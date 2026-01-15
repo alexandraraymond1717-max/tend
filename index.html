@@ -6,7 +6,7 @@
   <title>Tend — Life Design Companion</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,300;1,9..144,400&family=Outfit:wght@300;400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -18,43 +18,50 @@
     }
 
     :root {
-      --bg-deep: #1a1916;
-      --bg-warm: #252320;
-      --bg-card: #2d2a26;
-      --bg-elevated: #363330;
+      --bg-main: #FAF8F5;
+      --bg-warm: #F5F1EC;
+      --bg-card: #FFFFFF;
+      --bg-elevated: #F0EBE4;
       
-      --cream: #F5F0E8;
-      --cream-soft: #E8E2D6;
-      --cream-muted: #C4BEB2;
+      --sand: #E8E2D9;
+      --sand-dark: #D4CCC0;
       
-      --gold: #D4A574;
-      --gold-soft: #E8C9A0;
-      --gold-muted: #A67C4E;
+      --charcoal: #2D2A26;
+      --charcoal-light: #6B6660;
+      --charcoal-muted: #9A9590;
       
-      --sage: #8B9E7C;
-      --sage-soft: #A8B89A;
-      --sage-deep: #5C6B52;
+      --sage: #7D9B76;
+      --sage-soft: #A8C4A2;
+      --sage-light: #E8F0E6;
       
       --terracotta: #C4836A;
-      --terracotta-soft: #D9A88F;
+      --terracotta-soft: #DDBCAE;
+      --terracotta-light: #F5EAE5;
+      
+      --gold: #C9A66B;
+      --gold-soft: #E0CBA3;
+      --gold-light: #F7F1E6;
       
       --lavender: #9B8AAE;
-      --lavender-soft: #B8AAC8;
+      --lavender-soft: #C4B8D0;
+      --lavender-light: #F0ECF4;
       
       --sky: #7A9CAD;
-      --sky-soft: #9DBDCC;
+      --sky-soft: #A8C4D0;
+      --sky-light: #E8F2F5;
       
       --rose: #C48B8B;
-      --rose-soft: #D9ACAC;
+      --rose-soft: #DDBCBC;
+      --rose-light: #F5EAEA;
     }
 
     body {
-      font-family: 'Outfit', sans-serif;
-      background-color: var(--bg-deep);
-      color: var(--cream);
+      font-family: 'DM Sans', sans-serif;
+      background-color: var(--bg-main);
+      color: var(--charcoal);
       line-height: 1.6;
       min-height: 100vh;
-      font-weight: 300;
+      font-weight: 400;
     }
 
     h1, h2, h3, h4 {
@@ -62,7 +69,7 @@
       font-weight: 400;
     }
 
-    /* Noise texture overlay */
+    /* Subtle texture */
     body::before {
       content: '';
       position: fixed;
@@ -70,9 +77,9 @@
       left: 0;
       width: 100%;
       height: 100%;
-      opacity: 0.03;
+      opacity: 0.02;
       pointer-events: none;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
       z-index: 1000;
     }
 
@@ -86,19 +93,19 @@
     }
 
     ::-webkit-scrollbar-thumb {
-      background: var(--bg-elevated);
+      background: var(--sand-dark);
       border-radius: 4px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      background: var(--gold-muted);
+      background: var(--charcoal-muted);
     }
 
     /* Animations */
     @keyframes fadeUp {
       from { 
         opacity: 0; 
-        transform: translateY(30px); 
+        transform: translateY(20px); 
       }
       to { 
         opacity: 1; 
@@ -111,38 +118,28 @@
       to { opacity: 1; }
     }
 
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-10px); }
-    }
-
     @keyframes pulse {
       0%, 100% { opacity: 0.3; }
       50% { opacity: 0.8; }
     }
 
-    @keyframes shimmer {
-      0% { background-position: -200% center; }
-      100% { background-position: 200% center; }
-    }
-
-    @keyframes rotate {
-      from { transform: rotate(0deg); }
-      to { transform: rotate(360deg); }
-    }
-
     .fade-up {
-      animation: fadeUp 0.8s ease-out forwards;
+      animation: fadeUp 0.6s ease-out forwards;
     }
 
     .fade-in {
-      animation: fadeIn 0.5s ease-out forwards;
+      animation: fadeIn 0.4s ease-out forwards;
     }
 
     /* Selection */
     ::selection {
-      background: var(--gold);
-      color: var(--bg-deep);
+      background: var(--sage);
+      color: white;
+    }
+
+    /* Focus states */
+    input:focus, textarea:focus {
+      border-color: var(--sage) !important;
     }
   </style>
 </head>
@@ -159,22 +156,25 @@
         months: ['December', 'January', 'February'],
         color: 'var(--sky)',
         softColor: 'var(--sky-soft)',
+        lightColor: 'var(--sky-light)',
         essence: 'rest & reflection',
-        icon: '❋'
+        icon: '✦'
       },
       spring: { 
         name: 'Spring', 
         months: ['March', 'April', 'May'],
         color: 'var(--sage)',
         softColor: 'var(--sage-soft)',
+        lightColor: 'var(--sage-light)',
         essence: 'growth & renewal',
-        icon: '✿'
+        icon: '❋'
       },
       summer: { 
         name: 'Summer', 
         months: ['June', 'July', 'August'],
         color: 'var(--gold)',
         softColor: 'var(--gold-soft)',
+        lightColor: 'var(--gold-light)',
         essence: 'abundance & joy',
         icon: '✺'
       },
@@ -183,18 +183,19 @@
         months: ['September', 'October', 'November'],
         color: 'var(--terracotta)',
         softColor: 'var(--terracotta-soft)',
+        lightColor: 'var(--terracotta-light)',
         essence: 'harvest & release',
-        icon: '✦'
+        icon: '✧'
       }
     };
 
     const EVENT_TYPES = {
-      trip: { label: 'Trip', color: 'var(--sky)', icon: '↗' },
-      rest: { label: 'Rest', color: 'var(--sage)', icon: '◠' },
-      dateNight: { label: 'Date Night', color: 'var(--rose)', icon: '♡' },
-      personal: { label: 'Personal', color: 'var(--lavender)', icon: '✧' },
-      work: { label: 'Work', color: 'var(--cream-muted)', icon: '▫' },
-      partner: { label: "Partner", color: 'var(--gold-muted)', icon: '◦' },
+      trip: { label: 'Trip', color: 'var(--sky)', lightColor: 'var(--sky-light)', icon: '↗' },
+      rest: { label: 'Rest', color: 'var(--sage)', lightColor: 'var(--sage-light)', icon: '◠' },
+      dateNight: { label: 'Date Night', color: 'var(--rose)', lightColor: 'var(--rose-light)', icon: '♡' },
+      personal: { label: 'Personal', color: 'var(--lavender)', lightColor: 'var(--lavender-light)', icon: '✧' },
+      work: { label: 'Work', color: 'var(--charcoal-muted)', lightColor: 'var(--sand)', icon: '▫' },
+      partner: { label: "Partner", color: 'var(--gold)', lightColor: 'var(--gold-light)', icon: '◦' },
     };
 
     const VIEWS = {
@@ -206,50 +207,50 @@
     // ============ AI CONVERSATION FLOWS ============
     const AI_FLOWS = {
       year: {
-        initial: "Welcome to a new chapter.\n\nBefore we fill any calendars, let's slow down. Close your eyes for a moment if you'd like.\n\nWhen you imagine looking back at this year from December 31st, what do you hope to feel? Not what you want to *accomplish*—but how you want the year to have *felt*.",
+        initial: "Hi, I'm Tend. Let's take a moment to think about the year ahead.\n\nBefore we get into schedules and logistics, I'd love to know: What do you want this year to feel like? And is there a central theme or goal you want to organize it around?",
         followUps: [
-          "That's beautiful. And what would need to be true for the year to feel that way? What would you need more of—or less of?",
-          "I'm curious—when you think about that feeling, what images come to mind? What does a day look like when you're living in that energy?",
-          "Is there anything you want to leave behind this year? Any patterns or ways of being that don't serve you anymore?",
-          "Let's hold onto this. What would you call this year's theme if you had to give it a name? Just a word or a short phrase."
+          "That resonates. If that's your north star, what would need to be true by December for you to feel like you lived into it? Any milestones or experiences that come to mind?",
+          "And on a practical level—what are the big commitments you already know about? Work trips, weddings, anything already on the calendar?",
+          "One more thing: What do you want to protect this year? What tends to get squeezed out when life gets busy that you want to be more intentional about?",
+          "This is a beautiful foundation. Let's move into the seasons and see how this plays out across the year."
         ]
       },
       season: {
         winter: {
-          initial: "Let's look at Winter—December through February.\n\nThis is traditionally a season of rest and reflection, of turning inward. The world slows down.\n\nWhat do you need from this winter? What would feel nourishing?",
+          initial: "Let's look at Winter—December through February.\n\nThis season often brings holidays, end-of-year reflection, and a natural slowdown. What do you want from this winter? Any specific goals, trips, or experiences you want to make space for?",
           followUps: [
-            "Winter often brings holidays and family. How do you want to navigate that this year?",
-            "Is there something you want to start—a small practice, a project—that could benefit from the quiet of these months?"
+            "How do you want to navigate the holidays this year? Any boundaries you want to set or traditions you want to prioritize?",
+            "Is there anything you want to start or finish during these quieter months?"
           ]
         },
         spring: {
-          initial: "Now, Spring—March through May.\n\nEnergy returns. Things that were dormant begin to wake up. It's a natural time for beginnings.\n\nWhat do you want to plant this spring? What seeds—literal or metaphorical—are you ready to nurture?",
+          initial: "Now Spring—March through May.\n\nEnergy tends to pick up. It's a natural time for new beginnings and momentum. What do you want to focus on this spring? Any projects, habits, or goals you want to get moving?",
           followUps: [
-            "Spring often brings a restlessness, a desire to change everything at once. How do you want to pace yourself?",
-            "Is there a trip or adventure that would feel aligned with this season of renewal?"
+            "Spring often brings a burst of motivation. How do you want to channel that without overcommitting?",
+            "Any trips or experiences you want to plan while the weather shifts?"
           ]
         },
         summer: {
-          initial: "Summer—June through August.\n\nThe longest days. Warmth. Expansion. This is the season of fullness, of being out in the world.\n\nHow do you want to spend this abundant energy? What would make this summer feel alive?",
+          initial: "Summer—June through August.\n\nLonger days, more flexibility for many people. This is often the season for adventure, travel, and being out in the world. What do you want your summer to look like? Any trips, goals, or experiences you're dreaming about?",
           followUps: [
-            "Summer can also bring pressure to do it all, see everyone, make the most of every day. How do you want to balance openness with rest?",
-            "Is there a big experience—a trip, a gathering, a celebration—that you want to prioritize?"
+            "Summer can fill up fast. Is there anything you want to protect—downtime, a specific trip, quality time with someone?",
+            "What would make this summer feel memorable rather than just busy?"
           ]
         },
         fall: {
-          initial: "And Fall—September through November.\n\nThe world begins to release. Leaves fall. There's a natural invitation to let go, to harvest what you've grown, and to prepare for rest.\n\nWhat do you hope to be harvesting by fall? And what might you need to release?",
+          initial: "And Fall—September through November.\n\nA return to rhythm for many people. It's a good season for building routines and bringing things to completion. What do you want to focus on this fall? Any goals you want to hit before year-end?",
           followUps: [
-            "Fall often brings a return to routine after summer's openness. What kind of rhythm do you want to settle into?",
-            "Is there something you want to complete or bring to a close before the year ends?"
+            "Fall often feels like a fresh start. Any habits or routines you want to establish?",
+            "As the year winds down, is there anything you want to make sure you complete or celebrate?"
           ]
         }
       },
       month: {
-        initial: "Now let's get specific.\n\nLooking at this month, what's already on your plate? And what do you want to make sure doesn't get lost in the busyness?",
+        initial: "Now let's get into the details.\n\nLooking at this month specifically—what's already on your plate? And what do you want to make sure doesn't slip through the cracks?",
         followUps: [
-          "Where's the white space? Do you have enough room to breathe?",
-          "Is there something you keep meaning to schedule but haven't? Let's put it on the timeline.",
-          "How does this month balance with what you said you wanted for the season?"
+          "Where's the breathing room? Do you have enough white space, or does this feel packed?",
+          "Is there something you've been meaning to schedule but haven't? Let's get it on the timeline.",
+          "How does this month connect to your bigger goals for the season?"
         ]
       }
     };
@@ -258,9 +259,7 @@
     function TendApp() {
       const [currentView, setCurrentView] = useState(VIEWS.YEAR);
       const [currentSeason, setCurrentSeason] = useState('winter');
-      const [currentMonth, setCurrentMonth] = useState(0);
       const [yearTheme, setYearTheme] = useState('');
-      const [seasonIntentions, setSeasonIntentions] = useState({});
       const [events, setEvents] = useState([]);
       const [messages, setMessages] = useState([]);
       const [inputValue, setInputValue] = useState('');
@@ -270,7 +269,6 @@
       const messagesEndRef = useRef(null);
 
       useEffect(() => {
-        // Initialize with year view message
         setMessages([{ role: 'assistant', content: AI_FLOWS.year.initial }]);
       }, []);
 
@@ -300,7 +298,7 @@
           setMessages(prev => [...prev, { role: 'assistant', content: response }]);
           setMessageIndex(prev => prev + 1);
           setIsTyping(false);
-        }, 1500);
+        }, 1200);
       };
 
       const progressToSeason = () => {
@@ -330,6 +328,14 @@
         setMessages([{ role: 'assistant', content: AI_FLOWS.month.initial }]);
       };
 
+      const selectSeason = (season) => {
+        setCurrentSeason(season);
+        setCurrentView(VIEWS.SEASON);
+        setMessageIndex(0);
+        const seasonFlow = AI_FLOWS.season[season];
+        setMessages([{ role: 'assistant', content: seasonFlow.initial }]);
+      };
+
       const handleAddEvent = (eventData) => {
         setEvents(prev => [...prev, { ...eventData, id: Date.now() }]);
         setShowEventModal(false);
@@ -341,15 +347,10 @@
 
       return (
         <div style={styles.container}>
-          {/* Decorative elements */}
-          <div style={styles.gradientOrb1} />
-          <div style={styles.gradientOrb2} />
-          
           {/* Header */}
           <header style={styles.header}>
             <div style={styles.logoContainer}>
               <h1 style={styles.logo}>tend</h1>
-              <span style={styles.logoAccent}>✦</span>
             </div>
             <nav style={styles.nav}>
               <button 
@@ -390,12 +391,12 @@
           <main style={styles.main}>
             {/* Visualization Panel */}
             <div style={styles.vizPanel}>
-              {currentView === VIEWS.YEAR && <YearView yearTheme={yearTheme} />}
+              {currentView === VIEWS.YEAR && <YearView onSelectSeason={selectSeason} />}
               {currentView === VIEWS.SEASON && (
                 <SeasonView 
                   currentSeason={currentSeason} 
-                  seasonIntentions={seasonIntentions}
                   onNextSeason={progressToNextSeason}
+                  onSelectSeason={selectSeason}
                 />
               )}
               {currentView === VIEWS.MONTH && (
@@ -428,22 +429,25 @@
                       handleSendMessage();
                     }
                   }}
-                  placeholder="Share what's on your heart..."
+                  placeholder="Share what's on your mind..."
                   rows={3}
                 />
                 <div style={styles.chatActions}>
-                  {currentView === VIEWS.YEAR && (
+                  {currentView === VIEWS.YEAR && messageIndex >= 2 && (
                     <button style={styles.progressButton} onClick={progressToSeason}>
                       Continue to Seasons →
                     </button>
                   )}
-                  {currentView === VIEWS.SEASON && (
+                  {currentView === VIEWS.SEASON && messageIndex >= 1 && (
                     <button style={styles.progressButton} onClick={progressToNextSeason}>
-                      Next Season →
+                      {currentSeason === 'fall' ? 'Continue to Month →' : 'Next Season →'}
                     </button>
                   )}
                   <button 
-                    style={styles.sendButton}
+                    style={{
+                      ...styles.sendButton,
+                      ...(inputValue.trim() ? {} : styles.sendButtonDisabled)
+                    }}
                     onClick={handleSendMessage}
                     disabled={!inputValue.trim()}
                   >
@@ -466,163 +470,96 @@
     }
 
     // ============ YEAR VIEW ============
-    function YearView({ yearTheme }) {
+    function YearView({ onSelectSeason }) {
       const year = new Date().getFullYear();
       
       return (
         <div style={styles.yearView} className="fade-up">
-          <div style={styles.yearNumber}>{year}</div>
-          <div style={styles.yearCircle}>
-            <svg viewBox="0 0 400 400" style={styles.yearSvg}>
-              {/* Outer ring */}
-              <circle cx="200" cy="200" r="180" fill="none" stroke="var(--bg-elevated)" strokeWidth="1" />
-              <circle cx="200" cy="200" r="150" fill="none" stroke="var(--bg-elevated)" strokeWidth="1" />
-              
-              {/* Season arcs */}
-              {Object.entries(SEASONS).map(([key, season], idx) => {
-                const startAngle = idx * 90 - 90;
-                const endAngle = startAngle + 90;
-                const startRad = (startAngle * Math.PI) / 180;
-                const endRad = (endAngle * Math.PI) / 180;
-                const x1 = 200 + 165 * Math.cos(startRad);
-                const y1 = 200 + 165 * Math.sin(startRad);
-                const x2 = 200 + 165 * Math.cos(endRad);
-                const y2 = 200 + 165 * Math.sin(endRad);
-                
-                return (
-                  <g key={key}>
-                    <path
-                      d={`M ${x1} ${y1} A 165 165 0 0 1 ${x2} ${y2}`}
-                      fill="none"
-                      stroke={season.color}
-                      strokeWidth="24"
-                      opacity="0.6"
-                      style={{
-                        filter: 'blur(8px)',
-                      }}
-                    />
-                    <path
-                      d={`M ${x1} ${y1} A 165 165 0 0 1 ${x2} ${y2}`}
-                      fill="none"
-                      stroke={season.color}
-                      strokeWidth="3"
-                      opacity="0.9"
-                    />
-                  </g>
-                );
-              })}
-              
-              {/* Season labels */}
-              {Object.entries(SEASONS).map(([key, season], idx) => {
-                const angle = idx * 90 - 45;
-                const rad = (angle * Math.PI) / 180;
-                const x = 200 + 115 * Math.cos(rad);
-                const y = 200 + 115 * Math.sin(rad);
-                
-                return (
-                  <g key={`label-${key}`}>
-                    <text
-                      x={x}
-                      y={y - 8}
-                      textAnchor="middle"
-                      fill={season.color}
-                      style={{ 
-                        fontFamily: "'Fraunces', serif",
-                        fontSize: '14px',
-                        fontWeight: 400
-                      }}
-                    >
-                      {season.name}
-                    </text>
-                    <text
-                      x={x}
-                      y={y + 12}
-                      textAnchor="middle"
-                      fill="var(--cream-muted)"
-                      style={{ 
-                        fontFamily: "'Outfit', sans-serif",
-                        fontSize: '10px',
-                        fontWeight: 300
-                      }}
-                    >
-                      {season.essence}
-                    </text>
-                  </g>
-                );
-              })}
-              
-              {/* Center */}
-              <circle cx="200" cy="200" r="50" fill="var(--bg-card)" />
-              <text
-                x="200"
-                y="195"
-                textAnchor="middle"
-                fill="var(--cream)"
-                style={{ 
-                  fontFamily: "'Fraunces', serif",
-                  fontSize: '12px',
-                }}
-              >
-                your
-              </text>
-              <text
-                x="200"
-                y="212"
-                textAnchor="middle"
-                fill="var(--gold)"
-                style={{ 
-                  fontFamily: "'Fraunces', serif",
-                  fontSize: '14px',
-                  fontStyle: 'italic'
-                }}
-              >
-                year
-              </text>
-            </svg>
+          <div style={styles.yearHeader}>
+            <span style={styles.yearLabel}>Planning</span>
+            <h2 style={styles.yearNumber}>{year}</h2>
           </div>
           
-          <p style={styles.yearPrompt}>
-            What do you want this year to feel like?
+          <div style={styles.yearGrid}>
+            {Object.entries(SEASONS).map(([key, season], idx) => (
+              <button 
+                key={key}
+                style={{
+                  ...styles.seasonCard,
+                  animationDelay: `${idx * 0.1}s`,
+                  borderColor: season.softColor,
+                }}
+                className="fade-up"
+                onClick={() => onSelectSeason(key)}
+              >
+                <span style={{...styles.seasonCardIcon, color: season.color}}>{season.icon}</span>
+                <h3 style={{...styles.seasonCardName, color: season.color}}>{season.name}</h3>
+                <p style={styles.seasonCardEssence}>{season.essence}</p>
+                <div style={styles.seasonCardMonths}>
+                  {season.months.map(month => (
+                    <span key={month} style={styles.seasonCardMonth}>{month.slice(0, 3)}</span>
+                  ))}
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <p style={styles.yearHint}>
+            Click a season to explore, or chat with Tend to start designing your year.
           </p>
         </div>
       );
     }
 
     // ============ SEASON VIEW ============
-    function SeasonView({ currentSeason, seasonIntentions, onNextSeason }) {
+    function SeasonView({ currentSeason, onNextSeason, onSelectSeason }) {
       const season = SEASONS[currentSeason];
+      const seasonOrder = ['winter', 'spring', 'summer', 'fall'];
       
       return (
         <div style={styles.seasonView} className="fade-up">
-          <div style={styles.seasonHeader}>
-            <span style={{...styles.seasonIcon, color: season.color}}>{season.icon}</span>
-            <h2 style={{...styles.seasonName, color: season.color}}>{season.name}</h2>
-            <p style={styles.seasonEssence}>{season.essence}</p>
-          </div>
-          
-          <div style={styles.seasonMonths}>
-            {season.months.map((month, idx) => (
-              <div 
-                key={month} 
+          {/* Season tabs */}
+          <div style={styles.seasonTabs}>
+            {seasonOrder.map(key => (
+              <button
+                key={key}
                 style={{
-                  ...styles.seasonMonth,
-                  animationDelay: `${idx * 0.15}s`,
-                  borderColor: season.color,
+                  ...styles.seasonTab,
+                  ...(currentSeason === key && {
+                    backgroundColor: SEASONS[key].lightColor,
+                    color: SEASONS[key].color,
+                    borderColor: SEASONS[key].color,
+                  })
                 }}
-                className="fade-up"
+                onClick={() => onSelectSeason(key)}
               >
-                <span style={styles.seasonMonthName}>{month}</span>
-              </div>
+                {SEASONS[key].name}
+              </button>
             ))}
           </div>
 
-          <div style={styles.seasonQuote}>
-            <span style={{color: season.color}}>"</span>
-            {currentSeason === 'winter' && "In the depth of winter, I finally learned that within me there lay an invincible summer."}
-            {currentSeason === 'spring' && "Spring adds new life and new beauty to all that is."}
-            {currentSeason === 'summer' && "In summer, the song sings itself."}
-            {currentSeason === 'fall' && "Autumn shows us how beautiful it is to let things go."}
-            <span style={{color: season.color}}>"</span>
+          <div style={styles.seasonContent}>
+            <div style={styles.seasonHeader}>
+              <span style={{...styles.seasonIcon, color: season.color}}>{season.icon}</span>
+              <h2 style={{...styles.seasonName, color: season.color}}>{season.name}</h2>
+              <p style={styles.seasonEssence}>{season.essence}</p>
+            </div>
+            
+            <div style={styles.seasonMonths}>
+              {season.months.map((month, idx) => (
+                <div 
+                  key={month} 
+                  style={{
+                    ...styles.seasonMonth,
+                    backgroundColor: season.lightColor,
+                    borderColor: season.softColor,
+                  }}
+                  className="fade-up"
+                >
+                  <span style={styles.seasonMonthName}>{month}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       );
@@ -655,66 +592,68 @@
             <span style={styles.monthYear}>{currentYear}</span>
           </div>
 
-          <div style={styles.calendarGrid}>
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, idx) => (
-              <div key={idx} style={styles.calendarDayHeader}>{day}</div>
-            ))}
-            
-            {Array.from({ length: firstDay }, (_, i) => (
-              <div key={`empty-${i}`} style={styles.calendarDayEmpty} />
-            ))}
-            
-            {Array.from({ length: daysInMonth }, (_, i) => {
-              const day = i + 1;
-              const dayEvents = getEventsForDay(day);
-              const isToday = day === now.getDate();
+          <div style={styles.calendarContainer}>
+            <div style={styles.calendarGrid}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => (
+                <div key={idx} style={styles.calendarDayHeader}>{day}</div>
+              ))}
               
-              return (
-                <div 
-                  key={day} 
-                  style={{
-                    ...styles.calendarDay,
-                    ...(isToday && styles.calendarDayToday),
-                    ...(dayEvents.length > 0 && {
-                      backgroundColor: 'var(--bg-elevated)',
-                    })
-                  }}
-                >
-                  <span style={{
-                    ...styles.calendarDayNumber,
-                    ...(isToday && styles.calendarDayNumberToday)
-                  }}>{day}</span>
-                  {dayEvents.length > 0 && (
-                    <div style={styles.calendarDayDots}>
-                      {dayEvents.slice(0, 3).map((event, idx) => (
-                        <span 
-                          key={idx} 
-                          style={{
-                            ...styles.calendarDayDot,
-                            backgroundColor: EVENT_TYPES[event.type].color
-                          }}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+              {Array.from({ length: firstDay }, (_, i) => (
+                <div key={`empty-${i}`} style={styles.calendarDayEmpty} />
+              ))}
+              
+              {Array.from({ length: daysInMonth }, (_, i) => {
+                const day = i + 1;
+                const dayEvents = getEventsForDay(day);
+                const isToday = day === now.getDate();
+                
+                return (
+                  <div 
+                    key={day} 
+                    style={{
+                      ...styles.calendarDay,
+                      ...(isToday && styles.calendarDayToday),
+                      ...(dayEvents.length > 0 && {
+                        backgroundColor: EVENT_TYPES[dayEvents[0].type].lightColor,
+                      })
+                    }}
+                  >
+                    <span style={{
+                      ...styles.calendarDayNumber,
+                      ...(isToday && styles.calendarDayNumberToday)
+                    }}>{day}</span>
+                    {dayEvents.length > 0 && (
+                      <div style={styles.calendarDayDots}>
+                        {dayEvents.slice(0, 3).map((event, idx) => (
+                          <span 
+                            key={idx} 
+                            style={{
+                              ...styles.calendarDayDot,
+                              backgroundColor: EVENT_TYPES[event.type].color
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           <div style={styles.eventsList}>
             <div style={styles.eventsHeader}>
-              <h3 style={styles.eventsTitle}>This Month</h3>
+              <h3 style={styles.eventsTitle}>Planned Moments</h3>
               <button style={styles.addEventButton} onClick={onAddEvent}>
-                + Add moment
+                + Add
               </button>
             </div>
             
             {events.length === 0 ? (
-              <p style={styles.eventsEmpty}>
-                No moments planned yet.<br/>
-                <span style={styles.eventsEmptyHint}>What do you want to make space for?</span>
-              </p>
+              <div style={styles.eventsEmpty}>
+                <p style={styles.eventsEmptyText}>Nothing scheduled yet.</p>
+                <p style={styles.eventsEmptyHint}>What do you want to make space for?</p>
+              </div>
             ) : (
               <div style={styles.eventsGrid}>
                 {events.map(event => (
@@ -722,26 +661,26 @@
                     key={event.id} 
                     style={{
                       ...styles.eventCard,
-                      borderLeftColor: EVENT_TYPES[event.type].color
+                      borderLeftColor: EVENT_TYPES[event.type].color,
+                      backgroundColor: EVENT_TYPES[event.type].lightColor,
                     }}
                   >
-                    <div style={styles.eventCardHeader}>
-                      <span style={{
-                        ...styles.eventCardIcon,
-                        color: EVENT_TYPES[event.type].color
-                      }}>
-                        {EVENT_TYPES[event.type].icon}
-                      </span>
-                      <span style={styles.eventCardType}>{EVENT_TYPES[event.type].label}</span>
-                      {event.isShared && <span style={styles.eventCardShared}>shared</span>}
+                    <div style={styles.eventCardContent}>
+                      <div style={styles.eventCardTop}>
+                        <span style={{...styles.eventCardIcon, color: EVENT_TYPES[event.type].color}}>
+                          {EVENT_TYPES[event.type].icon}
+                        </span>
+                        <span style={styles.eventCardType}>{EVENT_TYPES[event.type].label}</span>
+                        {event.isShared && <span style={styles.eventCardShared}>shared</span>}
+                      </div>
+                      <h4 style={styles.eventCardTitle}>{event.title}</h4>
+                      <p style={styles.eventCardDate}>
+                        {new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                        {event.startDate !== event.endDate && (
+                          <> – {new Date(event.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>
+                        )}
+                      </p>
                     </div>
-                    <h4 style={styles.eventCardTitle}>{event.title}</h4>
-                    <p style={styles.eventCardDate}>
-                      {new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                      {event.startDate !== event.endDate && (
-                        <> – {new Date(event.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>
-                      )}
-                    </p>
                     <button 
                       style={styles.eventCardDelete}
                       onClick={() => onDeleteEvent(event.id)}
@@ -830,7 +769,7 @@
                   style={styles.formInput}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Weekend getaway, date night, rest day..."
+                  placeholder="Weekend trip, date night, rest day..."
                 />
               </div>
 
@@ -845,7 +784,7 @@
                         ...styles.typeOption,
                         ...(type === key && {
                           borderColor: value.color,
-                          backgroundColor: 'var(--bg-elevated)',
+                          backgroundColor: value.lightColor,
                         })
                       }}
                       onClick={() => setType(key)}
@@ -890,7 +829,10 @@
 
               <button 
                 type="submit" 
-                style={styles.submitButton}
+                style={{
+                  ...styles.submitButton,
+                  ...(!title || !startDate || !endDate ? styles.submitButtonDisabled : {})
+                }}
                 disabled={!title || !startDate || !endDate}
               >
                 Add to timeline
@@ -906,38 +848,14 @@
       container: {
         minHeight: '100vh',
         position: 'relative',
-        overflow: 'hidden',
-      },
-      gradientOrb1: {
-        position: 'fixed',
-        top: '-20%',
-        right: '-10%',
-        width: '50vw',
-        height: '50vw',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, var(--gold-muted) 0%, transparent 70%)',
-        opacity: 0.15,
-        pointerEvents: 'none',
-        filter: 'blur(60px)',
-      },
-      gradientOrb2: {
-        position: 'fixed',
-        bottom: '-30%',
-        left: '-20%',
-        width: '60vw',
-        height: '60vw',
-        borderRadius: '50%',
-        background: 'radial-gradient(circle, var(--sage-deep) 0%, transparent 70%)',
-        opacity: 0.1,
-        pointerEvents: 'none',
-        filter: 'blur(80px)',
       },
       header: {
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '1.5rem 3rem',
-        borderBottom: '1px solid var(--bg-elevated)',
+        padding: '1.25rem 2.5rem',
+        borderBottom: '1px solid var(--sand)',
+        backgroundColor: 'var(--bg-card)',
         position: 'relative',
         zIndex: 10,
       },
@@ -947,55 +865,54 @@
         gap: '0.5rem',
       },
       logo: {
-        fontSize: '1.75rem',
+        fontSize: '1.5rem',
         fontFamily: "'Fraunces', serif",
         fontWeight: 400,
-        color: 'var(--cream)',
+        color: 'var(--charcoal)',
         letterSpacing: '0.02em',
-      },
-      logoAccent: {
-        color: 'var(--gold)',
-        fontSize: '0.75rem',
-        marginTop: '-0.5rem',
       },
       nav: {
         display: 'flex',
-        gap: '0.5rem',
+        gap: '0.25rem',
+        backgroundColor: 'var(--bg-elevated)',
+        padding: '4px',
+        borderRadius: '10px',
       },
       navButton: {
         padding: '0.5rem 1.25rem',
         backgroundColor: 'transparent',
-        border: '1px solid var(--bg-elevated)',
-        borderRadius: '24px',
-        color: 'var(--cream-muted)',
+        border: 'none',
+        borderRadius: '8px',
+        color: 'var(--charcoal-light)',
         fontSize: '0.875rem',
-        fontFamily: "'Outfit', sans-serif",
-        fontWeight: 400,
+        fontFamily: "'DM Sans', sans-serif",
+        fontWeight: 500,
         cursor: 'pointer',
-        transition: 'all 0.3s ease',
+        transition: 'all 0.2s ease',
       },
       navButtonActive: {
-        backgroundColor: 'var(--bg-elevated)',
-        borderColor: 'var(--gold-muted)',
-        color: 'var(--cream)',
+        backgroundColor: 'var(--bg-card)',
+        color: 'var(--charcoal)',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
       },
       main: {
         display: 'grid',
-        gridTemplateColumns: '1fr 400px',
-        height: 'calc(100vh - 73px)',
+        gridTemplateColumns: '1fr 380px',
+        height: 'calc(100vh - 65px)',
         position: 'relative',
         zIndex: 10,
       },
       vizPanel: {
-        padding: '3rem',
+        padding: '2rem 3rem',
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-start',
         justifyContent: 'center',
         overflow: 'auto',
+        backgroundColor: 'var(--bg-main)',
       },
       chatPanel: {
-        backgroundColor: 'var(--bg-warm)',
-        borderLeft: '1px solid var(--bg-elevated)',
+        backgroundColor: 'var(--bg-card)',
+        borderLeft: '1px solid var(--sand)',
         display: 'flex',
         flexDirection: 'column',
       },
@@ -1005,7 +922,7 @@
         overflowY: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: '1.25rem',
+        gap: '1rem',
       },
       chatMessage: {
         display: 'flex',
@@ -1022,8 +939,8 @@
         width: '32px',
         height: '32px',
         borderRadius: '50%',
-        backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--gold-muted)',
+        backgroundColor: 'var(--sage-light)',
+        border: '1px solid var(--sage-soft)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -1032,56 +949,56 @@
       chatAvatarText: {
         fontFamily: "'Fraunces', serif",
         fontSize: '0.875rem',
-        color: 'var(--gold)',
+        color: 'var(--sage)',
+        fontWeight: 500,
       },
       chatBubble: {
-        padding: '1rem 1.25rem',
-        borderRadius: '16px',
+        padding: '0.875rem 1rem',
+        borderRadius: '14px',
         maxWidth: '85%',
         fontSize: '0.9rem',
-        lineHeight: 1.7,
+        lineHeight: 1.6,
       },
       chatBubbleAssistant: {
-        backgroundColor: 'var(--bg-card)',
+        backgroundColor: 'var(--bg-elevated)',
         borderTopLeftRadius: '4px',
-        color: 'var(--cream)',
+        color: 'var(--charcoal)',
       },
       chatBubbleUser: {
-        backgroundColor: 'var(--gold-muted)',
+        backgroundColor: 'var(--sage)',
         borderTopRightRadius: '4px',
-        color: 'var(--cream)',
+        color: 'white',
       },
       typingBubble: {
-        padding: '1rem 1.25rem',
-        backgroundColor: 'var(--bg-card)',
-        borderRadius: '16px',
+        padding: '0.875rem 1rem',
+        backgroundColor: 'var(--bg-elevated)',
+        borderRadius: '14px',
         borderTopLeftRadius: '4px',
         display: 'flex',
         gap: '4px',
       },
       typingDot: {
-        color: 'var(--gold)',
+        color: 'var(--sage)',
         fontSize: '1.25rem',
         lineHeight: 1,
         animation: 'pulse 1s infinite',
       },
       chatInputArea: {
-        padding: '1rem 1.5rem 1.5rem',
-        borderTop: '1px solid var(--bg-elevated)',
+        padding: '1rem 1.25rem 1.25rem',
+        borderTop: '1px solid var(--sand)',
       },
       chatInput: {
         width: '100%',
-        padding: '1rem',
-        backgroundColor: 'var(--bg-card)',
-        border: '1px solid var(--bg-elevated)',
+        padding: '0.875rem 1rem',
+        backgroundColor: 'var(--bg-elevated)',
+        border: '1px solid var(--sand)',
         borderRadius: '12px',
-        color: 'var(--cream)',
+        color: 'var(--charcoal)',
         fontSize: '0.9rem',
-        fontFamily: "'Outfit', sans-serif",
-        fontWeight: 300,
+        fontFamily: "'DM Sans', sans-serif",
         resize: 'none',
         outline: 'none',
-        transition: 'border-color 0.3s ease',
+        transition: 'border-color 0.2s ease',
         marginBottom: '0.75rem',
       },
       chatActions: {
@@ -1091,29 +1008,33 @@
       },
       progressButton: {
         padding: '0.5rem 1rem',
-        backgroundColor: 'transparent',
-        border: '1px solid var(--gold-muted)',
+        backgroundColor: 'var(--bg-elevated)',
+        border: '1px solid var(--sand-dark)',
         borderRadius: '20px',
-        color: 'var(--gold)',
+        color: 'var(--charcoal)',
         fontSize: '0.8rem',
-        fontFamily: "'Outfit', sans-serif",
+        fontFamily: "'DM Sans', sans-serif",
         cursor: 'pointer',
-        transition: 'all 0.3s ease',
+        transition: 'all 0.2s ease',
       },
       sendButton: {
-        width: '40px',
-        height: '40px',
+        width: '38px',
+        height: '38px',
         borderRadius: '50%',
-        backgroundColor: 'var(--gold-muted)',
+        backgroundColor: 'var(--sage)',
         border: 'none',
-        color: 'var(--cream)',
-        fontSize: '1.25rem',
+        color: 'white',
+        fontSize: '1.125rem',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        transition: 'all 0.3s ease',
+        transition: 'all 0.2s ease',
         marginLeft: 'auto',
+      },
+      sendButtonDisabled: {
+        backgroundColor: 'var(--sand)',
+        cursor: 'not-allowed',
       },
 
       // Year View
@@ -1122,27 +1043,72 @@
         flexDirection: 'column',
         alignItems: 'center',
         gap: '2rem',
+        width: '100%',
+        maxWidth: '700px',
+        paddingTop: '1rem',
+      },
+      yearHeader: {
+        textAlign: 'center',
+      },
+      yearLabel: {
+        fontSize: '0.875rem',
+        color: 'var(--charcoal-muted)',
+        textTransform: 'uppercase',
+        letterSpacing: '0.1em',
       },
       yearNumber: {
-        fontSize: '5rem',
+        fontSize: '3.5rem',
         fontFamily: "'Fraunces', serif",
-        fontWeight: 300,
-        color: 'var(--cream)',
-        letterSpacing: '-0.02em',
-        opacity: 0.9,
+        fontWeight: 400,
+        color: 'var(--charcoal)',
+        marginTop: '-0.25rem',
       },
-      yearCircle: {
-        width: '400px',
-        height: '400px',
-      },
-      yearSvg: {
+      yearGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '1rem',
         width: '100%',
-        height: '100%',
       },
-      yearPrompt: {
-        fontSize: '1.125rem',
-        color: 'var(--cream-muted)',
+      seasonCard: {
+        backgroundColor: 'var(--bg-card)',
+        border: '1px solid var(--sand)',
+        borderRadius: '16px',
+        padding: '1.5rem',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+        textAlign: 'left',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.5rem',
+      },
+      seasonCardIcon: {
+        fontSize: '1.5rem',
+      },
+      seasonCardName: {
+        fontSize: '1.25rem',
+        fontFamily: "'Fraunces', serif",
+        fontWeight: 400,
+      },
+      seasonCardEssence: {
+        fontSize: '0.875rem',
+        color: 'var(--charcoal-muted)',
         fontStyle: 'italic',
+      },
+      seasonCardMonths: {
+        display: 'flex',
+        gap: '0.5rem',
+        marginTop: '0.5rem',
+      },
+      seasonCardMonth: {
+        fontSize: '0.75rem',
+        color: 'var(--charcoal-light)',
+        backgroundColor: 'var(--bg-elevated)',
+        padding: '0.25rem 0.5rem',
+        borderRadius: '4px',
+      },
+      yearHint: {
+        fontSize: '0.875rem',
+        color: 'var(--charcoal-muted)',
         textAlign: 'center',
       },
 
@@ -1150,87 +1116,105 @@
       seasonView: {
         display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center',
-        gap: '3rem',
-        textAlign: 'center',
+        width: '100%',
         maxWidth: '600px',
+        gap: '2rem',
+      },
+      seasonTabs: {
+        display: 'flex',
+        gap: '0.5rem',
+        justifyContent: 'center',
+      },
+      seasonTab: {
+        padding: '0.5rem 1rem',
+        backgroundColor: 'var(--bg-card)',
+        border: '1px solid var(--sand)',
+        borderRadius: '20px',
+        color: 'var(--charcoal-light)',
+        fontSize: '0.875rem',
+        fontFamily: "'DM Sans', sans-serif",
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+      },
+      seasonContent: {
+        backgroundColor: 'var(--bg-card)',
+        borderRadius: '20px',
+        padding: '2.5rem',
+        textAlign: 'center',
+        border: '1px solid var(--sand)',
       },
       seasonHeader: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '0.5rem',
+        marginBottom: '2rem',
       },
       seasonIcon: {
-        fontSize: '3rem',
+        fontSize: '2.5rem',
+        display: 'block',
         marginBottom: '0.5rem',
       },
       seasonName: {
-        fontSize: '3.5rem',
+        fontSize: '2.5rem',
         fontFamily: "'Fraunces', serif",
         fontWeight: 400,
       },
       seasonEssence: {
-        fontSize: '1.125rem',
-        color: 'var(--cream-muted)',
+        fontSize: '1rem',
+        color: 'var(--charcoal-muted)',
         fontStyle: 'italic',
+        marginTop: '0.25rem',
       },
       seasonMonths: {
         display: 'flex',
         gap: '1rem',
+        justifyContent: 'center',
       },
       seasonMonth: {
-        padding: '1rem 2rem',
-        backgroundColor: 'var(--bg-card)',
+        padding: '1rem 1.5rem',
         borderRadius: '12px',
         border: '1px solid',
-        opacity: 0,
-        animation: 'fadeUp 0.6s ease-out forwards',
       },
       seasonMonthName: {
         fontSize: '1rem',
-        color: 'var(--cream)',
-        fontWeight: 400,
-      },
-      seasonQuote: {
-        fontSize: '1rem',
-        color: 'var(--cream-muted)',
-        fontStyle: 'italic',
-        maxWidth: '400px',
-        lineHeight: 1.8,
+        color: 'var(--charcoal)',
+        fontWeight: 500,
       },
 
       // Month View
       monthView: {
         width: '100%',
-        maxWidth: '700px',
+        maxWidth: '600px',
       },
       monthHeader: {
         display: 'flex',
         alignItems: 'baseline',
-        gap: '1rem',
-        marginBottom: '2rem',
+        gap: '0.75rem',
+        marginBottom: '1.5rem',
       },
       monthName: {
-        fontSize: '2.5rem',
+        fontSize: '2rem',
         fontFamily: "'Fraunces', serif",
         fontWeight: 400,
-        color: 'var(--cream)',
+        color: 'var(--charcoal)',
       },
       monthYear: {
-        fontSize: '1.25rem',
-        color: 'var(--cream-muted)',
+        fontSize: '1rem',
+        color: 'var(--charcoal-muted)',
+      },
+      calendarContainer: {
+        backgroundColor: 'var(--bg-card)',
+        borderRadius: '16px',
+        padding: '1.25rem',
+        marginBottom: '1.5rem',
+        border: '1px solid var(--sand)',
       },
       calendarGrid: {
         display: 'grid',
         gridTemplateColumns: 'repeat(7, 1fr)',
         gap: '4px',
-        marginBottom: '2rem',
       },
       calendarDayHeader: {
         padding: '0.5rem',
         textAlign: 'center',
-        color: 'var(--cream-muted)',
+        color: 'var(--charcoal-muted)',
         fontSize: '0.75rem',
         fontWeight: 500,
       },
@@ -1239,33 +1223,33 @@
       },
       calendarDay: {
         aspectRatio: '1',
-        backgroundColor: 'var(--bg-card)',
+        backgroundColor: 'var(--bg-elevated)',
         borderRadius: '8px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '4px',
+        gap: '2px',
         cursor: 'pointer',
-        transition: 'all 0.2s ease',
+        transition: 'all 0.15s ease',
         position: 'relative',
       },
       calendarDayToday: {
-        border: '1px solid var(--gold)',
+        border: '2px solid var(--sage)',
       },
       calendarDayNumber: {
         fontSize: '0.875rem',
-        color: 'var(--cream-muted)',
+        color: 'var(--charcoal-light)',
       },
       calendarDayNumberToday: {
-        color: 'var(--gold)',
-        fontWeight: 500,
+        color: 'var(--sage)',
+        fontWeight: 600,
       },
       calendarDayDots: {
         display: 'flex',
-        gap: '3px',
+        gap: '2px',
         position: 'absolute',
-        bottom: '6px',
+        bottom: '4px',
       },
       calendarDayDot: {
         width: '5px',
@@ -1275,7 +1259,8 @@
       eventsList: {
         backgroundColor: 'var(--bg-card)',
         borderRadius: '16px',
-        padding: '1.5rem',
+        padding: '1.25rem',
+        border: '1px solid var(--sand)',
       },
       eventsHeader: {
         display: 'flex',
@@ -1284,30 +1269,34 @@
         marginBottom: '1rem',
       },
       eventsTitle: {
-        fontSize: '1.125rem',
+        fontSize: '1rem',
         fontFamily: "'Fraunces', serif",
-        color: 'var(--cream)',
+        color: 'var(--charcoal)',
       },
       addEventButton: {
-        padding: '0.5rem 1rem',
-        backgroundColor: 'var(--gold-muted)',
+        padding: '0.4rem 0.875rem',
+        backgroundColor: 'var(--sage)',
         border: 'none',
-        borderRadius: '20px',
-        color: 'var(--cream)',
+        borderRadius: '16px',
+        color: 'white',
         fontSize: '0.8rem',
-        fontFamily: "'Outfit', sans-serif",
+        fontFamily: "'DM Sans', sans-serif",
         cursor: 'pointer',
-        transition: 'all 0.3s ease',
+        transition: 'all 0.2s ease',
       },
       eventsEmpty: {
-        color: 'var(--cream-muted)',
         textAlign: 'center',
-        padding: '2rem',
+        padding: '1.5rem',
+      },
+      eventsEmptyText: {
+        color: 'var(--charcoal-light)',
         fontSize: '0.9rem',
       },
       eventsEmptyHint: {
-        color: 'var(--gold-muted)',
+        color: 'var(--charcoal-muted)',
+        fontSize: '0.85rem',
         fontStyle: 'italic',
+        marginTop: '0.25rem',
       },
       eventsGrid: {
         display: 'flex',
@@ -1315,60 +1304,63 @@
         gap: '0.75rem',
       },
       eventCard: {
-        backgroundColor: 'var(--bg-elevated)',
         borderRadius: '10px',
-        padding: '1rem',
+        padding: '0.875rem 1rem',
         borderLeft: '3px solid',
-        position: 'relative',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
       },
-      eventCardHeader: {
+      eventCardContent: {
+        flex: 1,
+      },
+      eventCardTop: {
         display: 'flex',
         alignItems: 'center',
         gap: '0.5rem',
-        marginBottom: '0.5rem',
+        marginBottom: '0.25rem',
       },
       eventCardIcon: {
-        fontSize: '0.875rem',
+        fontSize: '0.8rem',
       },
       eventCardType: {
-        fontSize: '0.75rem',
-        color: 'var(--cream-muted)',
+        fontSize: '0.7rem',
+        color: 'var(--charcoal-muted)',
         textTransform: 'uppercase',
-        letterSpacing: '0.05em',
+        letterSpacing: '0.04em',
       },
       eventCardShared: {
         fontSize: '0.65rem',
-        padding: '0.125rem 0.5rem',
-        backgroundColor: 'var(--bg-card)',
-        borderRadius: '10px',
-        color: 'var(--cream-muted)',
-        marginLeft: 'auto',
+        padding: '0.125rem 0.4rem',
+        backgroundColor: 'rgba(0,0,0,0.06)',
+        borderRadius: '8px',
+        color: 'var(--charcoal-muted)',
       },
       eventCardTitle: {
-        fontSize: '1rem',
-        color: 'var(--cream)',
-        fontFamily: "'Outfit', sans-serif",
-        fontWeight: 400,
-        marginBottom: '0.25rem',
+        fontSize: '0.95rem',
+        color: 'var(--charcoal)',
+        fontFamily: "'DM Sans', sans-serif",
+        fontWeight: 500,
       },
       eventCardDate: {
         fontSize: '0.8rem',
-        color: 'var(--cream-muted)',
+        color: 'var(--charcoal-muted)',
+        marginTop: '0.125rem',
       },
       eventCardDelete: {
-        position: 'absolute',
-        top: '0.75rem',
-        right: '0.75rem',
         width: '24px',
         height: '24px',
         borderRadius: '50%',
         backgroundColor: 'transparent',
         border: 'none',
-        color: 'var(--cream-muted)',
-        fontSize: '1.25rem',
+        color: 'var(--charcoal-muted)',
+        fontSize: '1.125rem',
         cursor: 'pointer',
         opacity: 0.5,
-        transition: 'opacity 0.2s ease',
+        transition: 'opacity 0.15s ease',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
       },
 
       // Modal
@@ -1378,20 +1370,21 @@
         left: 0,
         right: 0,
         bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.7)',
+        backgroundColor: 'rgba(0,0,0,0.3)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         zIndex: 1000,
-        backdropFilter: 'blur(4px)',
+        backdropFilter: 'blur(2px)',
       },
       modal: {
         backgroundColor: 'var(--bg-card)',
         borderRadius: '20px',
-        padding: '2rem',
+        padding: '1.75rem',
         width: '90%',
-        maxWidth: '450px',
-        border: '1px solid var(--bg-elevated)',
+        maxWidth: '420px',
+        border: '1px solid var(--sand)',
+        boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
       },
       modalHeader: {
         display: 'flex',
@@ -1400,18 +1393,18 @@
         marginBottom: '1.5rem',
       },
       modalTitle: {
-        fontSize: '1.5rem',
+        fontSize: '1.25rem',
         fontFamily: "'Fraunces', serif",
-        color: 'var(--cream)',
+        color: 'var(--charcoal)',
       },
       modalClose: {
-        width: '32px',
-        height: '32px',
+        width: '30px',
+        height: '30px',
         borderRadius: '50%',
         backgroundColor: 'var(--bg-elevated)',
         border: 'none',
-        color: 'var(--cream-muted)',
-        fontSize: '1.25rem',
+        color: 'var(--charcoal-muted)',
+        fontSize: '1.125rem',
         cursor: 'pointer',
         display: 'flex',
         alignItems: 'center',
@@ -1430,24 +1423,25 @@
       formRow: {
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
-        gap: '1rem',
+        gap: '0.75rem',
       },
       formLabel: {
-        fontSize: '0.8rem',
-        color: 'var(--cream-muted)',
+        fontSize: '0.75rem',
+        color: 'var(--charcoal-muted)',
         textTransform: 'uppercase',
         letterSpacing: '0.05em',
+        fontWeight: 500,
       },
       formInput: {
-        padding: '0.875rem 1rem',
+        padding: '0.75rem 1rem',
         backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--bg-elevated)',
+        border: '1px solid var(--sand)',
         borderRadius: '10px',
-        color: 'var(--cream)',
+        color: 'var(--charcoal)',
         fontSize: '0.9rem',
-        fontFamily: "'Outfit', sans-serif",
+        fontFamily: "'DM Sans', sans-serif",
         outline: 'none',
-        transition: 'border-color 0.3s ease',
+        transition: 'border-color 0.2s ease',
       },
       typeSelector: {
         display: 'grid',
@@ -1455,45 +1449,49 @@
         gap: '0.5rem',
       },
       typeOption: {
-        padding: '0.75rem 0.5rem',
+        padding: '0.625rem 0.5rem',
         backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--bg-elevated)',
+        border: '1px solid var(--sand)',
         borderRadius: '10px',
-        color: 'var(--cream)',
+        color: 'var(--charcoal)',
         fontSize: '0.75rem',
-        fontFamily: "'Outfit', sans-serif",
+        fontFamily: "'DM Sans', sans-serif",
         cursor: 'pointer',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         gap: '0.25rem',
-        transition: 'all 0.2s ease',
+        transition: 'all 0.15s ease',
       },
       checkboxLabel: {
         display: 'flex',
         alignItems: 'center',
         gap: '0.75rem',
-        fontSize: '0.9rem',
-        color: 'var(--cream-muted)',
+        fontSize: '0.875rem',
+        color: 'var(--charcoal-light)',
         cursor: 'pointer',
       },
       checkbox: {
         width: '18px',
         height: '18px',
-        accentColor: 'var(--gold)',
+        accentColor: 'var(--sage)',
       },
       submitButton: {
-        padding: '1rem',
-        backgroundColor: 'var(--gold-muted)',
+        padding: '0.875rem',
+        backgroundColor: 'var(--sage)',
         border: 'none',
         borderRadius: '12px',
-        color: 'var(--cream)',
+        color: 'white',
         fontSize: '0.9rem',
-        fontFamily: "'Outfit', sans-serif",
+        fontFamily: "'DM Sans', sans-serif",
         fontWeight: 500,
         cursor: 'pointer',
-        transition: 'all 0.3s ease',
-        marginTop: '0.5rem',
+        transition: 'all 0.2s ease',
+        marginTop: '0.25rem',
+      },
+      submitButtonDisabled: {
+        backgroundColor: 'var(--sand-dark)',
+        cursor: 'not-allowed',
       },
     };
 
