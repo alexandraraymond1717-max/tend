@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Tend — Life Design Companion</title>
+  <title>Tend — Intentional Living</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,500;1,9..144,300;1,9..144,400&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
@@ -17,11 +17,38 @@
       box-sizing: border-box;
     }
 
+    :root {
+      --bg-main: #FAF8F5;
+      --bg-card: #FFFFFF;
+      --bg-elevated: #F0EBE4;
+      --text: #2D2A26;
+      --text-light: #6B6660;
+      --text-muted: #9A9590;
+      --border: #E8E2D9;
+      --border-dark: #D4CCC0;
+      --accent: #7D9B76;
+      --accent-light: #E8F0E6;
+    }
+
+    [data-theme="dark"] {
+      --bg-main: #1a1916;
+      --bg-card: #252320;
+      --bg-elevated: #2d2a26;
+      --text: #F5F0E8;
+      --text-light: #B8B2A8;
+      --text-muted: #8A857C;
+      --border: #3d3a36;
+      --border-dark: #4a4640;
+      --accent: #A8C4A2;
+      --accent-light: #2d332c;
+    }
+
     body {
       font-family: 'DM Sans', sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text);
       line-height: 1.6;
       min-height: 100vh;
-      font-weight: 400;
       transition: background-color 0.3s ease, color 0.3s ease;
     }
 
@@ -30,34 +57,22 @@
       font-weight: 400;
     }
 
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--border);
-      border-radius: 4px;
-    }
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: 4px; }
 
     @keyframes fadeUp {
       from { opacity: 0; transform: translateY(20px); }
       to { opacity: 1; transform: translateY(0); }
     }
-
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
     }
-
     @keyframes pulse {
       0%, 100% { opacity: 0.3; }
       50% { opacity: 0.8; }
     }
-
     .fade-up { animation: fadeUp 0.6s ease-out forwards; }
     .fade-in { animation: fadeIn 0.4s ease-out forwards; }
 
@@ -65,138 +80,118 @@
       outline: none;
       border-color: var(--accent) !important;
     }
+
+    /* Pattern overlays */
+    .pattern-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    [data-pattern="botanical"] .pattern-overlay.botanical { opacity: 1; }
+    [data-pattern="ocean"] .pattern-overlay.ocean { opacity: 1; }
+    [data-pattern="floral"] .pattern-overlay.floral { opacity: 1; }
+    [data-pattern="hydrangea"] .pattern-overlay.hydrangea { opacity: 1; }
   </style>
 </head>
-<body>
+<body data-theme="light" data-pattern="none">
+  <!-- Pattern Overlays -->
+  <div class="pattern-overlay botanical">
+    <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="botanicalPattern" x="0" y="0" width="120" height="120" patternUnits="userSpaceOnUse">
+          <!-- Delicate stems and leaves -->
+          <path d="M60 10 Q55 25 60 40" stroke="#7D9B76" fill="none" stroke-width="1" opacity="0.15"/>
+          <path d="M60 25 Q52 22 48 15" stroke="#7D9B76" fill="none" stroke-width="1" opacity="0.12"/>
+          <path d="M60 32 Q68 28 72 20" stroke="#7D9B76" fill="none" stroke-width="1" opacity="0.12"/>
+          <circle cx="60" cy="12" r="2" fill="#7D9B76" opacity="0.1"/>
+          
+          <path d="M20 70 Q15 85 20 100" stroke="#7D9B76" fill="none" stroke-width="1" opacity="0.12"/>
+          <path d="M20 82 Q12 78 8 72" stroke="#7D9B76" fill="none" stroke-width="1" opacity="0.1"/>
+          
+          <path d="M100 50 Q95 65 100 80" stroke="#7D9B76" fill="none" stroke-width="1" opacity="0.12"/>
+          <path d="M100 62 Q108 58 112 52" stroke="#7D9B76" fill="none" stroke-width="1" opacity="0.1"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#botanicalPattern)"/>
+    </svg>
+  </div>
+
+  <div class="pattern-overlay ocean">
+    <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="oceanPattern" x="0" y="0" width="200" height="100" patternUnits="userSpaceOnUse">
+          <!-- Single elegant wave -->
+          <path d="M0 50 Q50 30 100 50 Q150 70 200 50" stroke="#7A9CAD" fill="none" stroke-width="1.5" opacity="0.12"/>
+          <path d="M0 70 Q50 50 100 70 Q150 90 200 70" stroke="#7A9CAD" fill="none" stroke-width="1" opacity="0.08"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#oceanPattern)"/>
+    </svg>
+  </div>
+
+  <div class="pattern-overlay floral">
+    <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="floralPattern" x="0" y="0" width="80" height="80" patternUnits="userSpaceOnUse">
+          <!-- Minimal abstract flowers -->
+          <circle cx="20" cy="20" r="3" fill="none" stroke="#C48B8B" stroke-width="1" opacity="0.15"/>
+          <circle cx="20" cy="20" r="1" fill="#C48B8B" opacity="0.12"/>
+          
+          <circle cx="60" cy="55" r="4" fill="none" stroke="#C48B8B" stroke-width="1" opacity="0.12"/>
+          <circle cx="60" cy="55" r="1.5" fill="#C48B8B" opacity="0.1"/>
+          
+          <!-- Tiny dots -->
+          <circle cx="45" cy="15" r="1" fill="#C48B8B" opacity="0.1"/>
+          <circle cx="10" cy="60" r="1" fill="#C48B8B" opacity="0.08"/>
+          <circle cx="70" cy="25" r="0.8" fill="#C48B8B" opacity="0.08"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#floralPattern)"/>
+    </svg>
+  </div>
+
+  <div class="pattern-overlay hydrangea">
+    <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <pattern id="hydrangeaPattern" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
+          <!-- Clustered small circles like hydrangea petals -->
+          <circle cx="25" cy="25" r="4" fill="#9B8AAE" opacity="0.08"/>
+          <circle cx="30" cy="22" r="3" fill="#9B8AAE" opacity="0.1"/>
+          <circle cx="22" cy="30" r="3.5" fill="#9B8AAE" opacity="0.07"/>
+          <circle cx="28" cy="29" r="2.5" fill="#9B8AAE" opacity="0.09"/>
+          
+          <circle cx="75" cy="70" r="3.5" fill="#9B8AAE" opacity="0.09"/>
+          <circle cx="80" cy="68" r="3" fill="#9B8AAE" opacity="0.07"/>
+          <circle cx="72" cy="74" r="4" fill="#9B8AAE" opacity="0.08"/>
+          <circle cx="78" cy="75" r="2.5" fill="#9B8AAE" opacity="0.1"/>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#hydrangeaPattern)"/>
+    </svg>
+  </div>
+
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef, createContext, useContext } = React;
+    const { useState, useEffect, useRef } = React;
 
-    // ============ THEMES ============
-    const THEMES = {
-      light: {
-        name: 'Light Minimal',
-        preview: 'linear-gradient(135deg, #FAF8F5 0%, #F0EBE4 100%)',
-        colors: {
-          bgMain: '#FAF8F5',
-          bgCard: '#FFFFFF',
-          bgElevated: '#F0EBE4',
-          text: '#2D2A26',
-          textLight: '#6B6660',
-          textMuted: '#9A9590',
-          border: '#E8E2D9',
-          borderDark: '#D4CCC0',
-          accent: '#7D9B76',
-          accentLight: '#E8F0E6',
-        },
-        pattern: null,
-      },
-      dark: {
-        name: 'Dark Minimal',
-        preview: 'linear-gradient(135deg, #1a1916 0%, #2d2a26 100%)',
-        colors: {
-          bgMain: '#1a1916',
-          bgCard: '#2d2a26',
-          bgElevated: '#363330',
-          text: '#F5F0E8',
-          textLight: '#C4BEB2',
-          textMuted: '#8A857C',
-          border: '#3d3a36',
-          borderDark: '#4a4640',
-          accent: '#A8C4A2',
-          accentLight: '#2d332c',
-        },
-        pattern: null,
-      },
-      botanical: {
-        name: 'Botanical',
-        preview: 'linear-gradient(135deg, #E8F0E6 0%, #d4e5d0 100%)',
-        colors: {
-          bgMain: '#F5F8F4',
-          bgCard: '#FFFFFF',
-          bgElevated: '#E8F0E6',
-          text: '#2D3A2D',
-          textLight: '#5A6B5A',
-          textMuted: '#8A9A8A',
-          border: '#C8DBC4',
-          borderDark: '#A8C4A2',
-          accent: '#5A7D52',
-          accentLight: '#E8F0E6',
-        },
-        pattern: 'botanical',
-      },
-      ocean: {
-        name: 'Ocean',
-        preview: 'linear-gradient(135deg, #E8F2F5 0%, #c9dde4 100%)',
-        colors: {
-          bgMain: '#F0F6F8',
-          bgCard: '#FFFFFF',
-          bgElevated: '#E0EEF2',
-          text: '#1E3A4A',
-          textLight: '#4A6B7A',
-          textMuted: '#7A9AAA',
-          border: '#B8D4E0',
-          borderDark: '#8ABDD0',
-          accent: '#3A7A9A',
-          accentLight: '#E0EEF2',
-        },
-        pattern: 'waves',
-      },
-      garden: {
-        name: 'Garden',
-        preview: 'linear-gradient(135deg, #FDF5F7 0%, #f5e0e6 100%)',
-        colors: {
-          bgMain: '#FDF8F9',
-          bgCard: '#FFFFFF',
-          bgElevated: '#F8ECEF',
-          text: '#4A2D3A',
-          textLight: '#7A5A6A',
-          textMuted: '#AA8A9A',
-          border: '#E8CCD8',
-          borderDark: '#D4A8BC',
-          accent: '#B85A7A',
-          accentLight: '#F8ECEF',
-        },
-        pattern: 'floral',
-      },
-      sunset: {
-        name: 'Sunset',
-        preview: 'linear-gradient(135deg, #FDF5ED 0%, #f5e6d8 100%)',
-        colors: {
-          bgMain: '#FDF8F3',
-          bgCard: '#FFFFFF',
-          bgElevated: '#F8EEE4',
-          text: '#4A3020',
-          textLight: '#7A6050',
-          textMuted: '#AA9080',
-          border: '#E8D4C4',
-          borderDark: '#D4B8A0',
-          accent: '#C4836A',
-          accentLight: '#F8EEE4',
-        },
-        pattern: null,
-      },
-      hydrangea: {
-        name: 'Hydrangea',
-        preview: 'linear-gradient(135deg, #F0ECF4 0%, #dcd4e8 100%)',
-        colors: {
-          bgMain: '#F8F5FA',
-          bgCard: '#FFFFFF',
-          bgElevated: '#EDE8F4',
-          text: '#3A2D4A',
-          textLight: '#6A5A7A',
-          textMuted: '#9A8AAA',
-          border: '#D8CCE8',
-          borderDark: '#C4B0D8',
-          accent: '#7A5A9A',
-          accentLight: '#EDE8F4',
-        },
-        pattern: 'hydrangea',
-      },
-    };
+    // ============ CONSTANTS ============
+    const THEMES = [
+      { id: 'light', name: 'Light', pattern: 'none' },
+      { id: 'dark', name: 'Dark', pattern: 'none' },
+      { id: 'botanical', name: 'Botanical', pattern: 'botanical' },
+      { id: 'ocean', name: 'Ocean', pattern: 'ocean' },
+      { id: 'floral', name: 'Floral', pattern: 'floral' },
+      { id: 'hydrangea', name: 'Hydrangea', pattern: 'hydrangea' },
+    ];
 
-    // ============ LIFE AREAS ============
     const LIFE_AREAS = {
       health: { name: 'Health & Wellness', icon: '◐', color: '#7D9B76' },
       relationships: { name: 'Relationships', icon: '♡', color: '#C48B8B' },
@@ -206,373 +201,271 @@
       fun: { name: 'Fun & Adventure', icon: '✺', color: '#C4836A' },
     };
 
-    // ============ SEASONS ============
-    const SEASONS = {
-      winter: { name: 'Winter', months: ['Dec', 'Jan', 'Feb'], color: '#7A9CAD', icon: '✦' },
-      spring: { name: 'Spring', months: ['Mar', 'Apr', 'May'], color: '#7D9B76', icon: '❋' },
-      summer: { name: 'Summer', months: ['Jun', 'Jul', 'Aug'], color: '#C9A66B', icon: '✺' },
-      fall: { name: 'Fall', months: ['Sep', 'Oct', 'Nov'], color: '#C4836A', icon: '✧' },
-    };
-
-    // ============ VIEWS ============
     const VIEWS = {
+      YEAR: 'year',
       VALUES: 'values',
-      WHEEL: 'wheel',
-      SEASONS: 'seasons',
+      LIFE_AREAS: 'lifeAreas',
       GOALS: 'goals',
+      SEASONS: 'seasons',
       MONTH: 'month',
     };
 
-    // ============ AI CONVERSATION FLOWS ============
-    const AI_FLOWS = {
-      intro: `Welcome to Tend.
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-Tend is a space for living intentionally — for designing your life rather than just letting it happen. It's part planner, part guide, part thought partner.
+    // ============ AI CHAT CONTENT (complements, doesn't repeat visuals) ============
+    const AI_CONTENT = {
+      year: {
+        initial: `Here's your year at a glance.
 
-We'll start by getting clear on what matters most to you, then look at the different areas of your life, map your intentions to the seasons ahead, and set meaningful goals.
+Before we fill it in, let's get clear on what you actually want from these twelve months. Not what you <em>should</em> want — what you genuinely desire.
 
-There's no right way to do this. Some people move quickly, others take their time. The goal isn't productivity — it's alignment.
-
-Ready to begin?`,
+What's one thing that, if it happened this year, would make everything feel worthwhile?`,
+        followUps: [
+          `That's meaningful. What would need to be true for that to happen? What conditions, commitments, or changes?`,
+          `And what might get in the way? What patterns tend to pull you off course?`,
+          `Good. Let's ground this in your values — the principles that will guide your decisions.`,
+        ]
+      },
       values: {
-        initial: `Let's start with values — the foundation everything else builds on.
+        initial: `Values aren't goals — they're <em>how</em> you want to move through the world, regardless of outcomes.
 
-Values are the qualities you want to embody, the things that make life feel meaningful. Not goals, not achievements, but <em>ways of being</em>.
+Someone who values adventure might take a spontaneous trip or try a new restaurant. Someone who values growth might read challenging books or seek hard feedback.
 
-Some examples: freedom, connection, creativity, growth, adventure, stability, compassion, authenticity, courage, joy.
+When you're living in alignment with your values, even difficult things feel meaningful. When you're not, even success feels hollow.
 
-What are 3-5 values that feel true to who you are or who you want to become?`,
+What qualities do you want to embody this year?`,
         followUps: [
-          `Those are beautiful. When you look at that list, which one feels most important right now? The one that, if you lived by it fully, would change the most?`,
-          `And is there a value that you <em>want</em> to live by but struggle with? One where there's a gap between the intention and the reality?`,
-          `This is a strong foundation. Let's see how your life is actually lining up with these values.`
+          `Notice which of these feel aspirational versus which feel true. Both are valid — but it's worth knowing the difference.`,
+          `Is there a value you've been living by that no longer serves you? Something you inherited but didn't choose?`,
+          `These will be your compass. Now let's see how the different parts of your life are actually doing.`,
         ]
       },
-      wheel: {
-        initial: `Now let's look at the different areas of your life — what some call the "Wheel of Life."
+      lifeAreas: {
+        initial: `Be honest with these ratings — not harsh, just honest.
 
-You'll see six areas: Health, Relationships, Career, Finances, Personal Growth, and Fun & Adventure.
+A "5" isn't a failure. It might be intentional — maybe you're putting career on hold to focus on family. Or it might be a wake-up call.
 
-For each one, rate how you're feeling about it right now — not where you "should" be, but where you honestly are. Then we'll identify where you want to focus.
-
-Take your time with this. Be honest.`,
+The goal isn't to make everything a 10. It's to be intentional about where you invest your energy.`,
         followUps: [
-          `Looking at your ratings, what stands out? Any areas that feel particularly low or particularly high?`,
-          `If you could only focus on improving <em>one</em> of these areas over the next season, which would make the biggest difference to your overall sense of wellbeing?`,
-          `Good. Let's carry these insights into the seasons.`
-        ]
-      },
-      seasons: {
-        initial: `Now we'll map your intentions to the year ahead.
-
-Each season has its own energy. Winter tends toward rest and reflection. Spring brings momentum and new beginnings. Summer is expansion and adventure. Fall is harvest and completion.
-
-Looking at the areas you want to focus on, which seasons feel right for what? Not everything has to be now.`,
-        followUps: [
-          `That makes sense. Are there any external constraints — trips, work cycles, life events — that should shape when you focus on what?`,
-          `And what about rest? Which season do you want to protect for slowing down?`,
-          `Let's get specific about what success would look like.`
+          `Where do you feel the most friction? The gap between where you are and where you want to be?`,
+          `If you could only improve one area this year, which would create the most positive ripple effects?`,
+          `Let's turn this into something concrete.`,
         ]
       },
       goals: {
-        initial: `Finally, let's set some tangible goals — not to create pressure, but to create clarity.
+        initial: `Goals work best when they're specific enough to know if you've achieved them, but flexible enough to adapt.
 
-For each area you want to focus on, what would success look like? How would you <em>know</em> you'd made progress?
+"Get healthier" is a direction. "Run a 5K by June" is a goal. "Feel strong and energized" is an outcome.
 
-These can be measurable ("run a 5K", "save $5,000") or experiential ("feel more present with my partner", "have a creative practice I love").`,
+All three matter. What combination feels right for you?`,
         followUps: [
-          `Those feel meaningful. For the most important one, what's the first small step? The thing you could do this week to create momentum?`,
-          `And how do you want to check in on these? Some people like weekly reviews, others prefer monthly. What rhythm feels sustainable?`,
-          `You've built something beautiful here. Let's put it into practice.`
+          `For your most important goal — what's the smallest possible first step? Something you could do today?`,
+          `What would make this goal feel like play instead of obligation?`,
+          `Good. Now let's think about timing — when in the year does each of these make sense?`,
+        ]
+      },
+      seasons: {
+        initial: `Not everything belongs in every season.
+
+Winter naturally lends itself to rest and reflection. Spring brings energy for starting new things. Summer is for expansion and experiences. Fall is for harvesting and completing.
+
+What wants to happen when? What timing is already built into your life — work cycles, family rhythms, travel?`,
+        followUps: [
+          `Where do you need to protect space? What tends to get squeezed out when life gets busy?`,
+          `Is there a season you're dreading? What would make it feel more manageable?`,
+          `Let's get tactical with this month specifically.`,
         ]
       },
       month: {
-        initial: `Now let's get tactical.
+        initial: `Looking at the days ahead — where's the breathing room? Or is there any?
 
-Looking at this month specifically — what's already on your plate? And based on everything we've discussed, what do you want to make sure you schedule?
+The calendar isn't just about what you're doing. It's about what you're <em>not</em> doing. The white space is where life actually happens.
 
-Remember: white space is sacred. You don't have to fill every day.`,
+What needs to be protected this month?`,
         followUps: [
-          `Where's the breathing room? Does this month feel sustainable?`,
-          `How does this month connect to your seasonal intentions? Are the right things getting time?`,
-          `Is there anything you've been putting off that you want to finally schedule?`
+          `Does this month reflect your stated priorities? Or is there a mismatch between what you said matters and what's getting scheduled?`,
+          `What's one thing you keep meaning to do that never makes it onto the calendar?`,
+          `How do you want to feel at the end of this month? What would make it a success?`,
         ]
       }
     };
 
-    // ============ THEME CONTEXT ============
-    const ThemeContext = createContext();
-
-    function ThemeProvider({ children }) {
-      const [themeName, setThemeName] = useState(() => {
-        return localStorage.getItem('tend-theme') || 'light';
-      });
-
-      const theme = THEMES[themeName];
-
-      useEffect(() => {
-        localStorage.setItem('tend-theme', themeName);
-        const root = document.documentElement;
-        Object.entries(theme.colors).forEach(([key, value]) => {
-          root.style.setProperty(`--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`, value);
-        });
-        document.body.style.backgroundColor = theme.colors.bgMain;
-        document.body.style.color = theme.colors.text;
-      }, [themeName, theme]);
-
-      return (
-        <ThemeContext.Provider value={{ theme, themeName, setThemeName }}>
-          {children}
-        </ThemeContext.Provider>
-      );
-    }
-
-    // ============ LOGO COMPONENT ============
-    function Logo() {
-      const { theme } = useContext(ThemeContext);
-      return (
-        <div style={styles.logoContainer}>
-          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={{ marginRight: '8px' }}>
-            {/* Pot */}
-            <path 
-              d="M10 24 L22 24 L20 30 L12 30 Z" 
-              fill={theme.colors.accent}
-              opacity="0.3"
-            />
-            {/* Stem */}
-            <path 
-              d="M16 24 Q16 18 16 14" 
-              stroke={theme.colors.accent}
-              strokeWidth="2"
-              strokeLinecap="round"
-              fill="none"
-            />
-            {/* Left leaf */}
-            <path 
-              d="M16 18 Q10 16 8 10 Q14 12 16 18" 
-              fill={theme.colors.accent}
-              opacity="0.6"
-            />
-            {/* Right leaf */}
-            <path 
-              d="M16 14 Q22 10 24 4 Q18 8 16 14" 
-              fill={theme.colors.accent}
-            />
-            {/* Small sprout */}
-            <path 
-              d="M16 8 Q14 5 16 2 Q18 5 16 8" 
-              fill={theme.colors.accent}
-              opacity="0.8"
-            />
-          </svg>
-          <h1 style={{...styles.logo, color: theme.colors.text}}>tend</h1>
-        </div>
-      );
-    }
-
-    // ============ PATTERN OVERLAY ============
-    function PatternOverlay({ pattern }) {
-      if (!pattern) return null;
-      
-      const patterns = {
-        botanical: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 10 Q25 20 30 30 Q35 20 30 10' fill='%237D9B76' opacity='0.08'/%3E%3Cpath d='M10 40 Q15 35 20 40 Q15 45 10 40' fill='%237D9B76' opacity='0.06'/%3E%3Cpath d='M45 45 Q50 40 55 45 Q50 50 45 45' fill='%237D9B76' opacity='0.06'/%3E%3C/svg%3E")`,
-        waves: `url("data:image/svg+xml,%3Csvg width='100' height='20' viewBox='0 0 100 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q25 0 50 10 Q75 20 100 10' stroke='%233A7A9A' fill='none' opacity='0.08' stroke-width='1'/%3E%3C/svg%3E")`,
-        floral: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='3' fill='%23B85A7A' opacity='0.1'/%3E%3Ccircle cx='20' cy='14' r='4' fill='%23B85A7A' opacity='0.08'/%3E%3Ccircle cx='25' cy='18' r='4' fill='%23B85A7A' opacity='0.08'/%3E%3Ccircle cx='23' cy='25' r='4' fill='%23B85A7A' opacity='0.08'/%3E%3Ccircle cx='17' cy='25' r='4' fill='%23B85A7A' opacity='0.08'/%3E%3Ccircle cx='15' cy='18' r='4' fill='%23B85A7A' opacity='0.08'/%3E%3C/svg%3E")`,
-        hydrangea: `url("data:image/svg+xml,%3Csvg width='50' height='50' viewBox='0 0 50 50' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='15' cy='15' r='6' fill='%237A5A9A' opacity='0.06'/%3E%3Ccircle cx='35' cy='15' r='5' fill='%239A7ABA' opacity='0.06'/%3E%3Ccircle cx='25' cy='30' r='7' fill='%237A5A9A' opacity='0.05'/%3E%3Ccircle cx='10' cy='40' r='4' fill='%239A7ABA' opacity='0.06'/%3E%3Ccircle cx='40' cy='38' r='5' fill='%237A5A9A' opacity='0.05'/%3E%3C/svg%3E")`,
-      };
-
-      return (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundImage: patterns[pattern],
-          pointerEvents: 'none',
-          zIndex: 0,
-        }} />
-      );
-    }
-
-    // ============ THEME SELECTOR ============
-    function ThemeSelector({ isOpen, onClose }) {
-      const { themeName, setThemeName, theme } = useContext(ThemeContext);
-
-      if (!isOpen) return null;
-
-      return (
-        <div style={{...styles.modalOverlay, backgroundColor: 'rgba(0,0,0,0.4)'}} onClick={onClose}>
-          <div 
-            style={{
-              ...styles.modal, 
-              maxWidth: '500px',
-              backgroundColor: theme.colors.bgCard,
-              border: `1px solid ${theme.colors.border}`,
-            }} 
-            onClick={e => e.stopPropagation()}
-            className="fade-up"
-          >
-            <div style={styles.modalHeader}>
-              <h3 style={{...styles.modalTitle, color: theme.colors.text}}>Choose Your Theme</h3>
-              <button 
-                style={{...styles.modalClose, backgroundColor: theme.colors.bgElevated, color: theme.colors.textMuted}}
-                onClick={onClose}
-              >×</button>
-            </div>
-            <div style={styles.themeGrid}>
-              {Object.entries(THEMES).map(([key, t]) => (
-                <button
-                  key={key}
-                  style={{
-                    ...styles.themeOption,
-                    border: themeName === key ? `2px solid ${theme.colors.accent}` : `1px solid ${theme.colors.border}`,
-                    backgroundColor: theme.colors.bgElevated,
-                  }}
-                  onClick={() => setThemeName(key)}
-                >
-                  <div style={{
-                    ...styles.themePreview,
-                    background: t.preview,
-                  }} />
-                  <span style={{color: theme.colors.text, fontSize: '0.8rem'}}>{t.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
     // ============ MAIN APP ============
     function TendApp() {
-      const { theme } = useContext(ThemeContext);
-      const [currentView, setCurrentView] = useState(VIEWS.VALUES);
-      const [showIntro, setShowIntro] = useState(true);
-      const [showThemeSelector, setShowThemeSelector] = useState(false);
+      const [currentTheme, setCurrentTheme] = useState('light');
+      const [currentPattern, setCurrentPattern] = useState('none');
+      const [currentView, setCurrentView] = useState(VIEWS.YEAR);
       const [values, setValues] = useState([]);
-      const [wheelRatings, setWheelRatings] = useState({});
-      const [seasonalIntentions, setSeasonalIntentions] = useState({});
+      const [lifeAreaRatings, setLifeAreaRatings] = useState({});
       const [goals, setGoals] = useState([]);
+      const [seasonIntentions, setSeasonIntentions] = useState({});
       const [events, setEvents] = useState([]);
       const [messages, setMessages] = useState([]);
       const [inputValue, setInputValue] = useState('');
       const [isTyping, setIsTyping] = useState(false);
       const [messageIndex, setMessageIndex] = useState(0);
+      const [showThemeSelector, setShowThemeSelector] = useState(false);
       const [showEventModal, setShowEventModal] = useState(false);
+      const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
       const messagesEndRef = useRef(null);
 
       useEffect(() => {
-        if (showIntro) {
-          setMessages([{ role: 'assistant', content: AI_FLOWS.intro }]);
+        document.body.setAttribute('data-theme', currentTheme);
+        document.body.setAttribute('data-pattern', currentPattern);
+      }, [currentTheme, currentPattern]);
+
+      useEffect(() => {
+        const viewKey = currentView === VIEWS.LIFE_AREAS ? 'lifeAreas' : currentView;
+        if (AI_CONTENT[viewKey]) {
+          setMessages([{ role: 'assistant', content: AI_CONTENT[viewKey].initial }]);
+          setMessageIndex(0);
         }
-      }, []);
+      }, [currentView]);
 
       useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, [messages]);
 
-      const startJourney = () => {
-        setShowIntro(false);
-        setMessages([{ role: 'assistant', content: AI_FLOWS.values.initial }]);
-        setMessageIndex(0);
+      const handleThemeChange = (theme) => {
+        if (theme.id === 'dark') {
+          setCurrentTheme('dark');
+          setCurrentPattern('none');
+        } else if (theme.id === 'light') {
+          setCurrentTheme('light');
+          setCurrentPattern('none');
+        } else {
+          setCurrentTheme('light');
+          setCurrentPattern(theme.pattern);
+        }
+        setShowThemeSelector(false);
       };
 
       const handleSendMessage = () => {
         if (!inputValue.trim()) return;
-
-        const userMessage = { role: 'user', content: inputValue };
-        setMessages(prev => [...prev, userMessage]);
+        setMessages(prev => [...prev, { role: 'user', content: inputValue }]);
         setInputValue('');
         setIsTyping(true);
 
         setTimeout(() => {
-          let response;
-          const flowKey = currentView.toLowerCase();
-          const flow = AI_FLOWS[flowKey];
-          
-          if (flow && flow.followUps) {
-            response = flow.followUps[Math.min(messageIndex, flow.followUps.length - 1)];
-          } else {
-            response = "Tell me more about that.";
+          const viewKey = currentView === VIEWS.LIFE_AREAS ? 'lifeAreas' : currentView;
+          const flow = AI_CONTENT[viewKey];
+          if (flow?.followUps) {
+            const response = flow.followUps[Math.min(messageIndex, flow.followUps.length - 1)];
+            setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+            setMessageIndex(prev => prev + 1);
           }
-          
-          setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-          setMessageIndex(prev => prev + 1);
           setIsTyping(false);
         }, 1200);
       };
 
-      const navigateTo = (view) => {
-        setCurrentView(view);
-        setMessageIndex(0);
-        const flowKey = view.toLowerCase();
-        const flow = AI_FLOWS[flowKey];
-        if (flow && flow.initial) {
-          setMessages([{ role: 'assistant', content: flow.initial }]);
+      const navigateNext = () => {
+        const viewOrder = [VIEWS.YEAR, VIEWS.VALUES, VIEWS.LIFE_AREAS, VIEWS.GOALS, VIEWS.SEASONS, VIEWS.MONTH];
+        const currentIndex = viewOrder.indexOf(currentView);
+        if (currentIndex < viewOrder.length - 1) {
+          setCurrentView(viewOrder[currentIndex + 1]);
         }
       };
 
-      const getViewLabel = (view) => {
-        const labels = {
-          [VIEWS.VALUES]: 'Values',
-          [VIEWS.WHEEL]: 'Life Areas',
-          [VIEWS.SEASONS]: 'Seasons',
-          [VIEWS.GOALS]: 'Goals',
-          [VIEWS.MONTH]: 'Month',
-        };
-        return labels[view];
-      };
-
       return (
-        <div style={{...styles.container, backgroundColor: theme.colors.bgMain}}>
-          <PatternOverlay pattern={theme.pattern} />
-          
+        <div style={styles.container}>
           {/* Header */}
-          <header style={{...styles.header, backgroundColor: theme.colors.bgCard, borderBottom: `1px solid ${theme.colors.border}`}}>
-            <Logo />
-            <nav style={{...styles.nav, backgroundColor: theme.colors.bgElevated}}>
-              {Object.values(VIEWS).map(view => (
-                <button 
-                  key={view}
-                  style={{
-                    ...styles.navButton,
-                    color: currentView === view ? theme.colors.text : theme.colors.textMuted,
-                    backgroundColor: currentView === view ? theme.colors.bgCard : 'transparent',
-                    boxShadow: currentView === view ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-                  }}
-                  onClick={() => navigateTo(view)}
-                >
-                  {getViewLabel(view)}
-                </button>
-              ))}
-            </nav>
-            <button 
-              style={{
-                ...styles.themeButton,
-                backgroundColor: theme.colors.bgElevated,
-                color: theme.colors.textLight,
-                border: `1px solid ${theme.colors.border}`,
-              }}
-              onClick={() => setShowThemeSelector(true)}
-            >
-              ◐
-            </button>
+          <header style={styles.header}>
+            <div style={styles.headerLeft}>
+              <div style={styles.logoContainer}>
+                <svg width="28" height="28" viewBox="0 0 32 32" fill="none" style={{ marginRight: '8px' }}>
+                  <path d="M16 26 Q16 18 16 14" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+                  <path d="M16 18 Q10 16 8 10 Q14 12 16 18" fill="var(--accent)" opacity="0.5"/>
+                  <path d="M16 14 Q22 10 24 4 Q18 8 16 14" fill="var(--accent)"/>
+                  <path d="M16 10 Q14 6 16 2 Q18 6 16 10" fill="var(--accent)" opacity="0.7"/>
+                </svg>
+                <h1 style={styles.logoText}>tend</h1>
+              </div>
+              <p style={styles.tagline}>a space for designing your life with intention</p>
+            </div>
+            
+            <div style={styles.headerRight}>
+              <nav style={styles.nav}>
+                {[
+                  { id: VIEWS.YEAR, label: 'Year' },
+                  { id: VIEWS.VALUES, label: 'Values' },
+                  { id: VIEWS.LIFE_AREAS, label: 'Life Areas' },
+                  { id: VIEWS.GOALS, label: 'Goals' },
+                  { id: VIEWS.SEASONS, label: 'Seasons' },
+                  { id: VIEWS.MONTH, label: 'Month' },
+                ].map(item => (
+                  <button 
+                    key={item.id}
+                    style={{
+                      ...styles.navButton,
+                      ...(currentView === item.id && styles.navButtonActive)
+                    }}
+                    onClick={() => setCurrentView(item.id)}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </nav>
+              <button 
+                style={styles.themeButton}
+                onClick={() => setShowThemeSelector(!showThemeSelector)}
+              >
+                ◐
+              </button>
+              
+              {showThemeSelector && (
+                <div style={styles.themeDropdown}>
+                  {THEMES.map(theme => (
+                    <button
+                      key={theme.id}
+                      style={styles.themeOption}
+                      onClick={() => handleThemeChange(theme)}
+                    >
+                      <span style={{
+                        ...styles.themeSwatch,
+                        background: theme.id === 'dark' ? '#1a1916' : 
+                                   theme.id === 'botanical' ? '#7D9B76' :
+                                   theme.id === 'ocean' ? '#7A9CAD' :
+                                   theme.id === 'floral' ? '#C48B8B' :
+                                   theme.id === 'hydrangea' ? '#9B8AAE' : '#FAF8F5',
+                        border: theme.id === 'light' ? '1px solid #E8E2D9' : 'none',
+                      }} />
+                      {theme.name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </header>
 
           {/* Main Content */}
           <main style={styles.main}>
             {/* Visualization Panel */}
-            <div style={{...styles.vizPanel, backgroundColor: theme.colors.bgMain}}>
+            <div style={styles.vizPanel}>
+              {currentView === VIEWS.YEAR && (
+                <YearView 
+                  events={events} 
+                  onMonthClick={(month) => {
+                    setSelectedMonth(month);
+                    setCurrentView(VIEWS.MONTH);
+                  }}
+                />
+              )}
               {currentView === VIEWS.VALUES && <ValuesView values={values} setValues={setValues} />}
-              {currentView === VIEWS.WHEEL && <WheelView ratings={wheelRatings} setRatings={setWheelRatings} />}
-              {currentView === VIEWS.SEASONS && <SeasonsView intentions={seasonalIntentions} setIntentions={setSeasonalIntentions} />}
-              {currentView === VIEWS.GOALS && <GoalsView goals={goals} setGoals={setGoals} lifeAreas={LIFE_AREAS} />}
-              {currentView === VIEWS.MONTH && <MonthView events={events} onAddEvent={() => setShowEventModal(true)} onDeleteEvent={(id) => setEvents(prev => prev.filter(e => e.id !== id))} />}
+              {currentView === VIEWS.LIFE_AREAS && <LifeAreasView ratings={lifeAreaRatings} setRatings={setLifeAreaRatings} />}
+              {currentView === VIEWS.GOALS && <GoalsView goals={goals} setGoals={setGoals} />}
+              {currentView === VIEWS.SEASONS && <SeasonsView intentions={seasonIntentions} setIntentions={setSeasonIntentions} />}
+              {currentView === VIEWS.MONTH && (
+                <MonthView 
+                  events={events}
+                  selectedMonth={selectedMonth}
+                  onAddEvent={() => setShowEventModal(true)}
+                  onDeleteEvent={(id) => setEvents(prev => prev.filter(e => e.id !== id))}
+                />
+              )}
             </div>
 
             {/* Chat Panel */}
-            <div style={{...styles.chatPanel, backgroundColor: theme.colors.bgCard, borderLeft: `1px solid ${theme.colors.border}`}}>
+            <div style={styles.chatPanel}>
               <div style={styles.chatMessages}>
                 {messages.map((msg, idx) => (
                   <ChatMessage key={idx} message={msg} />
@@ -581,80 +474,46 @@ Remember: white space is sacred. You don't have to fill every day.`,
                 <div ref={messagesEndRef} />
               </div>
               
-              <div style={{...styles.chatInputArea, borderTop: `1px solid ${theme.colors.border}`}}>
-                {showIntro ? (
+              <div style={styles.chatInputArea}>
+                <textarea
+                  style={styles.chatInput}
+                  value={inputValue}
+                  onChange={(e) => setInputValue(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendMessage();
+                    }
+                  }}
+                  placeholder="Share what's on your mind..."
+                  rows={3}
+                />
+                <div style={styles.chatActions}>
+                  {messageIndex >= 2 && currentView !== VIEWS.MONTH && (
+                    <button style={styles.progressButton} onClick={navigateNext}>
+                      Continue →
+                    </button>
+                  )}
                   <button 
                     style={{
-                      ...styles.beginButton,
-                      backgroundColor: theme.colors.accent,
+                      ...styles.sendButton,
+                      ...(inputValue.trim() ? {} : styles.sendButtonDisabled)
                     }}
-                    onClick={startJourney}
+                    onClick={handleSendMessage}
+                    disabled={!inputValue.trim()}
                   >
-                    Begin →
+                    ↑
                   </button>
-                ) : (
-                  <>
-                    <textarea
-                      style={{
-                        ...styles.chatInput,
-                        backgroundColor: theme.colors.bgElevated,
-                        border: `1px solid ${theme.colors.border}`,
-                        color: theme.colors.text,
-                      }}
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      placeholder="Share what's on your mind..."
-                      rows={3}
-                    />
-                    <div style={styles.chatActions}>
-                      {messageIndex >= 2 && currentView !== VIEWS.MONTH && (
-                        <button 
-                          style={{
-                            ...styles.progressButton,
-                            backgroundColor: theme.colors.bgElevated,
-                            border: `1px solid ${theme.colors.borderDark}`,
-                            color: theme.colors.text,
-                          }}
-                          onClick={() => {
-                            const viewOrder = Object.values(VIEWS);
-                            const currentIndex = viewOrder.indexOf(currentView);
-                            if (currentIndex < viewOrder.length - 1) {
-                              navigateTo(viewOrder[currentIndex + 1]);
-                            }
-                          }}
-                        >
-                          Continue →
-                        </button>
-                      )}
-                      <button 
-                        style={{
-                          ...styles.sendButton,
-                          backgroundColor: inputValue.trim() ? theme.colors.accent : theme.colors.border,
-                        }}
-                        onClick={handleSendMessage}
-                        disabled={!inputValue.trim()}
-                      >
-                        ↑
-                      </button>
-                    </div>
-                  </>
-                )}
+                </div>
               </div>
             </div>
           </main>
 
-          <ThemeSelector isOpen={showThemeSelector} onClose={() => setShowThemeSelector(false)} />
           {showEventModal && (
             <EventModal 
               onClose={() => setShowEventModal(false)}
-              onAdd={(event) => {
-                setEvents(prev => [...prev, { ...event, id: Date.now() }]);
+              onAdd={(eventData) => {
+                setEvents(prev => [...prev, { ...eventData, id: Date.now() }]);
                 setShowEventModal(false);
               }}
             />
@@ -663,196 +522,164 @@ Remember: white space is sacred. You don't have to fill every day.`,
       );
     }
 
-    // ============ VALUES VIEW ============
-    function ValuesView({ values, setValues }) {
-      const { theme } = useContext(ThemeContext);
-      const [inputValue, setInputValue] = useState('');
+    // ============ YEAR VIEW ============
+    function YearView({ events, onMonthClick }) {
+      const currentYear = new Date().getFullYear();
+      const currentMonth = new Date().getMonth();
+      const currentDay = new Date().getDate();
 
-      const suggestedValues = ['Freedom', 'Connection', 'Growth', 'Creativity', 'Adventure', 'Stability', 'Compassion', 'Authenticity', 'Courage', 'Joy', 'Peace', 'Excellence'];
-
-      const addValue = (value) => {
-        if (values.length < 5 && !values.includes(value)) {
-          setValues([...values, value]);
-        }
+      const getMonthData = (monthIndex) => {
+        const firstDay = new Date(currentYear, monthIndex, 1).getDay();
+        const daysInMonth = new Date(currentYear, monthIndex + 1, 0).getDate();
+        return { firstDay, daysInMonth };
       };
 
-      const removeValue = (value) => {
-        setValues(values.filter(v => v !== value));
+      const getEventsForDay = (month, day) => {
+        const dateStr = `${currentYear}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        return events.filter(e => {
+          const start = new Date(e.startDate);
+          const end = new Date(e.endDate);
+          const current = new Date(dateStr);
+          return current >= start && current <= end;
+        });
+      };
+
+      return (
+        <div style={styles.yearView} className="fade-up">
+          <h2 style={styles.yearTitle}>{currentYear}</h2>
+          <div style={styles.yearGrid}>
+            {MONTHS.map((monthName, monthIndex) => {
+              const { firstDay, daysInMonth } = getMonthData(monthIndex);
+              const isCurrentMonth = monthIndex === currentMonth;
+              
+              return (
+                <div 
+                  key={monthIndex} 
+                  style={{
+                    ...styles.miniMonth,
+                    ...(isCurrentMonth && styles.miniMonthCurrent)
+                  }}
+                  onClick={() => onMonthClick(monthIndex)}
+                >
+                  <div style={styles.miniMonthHeader}>{monthName}</div>
+                  <div style={styles.miniMonthGrid}>
+                    {['S','M','T','W','T','F','S'].map((d, i) => (
+                      <div key={i} style={styles.miniDayHeader}>{d}</div>
+                    ))}
+                    {Array.from({ length: firstDay }, (_, i) => (
+                      <div key={`empty-${i}`} style={styles.miniDayEmpty} />
+                    ))}
+                    {Array.from({ length: daysInMonth }, (_, i) => {
+                      const day = i + 1;
+                      const isToday = monthIndex === currentMonth && day === currentDay;
+                      const dayEvents = getEventsForDay(monthIndex, day);
+                      
+                      return (
+                        <div 
+                          key={day} 
+                          style={{
+                            ...styles.miniDay,
+                            ...(isToday && styles.miniDayToday),
+                            ...(dayEvents.length > 0 && styles.miniDayWithEvent),
+                          }}
+                        >
+                          {day}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    // ============ VALUES VIEW ============
+    function ValuesView({ values, setValues }) {
+      const [inputVal, setInputVal] = useState('');
+      const suggestedValues = ['Freedom', 'Connection', 'Growth', 'Creativity', 'Adventure', 'Peace', 'Family', 'Health', 'Authenticity', 'Joy', 'Courage', 'Balance'];
+
+      const addValue = (val) => {
+        if (values.length < 5 && !values.includes(val)) {
+          setValues([...values, val]);
+        }
       };
 
       return (
         <div style={styles.viewContainer} className="fade-up">
-          <div style={styles.viewHeader}>
-            <span style={{...styles.viewLabel, color: theme.colors.textMuted}}>Foundation</span>
-            <h2 style={{...styles.viewTitle, color: theme.colors.text}}>Your Values</h2>
-            <p style={{...styles.viewSubtitle, color: theme.colors.textLight}}>Select up to 5 values that guide how you want to live</p>
-          </div>
-
-          {/* Selected Values */}
-          <div style={{...styles.valuesSelected, backgroundColor: theme.colors.bgCard, border: `1px solid ${theme.colors.border}`}}>
+          <h2 style={styles.viewTitle}>Your Values</h2>
+          
+          <div style={styles.selectedValues}>
             {values.length === 0 ? (
-              <p style={{color: theme.colors.textMuted, fontStyle: 'italic'}}>Your values will appear here</p>
+              <p style={styles.emptyText}>Select or add up to 5 values</p>
             ) : (
-              <div style={styles.valuesChips}>
-                {values.map(value => (
-                  <div 
-                    key={value} 
-                    style={{
-                      ...styles.valueChipSelected,
-                      backgroundColor: theme.colors.accentLight,
-                      border: `1px solid ${theme.colors.accent}`,
-                      color: theme.colors.accent,
-                    }}
-                  >
-                    {value}
-                    <button 
-                      style={{...styles.valueChipRemove, color: theme.colors.accent}}
-                      onClick={() => removeValue(value)}
-                    >×</button>
-                  </div>
-                ))}
-              </div>
+              values.map(val => (
+                <span key={val} style={styles.valueTag}>
+                  {val}
+                  <button style={styles.valueTagRemove} onClick={() => setValues(values.filter(v => v !== val))}>×</button>
+                </span>
+              ))
             )}
           </div>
 
-          {/* Suggested Values */}
-          <div style={styles.valuesSuggestions}>
-            <p style={{...styles.suggestionsLabel, color: theme.colors.textMuted}}>Suggestions</p>
-            <div style={styles.valuesChips}>
-              {suggestedValues.filter(v => !values.includes(v)).map(value => (
-                <button
-                  key={value}
-                  style={{
-                    ...styles.valueChip,
-                    backgroundColor: theme.colors.bgElevated,
-                    border: `1px solid ${theme.colors.border}`,
-                    color: theme.colors.text,
-                  }}
-                  onClick={() => addValue(value)}
-                  disabled={values.length >= 5}
-                >
-                  {value}
-                </button>
-              ))}
-            </div>
+          <div style={styles.valueSuggestions}>
+            {suggestedValues.filter(v => !values.includes(v)).map(val => (
+              <button 
+                key={val} 
+                style={styles.valueSuggestion}
+                onClick={() => addValue(val)}
+                disabled={values.length >= 5}
+              >
+                {val}
+              </button>
+            ))}
           </div>
 
-          {/* Custom Value Input */}
-          <div style={styles.customValueInput}>
+          <div style={styles.customInput}>
             <input
               type="text"
-              placeholder="Or add your own..."
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
+              placeholder="Add your own..."
+              value={inputVal}
+              onChange={(e) => setInputVal(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter' && inputValue.trim()) {
-                  addValue(inputValue.trim());
-                  setInputValue('');
+                if (e.key === 'Enter' && inputVal.trim()) {
+                  addValue(inputVal.trim());
+                  setInputVal('');
                 }
               }}
-              style={{
-                ...styles.formInput,
-                backgroundColor: theme.colors.bgElevated,
-                border: `1px solid ${theme.colors.border}`,
-                color: theme.colors.text,
-              }}
+              style={styles.textInput}
             />
           </div>
         </div>
       );
     }
 
-    // ============ WHEEL VIEW ============
-    function WheelView({ ratings, setRatings }) {
-      const { theme } = useContext(ThemeContext);
-
+    // ============ LIFE AREAS VIEW ============
+    function LifeAreasView({ ratings, setRatings }) {
       return (
         <div style={styles.viewContainer} className="fade-up">
-          <div style={styles.viewHeader}>
-            <span style={{...styles.viewLabel, color: theme.colors.textMuted}}>Assessment</span>
-            <h2 style={{...styles.viewTitle, color: theme.colors.text}}>Wheel of Life</h2>
-            <p style={{...styles.viewSubtitle, color: theme.colors.textLight}}>Rate how fulfilled you feel in each area (1-10)</p>
-          </div>
-
-          <div style={styles.wheelGrid}>
+          <h2 style={styles.viewTitle}>Life Areas</h2>
+          
+          <div style={styles.lifeAreasGrid}>
             {Object.entries(LIFE_AREAS).map(([key, area]) => (
-              <div 
-                key={key} 
-                style={{
-                  ...styles.wheelCard,
-                  backgroundColor: theme.colors.bgCard,
-                  border: `1px solid ${theme.colors.border}`,
-                }}
-              >
-                <div style={styles.wheelCardHeader}>
-                  <span style={{...styles.wheelIcon, color: area.color}}>{area.icon}</span>
-                  <span style={{color: theme.colors.text, fontWeight: 500}}>{area.name}</span>
+              <div key={key} style={styles.lifeAreaCard}>
+                <div style={styles.lifeAreaHeader}>
+                  <span style={{...styles.lifeAreaIcon, color: area.color}}>{area.icon}</span>
+                  <span style={styles.lifeAreaName}>{area.name}</span>
                 </div>
-                <div style={styles.wheelSlider}>
+                <div style={styles.sliderContainer}>
                   <input
                     type="range"
                     min="1"
                     max="10"
                     value={ratings[key] || 5}
                     onChange={(e) => setRatings({...ratings, [key]: parseInt(e.target.value)})}
-                    style={{
-                      ...styles.slider,
-                      accentColor: area.color,
-                    }}
+                    style={{...styles.slider, accentColor: area.color}}
                   />
-                  <span style={{
-                    ...styles.wheelValue,
-                    color: area.color,
-                  }}>{ratings[key] || 5}</span>
+                  <span style={{...styles.sliderValue, color: area.color}}>{ratings[key] || 5}</span>
                 </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    // ============ SEASONS VIEW ============
-    function SeasonsView({ intentions, setIntentions }) {
-      const { theme } = useContext(ThemeContext);
-
-      return (
-        <div style={styles.viewContainer} className="fade-up">
-          <div style={styles.viewHeader}>
-            <span style={{...styles.viewLabel, color: theme.colors.textMuted}}>Planning</span>
-            <h2 style={{...styles.viewTitle, color: theme.colors.text}}>Seasonal Intentions</h2>
-            <p style={{...styles.viewSubtitle, color: theme.colors.textLight}}>Map your focus areas to the natural rhythm of the year</p>
-          </div>
-
-          <div style={styles.seasonsGrid}>
-            {Object.entries(SEASONS).map(([key, season]) => (
-              <div 
-                key={key}
-                style={{
-                  ...styles.seasonCard,
-                  backgroundColor: theme.colors.bgCard,
-                  border: `1px solid ${theme.colors.border}`,
-                }}
-              >
-                <div style={styles.seasonCardHeader}>
-                  <span style={{color: season.color, fontSize: '1.5rem'}}>{season.icon}</span>
-                  <h3 style={{color: season.color, fontFamily: "'Fraunces', serif"}}>{season.name}</h3>
-                  <span style={{color: theme.colors.textMuted, fontSize: '0.8rem'}}>
-                    {season.months.join(' · ')}
-                  </span>
-                </div>
-                <textarea
-                  placeholder="What's your focus this season?"
-                  value={intentions[key] || ''}
-                  onChange={(e) => setIntentions({...intentions, [key]: e.target.value})}
-                  style={{
-                    ...styles.seasonTextarea,
-                    backgroundColor: theme.colors.bgElevated,
-                    border: `1px solid ${theme.colors.border}`,
-                    color: theme.colors.text,
-                  }}
-                  rows={3}
-                />
               </div>
             ))}
           </div>
@@ -861,8 +688,7 @@ Remember: white space is sacred. You don't have to fill every day.`,
     }
 
     // ============ GOALS VIEW ============
-    function GoalsView({ goals, setGoals, lifeAreas }) {
-      const { theme } = useContext(ThemeContext);
+    function GoalsView({ goals, setGoals }) {
       const [newGoal, setNewGoal] = useState({ text: '', area: 'health' });
 
       const addGoal = () => {
@@ -874,88 +700,42 @@ Remember: white space is sacred. You don't have to fill every day.`,
 
       return (
         <div style={styles.viewContainer} className="fade-up">
-          <div style={styles.viewHeader}>
-            <span style={{...styles.viewLabel, color: theme.colors.textMuted}}>Accountability</span>
-            <h2 style={{...styles.viewTitle, color: theme.colors.text}}>Goals & Milestones</h2>
-            <p style={{...styles.viewSubtitle, color: theme.colors.textLight}}>Define what success looks like for your focus areas</p>
-          </div>
-
-          {/* Add Goal Form */}
-          <div style={{
-            ...styles.addGoalForm,
-            backgroundColor: theme.colors.bgCard,
-            border: `1px solid ${theme.colors.border}`,
-          }}>
+          <h2 style={styles.viewTitle}>Goals</h2>
+          
+          <div style={styles.goalForm}>
             <input
               type="text"
               placeholder="What do you want to achieve?"
               value={newGoal.text}
               onChange={(e) => setNewGoal({...newGoal, text: e.target.value})}
               onKeyDown={(e) => e.key === 'Enter' && addGoal()}
-              style={{
-                ...styles.formInput,
-                backgroundColor: theme.colors.bgElevated,
-                border: `1px solid ${theme.colors.border}`,
-                color: theme.colors.text,
-                flex: 1,
-              }}
+              style={{...styles.textInput, flex: 1}}
             />
             <select
               value={newGoal.area}
               onChange={(e) => setNewGoal({...newGoal, area: e.target.value})}
-              style={{
-                ...styles.formSelect,
-                backgroundColor: theme.colors.bgElevated,
-                border: `1px solid ${theme.colors.border}`,
-                color: theme.colors.text,
-              }}
+              style={styles.selectInput}
             >
-              {Object.entries(lifeAreas).map(([key, area]) => (
+              {Object.entries(LIFE_AREAS).map(([key, area]) => (
                 <option key={key} value={key}>{area.name}</option>
               ))}
             </select>
-            <button
-              onClick={addGoal}
-              style={{
-                ...styles.addGoalButton,
-                backgroundColor: theme.colors.accent,
-              }}
-            >
-              Add
-            </button>
+            <button onClick={addGoal} style={styles.addButton}>Add</button>
           </div>
 
-          {/* Goals List */}
           <div style={styles.goalsList}>
             {goals.length === 0 ? (
-              <p style={{color: theme.colors.textMuted, textAlign: 'center', padding: '2rem'}}>
-                Your goals will appear here
-              </p>
+              <p style={styles.emptyText}>Your goals will appear here</p>
             ) : (
               goals.map(goal => (
-                <div 
-                  key={goal.id}
-                  style={{
-                    ...styles.goalCard,
-                    backgroundColor: theme.colors.bgCard,
-                    borderLeft: `3px solid ${lifeAreas[goal.area].color}`,
-                  }}
-                >
+                <div key={goal.id} style={{...styles.goalCard, borderLeftColor: LIFE_AREAS[goal.area].color}}>
                   <div>
-                    <span style={{
-                      ...styles.goalArea,
-                      color: lifeAreas[goal.area].color,
-                    }}>
-                      {lifeAreas[goal.area].icon} {lifeAreas[goal.area].name}
+                    <span style={{...styles.goalArea, color: LIFE_AREAS[goal.area].color}}>
+                      {LIFE_AREAS[goal.area].icon} {LIFE_AREAS[goal.area].name}
                     </span>
-                    <p style={{color: theme.colors.text}}>{goal.text}</p>
+                    <p style={styles.goalText}>{goal.text}</p>
                   </div>
-                  <button
-                    onClick={() => setGoals(goals.filter(g => g.id !== goal.id))}
-                    style={{...styles.goalDelete, color: theme.colors.textMuted}}
-                  >
-                    ×
-                  </button>
+                  <button onClick={() => setGoals(goals.filter(g => g.id !== goal.id))} style={styles.deleteButton}>×</button>
                 </div>
               ))
             )}
@@ -964,28 +744,51 @@ Remember: white space is sacred. You don't have to fill every day.`,
       );
     }
 
-    // ============ MONTH VIEW ============
-    function MonthView({ events, onAddEvent, onDeleteEvent }) {
-      const { theme } = useContext(ThemeContext);
-      const now = new Date();
-      const currentMonth = now.getMonth();
-      const currentYear = now.getFullYear();
-      const monthName = ['January', 'February', 'March', 'April', 'May', 'June', 
-                         'July', 'August', 'September', 'October', 'November', 'December'][currentMonth];
-      const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
-      const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+    // ============ SEASONS VIEW ============
+    function SeasonsView({ intentions, setIntentions }) {
+      const seasons = [
+        { id: 'winter', name: 'Winter', months: 'Dec – Feb', color: '#7A9CAD' },
+        { id: 'spring', name: 'Spring', months: 'Mar – May', color: '#7D9B76' },
+        { id: 'summer', name: 'Summer', months: 'Jun – Aug', color: '#C9A66B' },
+        { id: 'fall', name: 'Fall', months: 'Sep – Nov', color: '#C4836A' },
+      ];
 
-      const EVENT_TYPES = {
-        trip: { label: 'Trip', color: '#7A9CAD' },
-        rest: { label: 'Rest', color: '#7D9B76' },
-        dateNight: { label: 'Date Night', color: '#C48B8B' },
-        personal: { label: 'Personal', color: '#9B8AAE' },
-        work: { label: 'Work', color: '#6B6660' },
-        partner: { label: 'Partner', color: '#C9A66B' },
-      };
+      return (
+        <div style={styles.viewContainer} className="fade-up">
+          <h2 style={styles.viewTitle}>Seasonal Intentions</h2>
+          
+          <div style={styles.seasonsGrid}>
+            {seasons.map(season => (
+              <div key={season.id} style={styles.seasonCard}>
+                <div style={{...styles.seasonHeader, color: season.color}}>
+                  <h3 style={styles.seasonName}>{season.name}</h3>
+                  <span style={styles.seasonMonths}>{season.months}</span>
+                </div>
+                <textarea
+                  placeholder="What's your focus this season?"
+                  value={intentions[season.id] || ''}
+                  onChange={(e) => setIntentions({...intentions, [season.id]: e.target.value})}
+                  style={styles.seasonTextarea}
+                  rows={3}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ============ MONTH VIEW ============
+    function MonthView({ events, selectedMonth, onAddEvent, onDeleteEvent }) {
+      const now = new Date();
+      const year = now.getFullYear();
+      const monthName = ['January', 'February', 'March', 'April', 'May', 'June', 
+                         'July', 'August', 'September', 'October', 'November', 'December'][selectedMonth];
+      const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
+      const firstDay = new Date(year, selectedMonth, 1).getDay();
 
       const getEventsForDay = (day) => {
-        const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const dateStr = `${year}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
         return events.filter(e => {
           const start = new Date(e.startDate);
           const end = new Date(e.endDate);
@@ -994,56 +797,39 @@ Remember: white space is sacred. You don't have to fill every day.`,
         });
       };
 
+      const EVENT_COLORS = {
+        trip: '#7A9CAD',
+        rest: '#7D9B76',
+        dateNight: '#C48B8B',
+        personal: '#9B8AAE',
+        work: '#6B6660',
+        social: '#C9A66B',
+      };
+
       return (
         <div style={styles.viewContainer} className="fade-up">
-          <div style={styles.viewHeader}>
-            <span style={{...styles.viewLabel, color: theme.colors.textMuted}}>Tactical</span>
-            <h2 style={{...styles.viewTitle, color: theme.colors.text}}>{monthName} {currentYear}</h2>
-          </div>
-
-          <div style={{
-            ...styles.calendarContainer,
-            backgroundColor: theme.colors.bgCard,
-            border: `1px solid ${theme.colors.border}`,
-          }}>
+          <h2 style={styles.viewTitle}>{monthName}</h2>
+          
+          <div style={styles.calendarContainer}>
             <div style={styles.calendarGrid}>
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => (
-                <div key={idx} style={{...styles.calendarDayHeader, color: theme.colors.textMuted}}>{day}</div>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <div key={day} style={styles.calendarDayHeader}>{day}</div>
               ))}
-              
               {Array.from({ length: firstDay }, (_, i) => (
                 <div key={`empty-${i}`} style={styles.calendarDayEmpty} />
               ))}
-              
               {Array.from({ length: daysInMonth }, (_, i) => {
                 const day = i + 1;
                 const dayEvents = getEventsForDay(day);
-                const isToday = day === now.getDate();
+                const isToday = selectedMonth === now.getMonth() && day === now.getDate();
                 
                 return (
-                  <div 
-                    key={day} 
-                    style={{
-                      ...styles.calendarDay,
-                      backgroundColor: theme.colors.bgElevated,
-                      border: isToday ? `2px solid ${theme.colors.accent}` : 'none',
-                    }}
-                  >
-                    <span style={{
-                      ...styles.calendarDayNumber,
-                      color: isToday ? theme.colors.accent : theme.colors.textLight,
-                      fontWeight: isToday ? 600 : 400,
-                    }}>{day}</span>
+                  <div key={day} style={{...styles.calendarDay, ...(isToday && styles.calendarDayToday)}}>
+                    <span style={{...styles.calendarDayNumber, ...(isToday && styles.calendarDayNumberToday)}}>{day}</span>
                     {dayEvents.length > 0 && (
                       <div style={styles.calendarDayDots}>
-                        {dayEvents.slice(0, 3).map((event, idx) => (
-                          <span 
-                            key={idx} 
-                            style={{
-                              ...styles.calendarDayDot,
-                              backgroundColor: EVENT_TYPES[event.type]?.color || theme.colors.accent,
-                            }}
-                          />
+                        {dayEvents.slice(0,3).map((e, idx) => (
+                          <span key={idx} style={{...styles.calendarDayDot, backgroundColor: EVENT_COLORS[e.type] || 'var(--accent)'}} />
                         ))}
                       </div>
                     )}
@@ -1053,53 +839,26 @@ Remember: white space is sacred. You don't have to fill every day.`,
             </div>
           </div>
 
-          <div style={{
-            ...styles.eventsList,
-            backgroundColor: theme.colors.bgCard,
-            border: `1px solid ${theme.colors.border}`,
-          }}>
+          <div style={styles.eventsList}>
             <div style={styles.eventsHeader}>
-              <h3 style={{...styles.eventsTitle, color: theme.colors.text}}>Planned Moments</h3>
-              <button 
-                style={{...styles.addEventButton, backgroundColor: theme.colors.accent}}
-                onClick={onAddEvent}
-              >
-                + Add
-              </button>
+              <h3 style={styles.eventsTitle}>Planned</h3>
+              <button style={styles.addEventButton} onClick={onAddEvent}>+ Add</button>
             </div>
-            
             {events.length === 0 ? (
-              <div style={styles.eventsEmpty}>
-                <p style={{color: theme.colors.textLight}}>Nothing scheduled yet.</p>
-                <p style={{color: theme.colors.textMuted, fontStyle: 'italic', fontSize: '0.85rem'}}>
-                  What do you want to make space for?
-                </p>
-              </div>
+              <p style={styles.emptyText}>Nothing scheduled yet</p>
             ) : (
               <div style={styles.eventsGrid}>
                 {events.map(event => (
-                  <div 
-                    key={event.id} 
-                    style={{
-                      ...styles.eventCard,
-                      backgroundColor: theme.colors.bgElevated,
-                      borderLeftColor: EVENT_TYPES[event.type]?.color || theme.colors.accent,
-                    }}
-                  >
-                    <div style={styles.eventCardContent}>
-                      <span style={{...styles.eventCardType, color: theme.colors.textMuted}}>
-                        {EVENT_TYPES[event.type]?.label || event.type}
-                      </span>
-                      <p style={{color: theme.colors.text, fontWeight: 500}}>{event.title}</p>
-                      <span style={{color: theme.colors.textMuted, fontSize: '0.8rem'}}>
+                  <div key={event.id} style={{...styles.eventCard, borderLeftColor: EVENT_COLORS[event.type] || 'var(--accent)'}}>
+                    <div>
+                      <span style={styles.eventType}>{event.type}</span>
+                      <p style={styles.eventTitle}>{event.title}</p>
+                      <span style={styles.eventDate}>
                         {new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
                         {event.startDate !== event.endDate && ` – ${new Date(event.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
                       </span>
                     </div>
-                    <button 
-                      style={{...styles.eventCardDelete, color: theme.colors.textMuted}}
-                      onClick={() => onDeleteEvent(event.id)}
-                    >×</button>
+                    <button onClick={() => onDeleteEvent(event.id)} style={styles.deleteButton}>×</button>
                   </div>
                 ))}
               </div>
@@ -1111,58 +870,32 @@ Remember: white space is sacred. You don't have to fill every day.`,
 
     // ============ CHAT COMPONENTS ============
     function ChatMessage({ message }) {
-      const { theme } = useContext(ThemeContext);
       const isAssistant = message.role === 'assistant';
       
       return (
-        <div style={{
-          ...styles.chatMessage,
-          justifyContent: isAssistant ? 'flex-start' : 'flex-end',
-        }} className="fade-in">
+        <div style={{...styles.chatMessage, justifyContent: isAssistant ? 'flex-start' : 'flex-end'}} className="fade-in">
           {isAssistant && (
-            <div style={{
-              ...styles.chatAvatar,
-              backgroundColor: theme.colors.accentLight,
-              border: `1px solid ${theme.colors.accent}`,
-            }}>
-              <span style={{...styles.chatAvatarText, color: theme.colors.accent}}>T</span>
+            <div style={styles.chatAvatar}>
+              <span style={styles.chatAvatarText}>T</span>
             </div>
           )}
-          <div style={{
-            ...styles.chatBubble,
-            backgroundColor: isAssistant ? theme.colors.bgElevated : theme.colors.accent,
-            color: isAssistant ? theme.colors.text : 'white',
-            borderTopLeftRadius: isAssistant ? '4px' : '14px',
-            borderTopRightRadius: isAssistant ? '14px' : '4px',
-          }}>
-            <div dangerouslySetInnerHTML={{ 
-              __html: message.content
-                .replace(/\n/g, '<br/>')
-                .replace(/<em>/g, '<em style="font-style: italic;">')
-            }} />
+          <div style={{...styles.chatBubble, ...(isAssistant ? styles.chatBubbleAssistant : styles.chatBubbleUser)}}>
+            <div dangerouslySetInnerHTML={{ __html: message.content.replace(/\n/g, '<br/>') }} />
           </div>
         </div>
       );
     }
 
     function TypingIndicator() {
-      const { theme } = useContext(ThemeContext);
       return (
         <div style={styles.chatMessage} className="fade-in">
-          <div style={{
-            ...styles.chatAvatar,
-            backgroundColor: theme.colors.accentLight,
-            border: `1px solid ${theme.colors.accent}`,
-          }}>
-            <span style={{...styles.chatAvatarText, color: theme.colors.accent}}>T</span>
+          <div style={styles.chatAvatar}>
+            <span style={styles.chatAvatarText}>T</span>
           </div>
-          <div style={{
-            ...styles.typingBubble,
-            backgroundColor: theme.colors.bgElevated,
-          }}>
-            <span style={{...styles.typingDot, color: theme.colors.accent, animationDelay: '0s'}}>•</span>
-            <span style={{...styles.typingDot, color: theme.colors.accent, animationDelay: '0.15s'}}>•</span>
-            <span style={{...styles.typingDot, color: theme.colors.accent, animationDelay: '0.3s'}}>•</span>
+          <div style={styles.typingBubble}>
+            <span style={{...styles.typingDot, animationDelay: '0s'}}>•</span>
+            <span style={{...styles.typingDot, animationDelay: '0.15s'}}>•</span>
+            <span style={{...styles.typingDot, animationDelay: '0.3s'}}>•</span>
           </div>
         </div>
       );
@@ -1170,124 +903,46 @@ Remember: white space is sacred. You don't have to fill every day.`,
 
     // ============ EVENT MODAL ============
     function EventModal({ onClose, onAdd }) {
-      const { theme } = useContext(ThemeContext);
       const [title, setTitle] = useState('');
       const [type, setType] = useState('trip');
       const [startDate, setStartDate] = useState('');
       const [endDate, setEndDate] = useState('');
 
-      const EVENT_TYPES = {
-        trip: { label: 'Trip', color: '#7A9CAD' },
-        rest: { label: 'Rest', color: '#7D9B76' },
-        dateNight: { label: 'Date Night', color: '#C48B8B' },
-        personal: { label: 'Personal', color: '#9B8AAE' },
-        work: { label: 'Work', color: '#6B6660' },
-        partner: { label: 'Partner', color: '#C9A66B' },
-      };
-
-      const handleSubmit = (e) => {
-        e.preventDefault();
-        if (!title || !startDate || !endDate) return;
-        onAdd({ title, type, startDate, endDate });
-      };
+      const types = ['trip', 'rest', 'dateNight', 'personal', 'work', 'social'];
 
       return (
         <div style={styles.modalOverlay} onClick={onClose}>
-          <div 
-            style={{
-              ...styles.modal,
-              backgroundColor: theme.colors.bgCard,
-              border: `1px solid ${theme.colors.border}`,
-            }} 
-            onClick={e => e.stopPropagation()} 
-            className="fade-up"
-          >
+          <div style={styles.modal} onClick={e => e.stopPropagation()} className="fade-up">
             <div style={styles.modalHeader}>
-              <h3 style={{...styles.modalTitle, color: theme.colors.text}}>Add a moment</h3>
-              <button 
-                style={{...styles.modalClose, backgroundColor: theme.colors.bgElevated, color: theme.colors.textMuted}}
-                onClick={onClose}
-              >×</button>
+              <h3 style={styles.modalTitle}>Add a moment</h3>
+              <button style={styles.modalClose} onClick={onClose}>×</button>
             </div>
-            
-            <form onSubmit={handleSubmit} style={styles.modalForm}>
+            <form onSubmit={(e) => { e.preventDefault(); if (title && startDate && endDate) onAdd({ title, type, startDate, endDate }); }} style={styles.modalForm}>
               <div style={styles.formField}>
-                <label style={{...styles.formLabel, color: theme.colors.textMuted}}>What is it?</label>
-                <input
-                  type="text"
-                  style={{
-                    ...styles.formInput,
-                    backgroundColor: theme.colors.bgElevated,
-                    border: `1px solid ${theme.colors.border}`,
-                    color: theme.colors.text,
-                  }}
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Weekend trip, date night..."
-                />
+                <label style={styles.formLabel}>What is it?</label>
+                <input type="text" style={styles.textInput} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Weekend trip, date night..." />
               </div>
-
               <div style={styles.formField}>
-                <label style={{...styles.formLabel, color: theme.colors.textMuted}}>Type</label>
-                <div style={styles.typeSelector}>
-                  {Object.entries(EVENT_TYPES).map(([key, value]) => (
-                    <button
-                      key={key}
-                      type="button"
-                      style={{
-                        ...styles.typeOption,
-                        backgroundColor: type === key ? `${value.color}20` : theme.colors.bgElevated,
-                        border: type === key ? `2px solid ${value.color}` : `1px solid ${theme.colors.border}`,
-                        color: theme.colors.text,
-                      }}
-                      onClick={() => setType(key)}
-                    >
-                      <span style={{ color: value.color }}>●</span>
-                      <span>{value.label}</span>
+                <label style={styles.formLabel}>Type</label>
+                <div style={styles.typeGrid}>
+                  {types.map(t => (
+                    <button key={t} type="button" style={{...styles.typeButton, ...(type === t && styles.typeButtonActive)}} onClick={() => setType(t)}>
+                      {t}
                     </button>
                   ))}
                 </div>
               </div>
-
               <div style={styles.formRow}>
                 <div style={styles.formField}>
-                  <label style={{...styles.formLabel, color: theme.colors.textMuted}}>Start</label>
-                  <input
-                    type="date"
-                    style={{
-                      ...styles.formInput,
-                      backgroundColor: theme.colors.bgElevated,
-                      border: `1px solid ${theme.colors.border}`,
-                      color: theme.colors.text,
-                    }}
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                  />
+                  <label style={styles.formLabel}>Start</label>
+                  <input type="date" style={styles.textInput} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
                 </div>
                 <div style={styles.formField}>
-                  <label style={{...styles.formLabel, color: theme.colors.textMuted}}>End</label>
-                  <input
-                    type="date"
-                    style={{
-                      ...styles.formInput,
-                      backgroundColor: theme.colors.bgElevated,
-                      border: `1px solid ${theme.colors.border}`,
-                      color: theme.colors.text,
-                    }}
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                  />
+                  <label style={styles.formLabel}>End</label>
+                  <input type="date" style={styles.textInput} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
                 </div>
               </div>
-
-              <button 
-                type="submit" 
-                style={{
-                  ...styles.submitButton,
-                  backgroundColor: (!title || !startDate || !endDate) ? theme.colors.border : theme.colors.accent,
-                }}
-                disabled={!title || !startDate || !endDate}
-              >
+              <button type="submit" style={{...styles.submitButton, ...(!title || !startDate || !endDate ? styles.submitButtonDisabled : {})}}>
                 Add to timeline
               </button>
             </form>
@@ -1298,579 +953,203 @@ Remember: white space is sacred. You don't have to fill every day.`,
 
     // ============ STYLES ============
     const styles = {
-      container: {
-        minHeight: '100vh',
-        position: 'relative',
-      },
+      container: { minHeight: '100vh', position: 'relative', zIndex: 1 },
+      
+      // Header
       header: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        padding: '1rem 2rem',
-        position: 'relative',
-        zIndex: 10,
+        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
+        padding: '1.25rem 2rem', borderBottom: '1px solid var(--border)',
+        backgroundColor: 'var(--bg-card)', position: 'relative', zIndex: 10,
       },
-      logoContainer: {
-        display: 'flex',
-        alignItems: 'center',
-      },
-      logo: {
-        fontSize: '1.5rem',
-        fontFamily: "'Fraunces', serif",
-        fontWeight: 400,
-        letterSpacing: '0.02em',
-      },
-      nav: {
-        display: 'flex',
-        gap: '4px',
-        padding: '4px',
-        borderRadius: '10px',
-      },
+      headerLeft: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
+      headerRight: { display: 'flex', alignItems: 'center', gap: '1rem', position: 'relative' },
+      logoContainer: { display: 'flex', alignItems: 'center' },
+      logoText: { fontSize: '1.5rem', fontFamily: "'Fraunces', serif", fontWeight: 400, color: 'var(--text)' },
+      tagline: { fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic', marginLeft: '36px' },
+      nav: { display: 'flex', gap: '2px', backgroundColor: 'var(--bg-elevated)', padding: '4px', borderRadius: '10px' },
       navButton: {
-        padding: '0.5rem 1rem',
-        border: 'none',
-        borderRadius: '8px',
-        fontSize: '0.85rem',
-        fontFamily: "'DM Sans', sans-serif",
-        fontWeight: 500,
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
+        padding: '0.45rem 0.875rem', backgroundColor: 'transparent', border: 'none', borderRadius: '8px',
+        color: 'var(--text-muted)', fontSize: '0.8rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer',
       },
+      navButtonActive: { backgroundColor: 'var(--bg-card)', color: 'var(--text)', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' },
       themeButton: {
-        width: '36px',
-        height: '36px',
-        borderRadius: '50%',
-        fontSize: '1rem',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transition: 'all 0.2s ease',
+        width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'var(--bg-elevated)',
+        border: '1px solid var(--border)', cursor: 'pointer', fontSize: '1rem', color: 'var(--text-light)',
       },
-      main: {
-        display: 'grid',
-        gridTemplateColumns: '1fr 380px',
-        height: 'calc(100vh - 65px)',
-        position: 'relative',
-        zIndex: 1,
+      themeDropdown: {
+        position: 'absolute', top: '100%', right: 0, marginTop: '8px',
+        backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px',
+        padding: '0.5rem', minWidth: '140px', boxShadow: '0 10px 40px rgba(0,0,0,0.12)', zIndex: 100,
       },
-      vizPanel: {
-        padding: '2rem',
-        overflow: 'auto',
+      themeOption: {
+        display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', padding: '0.5rem 0.75rem',
+        backgroundColor: 'transparent', border: 'none', borderRadius: '8px', cursor: 'pointer',
+        color: 'var(--text)', fontSize: '0.85rem', textAlign: 'left',
       },
-      chatPanel: {
-        display: 'flex',
-        flexDirection: 'column',
-      },
-      chatMessages: {
-        flex: 1,
-        padding: '1.5rem',
-        overflowY: 'auto',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1rem',
-      },
-      chatMessage: {
-        display: 'flex',
-        gap: '0.75rem',
-        alignItems: 'flex-start',
-      },
-      chatAvatar: {
-        width: '32px',
-        height: '32px',
-        borderRadius: '50%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-      },
-      chatAvatarText: {
-        fontFamily: "'Fraunces', serif",
-        fontSize: '0.875rem',
-        fontWeight: 500,
-      },
-      chatBubble: {
-        padding: '0.875rem 1rem',
-        borderRadius: '14px',
-        maxWidth: '85%',
-        fontSize: '0.9rem',
-        lineHeight: 1.6,
-      },
-      typingBubble: {
-        padding: '0.875rem 1rem',
-        borderRadius: '14px',
-        borderTopLeftRadius: '4px',
-        display: 'flex',
-        gap: '4px',
-      },
-      typingDot: {
-        fontSize: '1.25rem',
-        lineHeight: 1,
-        animation: 'pulse 1s infinite',
-      },
-      chatInputArea: {
-        padding: '1rem 1.25rem 1.25rem',
-      },
+      themeSwatch: { width: '16px', height: '16px', borderRadius: '50%' },
+
+      // Main layout
+      main: { display: 'grid', gridTemplateColumns: '1fr 380px', height: 'calc(100vh - 80px)', position: 'relative', zIndex: 1 },
+      vizPanel: { padding: '2rem', overflow: 'auto', backgroundColor: 'var(--bg-main)' },
+      chatPanel: { backgroundColor: 'var(--bg-card)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column' },
+      chatMessages: { flex: 1, padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' },
+      chatInputArea: { padding: '1rem 1.25rem 1.25rem', borderTop: '1px solid var(--border)' },
       chatInput: {
-        width: '100%',
-        padding: '0.875rem 1rem',
-        borderRadius: '12px',
-        fontSize: '0.9rem',
-        fontFamily: "'DM Sans', sans-serif",
-        resize: 'none',
-        marginBottom: '0.75rem',
+        width: '100%', padding: '0.875rem 1rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)',
+        borderRadius: '12px', color: 'var(--text)', fontSize: '0.9rem', fontFamily: "'DM Sans', sans-serif",
+        resize: 'none', marginBottom: '0.75rem',
       },
-      chatActions: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-      },
+      chatActions: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
       progressButton: {
-        padding: '0.5rem 1rem',
-        borderRadius: '20px',
-        fontSize: '0.8rem',
-        fontFamily: "'DM Sans', sans-serif",
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
+        padding: '0.5rem 1rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-dark)',
+        borderRadius: '20px', color: 'var(--text)', fontSize: '0.8rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer',
       },
       sendButton: {
-        width: '38px',
-        height: '38px',
-        borderRadius: '50%',
-        border: 'none',
-        color: 'white',
-        fontSize: '1.125rem',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        transition: 'all 0.2s ease',
-        marginLeft: 'auto',
+        width: '38px', height: '38px', borderRadius: '50%', backgroundColor: 'var(--accent)', border: 'none',
+        color: 'white', fontSize: '1.125rem', cursor: 'pointer', marginLeft: 'auto',
       },
-      beginButton: {
-        width: '100%',
-        padding: '1rem',
-        borderRadius: '12px',
-        border: 'none',
-        color: 'white',
-        fontSize: '1rem',
-        fontFamily: "'DM Sans', sans-serif",
-        fontWeight: 500,
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
+      sendButtonDisabled: { backgroundColor: 'var(--border)', cursor: 'not-allowed' },
+
+      // Chat messages
+      chatMessage: { display: 'flex', gap: '0.75rem', alignItems: 'flex-start' },
+      chatAvatar: {
+        width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--accent-light)',
+        border: '1px solid var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      },
+      chatAvatarText: { fontFamily: "'Fraunces', serif", fontSize: '0.875rem', color: 'var(--accent)' },
+      chatBubble: { padding: '0.875rem 1rem', borderRadius: '14px', maxWidth: '85%', fontSize: '0.9rem', lineHeight: 1.6 },
+      chatBubbleAssistant: { backgroundColor: 'var(--bg-elevated)', borderTopLeftRadius: '4px', color: 'var(--text)' },
+      chatBubbleUser: { backgroundColor: 'var(--accent)', borderTopRightRadius: '4px', color: 'white' },
+      typingBubble: { padding: '0.875rem 1rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '14px', borderTopLeftRadius: '4px', display: 'flex', gap: '4px' },
+      typingDot: { color: 'var(--accent)', fontSize: '1.25rem', lineHeight: 1, animation: 'pulse 1s infinite' },
+
+      // Year view
+      yearView: { maxWidth: '900px', margin: '0 auto' },
+      yearTitle: { fontSize: '2.5rem', fontFamily: "'Fraunces', serif", color: 'var(--text)', marginBottom: '1.5rem', textAlign: 'center' },
+      yearGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' },
+      miniMonth: {
+        backgroundColor: 'var(--bg-card)', borderRadius: '12px', padding: '0.875rem',
+        border: '1px solid var(--border)', cursor: 'pointer', transition: 'all 0.2s ease',
+      },
+      miniMonthCurrent: { borderColor: 'var(--accent)', boxShadow: '0 0 0 1px var(--accent)' },
+      miniMonthHeader: { fontSize: '0.8rem', fontWeight: 500, color: 'var(--text)', marginBottom: '0.5rem', textAlign: 'center' },
+      miniMonthGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px' },
+      miniDayHeader: { fontSize: '0.5rem', color: 'var(--text-muted)', textAlign: 'center', padding: '2px 0' },
+      miniDayEmpty: { aspectRatio: '1' },
+      miniDay: { aspectRatio: '1', fontSize: '0.55rem', color: 'var(--text-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '2px' },
+      miniDayToday: { backgroundColor: 'var(--accent)', color: 'white', fontWeight: 600 },
+      miniDayWithEvent: { backgroundColor: 'var(--accent-light)' },
+
+      // View containers
+      viewContainer: { maxWidth: '700px', margin: '0 auto' },
+      viewTitle: { fontSize: '2rem', fontFamily: "'Fraunces', serif", color: 'var(--text)', marginBottom: '1.5rem', textAlign: 'center' },
+      emptyText: { color: 'var(--text-muted)', textAlign: 'center', padding: '1.5rem', fontStyle: 'italic' },
+
+      // Values
+      selectedValues: {
+        backgroundColor: 'var(--bg-card)', borderRadius: '12px', padding: '1.25rem',
+        border: '1px solid var(--border)', marginBottom: '1.5rem', minHeight: '70px',
+        display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignContent: 'flex-start',
+      },
+      valueTag: {
+        display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.875rem',
+        backgroundColor: 'var(--accent)', color: 'white', borderRadius: '20px', fontSize: '0.875rem',
+      },
+      valueTagRemove: { background: 'none', border: 'none', color: 'white', fontSize: '1rem', cursor: 'pointer', padding: 0, opacity: 0.8 },
+      valueSuggestions: { display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem', justifyContent: 'center' },
+      valueSuggestion: {
+        padding: '0.5rem 1rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)',
+        borderRadius: '20px', color: 'var(--text)', fontSize: '0.85rem', cursor: 'pointer',
+      },
+      customInput: { textAlign: 'center' },
+      textInput: {
+        padding: '0.75rem 1rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)',
+        borderRadius: '10px', color: 'var(--text)', fontSize: '0.9rem', fontFamily: "'DM Sans', sans-serif",
       },
 
-      // View styles
-      viewContainer: {
-        maxWidth: '700px',
-        margin: '0 auto',
-      },
-      viewHeader: {
-        textAlign: 'center',
-        marginBottom: '2rem',
-      },
-      viewLabel: {
-        fontSize: '0.8rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em',
-      },
-      viewTitle: {
-        fontSize: '2.5rem',
-        fontFamily: "'Fraunces', serif",
-        marginTop: '0.25rem',
-      },
-      viewSubtitle: {
-        fontSize: '1rem',
-        marginTop: '0.5rem',
-      },
+      // Life areas
+      lifeAreasGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' },
+      lifeAreaCard: { backgroundColor: 'var(--bg-card)', borderRadius: '12px', padding: '1.25rem', border: '1px solid var(--border)' },
+      lifeAreaHeader: { display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' },
+      lifeAreaIcon: { fontSize: '1.25rem' },
+      lifeAreaName: { fontSize: '0.9rem', fontWeight: 500, color: 'var(--text)' },
+      sliderContainer: { display: 'flex', alignItems: 'center', gap: '1rem' },
+      slider: { flex: 1, height: '6px', borderRadius: '3px', cursor: 'pointer' },
+      sliderValue: { fontWeight: 600, fontSize: '1.25rem', minWidth: '24px', textAlign: 'center' },
 
-      // Values view
-      valuesSelected: {
-        padding: '1.5rem',
-        borderRadius: '16px',
-        marginBottom: '1.5rem',
-        minHeight: '80px',
+      // Goals
+      goalForm: { display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' },
+      selectInput: {
+        padding: '0.75rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)',
+        borderRadius: '10px', color: 'var(--text)', fontSize: '0.85rem', fontFamily: "'DM Sans', sans-serif",
       },
-      valuesChips: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '0.5rem',
+      addButton: {
+        padding: '0.75rem 1.25rem', backgroundColor: 'var(--accent)', border: 'none',
+        borderRadius: '10px', color: 'white', fontSize: '0.875rem', cursor: 'pointer',
       },
-      valueChip: {
-        padding: '0.5rem 1rem',
-        borderRadius: '20px',
-        fontSize: '0.875rem',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-      },
-      valueChipSelected: {
-        padding: '0.5rem 1rem',
-        borderRadius: '20px',
-        fontSize: '0.875rem',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-      },
-      valueChipRemove: {
-        background: 'none',
-        border: 'none',
-        fontSize: '1rem',
-        cursor: 'pointer',
-        padding: 0,
-        lineHeight: 1,
-      },
-      valuesSuggestions: {
-        marginBottom: '1.5rem',
-      },
-      suggestionsLabel: {
-        fontSize: '0.8rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.05em',
-        marginBottom: '0.75rem',
-      },
-      customValueInput: {
-        marginTop: '1rem',
-      },
-
-      // Wheel view
-      wheelGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '1rem',
-      },
-      wheelCard: {
-        padding: '1.25rem',
-        borderRadius: '12px',
-      },
-      wheelCardHeader: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        marginBottom: '1rem',
-      },
-      wheelIcon: {
-        fontSize: '1.25rem',
-      },
-      wheelSlider: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '1rem',
-      },
-      slider: {
-        flex: 1,
-        height: '6px',
-        borderRadius: '3px',
-        cursor: 'pointer',
-      },
-      wheelValue: {
-        fontWeight: 600,
-        fontSize: '1.25rem',
-        minWidth: '24px',
-        textAlign: 'center',
-      },
-
-      // Seasons view
-      seasonsGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '1rem',
-      },
-      seasonCard: {
-        padding: '1.5rem',
-        borderRadius: '16px',
-      },
-      seasonCardHeader: {
-        textAlign: 'center',
-        marginBottom: '1rem',
-      },
-      seasonTextarea: {
-        width: '100%',
-        padding: '0.75rem',
-        borderRadius: '8px',
-        fontSize: '0.875rem',
-        fontFamily: "'DM Sans', sans-serif",
-        resize: 'none',
-      },
-
-      // Goals view
-      addGoalForm: {
-        display: 'flex',
-        gap: '0.75rem',
-        padding: '1rem',
-        borderRadius: '12px',
-        marginBottom: '1.5rem',
-      },
-      formSelect: {
-        padding: '0.75rem',
-        borderRadius: '8px',
-        fontSize: '0.875rem',
-        fontFamily: "'DM Sans', sans-serif",
-        cursor: 'pointer',
-      },
-      addGoalButton: {
-        padding: '0.75rem 1.25rem',
-        borderRadius: '8px',
-        border: 'none',
-        color: 'white',
-        fontSize: '0.875rem',
-        fontFamily: "'DM Sans', sans-serif",
-        cursor: 'pointer',
-      },
-      goalsList: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.75rem',
-      },
+      goalsList: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
       goalCard: {
-        padding: '1rem',
-        borderRadius: '8px',
-        borderLeft: '3px solid',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        backgroundColor: 'var(--bg-card)', borderRadius: '10px', padding: '1rem',
+        borderLeft: '3px solid', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
       },
-      goalArea: {
-        fontSize: '0.75rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.05em',
-        marginBottom: '0.25rem',
-        display: 'block',
-      },
-      goalDelete: {
-        background: 'none',
-        border: 'none',
-        fontSize: '1.25rem',
-        cursor: 'pointer',
-        opacity: 0.5,
+      goalArea: { fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem', display: 'block' },
+      goalText: { color: 'var(--text)', fontSize: '0.95rem' },
+      deleteButton: { background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.25rem', cursor: 'pointer', opacity: 0.5 },
+
+      // Seasons
+      seasonsGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' },
+      seasonCard: { backgroundColor: 'var(--bg-card)', borderRadius: '12px', padding: '1.25rem', border: '1px solid var(--border)' },
+      seasonHeader: { marginBottom: '0.75rem', textAlign: 'center' },
+      seasonName: { fontSize: '1.25rem', fontFamily: "'Fraunces', serif", marginBottom: '0.125rem' },
+      seasonMonths: { fontSize: '0.75rem', opacity: 0.7 },
+      seasonTextarea: {
+        width: '100%', padding: '0.75rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)',
+        borderRadius: '8px', color: 'var(--text)', fontSize: '0.85rem', fontFamily: "'DM Sans', sans-serif", resize: 'none',
       },
 
       // Month view
-      calendarContainer: {
-        padding: '1.25rem',
-        borderRadius: '16px',
-        marginBottom: '1.5rem',
-      },
-      calendarGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(7, 1fr)',
-        gap: '4px',
-      },
-      calendarDayHeader: {
-        padding: '0.5rem',
-        textAlign: 'center',
-        fontSize: '0.75rem',
-        fontWeight: 500,
-      },
-      calendarDayEmpty: {
-        aspectRatio: '1',
-      },
-      calendarDay: {
-        aspectRatio: '1',
-        borderRadius: '8px',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative',
-        cursor: 'pointer',
-      },
-      calendarDayNumber: {
-        fontSize: '0.875rem',
-      },
-      calendarDayDots: {
-        display: 'flex',
-        gap: '2px',
-        position: 'absolute',
-        bottom: '4px',
-      },
-      calendarDayDot: {
-        width: '5px',
-        height: '5px',
-        borderRadius: '50%',
-      },
-      eventsList: {
-        padding: '1.25rem',
-        borderRadius: '16px',
-      },
-      eventsHeader: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '1rem',
-      },
-      eventsTitle: {
-        fontFamily: "'Fraunces', serif",
-      },
-      addEventButton: {
-        padding: '0.4rem 0.875rem',
-        borderRadius: '16px',
-        border: 'none',
-        color: 'white',
-        fontSize: '0.8rem',
-        cursor: 'pointer',
-      },
-      eventsEmpty: {
-        textAlign: 'center',
-        padding: '1.5rem',
-      },
-      eventsGrid: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.75rem',
-      },
-      eventCard: {
-        padding: '0.875rem 1rem',
-        borderRadius: '8px',
-        borderLeft: '3px solid',
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'flex-start',
-      },
-      eventCardContent: {
-        flex: 1,
-      },
-      eventCardType: {
-        fontSize: '0.7rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.04em',
-      },
-      eventCardDelete: {
-        background: 'none',
-        border: 'none',
-        fontSize: '1.125rem',
-        cursor: 'pointer',
-        opacity: 0.5,
-      },
-
-      // Theme selector
-      themeGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '0.75rem',
-      },
-      themeOption: {
-        padding: '0.75rem',
-        borderRadius: '12px',
-        cursor: 'pointer',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '0.5rem',
-        transition: 'all 0.2s ease',
-      },
-      themePreview: {
-        width: '100%',
-        height: '50px',
-        borderRadius: '8px',
-      },
+      calendarContainer: { backgroundColor: 'var(--bg-card)', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem', border: '1px solid var(--border)' },
+      calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' },
+      calendarDayHeader: { padding: '0.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500 },
+      calendarDayEmpty: { aspectRatio: '1' },
+      calendarDay: { aspectRatio: '1', backgroundColor: 'var(--bg-elevated)', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' },
+      calendarDayToday: { border: '2px solid var(--accent)' },
+      calendarDayNumber: { fontSize: '0.875rem', color: 'var(--text-light)' },
+      calendarDayNumberToday: { color: 'var(--accent)', fontWeight: 600 },
+      calendarDayDots: { display: 'flex', gap: '2px', position: 'absolute', bottom: '4px' },
+      calendarDayDot: { width: '5px', height: '5px', borderRadius: '50%' },
+      eventsList: { backgroundColor: 'var(--bg-card)', borderRadius: '12px', padding: '1.25rem', border: '1px solid var(--border)' },
+      eventsHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' },
+      eventsTitle: { fontSize: '1rem', fontFamily: "'Fraunces', serif", color: 'var(--text)' },
+      addEventButton: { padding: '0.4rem 0.875rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '16px', color: 'white', fontSize: '0.8rem', cursor: 'pointer' },
+      eventsGrid: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
+      eventCard: { borderRadius: '10px', padding: '0.875rem 1rem', borderLeft: '3px solid', backgroundColor: 'var(--bg-elevated)', display: 'flex', justifyContent: 'space-between' },
+      eventType: { fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' },
+      eventTitle: { fontSize: '0.95rem', color: 'var(--text)', fontWeight: 500 },
+      eventDate: { fontSize: '0.8rem', color: 'var(--text-muted)' },
 
       // Modal
-      modalOverlay: {
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.3)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-        backdropFilter: 'blur(2px)',
+      modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
+      modal: { backgroundColor: 'var(--bg-card)', borderRadius: '20px', padding: '1.75rem', width: '90%', maxWidth: '420px', border: '1px solid var(--border)' },
+      modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' },
+      modalTitle: { fontSize: '1.25rem', fontFamily: "'Fraunces', serif", color: 'var(--text)' },
+      modalClose: { width: '30px', height: '30px', borderRadius: '50%', backgroundColor: 'var(--bg-elevated)', border: 'none', color: 'var(--text-muted)', fontSize: '1.125rem', cursor: 'pointer' },
+      modalForm: { display: 'flex', flexDirection: 'column', gap: '1.25rem' },
+      formField: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+      formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' },
+      formLabel: { fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 },
+      typeGrid: { display: 'flex', flexWrap: 'wrap', gap: '0.5rem' },
+      typeButton: {
+        padding: '0.5rem 0.875rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)',
+        borderRadius: '16px', color: 'var(--text)', fontSize: '0.75rem', cursor: 'pointer', textTransform: 'capitalize',
       },
-      modal: {
-        borderRadius: '20px',
-        padding: '1.75rem',
-        width: '90%',
-        maxWidth: '420px',
-        boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
-      },
-      modalHeader: {
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '1.5rem',
-      },
-      modalTitle: {
-        fontSize: '1.25rem',
-        fontFamily: "'Fraunces', serif",
-      },
-      modalClose: {
-        width: '30px',
-        height: '30px',
-        borderRadius: '50%',
-        border: 'none',
-        fontSize: '1.125rem',
-        cursor: 'pointer',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-      },
-      modalForm: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '1.25rem',
-      },
-      formField: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.5rem',
-      },
-      formRow: {
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        gap: '0.75rem',
-      },
-      formLabel: {
-        fontSize: '0.75rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.05em',
-        fontWeight: 500,
-      },
-      formInput: {
-        padding: '0.75rem 1rem',
-        borderRadius: '10px',
-        fontSize: '0.9rem',
-        fontFamily: "'DM Sans', sans-serif",
-      },
-      typeSelector: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '0.5rem',
-      },
-      typeOption: {
-        padding: '0.625rem 0.5rem',
-        borderRadius: '10px',
-        fontSize: '0.75rem',
-        fontFamily: "'DM Sans', sans-serif",
-        cursor: 'pointer',
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '0.25rem',
-        transition: 'all 0.15s ease',
-      },
-      submitButton: {
-        padding: '0.875rem',
-        borderRadius: '12px',
-        border: 'none',
-        color: 'white',
-        fontSize: '0.9rem',
-        fontFamily: "'DM Sans', sans-serif",
-        fontWeight: 500,
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        marginTop: '0.25rem',
-      },
+      typeButtonActive: { backgroundColor: 'var(--accent)', borderColor: 'var(--accent)', color: 'white' },
+      submitButton: { padding: '0.875rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '12px', color: 'white', fontSize: '0.9rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer', marginTop: '0.25rem' },
+      submitButtonDisabled: { backgroundColor: 'var(--border-dark)', cursor: 'not-allowed' },
     };
 
-    // ============ RENDER ============
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(
-      <ThemeProvider>
-        <TendApp />
-      </ThemeProvider>
-    );
+    root.render(<TendApp />);
   </script>
 </body>
 </html>
