@@ -17,51 +17,12 @@
       box-sizing: border-box;
     }
 
-    :root {
-      --bg-main: #FAF8F5;
-      --bg-warm: #F5F1EC;
-      --bg-card: #FFFFFF;
-      --bg-elevated: #F0EBE4;
-      
-      --sand: #E8E2D9;
-      --sand-dark: #D4CCC0;
-      
-      --charcoal: #2D2A26;
-      --charcoal-light: #6B6660;
-      --charcoal-muted: #9A9590;
-      
-      --sage: #7D9B76;
-      --sage-soft: #A8C4A2;
-      --sage-light: #E8F0E6;
-      
-      --terracotta: #C4836A;
-      --terracotta-soft: #DDBCAE;
-      --terracotta-light: #F5EAE5;
-      
-      --gold: #C9A66B;
-      --gold-soft: #E0CBA3;
-      --gold-light: #F7F1E6;
-      
-      --lavender: #9B8AAE;
-      --lavender-soft: #C4B8D0;
-      --lavender-light: #F0ECF4;
-      
-      --sky: #7A9CAD;
-      --sky-soft: #A8C4D0;
-      --sky-light: #E8F2F5;
-      
-      --rose: #C48B8B;
-      --rose-soft: #DDBCBC;
-      --rose-light: #F5EAEA;
-    }
-
     body {
       font-family: 'DM Sans', sans-serif;
-      background-color: var(--bg-main);
-      color: var(--charcoal);
       line-height: 1.6;
       min-height: 100vh;
       font-weight: 400;
+      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     h1, h2, h3, h4 {
@@ -69,21 +30,6 @@
       font-weight: 400;
     }
 
-    /* Subtle texture */
-    body::before {
-      content: '';
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      opacity: 0.02;
-      pointer-events: none;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-      z-index: 1000;
-    }
-
-    /* Custom scrollbar */
     ::-webkit-scrollbar {
       width: 8px;
     }
@@ -93,24 +39,13 @@
     }
 
     ::-webkit-scrollbar-thumb {
-      background: var(--sand-dark);
+      background: var(--border);
       border-radius: 4px;
     }
 
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--charcoal-muted);
-    }
-
-    /* Animations */
     @keyframes fadeUp {
-      from { 
-        opacity: 0; 
-        transform: translateY(20px); 
-      }
-      to { 
-        opacity: 1; 
-        transform: translateY(0); 
-      }
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
 
     @keyframes fadeIn {
@@ -123,23 +58,12 @@
       50% { opacity: 0.8; }
     }
 
-    .fade-up {
-      animation: fadeUp 0.6s ease-out forwards;
-    }
+    .fade-up { animation: fadeUp 0.6s ease-out forwards; }
+    .fade-in { animation: fadeIn 0.4s ease-out forwards; }
 
-    .fade-in {
-      animation: fadeIn 0.4s ease-out forwards;
-    }
-
-    /* Selection */
-    ::selection {
-      background: var(--sage);
-      color: white;
-    }
-
-    /* Focus states */
     input:focus, textarea:focus {
-      border-color: var(--sage) !important;
+      outline: none;
+      border-color: var(--accent) !important;
     }
   </style>
 </head>
@@ -147,119 +71,389 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    const { useState, useEffect, useRef, createContext, useContext } = React;
 
-    // ============ CONSTANTS ============
+    // ============ THEMES ============
+    const THEMES = {
+      light: {
+        name: 'Light Minimal',
+        preview: 'linear-gradient(135deg, #FAF8F5 0%, #F0EBE4 100%)',
+        colors: {
+          bgMain: '#FAF8F5',
+          bgCard: '#FFFFFF',
+          bgElevated: '#F0EBE4',
+          text: '#2D2A26',
+          textLight: '#6B6660',
+          textMuted: '#9A9590',
+          border: '#E8E2D9',
+          borderDark: '#D4CCC0',
+          accent: '#7D9B76',
+          accentLight: '#E8F0E6',
+        },
+        pattern: null,
+      },
+      dark: {
+        name: 'Dark Minimal',
+        preview: 'linear-gradient(135deg, #1a1916 0%, #2d2a26 100%)',
+        colors: {
+          bgMain: '#1a1916',
+          bgCard: '#2d2a26',
+          bgElevated: '#363330',
+          text: '#F5F0E8',
+          textLight: '#C4BEB2',
+          textMuted: '#8A857C',
+          border: '#3d3a36',
+          borderDark: '#4a4640',
+          accent: '#A8C4A2',
+          accentLight: '#2d332c',
+        },
+        pattern: null,
+      },
+      botanical: {
+        name: 'Botanical',
+        preview: 'linear-gradient(135deg, #E8F0E6 0%, #d4e5d0 100%)',
+        colors: {
+          bgMain: '#F5F8F4',
+          bgCard: '#FFFFFF',
+          bgElevated: '#E8F0E6',
+          text: '#2D3A2D',
+          textLight: '#5A6B5A',
+          textMuted: '#8A9A8A',
+          border: '#C8DBC4',
+          borderDark: '#A8C4A2',
+          accent: '#5A7D52',
+          accentLight: '#E8F0E6',
+        },
+        pattern: 'botanical',
+      },
+      ocean: {
+        name: 'Ocean',
+        preview: 'linear-gradient(135deg, #E8F2F5 0%, #c9dde4 100%)',
+        colors: {
+          bgMain: '#F0F6F8',
+          bgCard: '#FFFFFF',
+          bgElevated: '#E0EEF2',
+          text: '#1E3A4A',
+          textLight: '#4A6B7A',
+          textMuted: '#7A9AAA',
+          border: '#B8D4E0',
+          borderDark: '#8ABDD0',
+          accent: '#3A7A9A',
+          accentLight: '#E0EEF2',
+        },
+        pattern: 'waves',
+      },
+      garden: {
+        name: 'Garden',
+        preview: 'linear-gradient(135deg, #FDF5F7 0%, #f5e0e6 100%)',
+        colors: {
+          bgMain: '#FDF8F9',
+          bgCard: '#FFFFFF',
+          bgElevated: '#F8ECEF',
+          text: '#4A2D3A',
+          textLight: '#7A5A6A',
+          textMuted: '#AA8A9A',
+          border: '#E8CCD8',
+          borderDark: '#D4A8BC',
+          accent: '#B85A7A',
+          accentLight: '#F8ECEF',
+        },
+        pattern: 'floral',
+      },
+      sunset: {
+        name: 'Sunset',
+        preview: 'linear-gradient(135deg, #FDF5ED 0%, #f5e6d8 100%)',
+        colors: {
+          bgMain: '#FDF8F3',
+          bgCard: '#FFFFFF',
+          bgElevated: '#F8EEE4',
+          text: '#4A3020',
+          textLight: '#7A6050',
+          textMuted: '#AA9080',
+          border: '#E8D4C4',
+          borderDark: '#D4B8A0',
+          accent: '#C4836A',
+          accentLight: '#F8EEE4',
+        },
+        pattern: null,
+      },
+      hydrangea: {
+        name: 'Hydrangea',
+        preview: 'linear-gradient(135deg, #F0ECF4 0%, #dcd4e8 100%)',
+        colors: {
+          bgMain: '#F8F5FA',
+          bgCard: '#FFFFFF',
+          bgElevated: '#EDE8F4',
+          text: '#3A2D4A',
+          textLight: '#6A5A7A',
+          textMuted: '#9A8AAA',
+          border: '#D8CCE8',
+          borderDark: '#C4B0D8',
+          accent: '#7A5A9A',
+          accentLight: '#EDE8F4',
+        },
+        pattern: 'hydrangea',
+      },
+    };
+
+    // ============ LIFE AREAS ============
+    const LIFE_AREAS = {
+      health: { name: 'Health & Wellness', icon: '◐', color: '#7D9B76' },
+      relationships: { name: 'Relationships', icon: '♡', color: '#C48B8B' },
+      career: { name: 'Career & Work', icon: '◆', color: '#7A9CAD' },
+      finances: { name: 'Finances', icon: '○', color: '#C9A66B' },
+      growth: { name: 'Personal Growth', icon: '✦', color: '#9B8AAE' },
+      fun: { name: 'Fun & Adventure', icon: '✺', color: '#C4836A' },
+    };
+
+    // ============ SEASONS ============
     const SEASONS = {
-      winter: { 
-        name: 'Winter', 
-        months: ['December', 'January', 'February'],
-        color: 'var(--sky)',
-        softColor: 'var(--sky-soft)',
-        lightColor: 'var(--sky-light)',
-        essence: 'rest & reflection',
-        icon: '✦'
-      },
-      spring: { 
-        name: 'Spring', 
-        months: ['March', 'April', 'May'],
-        color: 'var(--sage)',
-        softColor: 'var(--sage-soft)',
-        lightColor: 'var(--sage-light)',
-        essence: 'growth & renewal',
-        icon: '❋'
-      },
-      summer: { 
-        name: 'Summer', 
-        months: ['June', 'July', 'August'],
-        color: 'var(--gold)',
-        softColor: 'var(--gold-soft)',
-        lightColor: 'var(--gold-light)',
-        essence: 'abundance & joy',
-        icon: '✺'
-      },
-      fall: { 
-        name: 'Fall', 
-        months: ['September', 'October', 'November'],
-        color: 'var(--terracotta)',
-        softColor: 'var(--terracotta-soft)',
-        lightColor: 'var(--terracotta-light)',
-        essence: 'harvest & release',
-        icon: '✧'
-      }
+      winter: { name: 'Winter', months: ['Dec', 'Jan', 'Feb'], color: '#7A9CAD', icon: '✦' },
+      spring: { name: 'Spring', months: ['Mar', 'Apr', 'May'], color: '#7D9B76', icon: '❋' },
+      summer: { name: 'Summer', months: ['Jun', 'Jul', 'Aug'], color: '#C9A66B', icon: '✺' },
+      fall: { name: 'Fall', months: ['Sep', 'Oct', 'Nov'], color: '#C4836A', icon: '✧' },
     };
 
-    const EVENT_TYPES = {
-      trip: { label: 'Trip', color: 'var(--sky)', lightColor: 'var(--sky-light)', icon: '↗' },
-      rest: { label: 'Rest', color: 'var(--sage)', lightColor: 'var(--sage-light)', icon: '◠' },
-      dateNight: { label: 'Date Night', color: 'var(--rose)', lightColor: 'var(--rose-light)', icon: '♡' },
-      personal: { label: 'Personal', color: 'var(--lavender)', lightColor: 'var(--lavender-light)', icon: '✧' },
-      work: { label: 'Work', color: 'var(--charcoal-muted)', lightColor: 'var(--sand)', icon: '▫' },
-      partner: { label: "Partner", color: 'var(--gold)', lightColor: 'var(--gold-light)', icon: '◦' },
-    };
-
+    // ============ VIEWS ============
     const VIEWS = {
-      YEAR: 'year',
-      SEASON: 'season',
-      MONTH: 'month'
+      VALUES: 'values',
+      WHEEL: 'wheel',
+      SEASONS: 'seasons',
+      GOALS: 'goals',
+      MONTH: 'month',
     };
 
     // ============ AI CONVERSATION FLOWS ============
     const AI_FLOWS = {
-      year: {
-        initial: "Hi, I'm Tend. Let's take a moment to think about the year ahead.\n\nBefore we get into schedules and logistics, I'd love to know: What do you want this year to feel like? And is there a central theme or goal you want to organize it around?",
+      intro: `Welcome to Tend.
+
+Tend is a space for living intentionally — for designing your life rather than just letting it happen. It's part planner, part guide, part thought partner.
+
+We'll start by getting clear on what matters most to you, then look at the different areas of your life, map your intentions to the seasons ahead, and set meaningful goals.
+
+There's no right way to do this. Some people move quickly, others take their time. The goal isn't productivity — it's alignment.
+
+Ready to begin?`,
+      values: {
+        initial: `Let's start with values — the foundation everything else builds on.
+
+Values are the qualities you want to embody, the things that make life feel meaningful. Not goals, not achievements, but <em>ways of being</em>.
+
+Some examples: freedom, connection, creativity, growth, adventure, stability, compassion, authenticity, courage, joy.
+
+What are 3-5 values that feel true to who you are or who you want to become?`,
         followUps: [
-          "That resonates. If that's your north star, what would need to be true by December for you to feel like you lived into it? Any milestones or experiences that come to mind?",
-          "And on a practical level—what are the big commitments you already know about? Work trips, weddings, anything already on the calendar?",
-          "One more thing: What do you want to protect this year? What tends to get squeezed out when life gets busy that you want to be more intentional about?",
-          "This is a beautiful foundation. Let's move into the seasons and see how this plays out across the year."
+          `Those are beautiful. When you look at that list, which one feels most important right now? The one that, if you lived by it fully, would change the most?`,
+          `And is there a value that you <em>want</em> to live by but struggle with? One where there's a gap between the intention and the reality?`,
+          `This is a strong foundation. Let's see how your life is actually lining up with these values.`
         ]
       },
-      season: {
-        winter: {
-          initial: "Let's look at Winter—December through February.\n\nThis season often brings holidays, end-of-year reflection, and a natural slowdown. What do you want from this winter? Any specific goals, trips, or experiences you want to make space for?",
-          followUps: [
-            "How do you want to navigate the holidays this year? Any boundaries you want to set or traditions you want to prioritize?",
-            "Is there anything you want to start or finish during these quieter months?"
-          ]
-        },
-        spring: {
-          initial: "Now Spring—March through May.\n\nEnergy tends to pick up. It's a natural time for new beginnings and momentum. What do you want to focus on this spring? Any projects, habits, or goals you want to get moving?",
-          followUps: [
-            "Spring often brings a burst of motivation. How do you want to channel that without overcommitting?",
-            "Any trips or experiences you want to plan while the weather shifts?"
-          ]
-        },
-        summer: {
-          initial: "Summer—June through August.\n\nLonger days, more flexibility for many people. This is often the season for adventure, travel, and being out in the world. What do you want your summer to look like? Any trips, goals, or experiences you're dreaming about?",
-          followUps: [
-            "Summer can fill up fast. Is there anything you want to protect—downtime, a specific trip, quality time with someone?",
-            "What would make this summer feel memorable rather than just busy?"
-          ]
-        },
-        fall: {
-          initial: "And Fall—September through November.\n\nA return to rhythm for many people. It's a good season for building routines and bringing things to completion. What do you want to focus on this fall? Any goals you want to hit before year-end?",
-          followUps: [
-            "Fall often feels like a fresh start. Any habits or routines you want to establish?",
-            "As the year winds down, is there anything you want to make sure you complete or celebrate?"
-          ]
-        }
+      wheel: {
+        initial: `Now let's look at the different areas of your life — what some call the "Wheel of Life."
+
+You'll see six areas: Health, Relationships, Career, Finances, Personal Growth, and Fun & Adventure.
+
+For each one, rate how you're feeling about it right now — not where you "should" be, but where you honestly are. Then we'll identify where you want to focus.
+
+Take your time with this. Be honest.`,
+        followUps: [
+          `Looking at your ratings, what stands out? Any areas that feel particularly low or particularly high?`,
+          `If you could only focus on improving <em>one</em> of these areas over the next season, which would make the biggest difference to your overall sense of wellbeing?`,
+          `Good. Let's carry these insights into the seasons.`
+        ]
+      },
+      seasons: {
+        initial: `Now we'll map your intentions to the year ahead.
+
+Each season has its own energy. Winter tends toward rest and reflection. Spring brings momentum and new beginnings. Summer is expansion and adventure. Fall is harvest and completion.
+
+Looking at the areas you want to focus on, which seasons feel right for what? Not everything has to be now.`,
+        followUps: [
+          `That makes sense. Are there any external constraints — trips, work cycles, life events — that should shape when you focus on what?`,
+          `And what about rest? Which season do you want to protect for slowing down?`,
+          `Let's get specific about what success would look like.`
+        ]
+      },
+      goals: {
+        initial: `Finally, let's set some tangible goals — not to create pressure, but to create clarity.
+
+For each area you want to focus on, what would success look like? How would you <em>know</em> you'd made progress?
+
+These can be measurable ("run a 5K", "save $5,000") or experiential ("feel more present with my partner", "have a creative practice I love").`,
+        followUps: [
+          `Those feel meaningful. For the most important one, what's the first small step? The thing you could do this week to create momentum?`,
+          `And how do you want to check in on these? Some people like weekly reviews, others prefer monthly. What rhythm feels sustainable?`,
+          `You've built something beautiful here. Let's put it into practice.`
+        ]
       },
       month: {
-        initial: "Now let's get into the details.\n\nLooking at this month specifically—what's already on your plate? And what do you want to make sure doesn't slip through the cracks?",
+        initial: `Now let's get tactical.
+
+Looking at this month specifically — what's already on your plate? And based on everything we've discussed, what do you want to make sure you schedule?
+
+Remember: white space is sacred. You don't have to fill every day.`,
         followUps: [
-          "Where's the breathing room? Do you have enough white space, or does this feel packed?",
-          "Is there something you've been meaning to schedule but haven't? Let's get it on the timeline.",
-          "How does this month connect to your bigger goals for the season?"
+          `Where's the breathing room? Does this month feel sustainable?`,
+          `How does this month connect to your seasonal intentions? Are the right things getting time?`,
+          `Is there anything you've been putting off that you want to finally schedule?`
         ]
       }
     };
 
+    // ============ THEME CONTEXT ============
+    const ThemeContext = createContext();
+
+    function ThemeProvider({ children }) {
+      const [themeName, setThemeName] = useState(() => {
+        return localStorage.getItem('tend-theme') || 'light';
+      });
+
+      const theme = THEMES[themeName];
+
+      useEffect(() => {
+        localStorage.setItem('tend-theme', themeName);
+        const root = document.documentElement;
+        Object.entries(theme.colors).forEach(([key, value]) => {
+          root.style.setProperty(`--${key.replace(/([A-Z])/g, '-$1').toLowerCase()}`, value);
+        });
+        document.body.style.backgroundColor = theme.colors.bgMain;
+        document.body.style.color = theme.colors.text;
+      }, [themeName, theme]);
+
+      return (
+        <ThemeContext.Provider value={{ theme, themeName, setThemeName }}>
+          {children}
+        </ThemeContext.Provider>
+      );
+    }
+
+    // ============ LOGO COMPONENT ============
+    function Logo() {
+      const { theme } = useContext(ThemeContext);
+      return (
+        <div style={styles.logoContainer}>
+          <svg width="32" height="32" viewBox="0 0 32 32" fill="none" style={{ marginRight: '8px' }}>
+            {/* Pot */}
+            <path 
+              d="M10 24 L22 24 L20 30 L12 30 Z" 
+              fill={theme.colors.accent}
+              opacity="0.3"
+            />
+            {/* Stem */}
+            <path 
+              d="M16 24 Q16 18 16 14" 
+              stroke={theme.colors.accent}
+              strokeWidth="2"
+              strokeLinecap="round"
+              fill="none"
+            />
+            {/* Left leaf */}
+            <path 
+              d="M16 18 Q10 16 8 10 Q14 12 16 18" 
+              fill={theme.colors.accent}
+              opacity="0.6"
+            />
+            {/* Right leaf */}
+            <path 
+              d="M16 14 Q22 10 24 4 Q18 8 16 14" 
+              fill={theme.colors.accent}
+            />
+            {/* Small sprout */}
+            <path 
+              d="M16 8 Q14 5 16 2 Q18 5 16 8" 
+              fill={theme.colors.accent}
+              opacity="0.8"
+            />
+          </svg>
+          <h1 style={{...styles.logo, color: theme.colors.text}}>tend</h1>
+        </div>
+      );
+    }
+
+    // ============ PATTERN OVERLAY ============
+    function PatternOverlay({ pattern }) {
+      if (!pattern) return null;
+      
+      const patterns = {
+        botanical: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 10 Q25 20 30 30 Q35 20 30 10' fill='%237D9B76' opacity='0.08'/%3E%3Cpath d='M10 40 Q15 35 20 40 Q15 45 10 40' fill='%237D9B76' opacity='0.06'/%3E%3Cpath d='M45 45 Q50 40 55 45 Q50 50 45 45' fill='%237D9B76' opacity='0.06'/%3E%3C/svg%3E")`,
+        waves: `url("data:image/svg+xml,%3Csvg width='100' height='20' viewBox='0 0 100 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q25 0 50 10 Q75 20 100 10' stroke='%233A7A9A' fill='none' opacity='0.08' stroke-width='1'/%3E%3C/svg%3E")`,
+        floral: `url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='20' cy='20' r='3' fill='%23B85A7A' opacity='0.1'/%3E%3Ccircle cx='20' cy='14' r='4' fill='%23B85A7A' opacity='0.08'/%3E%3Ccircle cx='25' cy='18' r='4' fill='%23B85A7A' opacity='0.08'/%3E%3Ccircle cx='23' cy='25' r='4' fill='%23B85A7A' opacity='0.08'/%3E%3Ccircle cx='17' cy='25' r='4' fill='%23B85A7A' opacity='0.08'/%3E%3Ccircle cx='15' cy='18' r='4' fill='%23B85A7A' opacity='0.08'/%3E%3C/svg%3E")`,
+        hydrangea: `url("data:image/svg+xml,%3Csvg width='50' height='50' viewBox='0 0 50 50' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='15' cy='15' r='6' fill='%237A5A9A' opacity='0.06'/%3E%3Ccircle cx='35' cy='15' r='5' fill='%239A7ABA' opacity='0.06'/%3E%3Ccircle cx='25' cy='30' r='7' fill='%237A5A9A' opacity='0.05'/%3E%3Ccircle cx='10' cy='40' r='4' fill='%239A7ABA' opacity='0.06'/%3E%3Ccircle cx='40' cy='38' r='5' fill='%237A5A9A' opacity='0.05'/%3E%3C/svg%3E")`,
+      };
+
+      return (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundImage: patterns[pattern],
+          pointerEvents: 'none',
+          zIndex: 0,
+        }} />
+      );
+    }
+
+    // ============ THEME SELECTOR ============
+    function ThemeSelector({ isOpen, onClose }) {
+      const { themeName, setThemeName, theme } = useContext(ThemeContext);
+
+      if (!isOpen) return null;
+
+      return (
+        <div style={{...styles.modalOverlay, backgroundColor: 'rgba(0,0,0,0.4)'}} onClick={onClose}>
+          <div 
+            style={{
+              ...styles.modal, 
+              maxWidth: '500px',
+              backgroundColor: theme.colors.bgCard,
+              border: `1px solid ${theme.colors.border}`,
+            }} 
+            onClick={e => e.stopPropagation()}
+            className="fade-up"
+          >
+            <div style={styles.modalHeader}>
+              <h3 style={{...styles.modalTitle, color: theme.colors.text}}>Choose Your Theme</h3>
+              <button 
+                style={{...styles.modalClose, backgroundColor: theme.colors.bgElevated, color: theme.colors.textMuted}}
+                onClick={onClose}
+              >×</button>
+            </div>
+            <div style={styles.themeGrid}>
+              {Object.entries(THEMES).map(([key, t]) => (
+                <button
+                  key={key}
+                  style={{
+                    ...styles.themeOption,
+                    border: themeName === key ? `2px solid ${theme.colors.accent}` : `1px solid ${theme.colors.border}`,
+                    backgroundColor: theme.colors.bgElevated,
+                  }}
+                  onClick={() => setThemeName(key)}
+                >
+                  <div style={{
+                    ...styles.themePreview,
+                    background: t.preview,
+                  }} />
+                  <span style={{color: theme.colors.text, fontSize: '0.8rem'}}>{t.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     // ============ MAIN APP ============
     function TendApp() {
-      const [currentView, setCurrentView] = useState(VIEWS.YEAR);
-      const [currentSeason, setCurrentSeason] = useState('winter');
-      const [yearTheme, setYearTheme] = useState('');
+      const { theme } = useContext(ThemeContext);
+      const [currentView, setCurrentView] = useState(VIEWS.VALUES);
+      const [showIntro, setShowIntro] = useState(true);
+      const [showThemeSelector, setShowThemeSelector] = useState(false);
+      const [values, setValues] = useState([]);
+      const [wheelRatings, setWheelRatings] = useState({});
+      const [seasonalIntentions, setSeasonalIntentions] = useState({});
+      const [goals, setGoals] = useState([]);
       const [events, setEvents] = useState([]);
       const [messages, setMessages] = useState([]);
       const [inputValue, setInputValue] = useState('');
@@ -269,12 +463,20 @@
       const messagesEndRef = useRef(null);
 
       useEffect(() => {
-        setMessages([{ role: 'assistant', content: AI_FLOWS.year.initial }]);
+        if (showIntro) {
+          setMessages([{ role: 'assistant', content: AI_FLOWS.intro }]);
+        }
       }, []);
 
       useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, [messages]);
+
+      const startJourney = () => {
+        setShowIntro(false);
+        setMessages([{ role: 'assistant', content: AI_FLOWS.values.initial }]);
+        setMessageIndex(0);
+      };
 
       const handleSendMessage = () => {
         if (!inputValue.trim()) return;
@@ -286,13 +488,13 @@
 
         setTimeout(() => {
           let response;
-          if (currentView === VIEWS.YEAR) {
-            response = AI_FLOWS.year.followUps[Math.min(messageIndex, AI_FLOWS.year.followUps.length - 1)];
-          } else if (currentView === VIEWS.SEASON) {
-            const seasonFlow = AI_FLOWS.season[currentSeason];
-            response = seasonFlow.followUps[Math.min(messageIndex, seasonFlow.followUps.length - 1)];
+          const flowKey = currentView.toLowerCase();
+          const flow = AI_FLOWS[flowKey];
+          
+          if (flow && flow.followUps) {
+            response = flow.followUps[Math.min(messageIndex, flow.followUps.length - 1)];
           } else {
-            response = AI_FLOWS.month.followUps[Math.min(messageIndex, AI_FLOWS.month.followUps.length - 1)];
+            response = "Tell me more about that.";
           }
           
           setMessages(prev => [...prev, { role: 'assistant', content: response }]);
@@ -301,115 +503,76 @@
         }, 1200);
       };
 
-      const progressToSeason = () => {
-        setCurrentView(VIEWS.SEASON);
+      const navigateTo = (view) => {
+        setCurrentView(view);
         setMessageIndex(0);
-        const seasonFlow = AI_FLOWS.season[currentSeason];
-        setMessages([{ role: 'assistant', content: seasonFlow.initial }]);
-      };
-
-      const progressToNextSeason = () => {
-        const seasonOrder = ['winter', 'spring', 'summer', 'fall'];
-        const currentIndex = seasonOrder.indexOf(currentSeason);
-        if (currentIndex < seasonOrder.length - 1) {
-          const nextSeason = seasonOrder[currentIndex + 1];
-          setCurrentSeason(nextSeason);
-          setMessageIndex(0);
-          const seasonFlow = AI_FLOWS.season[nextSeason];
-          setMessages([{ role: 'assistant', content: seasonFlow.initial }]);
-        } else {
-          progressToMonth();
+        const flowKey = view.toLowerCase();
+        const flow = AI_FLOWS[flowKey];
+        if (flow && flow.initial) {
+          setMessages([{ role: 'assistant', content: flow.initial }]);
         }
       };
 
-      const progressToMonth = () => {
-        setCurrentView(VIEWS.MONTH);
-        setMessageIndex(0);
-        setMessages([{ role: 'assistant', content: AI_FLOWS.month.initial }]);
-      };
-
-      const selectSeason = (season) => {
-        setCurrentSeason(season);
-        setCurrentView(VIEWS.SEASON);
-        setMessageIndex(0);
-        const seasonFlow = AI_FLOWS.season[season];
-        setMessages([{ role: 'assistant', content: seasonFlow.initial }]);
-      };
-
-      const handleAddEvent = (eventData) => {
-        setEvents(prev => [...prev, { ...eventData, id: Date.now() }]);
-        setShowEventModal(false);
-      };
-
-      const handleDeleteEvent = (eventId) => {
-        setEvents(prev => prev.filter(e => e.id !== eventId));
+      const getViewLabel = (view) => {
+        const labels = {
+          [VIEWS.VALUES]: 'Values',
+          [VIEWS.WHEEL]: 'Life Areas',
+          [VIEWS.SEASONS]: 'Seasons',
+          [VIEWS.GOALS]: 'Goals',
+          [VIEWS.MONTH]: 'Month',
+        };
+        return labels[view];
       };
 
       return (
-        <div style={styles.container}>
+        <div style={{...styles.container, backgroundColor: theme.colors.bgMain}}>
+          <PatternOverlay pattern={theme.pattern} />
+          
           {/* Header */}
-          <header style={styles.header}>
-            <div style={styles.logoContainer}>
-              <h1 style={styles.logo}>tend</h1>
-            </div>
-            <nav style={styles.nav}>
-              <button 
-                style={{
-                  ...styles.navButton,
-                  ...(currentView === VIEWS.YEAR && styles.navButtonActive)
-                }}
-                onClick={() => {
-                  setCurrentView(VIEWS.YEAR);
-                  setMessages([{ role: 'assistant', content: AI_FLOWS.year.initial }]);
-                  setMessageIndex(0);
-                }}
-              >
-                Year
-              </button>
-              <button 
-                style={{
-                  ...styles.navButton,
-                  ...(currentView === VIEWS.SEASON && styles.navButtonActive)
-                }}
-                onClick={() => progressToSeason()}
-              >
-                Season
-              </button>
-              <button 
-                style={{
-                  ...styles.navButton,
-                  ...(currentView === VIEWS.MONTH && styles.navButtonActive)
-                }}
-                onClick={() => progressToMonth()}
-              >
-                Month
-              </button>
+          <header style={{...styles.header, backgroundColor: theme.colors.bgCard, borderBottom: `1px solid ${theme.colors.border}`}}>
+            <Logo />
+            <nav style={{...styles.nav, backgroundColor: theme.colors.bgElevated}}>
+              {Object.values(VIEWS).map(view => (
+                <button 
+                  key={view}
+                  style={{
+                    ...styles.navButton,
+                    color: currentView === view ? theme.colors.text : theme.colors.textMuted,
+                    backgroundColor: currentView === view ? theme.colors.bgCard : 'transparent',
+                    boxShadow: currentView === view ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
+                  }}
+                  onClick={() => navigateTo(view)}
+                >
+                  {getViewLabel(view)}
+                </button>
+              ))}
             </nav>
+            <button 
+              style={{
+                ...styles.themeButton,
+                backgroundColor: theme.colors.bgElevated,
+                color: theme.colors.textLight,
+                border: `1px solid ${theme.colors.border}`,
+              }}
+              onClick={() => setShowThemeSelector(true)}
+            >
+              ◐
+            </button>
           </header>
 
           {/* Main Content */}
           <main style={styles.main}>
             {/* Visualization Panel */}
-            <div style={styles.vizPanel}>
-              {currentView === VIEWS.YEAR && <YearView onSelectSeason={selectSeason} />}
-              {currentView === VIEWS.SEASON && (
-                <SeasonView 
-                  currentSeason={currentSeason} 
-                  onNextSeason={progressToNextSeason}
-                  onSelectSeason={selectSeason}
-                />
-              )}
-              {currentView === VIEWS.MONTH && (
-                <MonthView 
-                  events={events}
-                  onAddEvent={() => setShowEventModal(true)}
-                  onDeleteEvent={handleDeleteEvent}
-                />
-              )}
+            <div style={{...styles.vizPanel, backgroundColor: theme.colors.bgMain}}>
+              {currentView === VIEWS.VALUES && <ValuesView values={values} setValues={setValues} />}
+              {currentView === VIEWS.WHEEL && <WheelView ratings={wheelRatings} setRatings={setWheelRatings} />}
+              {currentView === VIEWS.SEASONS && <SeasonsView intentions={seasonalIntentions} setIntentions={setSeasonalIntentions} />}
+              {currentView === VIEWS.GOALS && <GoalsView goals={goals} setGoals={setGoals} lifeAreas={LIFE_AREAS} />}
+              {currentView === VIEWS.MONTH && <MonthView events={events} onAddEvent={() => setShowEventModal(true)} onDeleteEvent={(id) => setEvents(prev => prev.filter(e => e.id !== id))} />}
             </div>
 
             {/* Chat Panel */}
-            <div style={styles.chatPanel}>
+            <div style={{...styles.chatPanel, backgroundColor: theme.colors.bgCard, borderLeft: `1px solid ${theme.colors.border}`}}>
               <div style={styles.chatMessages}>
                 {messages.map((msg, idx) => (
                   <ChatMessage key={idx} message={msg} />
@@ -418,148 +581,384 @@
                 <div ref={messagesEndRef} />
               </div>
               
-              <div style={styles.chatInputArea}>
-                <textarea
-                  style={styles.chatInput}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  placeholder="Share what's on your mind..."
-                  rows={3}
-                />
-                <div style={styles.chatActions}>
-                  {currentView === VIEWS.YEAR && messageIndex >= 2 && (
-                    <button style={styles.progressButton} onClick={progressToSeason}>
-                      Continue to Seasons →
-                    </button>
-                  )}
-                  {currentView === VIEWS.SEASON && messageIndex >= 1 && (
-                    <button style={styles.progressButton} onClick={progressToNextSeason}>
-                      {currentSeason === 'fall' ? 'Continue to Month →' : 'Next Season →'}
-                    </button>
-                  )}
+              <div style={{...styles.chatInputArea, borderTop: `1px solid ${theme.colors.border}`}}>
+                {showIntro ? (
                   <button 
                     style={{
-                      ...styles.sendButton,
-                      ...(inputValue.trim() ? {} : styles.sendButtonDisabled)
+                      ...styles.beginButton,
+                      backgroundColor: theme.colors.accent,
                     }}
-                    onClick={handleSendMessage}
-                    disabled={!inputValue.trim()}
+                    onClick={startJourney}
                   >
-                    ↑
+                    Begin →
                   </button>
-                </div>
+                ) : (
+                  <>
+                    <textarea
+                      style={{
+                        ...styles.chatInput,
+                        backgroundColor: theme.colors.bgElevated,
+                        border: `1px solid ${theme.colors.border}`,
+                        color: theme.colors.text,
+                      }}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                      placeholder="Share what's on your mind..."
+                      rows={3}
+                    />
+                    <div style={styles.chatActions}>
+                      {messageIndex >= 2 && currentView !== VIEWS.MONTH && (
+                        <button 
+                          style={{
+                            ...styles.progressButton,
+                            backgroundColor: theme.colors.bgElevated,
+                            border: `1px solid ${theme.colors.borderDark}`,
+                            color: theme.colors.text,
+                          }}
+                          onClick={() => {
+                            const viewOrder = Object.values(VIEWS);
+                            const currentIndex = viewOrder.indexOf(currentView);
+                            if (currentIndex < viewOrder.length - 1) {
+                              navigateTo(viewOrder[currentIndex + 1]);
+                            }
+                          }}
+                        >
+                          Continue →
+                        </button>
+                      )}
+                      <button 
+                        style={{
+                          ...styles.sendButton,
+                          backgroundColor: inputValue.trim() ? theme.colors.accent : theme.colors.border,
+                        }}
+                        onClick={handleSendMessage}
+                        disabled={!inputValue.trim()}
+                      >
+                        ↑
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </main>
 
-          {/* Event Modal */}
+          <ThemeSelector isOpen={showThemeSelector} onClose={() => setShowThemeSelector(false)} />
           {showEventModal && (
             <EventModal 
               onClose={() => setShowEventModal(false)}
-              onAdd={handleAddEvent}
+              onAdd={(event) => {
+                setEvents(prev => [...prev, { ...event, id: Date.now() }]);
+                setShowEventModal(false);
+              }}
             />
           )}
         </div>
       );
     }
 
-    // ============ YEAR VIEW ============
-    function YearView({ onSelectSeason }) {
-      const year = new Date().getFullYear();
-      
+    // ============ VALUES VIEW ============
+    function ValuesView({ values, setValues }) {
+      const { theme } = useContext(ThemeContext);
+      const [inputValue, setInputValue] = useState('');
+
+      const suggestedValues = ['Freedom', 'Connection', 'Growth', 'Creativity', 'Adventure', 'Stability', 'Compassion', 'Authenticity', 'Courage', 'Joy', 'Peace', 'Excellence'];
+
+      const addValue = (value) => {
+        if (values.length < 5 && !values.includes(value)) {
+          setValues([...values, value]);
+        }
+      };
+
+      const removeValue = (value) => {
+        setValues(values.filter(v => v !== value));
+      };
+
       return (
-        <div style={styles.yearView} className="fade-up">
-          <div style={styles.yearHeader}>
-            <span style={styles.yearLabel}>Planning</span>
-            <h2 style={styles.yearNumber}>{year}</h2>
-          </div>
-          
-          <div style={styles.yearGrid}>
-            {Object.entries(SEASONS).map(([key, season], idx) => (
-              <button 
-                key={key}
-                style={{
-                  ...styles.seasonCard,
-                  animationDelay: `${idx * 0.1}s`,
-                  borderColor: season.softColor,
-                }}
-                className="fade-up"
-                onClick={() => onSelectSeason(key)}
-              >
-                <span style={{...styles.seasonCardIcon, color: season.color}}>{season.icon}</span>
-                <h3 style={{...styles.seasonCardName, color: season.color}}>{season.name}</h3>
-                <p style={styles.seasonCardEssence}>{season.essence}</p>
-                <div style={styles.seasonCardMonths}>
-                  {season.months.map(month => (
-                    <span key={month} style={styles.seasonCardMonth}>{month.slice(0, 3)}</span>
-                  ))}
-                </div>
-              </button>
-            ))}
+        <div style={styles.viewContainer} className="fade-up">
+          <div style={styles.viewHeader}>
+            <span style={{...styles.viewLabel, color: theme.colors.textMuted}}>Foundation</span>
+            <h2 style={{...styles.viewTitle, color: theme.colors.text}}>Your Values</h2>
+            <p style={{...styles.viewSubtitle, color: theme.colors.textLight}}>Select up to 5 values that guide how you want to live</p>
           </div>
 
-          <p style={styles.yearHint}>
-            Click a season to explore, or chat with Tend to start designing your year.
-          </p>
+          {/* Selected Values */}
+          <div style={{...styles.valuesSelected, backgroundColor: theme.colors.bgCard, border: `1px solid ${theme.colors.border}`}}>
+            {values.length === 0 ? (
+              <p style={{color: theme.colors.textMuted, fontStyle: 'italic'}}>Your values will appear here</p>
+            ) : (
+              <div style={styles.valuesChips}>
+                {values.map(value => (
+                  <div 
+                    key={value} 
+                    style={{
+                      ...styles.valueChipSelected,
+                      backgroundColor: theme.colors.accentLight,
+                      border: `1px solid ${theme.colors.accent}`,
+                      color: theme.colors.accent,
+                    }}
+                  >
+                    {value}
+                    <button 
+                      style={{...styles.valueChipRemove, color: theme.colors.accent}}
+                      onClick={() => removeValue(value)}
+                    >×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Suggested Values */}
+          <div style={styles.valuesSuggestions}>
+            <p style={{...styles.suggestionsLabel, color: theme.colors.textMuted}}>Suggestions</p>
+            <div style={styles.valuesChips}>
+              {suggestedValues.filter(v => !values.includes(v)).map(value => (
+                <button
+                  key={value}
+                  style={{
+                    ...styles.valueChip,
+                    backgroundColor: theme.colors.bgElevated,
+                    border: `1px solid ${theme.colors.border}`,
+                    color: theme.colors.text,
+                  }}
+                  onClick={() => addValue(value)}
+                  disabled={values.length >= 5}
+                >
+                  {value}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Custom Value Input */}
+          <div style={styles.customValueInput}>
+            <input
+              type="text"
+              placeholder="Or add your own..."
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && inputValue.trim()) {
+                  addValue(inputValue.trim());
+                  setInputValue('');
+                }
+              }}
+              style={{
+                ...styles.formInput,
+                backgroundColor: theme.colors.bgElevated,
+                border: `1px solid ${theme.colors.border}`,
+                color: theme.colors.text,
+              }}
+            />
+          </div>
         </div>
       );
     }
 
-    // ============ SEASON VIEW ============
-    function SeasonView({ currentSeason, onNextSeason, onSelectSeason }) {
-      const season = SEASONS[currentSeason];
-      const seasonOrder = ['winter', 'spring', 'summer', 'fall'];
-      
+    // ============ WHEEL VIEW ============
+    function WheelView({ ratings, setRatings }) {
+      const { theme } = useContext(ThemeContext);
+
       return (
-        <div style={styles.seasonView} className="fade-up">
-          {/* Season tabs */}
-          <div style={styles.seasonTabs}>
-            {seasonOrder.map(key => (
-              <button
-                key={key}
-                style={{
-                  ...styles.seasonTab,
-                  ...(currentSeason === key && {
-                    backgroundColor: SEASONS[key].lightColor,
-                    color: SEASONS[key].color,
-                    borderColor: SEASONS[key].color,
-                  })
-                }}
-                onClick={() => onSelectSeason(key)}
-              >
-                {SEASONS[key].name}
-              </button>
-            ))}
+        <div style={styles.viewContainer} className="fade-up">
+          <div style={styles.viewHeader}>
+            <span style={{...styles.viewLabel, color: theme.colors.textMuted}}>Assessment</span>
+            <h2 style={{...styles.viewTitle, color: theme.colors.text}}>Wheel of Life</h2>
+            <p style={{...styles.viewSubtitle, color: theme.colors.textLight}}>Rate how fulfilled you feel in each area (1-10)</p>
           </div>
 
-          <div style={styles.seasonContent}>
-            <div style={styles.seasonHeader}>
-              <span style={{...styles.seasonIcon, color: season.color}}>{season.icon}</span>
-              <h2 style={{...styles.seasonName, color: season.color}}>{season.name}</h2>
-              <p style={styles.seasonEssence}>{season.essence}</p>
-            </div>
-            
-            <div style={styles.seasonMonths}>
-              {season.months.map((month, idx) => (
-                <div 
-                  key={month} 
-                  style={{
-                    ...styles.seasonMonth,
-                    backgroundColor: season.lightColor,
-                    borderColor: season.softColor,
-                  }}
-                  className="fade-up"
-                >
-                  <span style={styles.seasonMonthName}>{month}</span>
+          <div style={styles.wheelGrid}>
+            {Object.entries(LIFE_AREAS).map(([key, area]) => (
+              <div 
+                key={key} 
+                style={{
+                  ...styles.wheelCard,
+                  backgroundColor: theme.colors.bgCard,
+                  border: `1px solid ${theme.colors.border}`,
+                }}
+              >
+                <div style={styles.wheelCardHeader}>
+                  <span style={{...styles.wheelIcon, color: area.color}}>{area.icon}</span>
+                  <span style={{color: theme.colors.text, fontWeight: 500}}>{area.name}</span>
                 </div>
+                <div style={styles.wheelSlider}>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={ratings[key] || 5}
+                    onChange={(e) => setRatings({...ratings, [key]: parseInt(e.target.value)})}
+                    style={{
+                      ...styles.slider,
+                      accentColor: area.color,
+                    }}
+                  />
+                  <span style={{
+                    ...styles.wheelValue,
+                    color: area.color,
+                  }}>{ratings[key] || 5}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ============ SEASONS VIEW ============
+    function SeasonsView({ intentions, setIntentions }) {
+      const { theme } = useContext(ThemeContext);
+
+      return (
+        <div style={styles.viewContainer} className="fade-up">
+          <div style={styles.viewHeader}>
+            <span style={{...styles.viewLabel, color: theme.colors.textMuted}}>Planning</span>
+            <h2 style={{...styles.viewTitle, color: theme.colors.text}}>Seasonal Intentions</h2>
+            <p style={{...styles.viewSubtitle, color: theme.colors.textLight}}>Map your focus areas to the natural rhythm of the year</p>
+          </div>
+
+          <div style={styles.seasonsGrid}>
+            {Object.entries(SEASONS).map(([key, season]) => (
+              <div 
+                key={key}
+                style={{
+                  ...styles.seasonCard,
+                  backgroundColor: theme.colors.bgCard,
+                  border: `1px solid ${theme.colors.border}`,
+                }}
+              >
+                <div style={styles.seasonCardHeader}>
+                  <span style={{color: season.color, fontSize: '1.5rem'}}>{season.icon}</span>
+                  <h3 style={{color: season.color, fontFamily: "'Fraunces', serif"}}>{season.name}</h3>
+                  <span style={{color: theme.colors.textMuted, fontSize: '0.8rem'}}>
+                    {season.months.join(' · ')}
+                  </span>
+                </div>
+                <textarea
+                  placeholder="What's your focus this season?"
+                  value={intentions[key] || ''}
+                  onChange={(e) => setIntentions({...intentions, [key]: e.target.value})}
+                  style={{
+                    ...styles.seasonTextarea,
+                    backgroundColor: theme.colors.bgElevated,
+                    border: `1px solid ${theme.colors.border}`,
+                    color: theme.colors.text,
+                  }}
+                  rows={3}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ============ GOALS VIEW ============
+    function GoalsView({ goals, setGoals, lifeAreas }) {
+      const { theme } = useContext(ThemeContext);
+      const [newGoal, setNewGoal] = useState({ text: '', area: 'health' });
+
+      const addGoal = () => {
+        if (newGoal.text.trim()) {
+          setGoals([...goals, { ...newGoal, id: Date.now() }]);
+          setNewGoal({ text: '', area: 'health' });
+        }
+      };
+
+      return (
+        <div style={styles.viewContainer} className="fade-up">
+          <div style={styles.viewHeader}>
+            <span style={{...styles.viewLabel, color: theme.colors.textMuted}}>Accountability</span>
+            <h2 style={{...styles.viewTitle, color: theme.colors.text}}>Goals & Milestones</h2>
+            <p style={{...styles.viewSubtitle, color: theme.colors.textLight}}>Define what success looks like for your focus areas</p>
+          </div>
+
+          {/* Add Goal Form */}
+          <div style={{
+            ...styles.addGoalForm,
+            backgroundColor: theme.colors.bgCard,
+            border: `1px solid ${theme.colors.border}`,
+          }}>
+            <input
+              type="text"
+              placeholder="What do you want to achieve?"
+              value={newGoal.text}
+              onChange={(e) => setNewGoal({...newGoal, text: e.target.value})}
+              onKeyDown={(e) => e.key === 'Enter' && addGoal()}
+              style={{
+                ...styles.formInput,
+                backgroundColor: theme.colors.bgElevated,
+                border: `1px solid ${theme.colors.border}`,
+                color: theme.colors.text,
+                flex: 1,
+              }}
+            />
+            <select
+              value={newGoal.area}
+              onChange={(e) => setNewGoal({...newGoal, area: e.target.value})}
+              style={{
+                ...styles.formSelect,
+                backgroundColor: theme.colors.bgElevated,
+                border: `1px solid ${theme.colors.border}`,
+                color: theme.colors.text,
+              }}
+            >
+              {Object.entries(lifeAreas).map(([key, area]) => (
+                <option key={key} value={key}>{area.name}</option>
               ))}
-            </div>
+            </select>
+            <button
+              onClick={addGoal}
+              style={{
+                ...styles.addGoalButton,
+                backgroundColor: theme.colors.accent,
+              }}
+            >
+              Add
+            </button>
+          </div>
+
+          {/* Goals List */}
+          <div style={styles.goalsList}>
+            {goals.length === 0 ? (
+              <p style={{color: theme.colors.textMuted, textAlign: 'center', padding: '2rem'}}>
+                Your goals will appear here
+              </p>
+            ) : (
+              goals.map(goal => (
+                <div 
+                  key={goal.id}
+                  style={{
+                    ...styles.goalCard,
+                    backgroundColor: theme.colors.bgCard,
+                    borderLeft: `3px solid ${lifeAreas[goal.area].color}`,
+                  }}
+                >
+                  <div>
+                    <span style={{
+                      ...styles.goalArea,
+                      color: lifeAreas[goal.area].color,
+                    }}>
+                      {lifeAreas[goal.area].icon} {lifeAreas[goal.area].name}
+                    </span>
+                    <p style={{color: theme.colors.text}}>{goal.text}</p>
+                  </div>
+                  <button
+                    onClick={() => setGoals(goals.filter(g => g.id !== goal.id))}
+                    style={{...styles.goalDelete, color: theme.colors.textMuted}}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
       );
@@ -567,6 +966,7 @@
 
     // ============ MONTH VIEW ============
     function MonthView({ events, onAddEvent, onDeleteEvent }) {
+      const { theme } = useContext(ThemeContext);
       const now = new Date();
       const currentMonth = now.getMonth();
       const currentYear = now.getFullYear();
@@ -574,6 +974,15 @@
                          'July', 'August', 'September', 'October', 'November', 'December'][currentMonth];
       const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
       const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+
+      const EVENT_TYPES = {
+        trip: { label: 'Trip', color: '#7A9CAD' },
+        rest: { label: 'Rest', color: '#7D9B76' },
+        dateNight: { label: 'Date Night', color: '#C48B8B' },
+        personal: { label: 'Personal', color: '#9B8AAE' },
+        work: { label: 'Work', color: '#6B6660' },
+        partner: { label: 'Partner', color: '#C9A66B' },
+      };
 
       const getEventsForDay = (day) => {
         const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
@@ -586,16 +995,20 @@
       };
 
       return (
-        <div style={styles.monthView} className="fade-up">
-          <div style={styles.monthHeader}>
-            <h2 style={styles.monthName}>{monthName}</h2>
-            <span style={styles.monthYear}>{currentYear}</span>
+        <div style={styles.viewContainer} className="fade-up">
+          <div style={styles.viewHeader}>
+            <span style={{...styles.viewLabel, color: theme.colors.textMuted}}>Tactical</span>
+            <h2 style={{...styles.viewTitle, color: theme.colors.text}}>{monthName} {currentYear}</h2>
           </div>
 
-          <div style={styles.calendarContainer}>
+          <div style={{
+            ...styles.calendarContainer,
+            backgroundColor: theme.colors.bgCard,
+            border: `1px solid ${theme.colors.border}`,
+          }}>
             <div style={styles.calendarGrid}>
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, idx) => (
-                <div key={idx} style={styles.calendarDayHeader}>{day}</div>
+                <div key={idx} style={{...styles.calendarDayHeader, color: theme.colors.textMuted}}>{day}</div>
               ))}
               
               {Array.from({ length: firstDay }, (_, i) => (
@@ -612,15 +1025,14 @@
                     key={day} 
                     style={{
                       ...styles.calendarDay,
-                      ...(isToday && styles.calendarDayToday),
-                      ...(dayEvents.length > 0 && {
-                        backgroundColor: EVENT_TYPES[dayEvents[0].type].lightColor,
-                      })
+                      backgroundColor: theme.colors.bgElevated,
+                      border: isToday ? `2px solid ${theme.colors.accent}` : 'none',
                     }}
                   >
                     <span style={{
                       ...styles.calendarDayNumber,
-                      ...(isToday && styles.calendarDayNumberToday)
+                      color: isToday ? theme.colors.accent : theme.colors.textLight,
+                      fontWeight: isToday ? 600 : 400,
                     }}>{day}</span>
                     {dayEvents.length > 0 && (
                       <div style={styles.calendarDayDots}>
@@ -629,7 +1041,7 @@
                             key={idx} 
                             style={{
                               ...styles.calendarDayDot,
-                              backgroundColor: EVENT_TYPES[event.type].color
+                              backgroundColor: EVENT_TYPES[event.type]?.color || theme.colors.accent,
                             }}
                           />
                         ))}
@@ -641,18 +1053,27 @@
             </div>
           </div>
 
-          <div style={styles.eventsList}>
+          <div style={{
+            ...styles.eventsList,
+            backgroundColor: theme.colors.bgCard,
+            border: `1px solid ${theme.colors.border}`,
+          }}>
             <div style={styles.eventsHeader}>
-              <h3 style={styles.eventsTitle}>Planned Moments</h3>
-              <button style={styles.addEventButton} onClick={onAddEvent}>
+              <h3 style={{...styles.eventsTitle, color: theme.colors.text}}>Planned Moments</h3>
+              <button 
+                style={{...styles.addEventButton, backgroundColor: theme.colors.accent}}
+                onClick={onAddEvent}
+              >
                 + Add
               </button>
             </div>
             
             {events.length === 0 ? (
               <div style={styles.eventsEmpty}>
-                <p style={styles.eventsEmptyText}>Nothing scheduled yet.</p>
-                <p style={styles.eventsEmptyHint}>What do you want to make space for?</p>
+                <p style={{color: theme.colors.textLight}}>Nothing scheduled yet.</p>
+                <p style={{color: theme.colors.textMuted, fontStyle: 'italic', fontSize: '0.85rem'}}>
+                  What do you want to make space for?
+                </p>
               </div>
             ) : (
               <div style={styles.eventsGrid}>
@@ -661,32 +1082,24 @@
                     key={event.id} 
                     style={{
                       ...styles.eventCard,
-                      borderLeftColor: EVENT_TYPES[event.type].color,
-                      backgroundColor: EVENT_TYPES[event.type].lightColor,
+                      backgroundColor: theme.colors.bgElevated,
+                      borderLeftColor: EVENT_TYPES[event.type]?.color || theme.colors.accent,
                     }}
                   >
                     <div style={styles.eventCardContent}>
-                      <div style={styles.eventCardTop}>
-                        <span style={{...styles.eventCardIcon, color: EVENT_TYPES[event.type].color}}>
-                          {EVENT_TYPES[event.type].icon}
-                        </span>
-                        <span style={styles.eventCardType}>{EVENT_TYPES[event.type].label}</span>
-                        {event.isShared && <span style={styles.eventCardShared}>shared</span>}
-                      </div>
-                      <h4 style={styles.eventCardTitle}>{event.title}</h4>
-                      <p style={styles.eventCardDate}>
+                      <span style={{...styles.eventCardType, color: theme.colors.textMuted}}>
+                        {EVENT_TYPES[event.type]?.label || event.type}
+                      </span>
+                      <p style={{color: theme.colors.text, fontWeight: 500}}>{event.title}</p>
+                      <span style={{color: theme.colors.textMuted, fontSize: '0.8rem'}}>
                         {new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        {event.startDate !== event.endDate && (
-                          <> – {new Date(event.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</>
-                        )}
-                      </p>
+                        {event.startDate !== event.endDate && ` – ${new Date(event.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
+                      </span>
                     </div>
                     <button 
-                      style={styles.eventCardDelete}
+                      style={{...styles.eventCardDelete, color: theme.colors.textMuted}}
                       onClick={() => onDeleteEvent(event.id)}
-                    >
-                      ×
-                    </button>
+                    >×</button>
                   </div>
                 ))}
               </div>
@@ -698,42 +1111,58 @@
 
     // ============ CHAT COMPONENTS ============
     function ChatMessage({ message }) {
+      const { theme } = useContext(ThemeContext);
       const isAssistant = message.role === 'assistant';
       
       return (
         <div style={{
           ...styles.chatMessage,
-          ...(isAssistant ? styles.chatMessageAssistant : styles.chatMessageUser)
+          justifyContent: isAssistant ? 'flex-start' : 'flex-end',
         }} className="fade-in">
           {isAssistant && (
-            <div style={styles.chatAvatar}>
-              <span style={styles.chatAvatarText}>T</span>
+            <div style={{
+              ...styles.chatAvatar,
+              backgroundColor: theme.colors.accentLight,
+              border: `1px solid ${theme.colors.accent}`,
+            }}>
+              <span style={{...styles.chatAvatarText, color: theme.colors.accent}}>T</span>
             </div>
           )}
           <div style={{
             ...styles.chatBubble,
-            ...(isAssistant ? styles.chatBubbleAssistant : styles.chatBubbleUser)
+            backgroundColor: isAssistant ? theme.colors.bgElevated : theme.colors.accent,
+            color: isAssistant ? theme.colors.text : 'white',
+            borderTopLeftRadius: isAssistant ? '4px' : '14px',
+            borderTopRightRadius: isAssistant ? '14px' : '4px',
           }}>
-            {message.content.split('\n').map((line, i) => (
-              <p key={i} style={{ marginBottom: line ? '0.75rem' : '0' }}>
-                {line}
-              </p>
-            ))}
+            <div dangerouslySetInnerHTML={{ 
+              __html: message.content
+                .replace(/\n/g, '<br/>')
+                .replace(/<em>/g, '<em style="font-style: italic;">')
+            }} />
           </div>
         </div>
       );
     }
 
     function TypingIndicator() {
+      const { theme } = useContext(ThemeContext);
       return (
         <div style={styles.chatMessage} className="fade-in">
-          <div style={styles.chatAvatar}>
-            <span style={styles.chatAvatarText}>T</span>
+          <div style={{
+            ...styles.chatAvatar,
+            backgroundColor: theme.colors.accentLight,
+            border: `1px solid ${theme.colors.accent}`,
+          }}>
+            <span style={{...styles.chatAvatarText, color: theme.colors.accent}}>T</span>
           </div>
-          <div style={styles.typingBubble}>
-            <span style={{...styles.typingDot, animationDelay: '0s'}}>•</span>
-            <span style={{...styles.typingDot, animationDelay: '0.15s'}}>•</span>
-            <span style={{...styles.typingDot, animationDelay: '0.3s'}}>•</span>
+          <div style={{
+            ...styles.typingBubble,
+            backgroundColor: theme.colors.bgElevated,
+          }}>
+            <span style={{...styles.typingDot, color: theme.colors.accent, animationDelay: '0s'}}>•</span>
+            <span style={{...styles.typingDot, color: theme.colors.accent, animationDelay: '0.15s'}}>•</span>
+            <span style={{...styles.typingDot, color: theme.colors.accent, animationDelay: '0.3s'}}>•</span>
           </div>
         </div>
       );
@@ -741,40 +1170,65 @@
 
     // ============ EVENT MODAL ============
     function EventModal({ onClose, onAdd }) {
+      const { theme } = useContext(ThemeContext);
       const [title, setTitle] = useState('');
       const [type, setType] = useState('trip');
       const [startDate, setStartDate] = useState('');
       const [endDate, setEndDate] = useState('');
-      const [isShared, setIsShared] = useState(false);
+
+      const EVENT_TYPES = {
+        trip: { label: 'Trip', color: '#7A9CAD' },
+        rest: { label: 'Rest', color: '#7D9B76' },
+        dateNight: { label: 'Date Night', color: '#C48B8B' },
+        personal: { label: 'Personal', color: '#9B8AAE' },
+        work: { label: 'Work', color: '#6B6660' },
+        partner: { label: 'Partner', color: '#C9A66B' },
+      };
 
       const handleSubmit = (e) => {
         e.preventDefault();
         if (!title || !startDate || !endDate) return;
-        onAdd({ title, type, startDate, endDate, isShared });
+        onAdd({ title, type, startDate, endDate });
       };
 
       return (
         <div style={styles.modalOverlay} onClick={onClose}>
-          <div style={styles.modal} onClick={e => e.stopPropagation()} className="fade-up">
+          <div 
+            style={{
+              ...styles.modal,
+              backgroundColor: theme.colors.bgCard,
+              border: `1px solid ${theme.colors.border}`,
+            }} 
+            onClick={e => e.stopPropagation()} 
+            className="fade-up"
+          >
             <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>Add a moment</h3>
-              <button style={styles.modalClose} onClick={onClose}>×</button>
+              <h3 style={{...styles.modalTitle, color: theme.colors.text}}>Add a moment</h3>
+              <button 
+                style={{...styles.modalClose, backgroundColor: theme.colors.bgElevated, color: theme.colors.textMuted}}
+                onClick={onClose}
+              >×</button>
             </div>
             
             <form onSubmit={handleSubmit} style={styles.modalForm}>
               <div style={styles.formField}>
-                <label style={styles.formLabel}>What is it?</label>
+                <label style={{...styles.formLabel, color: theme.colors.textMuted}}>What is it?</label>
                 <input
                   type="text"
-                  style={styles.formInput}
+                  style={{
+                    ...styles.formInput,
+                    backgroundColor: theme.colors.bgElevated,
+                    border: `1px solid ${theme.colors.border}`,
+                    color: theme.colors.text,
+                  }}
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="Weekend trip, date night, rest day..."
+                  placeholder="Weekend trip, date night..."
                 />
               </div>
 
               <div style={styles.formField}>
-                <label style={styles.formLabel}>Type</label>
+                <label style={{...styles.formLabel, color: theme.colors.textMuted}}>Type</label>
                 <div style={styles.typeSelector}>
                   {Object.entries(EVENT_TYPES).map(([key, value]) => (
                     <button
@@ -782,14 +1236,13 @@
                       type="button"
                       style={{
                         ...styles.typeOption,
-                        ...(type === key && {
-                          borderColor: value.color,
-                          backgroundColor: value.lightColor,
-                        })
+                        backgroundColor: type === key ? `${value.color}20` : theme.colors.bgElevated,
+                        border: type === key ? `2px solid ${value.color}` : `1px solid ${theme.colors.border}`,
+                        color: theme.colors.text,
                       }}
                       onClick={() => setType(key)}
                     >
-                      <span style={{ color: value.color }}>{value.icon}</span>
+                      <span style={{ color: value.color }}>●</span>
                       <span>{value.label}</span>
                     </button>
                   ))}
@@ -798,40 +1251,40 @@
 
               <div style={styles.formRow}>
                 <div style={styles.formField}>
-                  <label style={styles.formLabel}>Start</label>
+                  <label style={{...styles.formLabel, color: theme.colors.textMuted}}>Start</label>
                   <input
                     type="date"
-                    style={styles.formInput}
+                    style={{
+                      ...styles.formInput,
+                      backgroundColor: theme.colors.bgElevated,
+                      border: `1px solid ${theme.colors.border}`,
+                      color: theme.colors.text,
+                    }}
                     value={startDate}
                     onChange={(e) => setStartDate(e.target.value)}
                   />
                 </div>
                 <div style={styles.formField}>
-                  <label style={styles.formLabel}>End</label>
+                  <label style={{...styles.formLabel, color: theme.colors.textMuted}}>End</label>
                   <input
                     type="date"
-                    style={styles.formInput}
+                    style={{
+                      ...styles.formInput,
+                      backgroundColor: theme.colors.bgElevated,
+                      border: `1px solid ${theme.colors.border}`,
+                      color: theme.colors.text,
+                    }}
                     value={endDate}
                     onChange={(e) => setEndDate(e.target.value)}
                   />
                 </div>
               </div>
 
-              <label style={styles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={isShared}
-                  onChange={(e) => setIsShared(e.target.checked)}
-                  style={styles.checkbox}
-                />
-                <span>This is shared with my partner</span>
-              </label>
-
               <button 
                 type="submit" 
                 style={{
                   ...styles.submitButton,
-                  ...(!title || !startDate || !endDate ? styles.submitButtonDisabled : {})
+                  backgroundColor: (!title || !startDate || !endDate) ? theme.colors.border : theme.colors.accent,
                 }}
                 disabled={!title || !startDate || !endDate}
               >
@@ -853,66 +1306,59 @@
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '1.25rem 2.5rem',
-        borderBottom: '1px solid var(--sand)',
-        backgroundColor: 'var(--bg-card)',
+        padding: '1rem 2rem',
         position: 'relative',
         zIndex: 10,
       },
       logoContainer: {
         display: 'flex',
         alignItems: 'center',
-        gap: '0.5rem',
       },
       logo: {
         fontSize: '1.5rem',
         fontFamily: "'Fraunces', serif",
         fontWeight: 400,
-        color: 'var(--charcoal)',
         letterSpacing: '0.02em',
       },
       nav: {
         display: 'flex',
-        gap: '0.25rem',
-        backgroundColor: 'var(--bg-elevated)',
+        gap: '4px',
         padding: '4px',
         borderRadius: '10px',
       },
       navButton: {
-        padding: '0.5rem 1.25rem',
-        backgroundColor: 'transparent',
+        padding: '0.5rem 1rem',
         border: 'none',
         borderRadius: '8px',
-        color: 'var(--charcoal-light)',
-        fontSize: '0.875rem',
+        fontSize: '0.85rem',
         fontFamily: "'DM Sans', sans-serif",
         fontWeight: 500,
         cursor: 'pointer',
         transition: 'all 0.2s ease',
       },
-      navButtonActive: {
-        backgroundColor: 'var(--bg-card)',
-        color: 'var(--charcoal)',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+      themeButton: {
+        width: '36px',
+        height: '36px',
+        borderRadius: '50%',
+        fontSize: '1rem',
+        cursor: 'pointer',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        transition: 'all 0.2s ease',
       },
       main: {
         display: 'grid',
         gridTemplateColumns: '1fr 380px',
         height: 'calc(100vh - 65px)',
         position: 'relative',
-        zIndex: 10,
+        zIndex: 1,
       },
       vizPanel: {
-        padding: '2rem 3rem',
-        display: 'flex',
-        alignItems: 'flex-start',
-        justifyContent: 'center',
+        padding: '2rem',
         overflow: 'auto',
-        backgroundColor: 'var(--bg-main)',
       },
       chatPanel: {
-        backgroundColor: 'var(--bg-card)',
-        borderLeft: '1px solid var(--sand)',
         display: 'flex',
         flexDirection: 'column',
       },
@@ -929,18 +1375,10 @@
         gap: '0.75rem',
         alignItems: 'flex-start',
       },
-      chatMessageAssistant: {
-        justifyContent: 'flex-start',
-      },
-      chatMessageUser: {
-        justifyContent: 'flex-end',
-      },
       chatAvatar: {
         width: '32px',
         height: '32px',
         borderRadius: '50%',
-        backgroundColor: 'var(--sage-light)',
-        border: '1px solid var(--sage-soft)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -949,7 +1387,6 @@
       chatAvatarText: {
         fontFamily: "'Fraunces', serif",
         fontSize: '0.875rem',
-        color: 'var(--sage)',
         fontWeight: 500,
       },
       chatBubble: {
@@ -959,46 +1396,28 @@
         fontSize: '0.9rem',
         lineHeight: 1.6,
       },
-      chatBubbleAssistant: {
-        backgroundColor: 'var(--bg-elevated)',
-        borderTopLeftRadius: '4px',
-        color: 'var(--charcoal)',
-      },
-      chatBubbleUser: {
-        backgroundColor: 'var(--sage)',
-        borderTopRightRadius: '4px',
-        color: 'white',
-      },
       typingBubble: {
         padding: '0.875rem 1rem',
-        backgroundColor: 'var(--bg-elevated)',
         borderRadius: '14px',
         borderTopLeftRadius: '4px',
         display: 'flex',
         gap: '4px',
       },
       typingDot: {
-        color: 'var(--sage)',
         fontSize: '1.25rem',
         lineHeight: 1,
         animation: 'pulse 1s infinite',
       },
       chatInputArea: {
         padding: '1rem 1.25rem 1.25rem',
-        borderTop: '1px solid var(--sand)',
       },
       chatInput: {
         width: '100%',
         padding: '0.875rem 1rem',
-        backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--sand)',
         borderRadius: '12px',
-        color: 'var(--charcoal)',
         fontSize: '0.9rem',
         fontFamily: "'DM Sans', sans-serif",
         resize: 'none',
-        outline: 'none',
-        transition: 'border-color 0.2s ease',
         marginBottom: '0.75rem',
       },
       chatActions: {
@@ -1008,10 +1427,7 @@
       },
       progressButton: {
         padding: '0.5rem 1rem',
-        backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--sand-dark)',
         borderRadius: '20px',
-        color: 'var(--charcoal)',
         fontSize: '0.8rem',
         fontFamily: "'DM Sans', sans-serif",
         cursor: 'pointer',
@@ -1021,7 +1437,6 @@
         width: '38px',
         height: '38px',
         borderRadius: '50%',
-        backgroundColor: 'var(--sage)',
         border: 'none',
         color: 'white',
         fontSize: '1.125rem',
@@ -1032,179 +1447,208 @@
         transition: 'all 0.2s ease',
         marginLeft: 'auto',
       },
-      sendButtonDisabled: {
-        backgroundColor: 'var(--sand)',
-        cursor: 'not-allowed',
+      beginButton: {
+        width: '100%',
+        padding: '1rem',
+        borderRadius: '12px',
+        border: 'none',
+        color: 'white',
+        fontSize: '1rem',
+        fontFamily: "'DM Sans', sans-serif",
+        fontWeight: 500,
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
       },
 
-      // Year View
-      yearView: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '2rem',
-        width: '100%',
+      // View styles
+      viewContainer: {
         maxWidth: '700px',
-        paddingTop: '1rem',
+        margin: '0 auto',
       },
-      yearHeader: {
+      viewHeader: {
         textAlign: 'center',
+        marginBottom: '2rem',
       },
-      yearLabel: {
-        fontSize: '0.875rem',
-        color: 'var(--charcoal-muted)',
+      viewLabel: {
+        fontSize: '0.8rem',
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
       },
-      yearNumber: {
-        fontSize: '3.5rem',
+      viewTitle: {
+        fontSize: '2.5rem',
         fontFamily: "'Fraunces', serif",
-        fontWeight: 400,
-        color: 'var(--charcoal)',
-        marginTop: '-0.25rem',
+        marginTop: '0.25rem',
       },
-      yearGrid: {
+      viewSubtitle: {
+        fontSize: '1rem',
+        marginTop: '0.5rem',
+      },
+
+      // Values view
+      valuesSelected: {
+        padding: '1.5rem',
+        borderRadius: '16px',
+        marginBottom: '1.5rem',
+        minHeight: '80px',
+      },
+      valuesChips: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '0.5rem',
+      },
+      valueChip: {
+        padding: '0.5rem 1rem',
+        borderRadius: '20px',
+        fontSize: '0.875rem',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+      },
+      valueChipSelected: {
+        padding: '0.5rem 1rem',
+        borderRadius: '20px',
+        fontSize: '0.875rem',
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+      },
+      valueChipRemove: {
+        background: 'none',
+        border: 'none',
+        fontSize: '1rem',
+        cursor: 'pointer',
+        padding: 0,
+        lineHeight: 1,
+      },
+      valuesSuggestions: {
+        marginBottom: '1.5rem',
+      },
+      suggestionsLabel: {
+        fontSize: '0.8rem',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        marginBottom: '0.75rem',
+      },
+      customValueInput: {
+        marginTop: '1rem',
+      },
+
+      // Wheel view
+      wheelGrid: {
         display: 'grid',
         gridTemplateColumns: 'repeat(2, 1fr)',
         gap: '1rem',
-        width: '100%',
       },
-      seasonCard: {
-        backgroundColor: 'var(--bg-card)',
-        border: '1px solid var(--sand)',
-        borderRadius: '16px',
-        padding: '1.5rem',
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-        textAlign: 'left',
+      wheelCard: {
+        padding: '1.25rem',
+        borderRadius: '12px',
+      },
+      wheelCardHeader: {
         display: 'flex',
-        flexDirection: 'column',
+        alignItems: 'center',
         gap: '0.5rem',
+        marginBottom: '1rem',
       },
-      seasonCardIcon: {
-        fontSize: '1.5rem',
-      },
-      seasonCardName: {
+      wheelIcon: {
         fontSize: '1.25rem',
-        fontFamily: "'Fraunces', serif",
-        fontWeight: 400,
       },
-      seasonCardEssence: {
-        fontSize: '0.875rem',
-        color: 'var(--charcoal-muted)',
-        fontStyle: 'italic',
-      },
-      seasonCardMonths: {
+      wheelSlider: {
         display: 'flex',
-        gap: '0.5rem',
-        marginTop: '0.5rem',
+        alignItems: 'center',
+        gap: '1rem',
       },
-      seasonCardMonth: {
-        fontSize: '0.75rem',
-        color: 'var(--charcoal-light)',
-        backgroundColor: 'var(--bg-elevated)',
-        padding: '0.25rem 0.5rem',
-        borderRadius: '4px',
+      slider: {
+        flex: 1,
+        height: '6px',
+        borderRadius: '3px',
+        cursor: 'pointer',
       },
-      yearHint: {
-        fontSize: '0.875rem',
-        color: 'var(--charcoal-muted)',
+      wheelValue: {
+        fontWeight: 600,
+        fontSize: '1.25rem',
+        minWidth: '24px',
         textAlign: 'center',
       },
 
-      // Season View
-      seasonView: {
-        display: 'flex',
-        flexDirection: 'column',
+      // Seasons view
+      seasonsGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '1rem',
+      },
+      seasonCard: {
+        padding: '1.5rem',
+        borderRadius: '16px',
+      },
+      seasonCardHeader: {
+        textAlign: 'center',
+        marginBottom: '1rem',
+      },
+      seasonTextarea: {
         width: '100%',
-        maxWidth: '600px',
-        gap: '2rem',
+        padding: '0.75rem',
+        borderRadius: '8px',
+        fontSize: '0.875rem',
+        fontFamily: "'DM Sans', sans-serif",
+        resize: 'none',
       },
-      seasonTabs: {
+
+      // Goals view
+      addGoalForm: {
         display: 'flex',
-        gap: '0.5rem',
-        justifyContent: 'center',
+        gap: '0.75rem',
+        padding: '1rem',
+        borderRadius: '12px',
+        marginBottom: '1.5rem',
       },
-      seasonTab: {
-        padding: '0.5rem 1rem',
-        backgroundColor: 'var(--bg-card)',
-        border: '1px solid var(--sand)',
-        borderRadius: '20px',
-        color: 'var(--charcoal-light)',
+      formSelect: {
+        padding: '0.75rem',
+        borderRadius: '8px',
         fontSize: '0.875rem',
         fontFamily: "'DM Sans', sans-serif",
         cursor: 'pointer',
-        transition: 'all 0.2s ease',
       },
-      seasonContent: {
-        backgroundColor: 'var(--bg-card)',
-        borderRadius: '20px',
-        padding: '2.5rem',
-        textAlign: 'center',
-        border: '1px solid var(--sand)',
+      addGoalButton: {
+        padding: '0.75rem 1.25rem',
+        borderRadius: '8px',
+        border: 'none',
+        color: 'white',
+        fontSize: '0.875rem',
+        fontFamily: "'DM Sans', sans-serif",
+        cursor: 'pointer',
       },
-      seasonHeader: {
-        marginBottom: '2rem',
-      },
-      seasonIcon: {
-        fontSize: '2.5rem',
-        display: 'block',
-        marginBottom: '0.5rem',
-      },
-      seasonName: {
-        fontSize: '2.5rem',
-        fontFamily: "'Fraunces', serif",
-        fontWeight: 400,
-      },
-      seasonEssence: {
-        fontSize: '1rem',
-        color: 'var(--charcoal-muted)',
-        fontStyle: 'italic',
-        marginTop: '0.25rem',
-      },
-      seasonMonths: {
+      goalsList: {
         display: 'flex',
-        gap: '1rem',
-        justifyContent: 'center',
+        flexDirection: 'column',
+        gap: '0.75rem',
       },
-      seasonMonth: {
-        padding: '1rem 1.5rem',
-        borderRadius: '12px',
-        border: '1px solid',
+      goalCard: {
+        padding: '1rem',
+        borderRadius: '8px',
+        borderLeft: '3px solid',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'flex-start',
       },
-      seasonMonthName: {
-        fontSize: '1rem',
-        color: 'var(--charcoal)',
-        fontWeight: 500,
+      goalArea: {
+        fontSize: '0.75rem',
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        marginBottom: '0.25rem',
+        display: 'block',
+      },
+      goalDelete: {
+        background: 'none',
+        border: 'none',
+        fontSize: '1.25rem',
+        cursor: 'pointer',
+        opacity: 0.5,
       },
 
-      // Month View
-      monthView: {
-        width: '100%',
-        maxWidth: '600px',
-      },
-      monthHeader: {
-        display: 'flex',
-        alignItems: 'baseline',
-        gap: '0.75rem',
-        marginBottom: '1.5rem',
-      },
-      monthName: {
-        fontSize: '2rem',
-        fontFamily: "'Fraunces', serif",
-        fontWeight: 400,
-        color: 'var(--charcoal)',
-      },
-      monthYear: {
-        fontSize: '1rem',
-        color: 'var(--charcoal-muted)',
-      },
+      // Month view
       calendarContainer: {
-        backgroundColor: 'var(--bg-card)',
-        borderRadius: '16px',
         padding: '1.25rem',
+        borderRadius: '16px',
         marginBottom: '1.5rem',
-        border: '1px solid var(--sand)',
       },
       calendarGrid: {
         display: 'grid',
@@ -1214,7 +1658,6 @@
       calendarDayHeader: {
         padding: '0.5rem',
         textAlign: 'center',
-        color: 'var(--charcoal-muted)',
         fontSize: '0.75rem',
         fontWeight: 500,
       },
@@ -1223,27 +1666,16 @@
       },
       calendarDay: {
         aspectRatio: '1',
-        backgroundColor: 'var(--bg-elevated)',
         borderRadius: '8px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: '2px',
-        cursor: 'pointer',
-        transition: 'all 0.15s ease',
         position: 'relative',
-      },
-      calendarDayToday: {
-        border: '2px solid var(--sage)',
+        cursor: 'pointer',
       },
       calendarDayNumber: {
         fontSize: '0.875rem',
-        color: 'var(--charcoal-light)',
-      },
-      calendarDayNumberToday: {
-        color: 'var(--sage)',
-        fontWeight: 600,
       },
       calendarDayDots: {
         display: 'flex',
@@ -1257,10 +1689,8 @@
         borderRadius: '50%',
       },
       eventsList: {
-        backgroundColor: 'var(--bg-card)',
-        borderRadius: '16px',
         padding: '1.25rem',
-        border: '1px solid var(--sand)',
+        borderRadius: '16px',
       },
       eventsHeader: {
         display: 'flex',
@@ -1269,34 +1699,19 @@
         marginBottom: '1rem',
       },
       eventsTitle: {
-        fontSize: '1rem',
         fontFamily: "'Fraunces', serif",
-        color: 'var(--charcoal)',
       },
       addEventButton: {
         padding: '0.4rem 0.875rem',
-        backgroundColor: 'var(--sage)',
-        border: 'none',
         borderRadius: '16px',
+        border: 'none',
         color: 'white',
         fontSize: '0.8rem',
-        fontFamily: "'DM Sans', sans-serif",
         cursor: 'pointer',
-        transition: 'all 0.2s ease',
       },
       eventsEmpty: {
         textAlign: 'center',
         padding: '1.5rem',
-      },
-      eventsEmptyText: {
-        color: 'var(--charcoal-light)',
-        fontSize: '0.9rem',
-      },
-      eventsEmptyHint: {
-        color: 'var(--charcoal-muted)',
-        fontSize: '0.85rem',
-        fontStyle: 'italic',
-        marginTop: '0.25rem',
       },
       eventsGrid: {
         display: 'flex',
@@ -1304,8 +1719,8 @@
         gap: '0.75rem',
       },
       eventCard: {
-        borderRadius: '10px',
         padding: '0.875rem 1rem',
+        borderRadius: '8px',
         borderLeft: '3px solid',
         display: 'flex',
         justifyContent: 'space-between',
@@ -1314,53 +1729,39 @@
       eventCardContent: {
         flex: 1,
       },
-      eventCardTop: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        marginBottom: '0.25rem',
-      },
-      eventCardIcon: {
-        fontSize: '0.8rem',
-      },
       eventCardType: {
         fontSize: '0.7rem',
-        color: 'var(--charcoal-muted)',
         textTransform: 'uppercase',
         letterSpacing: '0.04em',
       },
-      eventCardShared: {
-        fontSize: '0.65rem',
-        padding: '0.125rem 0.4rem',
-        backgroundColor: 'rgba(0,0,0,0.06)',
-        borderRadius: '8px',
-        color: 'var(--charcoal-muted)',
-      },
-      eventCardTitle: {
-        fontSize: '0.95rem',
-        color: 'var(--charcoal)',
-        fontFamily: "'DM Sans', sans-serif",
-        fontWeight: 500,
-      },
-      eventCardDate: {
-        fontSize: '0.8rem',
-        color: 'var(--charcoal-muted)',
-        marginTop: '0.125rem',
-      },
       eventCardDelete: {
-        width: '24px',
-        height: '24px',
-        borderRadius: '50%',
-        backgroundColor: 'transparent',
+        background: 'none',
         border: 'none',
-        color: 'var(--charcoal-muted)',
         fontSize: '1.125rem',
         cursor: 'pointer',
         opacity: 0.5,
-        transition: 'opacity 0.15s ease',
+      },
+
+      // Theme selector
+      themeGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '0.75rem',
+      },
+      themeOption: {
+        padding: '0.75rem',
+        borderRadius: '12px',
+        cursor: 'pointer',
         display: 'flex',
+        flexDirection: 'column',
         alignItems: 'center',
-        justifyContent: 'center',
+        gap: '0.5rem',
+        transition: 'all 0.2s ease',
+      },
+      themePreview: {
+        width: '100%',
+        height: '50px',
+        borderRadius: '8px',
       },
 
       // Modal
@@ -1378,12 +1779,10 @@
         backdropFilter: 'blur(2px)',
       },
       modal: {
-        backgroundColor: 'var(--bg-card)',
         borderRadius: '20px',
         padding: '1.75rem',
         width: '90%',
         maxWidth: '420px',
-        border: '1px solid var(--sand)',
         boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
       },
       modalHeader: {
@@ -1395,15 +1794,12 @@
       modalTitle: {
         fontSize: '1.25rem',
         fontFamily: "'Fraunces', serif",
-        color: 'var(--charcoal)',
       },
       modalClose: {
         width: '30px',
         height: '30px',
         borderRadius: '50%',
-        backgroundColor: 'var(--bg-elevated)',
         border: 'none',
-        color: 'var(--charcoal-muted)',
         fontSize: '1.125rem',
         cursor: 'pointer',
         display: 'flex',
@@ -1427,21 +1823,15 @@
       },
       formLabel: {
         fontSize: '0.75rem',
-        color: 'var(--charcoal-muted)',
         textTransform: 'uppercase',
         letterSpacing: '0.05em',
         fontWeight: 500,
       },
       formInput: {
         padding: '0.75rem 1rem',
-        backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--sand)',
         borderRadius: '10px',
-        color: 'var(--charcoal)',
         fontSize: '0.9rem',
         fontFamily: "'DM Sans', sans-serif",
-        outline: 'none',
-        transition: 'border-color 0.2s ease',
       },
       typeSelector: {
         display: 'grid',
@@ -1450,10 +1840,7 @@
       },
       typeOption: {
         padding: '0.625rem 0.5rem',
-        backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--sand)',
         borderRadius: '10px',
-        color: 'var(--charcoal)',
         fontSize: '0.75rem',
         fontFamily: "'DM Sans', sans-serif",
         cursor: 'pointer',
@@ -1463,24 +1850,10 @@
         gap: '0.25rem',
         transition: 'all 0.15s ease',
       },
-      checkboxLabel: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-        fontSize: '0.875rem',
-        color: 'var(--charcoal-light)',
-        cursor: 'pointer',
-      },
-      checkbox: {
-        width: '18px',
-        height: '18px',
-        accentColor: 'var(--sage)',
-      },
       submitButton: {
         padding: '0.875rem',
-        backgroundColor: 'var(--sage)',
-        border: 'none',
         borderRadius: '12px',
+        border: 'none',
         color: 'white',
         fontSize: '0.9rem',
         fontFamily: "'DM Sans', sans-serif",
@@ -1489,15 +1862,15 @@
         transition: 'all 0.2s ease',
         marginTop: '0.25rem',
       },
-      submitButtonDisabled: {
-        backgroundColor: 'var(--sand-dark)',
-        cursor: 'not-allowed',
-      },
     };
 
     // ============ RENDER ============
     const root = ReactDOM.createRoot(document.getElementById('root'));
-    root.render(<TendApp />);
+    root.render(
+      <ThemeProvider>
+        <TendApp />
+      </ThemeProvider>
+    );
   </script>
 </body>
 </html>
