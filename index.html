@@ -99,8 +99,26 @@
       const [phase, setPhase] = useState(PHASES.EXPLORE);
       const [values, setValues] = useState([]);
       const [lifeAreaRatings, setLifeAreaRatings] = useState({
-        health: 5, relationships: 5, career: 5, finances: 5, growth: 5, fun: 5
+        health: { satisfaction: null, intention: null },
+        relationships: { satisfaction: null, intention: null },
+        career: { satisfaction: null, intention: null },
+        finances: { satisfaction: null, intention: null },
+        growth: { satisfaction: null, intention: null },
+        fun: { satisfaction: null, intention: null }
       });
+      const [lifeAreasCompleted, setLifeAreasCompleted] = useState(false);
+      const [lifeAreasMode, setLifeAreasMode] = useState(false);
+      const [currentLifeAreaIndex, setCurrentLifeAreaIndex] = useState(0);
+      const [waitingForSatisfaction, setWaitingForSatisfaction] = useState(true);
+      const lifeAreaOrder = ['health', 'relationships', 'career', 'finances', 'growth', 'fun'];
+      const lifeAreaDescriptions = {
+        health: 'physical energy, movement, sleep, how your body feels',
+        relationships: 'partner, family, friendships, feeling connected',
+        career: 'work satisfaction, growth, meaning in what you do',
+        finances: 'financial security, freedom, relationship with money',
+        growth: 'learning, self-improvement, becoming who you want to be',
+        fun: 'play, adventure, hobbies, things that bring you joy'
+      };
       const [events, setEvents] = useState([]);
       const [goals, setGoals] = useState([]);
       const [notes, setNotes] = useState('');
@@ -639,6 +657,39 @@ Click on the event in the sidebar to add details.`;
           return 'fall';
         })();
 
+        const lifeAreasContext = lifeAreasCompleted 
+          ? Object.entries(lifeAreaRatings).map(([key, val]) => 
+              `${LIFE_AREAS[key].name}: satisfaction ${val.satisfaction}/10, intention ${val.intention}/10`
+            ).join(', ')
+          : 'not assessed yet';
+
+        // Check for misalignments between intentions and actual plans
+        const getMisalignments = () => {
+          if (!lifeAreasCompleted) return '';
+          const misalignments = [];
+          
+          // High intention areas with low activity
+          Object.entries(lifeAreaRatings).forEach(([key, val]) => {
+            if (val.intention >= 7) {
+              const relatedHabits = weeklyHabits.filter(h => 
+                h.text.toLowerCase().includes(key) || 
+                (key === 'health' && /exercise|workout|gym|run|walk|yoga/i.test(h.text)) ||
+                (key === 'relationships' && /date|partner|friend|family|call/i.test(h.text)) ||
+                (key === 'fun' && /hobby|play|adventure|trip/i.test(h.text))
+              );
+              const relatedEvents = events.filter(e => e.lifeArea === key);
+              
+              if (relatedHabits.length === 0 && relatedEvents.length === 0) {
+                misalignments.push(`${LIFE_AREAS[key].name} has high intention (${val.intention}) but no related habits or events`);
+              }
+            }
+          });
+          
+          return misalignments.length > 0 
+            ? `\n\nPotential misalignments to gently explore: ${misalignments.join('; ')}`
+            : '';
+        };
+
         return `You are Tend, a thoughtful AI companion for intentional living and life design. You help people design their year with intention — not just manage tasks, but create a life aligned with their values.
 
 Your personality:
@@ -655,10 +706,25 @@ Current context:
 - Current season: ${currentSeason}
 - Their year theme: ${yearTheme || 'not set yet'}
 - Their values: ${values.length > 0 ? values.join(', ') : 'not identified yet'}
+- Life areas: ${lifeAreasContext}
 - Their events: ${events.length > 0 ? events.map(e => `${MONTHS[e.month]}: ${e.title}`).join(', ') : 'none yet'}
 - Weekly habits: ${weeklyHabits.length > 0 ? weeklyHabits.map(h => `${h.text} (${h.frequency}x/week)`).join(', ') : 'none yet'}
 - Daily habits: ${dailyHabits.length > 0 ? dailyHabits.map(h => h.text).join(', ') : 'none yet'}
 - Phase: ${phase} (explore = getting to know them, ground = understanding commitments, reveal = unlocking the app, plan = ongoing planning)
+- Life areas mode: ${lifeAreasMode ? 'YES - currently doing life areas assessment' : 'no'}
+${getMisalignments()}
+
+${lifeAreasMode ? `LIFE AREAS ASSESSMENT MODE:
+You are walking the user through rating their life areas. For each area, ask about:
+1. Satisfaction (1-10): How do they feel about this area RIGHT NOW?
+2. Intention (1-10): How much attention do they WANT to give this area this year?
+
+Current area: ${LIFE_AREAS[lifeAreaOrder[currentLifeAreaIndex]]?.name || 'done'}
+Description: ${lifeAreaDescriptions[lifeAreaOrder[currentLifeAreaIndex]] || ''}
+Waiting for: ${waitingForSatisfaction ? 'satisfaction score' : 'intention score'}
+
+Keep it conversational. After they give a number, briefly acknowledge it and ask the follow-up. When both scores are given, move to the next area.
+` : ''}
 
 View-specific guidance:
 - Year view: Help them find their theme word and see the big picture
@@ -670,6 +736,7 @@ View-specific guidance:
 If they're in the EXPLORE phase, focus on understanding what they want from the year and helping them find their theme word.
 If they mention specific months or events, acknowledge those.
 If they seem stuck, offer a gentle prompt or example.
+If you notice a misalignment between their life area intentions and their actual plans, gently bring it up.
 
 Keep responses focused and conversational. You're not a productivity app — you're helping them live with more intention.`;
       };
@@ -729,6 +796,70 @@ Keep responses focused and conversational. You're not a productivity app — you
         setIsTyping(true);
         setExchangeCount(prev => prev + 1);
 
+        // Handle life areas mode - parse numbers
+        if (lifeAreasMode) {
+          const numbers = userMessage.match(/\b([1-9]|10)\b/g);
+          if (numbers && numbers.length > 0) {
+            const score = parseInt(numbers[0]);
+            const currentArea = lifeAreaOrder[currentLifeAreaIndex];
+            
+            if (waitingForSatisfaction) {
+              setLifeAreaRatings(prev => ({
+                ...prev,
+                [currentArea]: { ...prev[currentArea], satisfaction: score }
+              }));
+              setWaitingForSatisfaction(false);
+            } else {
+              setLifeAreaRatings(prev => ({
+                ...prev,
+                [currentArea]: { ...prev[currentArea], intention: score }
+              }));
+              
+              // Move to next area
+              if (currentLifeAreaIndex < lifeAreaOrder.length - 1) {
+                setCurrentLifeAreaIndex(prev => prev + 1);
+                setWaitingForSatisfaction(true);
+              } else {
+                // All done!
+                setLifeAreasCompleted(true);
+                setLifeAreasMode(false);
+                
+                // Add completion summary after API response
+                setTimeout(() => {
+                  // Find areas with biggest gaps (intention > satisfaction)
+                  const updatedRatings = {
+                    ...lifeAreaRatings,
+                    [currentArea]: { ...lifeAreaRatings[currentArea], intention: score }
+                  };
+                  const gaps = Object.entries(updatedRatings)
+                    .map(([key, val]) => ({
+                      area: LIFE_AREAS[key].name,
+                      gap: (val.intention || 0) - (val.satisfaction || 0)
+                    }))
+                    .filter(g => g.gap > 2)
+                    .sort((a, b) => b.gap - a.gap);
+                  
+                  const focusAreas = gaps.slice(0, 2).map(g => g.area);
+                  
+                  const summaryMsg = focusAreas.length > 0
+                    ? `I've captured your life area pulse. Looking at the gaps between where you are and where you want to be, <em>${focusAreas.join('</em> and <em>')}</em> stand out as areas wanting more attention this year.
+
+As we plan, I'll keep an eye on whether your events, habits, and time are actually flowing toward these priorities.
+
+Now — what would you like to focus on first?`
+                    : `I've captured your life area pulse. You seem relatively balanced across areas, which is a great foundation.
+
+As we plan, I'll help make sure your time and energy stay aligned with what matters to you.
+
+What would you like to focus on first?`;
+                  
+                  setMessages(prev => [...prev, { role: 'assistant', content: summaryMsg }]);
+                }, 2000);
+              }
+            }
+          }
+        }
+
         // Analyze for values/events even with API
         const detected = analyzeText(userMessage);
         processAnalysis(detected);
@@ -766,6 +897,26 @@ Keep responses focused and conversational. You're not a productivity app — you
           setTimeout(() => {
             setPhase(PHASES.REVEAL);
             setRevealed(true);
+            // Trigger life areas after a delay
+            setTimeout(() => {
+              if (!lifeAreasCompleted) {
+                setMessages(prev => [...prev, { 
+                  role: 'assistant', 
+                  content: `Your year is taking shape. Now let's get grounded in where you're at.
+
+I'd like to walk through six areas of life and ask you two questions about each:
+1. How <em>satisfied</em> are you with this area right now? (1-10)
+2. How much <em>attention</em> do you want to give it this year? (1-10)
+
+This helps me understand where you're starting from and where you want to focus.
+
+<strong>Let's start with Health</strong> — ${lifeAreaDescriptions.health}.
+
+On a scale of 1-10, how satisfied are you with your health right now?`
+                }]);
+                setLifeAreasMode(true);
+              }
+            }, 1500);
           }, 500);
         }
 
@@ -955,29 +1106,36 @@ I'm here to help with any planning.`
                 
                 <div style={styles.lifeAreasSection}>
                   <h3 style={styles.sectionLabel}>Life Areas</h3>
-                  <div style={styles.lifeAreasGrid}>
-                    {Object.entries(LIFE_AREAS).map(([key, area]) => (
-                      <div key={key} style={styles.lifeAreaItem}>
-                        <div style={styles.lifeAreaHeader}>
-                          <span style={{color: area.color}}>{area.icon}</span>
-                          <span style={styles.lifeAreaName}>{area.name.split(' ')[0]}</span>
+                  {lifeAreasCompleted ? (
+                    <div style={styles.lifeAreasGrid}>
+                      {Object.entries(LIFE_AREAS).map(([key, area]) => (
+                        <div key={key} style={styles.lifeAreaItem}>
+                          <div style={styles.lifeAreaHeader}>
+                            <span style={{color: area.color}}>{area.icon}</span>
+                            <span style={styles.lifeAreaName}>{area.name.split(' ')[0]}</span>
+                          </div>
+                          <div style={styles.lifeAreaScores}>
+                            <span style={styles.lifeAreaScore} title="Current satisfaction">
+                              {lifeAreaRatings[key]?.satisfaction || '–'}
+                            </span>
+                            <span style={styles.lifeAreaArrow}>→</span>
+                            <span style={{...styles.lifeAreaScore, color: area.color, fontWeight: 600}} title="Intention for this year">
+                              {lifeAreaRatings[key]?.intention || '–'}
+                            </span>
+                          </div>
                         </div>
-                        {revealed ? (
-                          <input
-                            type="range" min="1" max="10"
-                            value={lifeAreaRatings[key]}
-                            onChange={(e) => setLifeAreaRatings({...lifeAreaRatings, [key]: parseInt(e.target.value)})}
-                            style={{...styles.slider, accentColor: area.color}}
-                          />
-                        ) : (
-                          <div style={styles.sliderPlaceholder}></div>
-                        )}
-                        <span style={{...styles.lifeAreaRating, color: area.color}}>
-                          {revealed ? lifeAreaRatings[key] : '–'}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div style={styles.lifeAreasPlaceholder}>
+                      <p style={styles.lifeAreasPlaceholderText}>
+                        {lifeAreasMode 
+                          ? `Assessing: ${LIFE_AREAS[lifeAreaOrder[currentLifeAreaIndex]]?.name}...`
+                          : 'Complete the conversation to reflect on your life areas'
+                        }
+                      </p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1824,13 +1982,16 @@ I'm here to help with any planning.`
       valueRemove: { background: 'none', border: 'none', color: 'white', opacity: 0.7, cursor: 'pointer', fontSize: '0.8rem', padding: 0, lineHeight: 1 },
       addValueButton: { padding: '0.3rem 0.6rem', backgroundColor: 'transparent', border: '1px dashed var(--border-dark)', borderRadius: '12px', color: 'var(--text-muted)', fontSize: '0.7rem', cursor: 'pointer' },
       lifeAreasSection: {},
-      lifeAreasGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' },
-      lifeAreaItem: { display: 'flex', flexDirection: 'column', gap: '0.2rem' },
+      lifeAreasGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.625rem' },
+      lifeAreaItem: { display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' },
       lifeAreaHeader: { display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.65rem' },
       lifeAreaName: { color: 'var(--text-light)', fontSize: '0.65rem' },
+      lifeAreaScores: { display: 'flex', alignItems: 'center', gap: '0.25rem' },
+      lifeAreaScore: { fontSize: '0.8rem', color: 'var(--text-muted)' },
+      lifeAreaArrow: { fontSize: '0.6rem', color: 'var(--text-muted)' },
+      lifeAreasPlaceholder: { padding: '1rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '8px', textAlign: 'center' },
+      lifeAreasPlaceholderText: { fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' },
       slider: { width: '100%', height: '3px', cursor: 'pointer' },
-      sliderPlaceholder: { width: '100%', height: '3px', backgroundColor: 'var(--border)', borderRadius: '2px' },
-      lifeAreaRating: { fontSize: '0.7rem', fontWeight: 600, textAlign: 'center' },
 
       // Chat
       chatPanel: { backgroundColor: 'var(--bg-card)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden', position: 'relative' },
