@@ -28,6 +28,7 @@
       --border-dark: #D4CCC0;
       --accent: #7D9B76;
       --accent-light: #E8F0E6;
+      --ghost: #E8E2D9;
     }
 
     [data-theme="dark"] {
@@ -41,6 +42,7 @@
       --border-dark: #4a4640;
       --accent: #A8C4A2;
       --accent-light: #2d332c;
+      --ghost: #3d3a36;
     }
 
     body {
@@ -70,15 +72,42 @@
       to { opacity: 1; }
     }
     @keyframes pulse {
-      0%, 100% { opacity: 0.3; }
-      50% { opacity: 0.8; }
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.7; }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes revealSection {
+      from { opacity: 0.3; transform: scale(0.98); }
+      to { opacity: 1; transform: scale(1); }
     }
     .fade-up { animation: fadeUp 0.6s ease-out forwards; }
     .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+    .slide-in { animation: slideIn 0.4s ease-out forwards; }
+    .reveal { animation: revealSection 0.6s ease-out forwards; }
 
     input:focus, textarea:focus, select:focus {
       outline: none;
       border-color: var(--accent) !important;
+    }
+
+    /* Ghosted state */
+    .ghosted {
+      opacity: 0.3;
+      pointer-events: none;
+    }
+    .ghosted-soft {
+      opacity: 0.5;
+    }
+    .emerging {
+      opacity: 0.7;
+      transition: opacity 0.5s ease;
+    }
+    .revealed {
+      opacity: 1;
+      transition: opacity 0.5s ease;
     }
   </style>
 </head>
@@ -89,392 +118,310 @@
     const { useState, useEffect, useRef, useMemo } = React;
 
     // ============ CONSTANTS ============
-    const THEMES = [
-      { id: 'light', name: 'Light' },
-      { id: 'dark', name: 'Dark' },
-      { id: 'botanical', name: 'Botanical' },
-      { id: 'ocean', name: 'Ocean' },
-      { id: 'floral', name: 'Floral' },
-      { id: 'hydrangea', name: 'Hydrangea' },
-    ];
-
     const LIFE_AREAS = {
-      health: { name: 'Health & Wellness', icon: '◐', color: '#7D9B76' },
-      relationships: { name: 'Relationships', icon: '♡', color: '#C48B8B' },
-      career: { name: 'Career & Work', icon: '◆', color: '#7A9CAD' },
-      finances: { name: 'Finances', icon: '○', color: '#C9A66B' },
-      growth: { name: 'Personal Growth', icon: '✦', color: '#9B8AAE' },
-      fun: { name: 'Fun & Adventure', icon: '✺', color: '#C4836A' },
+      health: { name: 'Health & Wellness', icon: '◐', color: '#7D9B76', keywords: ['health', 'fitness', 'exercise', 'gym', 'sleep', 'energy', 'body', 'weight', 'diet', 'mental health', 'stress', 'anxiety', 'tired', 'exhausted'] },
+      relationships: { name: 'Relationships', icon: '♡', color: '#C48B8B', keywords: ['partner', 'relationship', 'marriage', 'spouse', 'husband', 'wife', 'boyfriend', 'girlfriend', 'family', 'friends', 'kids', 'children', 'parents', 'dating', 'connection', 'lonely', 'love'] },
+      career: { name: 'Career & Work', icon: '◆', color: '#7A9CAD', keywords: ['work', 'job', 'career', 'promotion', 'boss', 'office', 'business', 'project', 'deadline', 'meeting', 'professional', 'salary', 'coworkers', 'manager', 'burnout'] },
+      finances: { name: 'Finances', icon: '○', color: '#C9A66B', keywords: ['money', 'financial', 'savings', 'debt', 'budget', 'invest', 'retirement', 'income', 'expenses', 'afford', 'bills', 'salary', 'wealth'] },
+      growth: { name: 'Personal Growth', icon: '✦', color: '#9B8AAE', keywords: ['learn', 'grow', 'growth', 'read', 'book', 'course', 'skill', 'hobby', 'creative', 'creativity', 'develop', 'improve', 'therapy', 'meditation', 'mindful'] },
+      fun: { name: 'Fun & Adventure', icon: '✺', color: '#C4836A', keywords: ['fun', 'adventure', 'travel', 'trip', 'vacation', 'explore', 'experience', 'play', 'enjoy', 'hobby', 'entertainment', 'relax', 'weekend'] },
     };
 
-    const SEASONS_DATA = {
-      winter: { name: 'Winter', months: [11, 0, 1], color: '#7A9CAD' },
-      spring: { name: 'Spring', months: [2, 3, 4], color: '#7D9B76' },
-      summer: { name: 'Summer', months: [5, 6, 7], color: '#C9A66B' },
-      fall: { name: 'Fall', months: [8, 9, 10], color: '#C4836A' },
+    const VALUE_KEYWORDS = {
+      'Freedom': ['freedom', 'free', 'autonomy', 'independent', 'flexible', 'flexibility', 'control', 'choice'],
+      'Connection': ['connection', 'connected', 'together', 'relationship', 'partner', 'love', 'intimacy', 'close', 'present', 'presence'],
+      'Growth': ['growth', 'grow', 'learn', 'improve', 'better', 'develop', 'progress', 'evolve'],
+      'Peace': ['peace', 'calm', 'peaceful', 'stress', 'less stressed', 'relaxed', 'quiet', 'stillness', 'balance', 'balanced'],
+      'Health': ['health', 'healthy', 'fit', 'strong', 'energy', 'energized', 'well', 'wellness'],
+      'Adventure': ['adventure', 'travel', 'explore', 'new', 'exciting', 'experience', 'spontaneous'],
+      'Creativity': ['creative', 'creativity', 'create', 'art', 'make', 'build', 'design', 'write', 'music'],
+      'Family': ['family', 'kids', 'children', 'parents', 'mom', 'dad', 'siblings', 'home'],
+      'Success': ['success', 'achieve', 'accomplish', 'goal', 'ambitious', 'career', 'promotion'],
+      'Joy': ['joy', 'happy', 'happiness', 'fun', 'laugh', 'enjoy', 'pleasure', 'delight'],
+      'Authenticity': ['authentic', 'real', 'true', 'honest', 'genuine', 'myself', 'who I am'],
+      'Security': ['security', 'secure', 'stable', 'stability', 'safe', 'reliable', 'consistent'],
     };
 
-    const VIEWS = {
-      YEAR: 'year',
-      VALUES: 'values',
-      LIFE_AREAS: 'lifeAreas',
-      GOALS: 'goals',
-      SEASONS: 'seasons',
-      MONTH: 'month',
+    const PHASES = {
+      EXPLORE: 'explore',
+      GROUND: 'ground',
+      REVEAL: 'reveal',
+      PLAN: 'plan',
     };
 
     const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-    // ============ PATTERN COMPONENT ============
-    function PatternOverlay({ pattern }) {
-      if (!pattern || pattern === 'none') return null;
-
-      const getPatternSVG = () => {
-        switch(pattern) {
-          case 'botanical':
-            return (
-              <svg width="100%" height="100%" style={{position: 'fixed', top: 0, left: 0, pointerEvents: 'none', zIndex: 0}}>
-                <defs>
-                  <pattern id="botanical" x="0" y="0" width="100" height="100" patternUnits="userSpaceOnUse">
-                    <path d="M50 15 Q45 30 50 45" stroke="#7D9B76" fill="none" strokeWidth="1" opacity="0.12"/>
-                    <path d="M50 28 Q42 25 38 18" stroke="#7D9B76" fill="none" strokeWidth="1" opacity="0.1"/>
-                    <path d="M50 35 Q58 31 62 24" stroke="#7D9B76" fill="none" strokeWidth="1" opacity="0.1"/>
-                    <path d="M20 70 Q15 85 20 95" stroke="#7D9B76" fill="none" strokeWidth="1" opacity="0.08"/>
-                    <path d="M80 60 Q75 72 80 82" stroke="#7D9B76" fill="none" strokeWidth="1" opacity="0.08"/>
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#botanical)"/>
-              </svg>
-            );
-          case 'ocean':
-            return (
-              <svg width="100%" height="100%" style={{position: 'fixed', top: 0, left: 0, pointerEvents: 'none', zIndex: 0}}>
-                <defs>
-                  <pattern id="ocean" x="0" y="0" width="200" height="80" patternUnits="userSpaceOnUse">
-                    <path d="M0 40 Q50 25 100 40 Q150 55 200 40" stroke="#7A9CAD" fill="none" strokeWidth="1.5" opacity="0.1"/>
-                    <path d="M0 60 Q50 45 100 60 Q150 75 200 60" stroke="#7A9CAD" fill="none" strokeWidth="1" opacity="0.07"/>
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#ocean)"/>
-              </svg>
-            );
-          case 'floral':
-            return (
-              <svg width="100%" height="100%" style={{position: 'fixed', top: 0, left: 0, pointerEvents: 'none', zIndex: 0}}>
-                <defs>
-                  <pattern id="floral" x="0" y="0" width="70" height="70" patternUnits="userSpaceOnUse">
-                    <circle cx="20" cy="20" r="4" fill="none" stroke="#C48B8B" strokeWidth="1" opacity="0.12"/>
-                    <circle cx="20" cy="20" r="1.5" fill="#C48B8B" opacity="0.1"/>
-                    <circle cx="55" cy="50" r="3" fill="none" stroke="#C48B8B" strokeWidth="1" opacity="0.1"/>
-                    <circle cx="55" cy="50" r="1" fill="#C48B8B" opacity="0.08"/>
-                    <circle cx="40" cy="10" r="1" fill="#C48B8B" opacity="0.06"/>
-                    <circle cx="10" cy="55" r="1" fill="#C48B8B" opacity="0.06"/>
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#floral)"/>
-              </svg>
-            );
-          case 'hydrangea':
-            return (
-              <svg width="100%" height="100%" style={{position: 'fixed', top: 0, left: 0, pointerEvents: 'none', zIndex: 0}}>
-                <defs>
-                  <pattern id="hydrangea" x="0" y="0" width="90" height="90" patternUnits="userSpaceOnUse">
-                    <circle cx="20" cy="22" r="5" fill="#9B8AAE" opacity="0.07"/>
-                    <circle cx="26" cy="18" r="4" fill="#9B8AAE" opacity="0.08"/>
-                    <circle cx="17" cy="28" r="4" fill="#9B8AAE" opacity="0.06"/>
-                    <circle cx="25" cy="26" r="3" fill="#9B8AAE" opacity="0.07"/>
-                    <circle cx="70" cy="65" r="4" fill="#9B8AAE" opacity="0.07"/>
-                    <circle cx="75" cy="60" r="3" fill="#9B8AAE" opacity="0.06"/>
-                    <circle cx="66" cy="70" r="4" fill="#9B8AAE" opacity="0.08"/>
-                  </pattern>
-                </defs>
-                <rect width="100%" height="100%" fill="url(#hydrangea)"/>
-              </svg>
-            );
-          default:
-            return null;
-        }
-      };
-
-      return getPatternSVG();
-    }
-
     // ============ MAIN APP ============
     function TendApp() {
-      // Theme state
-      const [currentTheme, setCurrentTheme] = useState('light');
-      const [currentPattern, setCurrentPattern] = useState('none');
-      const [showThemeSelector, setShowThemeSelector] = useState(false);
-
-      // Navigation
-      const [currentView, setCurrentView] = useState(VIEWS.YEAR);
-      const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
-
-      // Core data - THE INTEGRATED SYSTEM
+      // Core state
+      const [phase, setPhase] = useState(PHASES.EXPLORE);
       const [values, setValues] = useState([]);
-      const [lifeAreaRatings, setLifeAreaRatings] = useState({});
-      const [focusAreas, setFocusAreas] = useState([]); // Top priorities from life areas
-      const [goals, setGoals] = useState([]); // { id, text, lifeArea, value, season, completed }
-      const [seasonIntentions, setSeasonIntentions] = useState({}); // { winter: { focus: '', values: [] } }
-      const [events, setEvents] = useState([]); // { id, title, type, startDate, endDate, lifeArea }
-
+      const [lifeAreaFocus, setLifeAreaFocus] = useState({}); // { health: 'needs-attention', career: 'overloaded' }
+      const [events, setEvents] = useState([]);
+      const [goals, setGoals] = useState([]);
+      const [seasonFocus, setSeasonFocus] = useState({});
+      
       // Chat state
       const [messages, setMessages] = useState([]);
       const [inputValue, setInputValue] = useState('');
       const [isTyping, setIsTyping] = useState(false);
+      const [exchangeCount, setExchangeCount] = useState(0);
       const messagesEndRef = useRef(null);
 
-      // Modals
+      // UI state
+      const [revealed, setRevealed] = useState(false);
       const [showEventModal, setShowEventModal] = useState(false);
-      const [showGoalModal, setShowGoalModal] = useState(false);
+      const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
 
-      // ============ COMPUTED INSIGHTS ============
-      const insights = useMemo(() => {
-        const currentMonth = new Date().getMonth();
-        const currentYear = new Date().getFullYear();
-        
-        // Count events by life area for current month
-        const monthEvents = events.filter(e => {
-          const start = new Date(e.startDate);
-          return start.getMonth() === selectedMonth && start.getFullYear() === currentYear;
-        });
-
-        const eventsByArea = {};
-        Object.keys(LIFE_AREAS).forEach(area => {
-          eventsByArea[area] = monthEvents.filter(e => e.lifeArea === area).length;
-        });
-
-        // Find gaps - areas with low ratings but no events
-        const gaps = [];
-        Object.entries(lifeAreaRatings).forEach(([area, rating]) => {
-          if (rating <= 5 && eventsByArea[area] === 0) {
-            gaps.push({ area, rating, name: LIFE_AREAS[area].name });
-          }
-        });
-
-        // Find alignment - values without supporting goals
-        const valuesWithoutGoals = values.filter(v => 
-          !goals.some(g => g.value === v)
-        );
-
-        // Find overloaded areas
-        const overloaded = Object.entries(eventsByArea)
-          .filter(([area, count]) => count > 5)
-          .map(([area, count]) => ({ area, count, name: LIFE_AREAS[area].name }));
-
-        // Calculate balance score
-        const totalEvents = monthEvents.length;
-        const areasWithEvents = Object.values(eventsByArea).filter(c => c > 0).length;
-        const balanceScore = totalEvents > 0 ? Math.round((areasWithEvents / 6) * 100) : 0;
-
-        return {
-          eventsByArea,
-          gaps,
-          valuesWithoutGoals,
-          overloaded,
-          balanceScore,
-          totalEvents: monthEvents.length,
-        };
-      }, [events, lifeAreaRatings, values, goals, selectedMonth]);
-
-      // ============ DYNAMIC AI RESPONSES ============
-      const generateAIMessage = (view) => {
-        switch(view) {
-          case VIEWS.YEAR:
-            return `Here's your year at a glance.
-
-Before we fill it in, let's get clear on what you actually want from these twelve months.
-
-What's one thing that, if it happened this year, would make everything feel worthwhile?`;
-
-          case VIEWS.VALUES:
-            if (values.length > 0) {
-              return `You've chosen: ${values.join(', ')}.
-
-These aren't just words — they're commitments. ${values[0]} especially will ask something of you.
-
-What would it look like to actually <em>live</em> ${values[0]} this year? Not as an idea, but as a practice?`;
-            }
-            return `Values aren't goals — they're <em>how</em> you want to move through the world, regardless of outcomes.
-
-When you're living in alignment with your values, even difficult things feel meaningful. When you're not, even success feels hollow.
-
-What qualities do you want to embody this year?`;
-
-          case VIEWS.LIFE_AREAS:
-            const lowAreas = Object.entries(lifeAreaRatings)
-              .filter(([_, rating]) => rating <= 4)
-              .map(([area, _]) => LIFE_AREAS[area].name);
-            
-            if (lowAreas.length > 0) {
-              return `I notice ${lowAreas.join(' and ')} ${lowAreas.length > 1 ? 'are' : 'is'} sitting lower.
-
-That's not a judgment — sometimes we intentionally let areas rest. But is this intentional, or is it a wake-up call?
-
-${values.length > 0 ? `How does this connect to your value of ${values[0]}?` : 'What would moving the needle here look like?'}`;
-            }
-            return `Be honest with these ratings — not harsh, just honest.
-
-A "5" isn't a failure. It might be intentional. Or it might be a wake-up call.
-
-The goal isn't to make everything a 10. It's to be intentional about where you invest your energy.`;
-
-          case VIEWS.GOALS:
-            if (insights.valuesWithoutGoals.length > 0 && values.length > 0) {
-              return `You said ${insights.valuesWithoutGoals.join(' and ')} matter${insights.valuesWithoutGoals.length > 1 ? '' : 's'} to you, but I don't see any goals supporting ${insights.valuesWithoutGoals.length > 1 ? 'them' : 'it'} yet.
-
-What would a concrete goal look like for ${insights.valuesWithoutGoals[0]}?`;
-            }
-            if (goals.length > 0) {
-              const goalAreas = [...new Set(goals.map(g => g.lifeArea))];
-              const missingAreas = Object.keys(LIFE_AREAS).filter(a => !goalAreas.includes(a));
-              if (missingAreas.length > 0 && missingAreas.length < 5) {
-                return `You have goals for ${goalAreas.map(a => LIFE_AREAS[a].name).join(', ')}.
-
-Nothing yet for ${missingAreas.slice(0, 2).map(a => LIFE_AREAS[a].name).join(' or ')}. Is that intentional?`;
-              }
-            }
-            return `Goals work best when they're specific enough to know if you've achieved them, but flexible enough to adapt.
-
-"Get healthier" is a direction. "Run a 5K by June" is a goal.
-
-What do you want to make real this year?`;
-
-          case VIEWS.SEASONS:
-            const currentSeason = getCurrentSeason();
-            return `Not everything belongs in every season.
-
-You're in ${SEASONS_DATA[currentSeason].name} right now. What wants your attention this season specifically?
-
-${goals.length > 0 ? `You have ${goals.length} goal${goals.length > 1 ? 's' : ''} — which of these belongs to ${SEASONS_DATA[currentSeason].name}?` : ''}`;
-
-          case VIEWS.MONTH:
-            const monthName = ['January', 'February', 'March', 'April', 'May', 'June', 
-                             'July', 'August', 'September', 'October', 'November', 'December'][selectedMonth];
-            
-            if (insights.gaps.length > 0) {
-              return `Looking at ${monthName}...
-
-You rated ${insights.gaps[0].name} a ${insights.gaps[0].rating}/10, but there's nothing scheduled for it this month. Is that okay, or does something need to get on the calendar?`;
-            }
-            if (insights.overloaded.length > 0) {
-              return `${monthName} is heavy on ${insights.overloaded[0].name} — ${insights.overloaded[0].count} events.
-
-${values.length > 0 ? `Does this reflect your value of ${values[0]}, or is it crowding it out?` : 'Is there breathing room?'}`;
-            }
-            if (insights.totalEvents === 0) {
-              return `${monthName} is wide open.
-
-That's either freedom or avoidance. What <em>must</em> happen this month for it to feel successful?`;
-            }
-            return `${insights.totalEvents} things planned for ${monthName}. Balance score: ${insights.balanceScore}%.
-
-${insights.balanceScore < 50 ? "Your time is concentrated in just a few areas. Intentional?" : "You've got decent spread across life areas."}
-
-What's missing?`;
-
-          default:
-            return '';
-        }
-      };
-
-      const getCurrentSeason = () => {
-        const month = new Date().getMonth();
-        for (const [season, data] of Object.entries(SEASONS_DATA)) {
-          if (data.months.includes(month)) return season;
-        }
-        return 'winter';
-      };
-
-      // ============ EFFECTS ============
+      // Initialize
       useEffect(() => {
-        document.body.setAttribute('data-theme', currentTheme);
-      }, [currentTheme]);
+        setMessages([{
+          role: 'assistant',
+          content: `Welcome to Tend.
 
-      useEffect(() => {
-        setMessages([{ role: 'assistant', content: generateAIMessage(currentView) }]);
-      }, [currentView, values.length, Object.keys(lifeAreaRatings).length, goals.length, selectedMonth]);
+Before we get into calendars and planning, I want to understand what you actually want from this year.
+
+What would make 2026 feel like a success? It could be a concrete achievement, a feeling you want to have, a change in how you're living — whatever comes to mind first.`
+        }]);
+      }, []);
 
       useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, [messages]);
 
-      // ============ HANDLERS ============
-      const handleThemeChange = (theme) => {
-        if (theme.id === 'dark') {
-          setCurrentTheme('dark');
-          setCurrentPattern('none');
-        } else if (theme.id === 'light') {
-          setCurrentTheme('light');
-          setCurrentPattern('none');
-        } else {
-          setCurrentTheme('light');
-          setCurrentPattern(theme.id);
-        }
-        setShowThemeSelector(false);
+      // ============ TEXT ANALYSIS ============
+      const analyzeText = (text) => {
+        const lower = text.toLowerCase();
+        const detected = { values: [], lifeAreas: [], events: [] };
+
+        // Detect values
+        Object.entries(VALUE_KEYWORDS).forEach(([value, keywords]) => {
+          if (keywords.some(kw => lower.includes(kw)) && !values.includes(value)) {
+            detected.values.push(value);
+          }
+        });
+
+        // Detect life area mentions
+        Object.entries(LIFE_AREAS).forEach(([key, area]) => {
+          if (area.keywords.some(kw => lower.includes(kw))) {
+            detected.lifeAreas.push(key);
+          }
+        });
+
+        // Detect events (simple month detection)
+        const monthPatterns = [
+          /(?:in|during|around)\s+(january|february|march|april|may|june|july|august|september|october|november|december)/gi,
+          /(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d+/gi,
+        ];
+        
+        const monthMap = { january: 0, february: 1, march: 2, april: 3, may: 4, june: 5, 
+                          july: 6, august: 7, september: 8, october: 9, november: 10, december: 11 };
+        
+        monthPatterns.forEach(pattern => {
+          const matches = text.matchAll(pattern);
+          for (const match of matches) {
+            const monthName = match[1]?.toLowerCase();
+            if (monthName && monthMap[monthName] !== undefined) {
+              detected.events.push({ month: monthMap[monthName], text: match[0] });
+            }
+          }
+        });
+
+        return detected;
       };
 
+      // Update state based on analysis
+      const processAnalysis = (detected) => {
+        if (detected.values.length > 0) {
+          setValues(prev => [...new Set([...prev, ...detected.values])].slice(0, 5));
+        }
+        
+        if (detected.lifeAreas.length > 0) {
+          setLifeAreaFocus(prev => {
+            const updated = { ...prev };
+            detected.lifeAreas.forEach(area => {
+              if (!updated[area]) updated[area] = 'mentioned';
+            });
+            return updated;
+          });
+        }
+      };
+
+      // ============ CONVERSATION LOGIC ============
+      const generateResponse = (userMessage, currentPhase, exchangeNum) => {
+        const detected = analyzeText(userMessage);
+        processAnalysis(detected);
+        
+        const lower = userMessage.toLowerCase();
+
+        // Phase-specific responses
+        if (currentPhase === PHASES.EXPLORE) {
+          if (exchangeNum === 1) {
+            // First response - dig deeper
+            const hasFeeling = ['feel', 'feeling', 'want to be', 'less', 'more'].some(w => lower.includes(w));
+            const hasConcrete = ['achieve', 'goal', 'finish', 'complete', 'start', 'launch', 'build'].some(w => lower.includes(w));
+            
+            if (hasFeeling) {
+              return `That's about <em>how</em> you want to feel, not just what you want to do — which is important.
+
+What's getting in the way of that right now? What's creating friction?`;
+            } else if (hasConcrete) {
+              return `That's concrete — I can work with that.
+
+But beyond achieving that, how do you want to <em>feel</em> this year? What would be different about your day-to-day life?`;
+            } else {
+              return `Say more about that. What would that actually look like in your life?`;
+            }
+          }
+          
+          if (exchangeNum === 2) {
+            // Second response - identify the tension
+            const detectedAreas = Object.keys(lifeAreaFocus);
+            if (detectedAreas.length > 0) {
+              const areaName = LIFE_AREAS[detectedAreas[0]].name;
+              return `So ${areaName.toLowerCase()} is part of this.
+
+If things stayed exactly as they are now for another year, how would that feel?`;
+            }
+            return `I'm starting to get a picture. What would you need to let go of to make space for this?`;
+          }
+
+          if (exchangeNum >= 3) {
+            // Transition to GROUND phase
+            setPhase(PHASES.GROUND);
+            return `Before I share what I'm hearing, help me understand what's already on your plate this year.
+
+What's committed — trips, work deadlines, big family events, anything that's already locked in?`;
+          }
+        }
+
+        if (currentPhase === PHASES.GROUND) {
+          // Parse events from their response
+          const eventMentions = [];
+          const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 
+                             'july', 'august', 'september', 'october', 'november', 'december'];
+          
+          monthNames.forEach((month, idx) => {
+            if (lower.includes(month)) {
+              // Try to extract what the event is
+              const regex = new RegExp(`([\\w\\s]+?)(?:in|during|around)?\\s*${month}|${month}[\\s\\w]*?(?:for|:)?\\s*([\\w\\s]+)`, 'i');
+              const match = userMessage.match(regex);
+              eventMentions.push({ month: idx, raw: match ? match[0] : month });
+            }
+          });
+
+          if (eventMentions.length > 0) {
+            // Add events
+            const newEvents = eventMentions.map((e, i) => ({
+              id: Date.now() + i,
+              title: `Event in ${MONTHS[e.month]}`,
+              month: e.month,
+              lifeArea: 'fun', // default
+              startDate: `2026-${String(e.month + 1).padStart(2, '0')}-15`,
+              endDate: `2026-${String(e.month + 1).padStart(2, '0')}-15`,
+            }));
+            setEvents(prev => [...prev, ...newEvents]);
+          }
+
+          // Transition to REVEAL
+          setTimeout(() => {
+            setPhase(PHASES.REVEAL);
+            setRevealed(true);
+          }, 500);
+
+          const valuesSummary = values.length > 0 
+            ? values.slice(0, 3).join(', ')
+            : 'presence, balance, and intention';
+          
+          const areasSummary = Object.keys(lifeAreaFocus).length > 0
+            ? Object.keys(lifeAreaFocus).map(k => LIFE_AREAS[k].name.toLowerCase()).join(' and ')
+            : 'how you spend your time and energy';
+
+          return `Got it. Let me reflect back what I'm hearing.
+
+<strong>Here's what I'm hearing:</strong>
+
+Your values this year center around <em>${valuesSummary}</em>.
+
+${Object.keys(lifeAreaFocus).length > 0 
+  ? `${LIFE_AREAS[Object.keys(lifeAreaFocus)[0]].name} seems to be where the tension lives — ${Object.keys(lifeAreaFocus).length > 1 ? `and ${LIFE_AREAS[Object.keys(lifeAreaFocus)[1]].name} is connected to what you want more of` : 'it needs attention'}.`
+  : `You're looking for a shift in ${areasSummary}.`}
+
+${events.length > 0 
+  ? `You've got ${events.length} thing${events.length > 1 ? 's' : ''} already on the calendar.`
+  : `Your calendar is relatively open — that's either freedom or something to fill intentionally.`}
+
+Take a look at what's taking shape on the left. Does this feel right?`;
+        }
+
+        if (currentPhase === PHASES.REVEAL || currentPhase === PHASES.PLAN) {
+          setPhase(PHASES.PLAN);
+          
+          // Contextual planning responses
+          if (lower.includes('yes') || lower.includes('right') || lower.includes('exactly') || lower.includes('that\'s it')) {
+            return `Good. Now let's make it real.
+
+Looking at your calendar — what's missing? ${values.length > 0 ? `If ${values[0]} matters, what needs to get scheduled to protect it?` : `What would make the next few months feel intentional rather than reactive?`}`;
+          }
+
+          if (lower.includes('no') || lower.includes('not quite') || lower.includes('change')) {
+            return `That's okay — this is a starting point. You can edit anything on the left directly.
+
+What feels off? What would you adjust?`;
+          }
+
+          // General planning responses
+          const planningPrompts = [
+            `What's one thing you've been meaning to schedule but haven't?`,
+            `Which month feels most open right now? What could you protect that space for?`,
+            `Is there something that used to bring you joy that's fallen off the calendar?`,
+            `Looking at the balance of your time — what's missing?`,
+          ];
+          
+          return planningPrompts[Math.floor(Math.random() * planningPrompts.length)];
+        }
+
+        return `Tell me more about that.`;
+      };
+
+      // ============ HANDLERS ============
       const handleSendMessage = () => {
         if (!inputValue.trim()) return;
-        setMessages(prev => [...prev, { role: 'user', content: inputValue }]);
+        
+        const userMessage = inputValue.trim();
+        setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
         setInputValue('');
         setIsTyping(true);
+        setExchangeCount(prev => prev + 1);
 
         setTimeout(() => {
-          // Generate contextual response based on user input and current state
-          let response = generateFollowUp(currentView, inputValue);
+          const response = generateResponse(userMessage, phase, exchangeCount + 1);
           setMessages(prev => [...prev, { role: 'assistant', content: response }]);
           setIsTyping(false);
         }, 1200);
       };
 
-      const generateFollowUp = (view, userInput) => {
-        const input = userInput.toLowerCase();
-        
-        // Context-aware responses
-        if (input.includes('help') || input.includes('stuck') || input.includes("don't know")) {
-          return `That's okay. Let's make it smaller.\n\nForget the big picture for a moment. What's one tiny thing you know is true about what you want?`;
-        }
-        
-        if (view === VIEWS.VALUES && values.length > 0) {
-          return `I hear you. ${values[0]} seems central to how you want to live.\n\nHere's a question: when was the last time you felt fully aligned with ${values[0]}? What were you doing?`;
-        }
-        
-        if (view === VIEWS.LIFE_AREAS) {
-          const lowest = Object.entries(lifeAreaRatings).sort((a, b) => a[1] - b[1])[0];
-          if (lowest) {
-            return `${LIFE_AREAS[lowest[0]].name} at ${lowest[1]} — what would it take to move that up by just one point? Not a complete overhaul, just one point.`;
-          }
-        }
+      const handleSkip = () => {
+        setPhase(PHASES.PLAN);
+        setRevealed(true);
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `No problem — let's jump into planning.
 
-        if (view === VIEWS.MONTH && insights.gaps.length > 0) {
-          return `You mentioned that. So here's the real question: what's one thing for ${insights.gaps[0].name} that you could schedule right now? Even 30 minutes counts.`;
-        }
+The canvas on the left is yours to shape. Add your values, rate how different areas of life are going, and start putting things on the calendar.
 
-        // Default thoughtful follow-ups
-        const followUps = [
-          `That's interesting. Say more about that.`,
-          `What would that look like in practice? Not in theory — in your actual Tuesday afternoon?`,
-          `And what gets in the way of that? What's the pattern?`,
-          `If you did nothing about this, where would you be in a year?`,
-          `What's the smallest version of this that would still feel meaningful?`,
-        ];
-        return followUps[Math.floor(Math.random() * followUps.length)];
+I'm here if you want to talk through any of it.`
+        }]);
       };
 
-      const navigateNext = () => {
-        const viewOrder = [VIEWS.YEAR, VIEWS.VALUES, VIEWS.LIFE_AREAS, VIEWS.GOALS, VIEWS.SEASONS, VIEWS.MONTH];
-        const currentIndex = viewOrder.indexOf(currentView);
-        if (currentIndex < viewOrder.length - 1) {
-          setCurrentView(viewOrder[currentIndex + 1]);
-        }
+      const handleAddEvent = (eventData) => {
+        setEvents(prev => [...prev, { ...eventData, id: Date.now() }]);
+        setShowEventModal(false);
       };
 
       // ============ RENDER ============
       return (
         <div style={styles.container}>
-          <PatternOverlay pattern={currentPattern} />
-          
           {/* Header */}
           <header style={styles.header}>
             <div style={styles.headerLeft}>
@@ -489,113 +436,124 @@ What's missing?`;
               </div>
               <p style={styles.tagline}>a space for designing your life with intention</p>
             </div>
-            
-            <div style={styles.headerRight}>
-              <nav style={styles.nav}>
-                {[
-                  { id: VIEWS.YEAR, label: 'Year' },
-                  { id: VIEWS.VALUES, label: 'Values' },
-                  { id: VIEWS.LIFE_AREAS, label: 'Life Areas' },
-                  { id: VIEWS.GOALS, label: 'Goals' },
-                  { id: VIEWS.SEASONS, label: 'Seasons' },
-                  { id: VIEWS.MONTH, label: 'Month' },
-                ].map(item => (
-                  <button 
-                    key={item.id}
-                    style={{
-                      ...styles.navButton,
-                      ...(currentView === item.id && styles.navButtonActive)
-                    }}
-                    onClick={() => setCurrentView(item.id)}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </nav>
-              <div style={styles.themeContainer}>
-                <button 
-                  style={styles.themeButton}
-                  onClick={() => setShowThemeSelector(!showThemeSelector)}
-                >
-                  ◐
-                </button>
-                
-                {showThemeSelector && (
-                  <div style={styles.themeDropdown}>
-                    {THEMES.map(theme => (
-                      <button
-                        key={theme.id}
-                        style={styles.themeOption}
-                        onClick={() => handleThemeChange(theme)}
-                      >
-                        <span style={{
-                          ...styles.themeSwatch,
-                          background: theme.id === 'dark' ? '#1a1916' : 
-                                     theme.id === 'botanical' ? '#7D9B76' :
-                                     theme.id === 'ocean' ? '#7A9CAD' :
-                                     theme.id === 'floral' ? '#C48B8B' :
-                                     theme.id === 'hydrangea' ? '#9B8AAE' : '#FAF8F5',
-                          border: theme.id === 'light' ? '1px solid #E8E2D9' : 'none',
-                        }} />
-                        {theme.name}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
           </header>
 
           {/* Main Content */}
           <main style={styles.main}>
-            {/* Visualization Panel */}
-            <div style={styles.vizPanel}>
-              {currentView === VIEWS.YEAR && (
-                <YearView 
-                  events={events} 
-                  onMonthClick={(month) => {
-                    setSelectedMonth(month);
-                    setCurrentView(VIEWS.MONTH);
-                  }}
-                />
-              )}
-              {currentView === VIEWS.VALUES && (
-                <ValuesView values={values} setValues={setValues} />
-              )}
-              {currentView === VIEWS.LIFE_AREAS && (
-                <LifeAreasView 
-                  ratings={lifeAreaRatings} 
-                  setRatings={setLifeAreaRatings}
-                  values={values}
-                />
-              )}
-              {currentView === VIEWS.GOALS && (
-                <GoalsView 
-                  goals={goals} 
-                  setGoals={setGoals}
-                  values={values}
-                  onAddGoal={() => setShowGoalModal(true)}
-                />
-              )}
-              {currentView === VIEWS.SEASONS && (
-                <SeasonsView 
-                  intentions={seasonIntentions} 
-                  setIntentions={setSeasonIntentions}
-                  values={values}
-                  goals={goals}
-                />
-              )}
-              {currentView === VIEWS.MONTH && (
-                <MonthView 
-                  events={events}
-                  selectedMonth={selectedMonth}
-                  setSelectedMonth={setSelectedMonth}
-                  onAddEvent={() => setShowEventModal(true)}
-                  onDeleteEvent={(id) => setEvents(prev => prev.filter(e => e.id !== id))}
-                  insights={insights}
-                  goals={goals}
-                />
-              )}
+            {/* Left Panel - The Canvas */}
+            <div style={styles.canvasPanel}>
+              <div style={styles.canvasContent}>
+                {/* Year Header */}
+                <div style={styles.yearHeader}>
+                  <h2 style={styles.yearTitle}>2026</h2>
+                  <p style={styles.yearSubtitle}>Your year is taking shape</p>
+                </div>
+
+                {/* Values Section */}
+                <div style={{...styles.section, ...(revealed ? {} : styles.ghosted)}}>
+                  <div style={styles.sectionHeader}>
+                    <h3 style={styles.sectionTitle}>Values</h3>
+                    {revealed && values.length < 5 && (
+                      <button style={styles.sectionAdd} onClick={() => {
+                        const newValue = prompt('Add a value:');
+                        if (newValue && !values.includes(newValue)) {
+                          setValues([...values, newValue]);
+                        }
+                      }}>+ Add</button>
+                    )}
+                  </div>
+                  <div style={styles.valuesContainer}>
+                    {values.length === 0 ? (
+                      <div style={styles.ghostedPlaceholder}>
+                        <span style={styles.ghostedCircle}></span>
+                        <span style={styles.ghostedCircle}></span>
+                        <span style={styles.ghostedCircle}></span>
+                      </div>
+                    ) : (
+                      <div style={styles.valuesTags}>
+                        {values.map((v, i) => (
+                          <span key={v} style={styles.valueTag} className="slide-in">
+                            {v}
+                            {revealed && (
+                              <button 
+                                style={styles.valueRemove}
+                                onClick={() => setValues(values.filter(x => x !== v))}
+                              >×</button>
+                            )}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Life Areas Section */}
+                <div style={{...styles.section, ...(revealed ? {} : styles.ghostedSoft)}}>
+                  <div style={styles.sectionHeader}>
+                    <h3 style={styles.sectionTitle}>Life Areas</h3>
+                  </div>
+                  <div style={styles.lifeAreasGrid}>
+                    {Object.entries(LIFE_AREAS).map(([key, area]) => {
+                      const status = lifeAreaFocus[key];
+                      const isActive = revealed || status;
+                      return (
+                        <div 
+                          key={key} 
+                          style={{
+                            ...styles.lifeAreaPill,
+                            opacity: isActive ? 1 : 0.3,
+                            borderColor: status ? area.color : 'var(--border)',
+                            backgroundColor: status ? `${area.color}15` : 'transparent',
+                          }}
+                          className={status ? 'slide-in' : ''}
+                        >
+                          <span style={{color: area.color}}>{area.icon}</span>
+                          <span style={styles.lifeAreaName}>{area.name}</span>
+                          {status && <span style={{...styles.statusDot, backgroundColor: area.color}}></span>}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Mini Calendar */}
+                <div style={{...styles.section, ...(revealed ? {} : styles.ghostedSoft)}}>
+                  <div style={styles.sectionHeader}>
+                    <h3 style={styles.sectionTitle}>The Year</h3>
+                    {revealed && (
+                      <button style={styles.sectionAdd} onClick={() => setShowEventModal(true)}>+ Add Event</button>
+                    )}
+                  </div>
+                  <MiniYearCalendar 
+                    events={events} 
+                    revealed={revealed}
+                    onMonthClick={(month) => setSelectedMonth(month)}
+                  />
+                </div>
+
+                {/* Events List */}
+                {events.length > 0 && (
+                  <div style={{...styles.section}} className="fade-in">
+                    <div style={styles.sectionHeader}>
+                      <h3 style={styles.sectionTitle}>Planned</h3>
+                    </div>
+                    <div style={styles.eventsList}>
+                      {events.map(event => (
+                        <div key={event.id} style={styles.eventItem}>
+                          <span style={styles.eventMonth}>{MONTHS[event.month]}</span>
+                          <span style={styles.eventTitle}>{event.title}</span>
+                          {revealed && (
+                            <button 
+                              style={styles.eventRemove}
+                              onClick={() => setEvents(events.filter(e => e.id !== event.id))}
+                            >×</button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Chat Panel */}
@@ -609,25 +567,25 @@ What's missing?`;
               </div>
               
               <div style={styles.chatInputArea}>
-                <textarea
-                  style={styles.chatInput}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendMessage();
-                    }
-                  }}
-                  placeholder="Share what's on your mind..."
-                  rows={3}
-                />
-                <div style={styles.chatActions}>
-                  {currentView !== VIEWS.MONTH && (
-                    <button style={styles.progressButton} onClick={navigateNext}>
-                      Continue →
-                    </button>
-                  )}
+                {!revealed && phase === PHASES.EXPLORE && (
+                  <button style={styles.skipButton} onClick={handleSkip}>
+                    Skip to planning →
+                  </button>
+                )}
+                <div style={styles.inputRow}>
+                  <textarea
+                    style={styles.chatInput}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSendMessage();
+                      }
+                    }}
+                    placeholder="Share what's on your mind..."
+                    rows={2}
+                  />
                   <button 
                     style={{
                       ...styles.sendButton,
@@ -643,540 +601,59 @@ What's missing?`;
             </div>
           </main>
 
-          {/* Modals */}
+          {/* Event Modal */}
           {showEventModal && (
             <EventModal 
               onClose={() => setShowEventModal(false)}
-              onAdd={(eventData) => {
-                setEvents(prev => [...prev, { ...eventData, id: Date.now() }]);
-                setShowEventModal(false);
-              }}
-            />
-          )}
-          {showGoalModal && (
-            <GoalModal
-              onClose={() => setShowGoalModal(false)}
-              onAdd={(goalData) => {
-                setGoals(prev => [...prev, { ...goalData, id: Date.now(), completed: false }]);
-                setShowGoalModal(false);
-              }}
-              values={values}
+              onAdd={handleAddEvent}
             />
           )}
         </div>
       );
     }
 
-    // ============ YEAR VIEW ============
-    function YearView({ events, onMonthClick }) {
-      const currentYear = new Date().getFullYear();
+    // ============ MINI YEAR CALENDAR ============
+    function MiniYearCalendar({ events, revealed, onMonthClick }) {
       const currentMonth = new Date().getMonth();
-      const currentDay = new Date().getDate();
+      const currentYear = new Date().getFullYear();
 
-      const getMonthData = (monthIndex) => {
-        const firstDay = new Date(currentYear, monthIndex, 1).getDay();
-        const daysInMonth = new Date(currentYear, monthIndex + 1, 0).getDate();
-        return { firstDay, daysInMonth };
-      };
-
-      const getEventsForDay = (month, day) => {
-        const dateStr = `${currentYear}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        return events.filter(e => {
-          const start = new Date(e.startDate);
-          const end = new Date(e.endDate);
-          const current = new Date(dateStr);
-          return current >= start && current <= end;
-        });
+      const getEventsForMonth = (monthIndex) => {
+        return events.filter(e => e.month === monthIndex);
       };
 
       return (
-        <div style={styles.yearView} className="fade-up">
-          <h2 style={styles.yearTitle}>{currentYear}</h2>
-          <div style={styles.yearGrid}>
-            {MONTHS.map((monthName, monthIndex) => {
-              const { firstDay, daysInMonth } = getMonthData(monthIndex);
-              const isCurrentMonth = monthIndex === currentMonth;
-              
-              return (
-                <div 
-                  key={monthIndex} 
-                  style={{
-                    ...styles.miniMonth,
-                    ...(isCurrentMonth && styles.miniMonthCurrent)
-                  }}
-                  onClick={() => onMonthClick(monthIndex)}
-                >
-                  <div style={styles.miniMonthHeader}>{monthName}</div>
-                  <div style={styles.miniMonthGrid}>
-                    {['S','M','T','W','T','F','S'].map((d, i) => (
-                      <div key={i} style={styles.miniDayHeader}>{d}</div>
-                    ))}
-                    {Array.from({ length: firstDay }, (_, i) => (
-                      <div key={`empty-${i}`} style={styles.miniDayEmpty} />
-                    ))}
-                    {Array.from({ length: daysInMonth }, (_, i) => {
-                      const day = i + 1;
-                      const isToday = monthIndex === currentMonth && day === currentDay;
-                      const dayEvents = getEventsForDay(monthIndex, day);
-                      
-                      return (
-                        <div 
-                          key={day} 
-                          style={{
-                            ...styles.miniDay,
-                            ...(isToday && styles.miniDayToday),
-                            ...(dayEvents.length > 0 && styles.miniDayWithEvent),
-                          }}
-                        >
-                          {day}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
-
-    // ============ VALUES VIEW ============
-    function ValuesView({ values, setValues }) {
-      const [inputVal, setInputVal] = useState('');
-      const suggestedValues = ['Freedom', 'Connection', 'Growth', 'Creativity', 'Adventure', 'Peace', 'Family', 'Health', 'Authenticity', 'Joy', 'Courage', 'Balance'];
-
-      const addValue = (val) => {
-        if (values.length < 5 && !values.includes(val)) {
-          setValues([...values, val]);
-        }
-      };
-
-      return (
-        <div style={styles.viewContainer} className="fade-up">
-          <h2 style={styles.viewTitle}>Your Values</h2>
-          
-          <div style={styles.selectedValues}>
-            {values.length === 0 ? (
-              <p style={styles.emptyText}>Select or add up to 5 values</p>
-            ) : (
-              values.map((val, idx) => (
-                <span key={val} style={{...styles.valueTag, opacity: 1 - (idx * 0.15)}}>
-                  {val}
-                  <button style={styles.valueTagRemove} onClick={() => setValues(values.filter(v => v !== val))}>×</button>
-                </span>
-              ))
-            )}
-          </div>
-
-          <div style={styles.valueSuggestions}>
-            {suggestedValues.filter(v => !values.includes(v)).map(val => (
-              <button 
-                key={val} 
-                style={styles.valueSuggestion}
-                onClick={() => addValue(val)}
-                disabled={values.length >= 5}
-              >
-                {val}
-              </button>
-            ))}
-          </div>
-
-          <div style={styles.customInput}>
-            <input
-              type="text"
-              placeholder="Add your own..."
-              value={inputVal}
-              onChange={(e) => setInputVal(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && inputVal.trim()) {
-                  addValue(inputVal.trim());
-                  setInputVal('');
-                }
-              }}
-              style={styles.textInput}
-            />
-          </div>
-        </div>
-      );
-    }
-
-    // ============ LIFE AREAS VIEW ============
-    function LifeAreasView({ ratings, setRatings, values }) {
-      return (
-        <div style={styles.viewContainer} className="fade-up">
-          <h2 style={styles.viewTitle}>Life Areas</h2>
-          {values.length > 0 && (
-            <p style={styles.viewSubtitle}>Consider how each area relates to your values: {values.join(', ')}</p>
-          )}
-          
-          <div style={styles.lifeAreasGrid}>
-            {Object.entries(LIFE_AREAS).map(([key, area]) => (
-              <div key={key} style={styles.lifeAreaCard}>
-                <div style={styles.lifeAreaHeader}>
-                  <span style={{...styles.lifeAreaIcon, color: area.color}}>{area.icon}</span>
-                  <span style={styles.lifeAreaName}>{area.name}</span>
-                </div>
-                <div style={styles.sliderContainer}>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={ratings[key] || 5}
-                    onChange={(e) => setRatings({...ratings, [key]: parseInt(e.target.value)})}
-                    style={{...styles.slider, accentColor: area.color}}
-                  />
-                  <span style={{
-                    ...styles.sliderValue, 
-                    color: (ratings[key] || 5) <= 4 ? '#C4836A' : area.color
-                  }}>
-                    {ratings[key] || 5}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    // ============ GOALS VIEW ============
-    function GoalsView({ goals, setGoals, values, onAddGoal }) {
-      const toggleGoal = (id) => {
-        setGoals(goals.map(g => g.id === id ? {...g, completed: !g.completed} : g));
-      };
-
-      // Group goals by life area
-      const goalsByArea = {};
-      goals.forEach(goal => {
-        if (!goalsByArea[goal.lifeArea]) goalsByArea[goal.lifeArea] = [];
-        goalsByArea[goal.lifeArea].push(goal);
-      });
-
-      return (
-        <div style={styles.viewContainer} className="fade-up">
-          <div style={styles.goalsHeader}>
-            <h2 style={styles.viewTitle}>Goals</h2>
-            <button style={styles.addButton} onClick={onAddGoal}>+ Add Goal</button>
-          </div>
-
-          {values.length > 0 && (
-            <div style={styles.valuesReminder}>
-              <span style={styles.valuesReminderLabel}>Your values:</span>
-              {values.map(v => (
-                <span key={v} style={styles.valuesReminderTag}>{v}</span>
-              ))}
-            </div>
-          )}
-
-          {goals.length === 0 ? (
-            <div style={styles.emptyState}>
-              <p style={styles.emptyText}>No goals yet</p>
-              <p style={styles.emptyHint}>Goals connected to your values are more likely to stick.</p>
-            </div>
-          ) : (
-            <div style={styles.goalsList}>
-              {Object.entries(goalsByArea).map(([area, areaGoals]) => (
-                <div key={area} style={styles.goalGroup}>
-                  <div style={styles.goalGroupHeader}>
-                    <span style={{color: LIFE_AREAS[area].color}}>{LIFE_AREAS[area].icon}</span>
-                    <span>{LIFE_AREAS[area].name}</span>
-                  </div>
-                  {areaGoals.map(goal => (
-                    <div 
-                      key={goal.id} 
-                      style={{
-                        ...styles.goalCard,
-                        borderLeftColor: LIFE_AREAS[goal.lifeArea].color,
-                        opacity: goal.completed ? 0.6 : 1,
-                      }}
-                    >
-                      <button 
-                        style={{
-                          ...styles.goalCheck,
-                          backgroundColor: goal.completed ? LIFE_AREAS[goal.lifeArea].color : 'transparent',
-                          borderColor: LIFE_AREAS[goal.lifeArea].color,
-                        }}
-                        onClick={() => toggleGoal(goal.id)}
-                      >
-                        {goal.completed && '✓'}
-                      </button>
-                      <div style={styles.goalContent}>
-                        <p style={{
-                          ...styles.goalText,
-                          textDecoration: goal.completed ? 'line-through' : 'none',
-                        }}>{goal.text}</p>
-                        <div style={styles.goalMeta}>
-                          {goal.value && <span style={styles.goalValue}>↳ {goal.value}</span>}
-                          {goal.season && <span style={styles.goalSeason}>{goal.season}</span>}
-                        </div>
-                      </div>
-                      <button 
-                        onClick={() => setGoals(goals.filter(g => g.id !== goal.id))} 
-                        style={styles.deleteButton}
-                      >×</button>
-                    </div>
-                  ))}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    // ============ SEASONS VIEW ============
-    function SeasonsView({ intentions, setIntentions, values, goals }) {
-      const seasons = [
-        { id: 'winter', name: 'Winter', months: 'Dec – Feb', color: '#7A9CAD' },
-        { id: 'spring', name: 'Spring', months: 'Mar – May', color: '#7D9B76' },
-        { id: 'summer', name: 'Summer', months: 'Jun – Aug', color: '#C9A66B' },
-        { id: 'fall', name: 'Fall', months: 'Sep – Nov', color: '#C4836A' },
-      ];
-
-      const currentSeason = (() => {
-        const month = new Date().getMonth();
-        if ([11, 0, 1].includes(month)) return 'winter';
-        if ([2, 3, 4].includes(month)) return 'spring';
-        if ([5, 6, 7].includes(month)) return 'summer';
-        return 'fall';
-      })();
-
-      const goalsForSeason = (seasonId) => goals.filter(g => g.season === seasonId);
-
-      return (
-        <div style={styles.viewContainer} className="fade-up">
-          <h2 style={styles.viewTitle}>Seasonal Intentions</h2>
-          
-          <div style={styles.seasonsGrid}>
-            {seasons.map(season => (
-              <div 
-                key={season.id} 
-                style={{
-                  ...styles.seasonCard,
-                  ...(season.id === currentSeason && styles.seasonCardCurrent),
-                }}
-              >
-                <div style={{...styles.seasonHeader, color: season.color}}>
-                  <h3 style={styles.seasonName}>{season.name}</h3>
-                  <span style={styles.seasonMonths}>{season.months}</span>
-                  {season.id === currentSeason && <span style={styles.currentBadge}>Now</span>}
-                </div>
-                
-                {/* Values to focus on this season */}
-                {values.length > 0 && (
-                  <div style={styles.seasonValues}>
-                    <span style={styles.seasonValuesLabel}>Focus on:</span>
-                    <div style={styles.seasonValuesTags}>
-                      {values.map(v => {
-                        const isSelected = intentions[season.id]?.values?.includes(v);
-                        return (
-                          <button
-                            key={v}
-                            style={{
-                              ...styles.seasonValueTag,
-                              backgroundColor: isSelected ? season.color : 'var(--bg-elevated)',
-                              color: isSelected ? 'white' : 'var(--text-light)',
-                            }}
-                            onClick={() => {
-                              const current = intentions[season.id] || { focus: '', values: [] };
-                              const newValues = isSelected 
-                                ? current.values.filter(x => x !== v)
-                                : [...(current.values || []), v];
-                              setIntentions({...intentions, [season.id]: {...current, values: newValues}});
-                            }}
-                          >
-                            {v}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                <textarea
-                  placeholder="What's your focus this season?"
-                  value={intentions[season.id]?.focus || ''}
-                  onChange={(e) => {
-                    const current = intentions[season.id] || { focus: '', values: [] };
-                    setIntentions({...intentions, [season.id]: {...current, focus: e.target.value}});
-                  }}
-                  style={styles.seasonTextarea}
-                  rows={2}
-                />
-
-                {/* Goals assigned to this season */}
-                {goalsForSeason(season.id).length > 0 && (
-                  <div style={styles.seasonGoals}>
-                    <span style={styles.seasonGoalsLabel}>Goals:</span>
-                    {goalsForSeason(season.id).map(g => (
-                      <span key={g.id} style={{...styles.seasonGoalTag, borderColor: LIFE_AREAS[g.lifeArea].color}}>
-                        {g.text}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    // ============ MONTH VIEW ============
-    function MonthView({ events, selectedMonth, setSelectedMonth, onAddEvent, onDeleteEvent, insights, goals }) {
-      const now = new Date();
-      const year = now.getFullYear();
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
-                         'July', 'August', 'September', 'October', 'November', 'December'];
-      const monthName = monthNames[selectedMonth];
-      const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
-      const firstDay = new Date(year, selectedMonth, 1).getDay();
-
-      const getEventsForDay = (day) => {
-        const dateStr = `${year}-${String(selectedMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        return events.filter(e => {
-          const start = new Date(e.startDate);
-          const end = new Date(e.endDate);
-          const current = new Date(dateStr);
-          return current >= start && current <= end;
-        });
-      };
-
-      return (
-        <div style={styles.viewContainer} className="fade-up">
-          {/* Month Navigator */}
-          <div style={styles.monthNav}>
-            <button 
-              style={styles.monthNavButton}
-              onClick={() => setSelectedMonth(selectedMonth === 0 ? 11 : selectedMonth - 1)}
-            >
-              ←
-            </button>
-            <h2 style={styles.viewTitle}>{monthName}</h2>
-            <button 
-              style={styles.monthNavButton}
-              onClick={() => setSelectedMonth(selectedMonth === 11 ? 0 : selectedMonth + 1)}
-            >
-              →
-            </button>
-          </div>
-
-          {/* Alignment Insights */}
-          <div style={styles.insightsBar}>
-            <div style={styles.insightItem}>
-              <span style={styles.insightValue}>{insights.totalEvents}</span>
-              <span style={styles.insightLabel}>Events</span>
-            </div>
-            <div style={styles.insightItem}>
-              <span style={{
-                ...styles.insightValue,
-                color: insights.balanceScore >= 50 ? 'var(--accent)' : '#C4836A'
-              }}>
-                {insights.balanceScore}%
-              </span>
-              <span style={styles.insightLabel}>Balance</span>
-            </div>
-            {insights.gaps.length > 0 && (
-              <div style={styles.insightGap}>
-                <span style={styles.insightGapIcon}>⚠</span>
-                <span>{insights.gaps[0].name} needs attention</span>
-              </div>
-            )}
-          </div>
-
-          {/* Calendar */}
-          <div style={styles.calendarContainer}>
-            <div style={styles.calendarGrid}>
-              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                <div key={day} style={styles.calendarDayHeader}>{day}</div>
-              ))}
-              {Array.from({ length: firstDay }, (_, i) => (
-                <div key={`empty-${i}`} style={styles.calendarDayEmpty} />
-              ))}
-              {Array.from({ length: daysInMonth }, (_, i) => {
-                const day = i + 1;
-                const dayEvents = getEventsForDay(day);
-                const isToday = selectedMonth === now.getMonth() && day === now.getDate();
-                
-                return (
-                  <div key={day} style={{...styles.calendarDay, ...(isToday && styles.calendarDayToday)}}>
-                    <span style={{...styles.calendarDayNumber, ...(isToday && styles.calendarDayNumberToday)}}>{day}</span>
-                    {dayEvents.length > 0 && (
-                      <div style={styles.calendarDayDots}>
-                        {dayEvents.slice(0,3).map((e, idx) => (
-                          <span key={idx} style={{
-                            ...styles.calendarDayDot, 
-                            backgroundColor: LIFE_AREAS[e.lifeArea]?.color || 'var(--accent)'
-                          }} />
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Events by Life Area */}
-          <div style={styles.eventsList}>
-            <div style={styles.eventsHeader}>
-              <h3 style={styles.eventsTitle}>This Month</h3>
-              <button style={styles.addEventButton} onClick={onAddEvent}>+ Add</button>
-            </div>
+        <div style={styles.miniYearGrid}>
+          {MONTHS.map((monthName, idx) => {
+            const monthEvents = getEventsForMonth(idx);
+            const isCurrent = idx === currentMonth;
             
-            {/* Area breakdown */}
-            <div style={styles.areaBreakdown}>
-              {Object.entries(LIFE_AREAS).map(([key, area]) => (
-                <div 
-                  key={key} 
-                  style={{
-                    ...styles.areaBreakdownItem,
-                    opacity: insights.eventsByArea[key] > 0 ? 1 : 0.4,
-                  }}
-                >
-                  <span style={{color: area.color}}>{area.icon}</span>
-                  <span style={styles.areaBreakdownCount}>{insights.eventsByArea[key] || 0}</span>
-                </div>
-              ))}
-            </div>
-
-            {events.length === 0 ? (
-              <p style={styles.emptyText}>Nothing scheduled yet</p>
-            ) : (
-              <div style={styles.eventsGrid}>
-                {events.filter(e => {
-                  const start = new Date(e.startDate);
-                  return start.getMonth() === selectedMonth;
-                }).map(event => (
-                  <div 
-                    key={event.id} 
-                    style={{
-                      ...styles.eventCard, 
-                      borderLeftColor: LIFE_AREAS[event.lifeArea]?.color || 'var(--accent)'
-                    }}
-                  >
-                    <div>
-                      <span style={styles.eventType}>
-                        {LIFE_AREAS[event.lifeArea]?.icon} {LIFE_AREAS[event.lifeArea]?.name || event.type}
-                      </span>
-                      <p style={styles.eventTitle}>{event.title}</p>
-                      <span style={styles.eventDate}>
-                        {new Date(event.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        {event.startDate !== event.endDate && ` – ${new Date(event.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`}
-                      </span>
-                    </div>
-                    <button onClick={() => onDeleteEvent(event.id)} style={styles.deleteButton}>×</button>
+            return (
+              <div 
+                key={idx}
+                style={{
+                  ...styles.miniMonthCard,
+                  ...(isCurrent && styles.miniMonthCurrent),
+                  ...(monthEvents.length > 0 && styles.miniMonthWithEvents),
+                  cursor: revealed ? 'pointer' : 'default',
+                }}
+                onClick={() => revealed && onMonthClick(idx)}
+              >
+                <span style={styles.miniMonthName}>{monthName}</span>
+                {monthEvents.length > 0 && (
+                  <div style={styles.miniMonthDots}>
+                    {monthEvents.slice(0, 3).map((_, i) => (
+                      <span key={i} style={styles.miniMonthDot}></span>
+                    ))}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
+            );
+          })}
         </div>
       );
     }
 
-    // ============ CHAT COMPONENTS ============
+    // ============ CHAT MESSAGE ============
     function ChatMessage({ message }) {
       const isAssistant = message.role === 'assistant';
       
@@ -1194,6 +671,7 @@ What's missing?`;
       );
     }
 
+    // ============ TYPING INDICATOR ============
     function TypingIndicator() {
       return (
         <div style={styles.chatMessage} className="fade-in">
@@ -1212,95 +690,51 @@ What's missing?`;
     // ============ EVENT MODAL ============
     function EventModal({ onClose, onAdd }) {
       const [title, setTitle] = useState('');
-      const [lifeArea, setLifeArea] = useState('health');
-      const [startDate, setStartDate] = useState('');
-      const [endDate, setEndDate] = useState('');
+      const [month, setMonth] = useState(new Date().getMonth());
+      const [lifeArea, setLifeArea] = useState('fun');
 
       return (
         <div style={styles.modalOverlay} onClick={onClose}>
           <div style={styles.modal} onClick={e => e.stopPropagation()} className="fade-up">
             <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>Add a moment</h3>
+              <h3 style={styles.modalTitle}>Add an event</h3>
               <button style={styles.modalClose} onClick={onClose}>×</button>
             </div>
             <form onSubmit={(e) => { 
               e.preventDefault(); 
-              if (title && startDate && endDate) onAdd({ title, lifeArea, startDate, endDate }); 
+              if (title) {
+                onAdd({ 
+                  title, 
+                  month,
+                  lifeArea,
+                  startDate: `2026-${String(month + 1).padStart(2, '0')}-15`,
+                  endDate: `2026-${String(month + 1).padStart(2, '0')}-15`,
+                });
+              }
             }} style={styles.modalForm}>
               <div style={styles.formField}>
                 <label style={styles.formLabel}>What is it?</label>
-                <input type="text" style={styles.textInput} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Date night, gym session, project deadline..." />
-              </div>
-              <div style={styles.formField}>
-                <label style={styles.formLabel}>Life Area</label>
-                <div style={styles.typeGrid}>
-                  {Object.entries(LIFE_AREAS).map(([key, area]) => (
-                    <button 
-                      key={key} 
-                      type="button" 
-                      style={{
-                        ...styles.typeButton, 
-                        ...(lifeArea === key && {
-                          backgroundColor: area.color,
-                          borderColor: area.color,
-                          color: 'white',
-                        })
-                      }} 
-                      onClick={() => setLifeArea(key)}
-                    >
-                      {area.icon} {area.name.split(' ')[0]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              <div style={styles.formRow}>
-                <div style={styles.formField}>
-                  <label style={styles.formLabel}>Start</label>
-                  <input type="date" style={styles.textInput} value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                </div>
-                <div style={styles.formField}>
-                  <label style={styles.formLabel}>End</label>
-                  <input type="date" style={styles.textInput} value={endDate} onChange={(e) => setEndDate(e.target.value)} />
-                </div>
-              </div>
-              <button type="submit" style={{...styles.submitButton, ...(!title || !startDate || !endDate ? styles.submitButtonDisabled : {})}}>
-                Add to calendar
-              </button>
-            </form>
-          </div>
-        </div>
-      );
-    }
-
-    // ============ GOAL MODAL ============
-    function GoalModal({ onClose, onAdd, values }) {
-      const [text, setText] = useState('');
-      const [lifeArea, setLifeArea] = useState('health');
-      const [value, setValue] = useState('');
-      const [season, setSeason] = useState('');
-
-      return (
-        <div style={styles.modalOverlay} onClick={onClose}>
-          <div style={styles.modal} onClick={e => e.stopPropagation()} className="fade-up">
-            <div style={styles.modalHeader}>
-              <h3 style={styles.modalTitle}>Add a goal</h3>
-              <button style={styles.modalClose} onClick={onClose}>×</button>
-            </div>
-            <form onSubmit={(e) => { 
-              e.preventDefault(); 
-              if (text) onAdd({ text, lifeArea, value, season }); 
-            }} style={styles.modalForm}>
-              <div style={styles.formField}>
-                <label style={styles.formLabel}>What do you want to achieve?</label>
                 <input 
                   type="text" 
                   style={styles.textInput} 
-                  value={text} 
-                  onChange={(e) => setText(e.target.value)} 
-                  placeholder="Run a 5K, read 12 books, save $5000..." 
+                  value={title} 
+                  onChange={(e) => setTitle(e.target.value)} 
+                  placeholder="Trip to Italy, work conference, birthday..." 
+                  autoFocus
                 />
               </div>
-              
+              <div style={styles.formField}>
+                <label style={styles.formLabel}>When?</label>
+                <select 
+                  style={styles.selectInput} 
+                  value={month} 
+                  onChange={(e) => setMonth(parseInt(e.target.value))}
+                >
+                  {MONTHS.map((m, i) => (
+                    <option key={i} value={i}>{m} 2026</option>
+                  ))}
+                </select>
+              </div>
               <div style={styles.formField}>
                 <label style={styles.formLabel}>Life Area</label>
                 <select 
@@ -1313,40 +747,12 @@ What's missing?`;
                   ))}
                 </select>
               </div>
-
-              {values.length > 0 && (
-                <div style={styles.formField}>
-                  <label style={styles.formLabel}>Connected to value (optional)</label>
-                  <select 
-                    style={styles.selectInput} 
-                    value={value} 
-                    onChange={(e) => setValue(e.target.value)}
-                  >
-                    <option value="">None</option>
-                    {values.map(v => (
-                      <option key={v} value={v}>{v}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div style={styles.formField}>
-                <label style={styles.formLabel}>Target season (optional)</label>
-                <select 
-                  style={styles.selectInput} 
-                  value={season} 
-                  onChange={(e) => setSeason(e.target.value)}
-                >
-                  <option value="">Any time</option>
-                  <option value="winter">Winter (Dec-Feb)</option>
-                  <option value="spring">Spring (Mar-May)</option>
-                  <option value="summer">Summer (Jun-Aug)</option>
-                  <option value="fall">Fall (Sep-Nov)</option>
-                </select>
-              </div>
-
-              <button type="submit" style={{...styles.submitButton, ...(!text ? styles.submitButtonDisabled : {})}}>
-                Add goal
+              <button 
+                type="submit" 
+                style={{...styles.submitButton, ...(!title ? styles.submitButtonDisabled : {})}}
+                disabled={!title}
+              >
+                Add to calendar
               </button>
             </form>
           </div>
@@ -1356,235 +762,441 @@ What's missing?`;
 
     // ============ STYLES ============
     const styles = {
-      container: { minHeight: '100vh', position: 'relative', zIndex: 1 },
+      container: { 
+        minHeight: '100vh', 
+        display: 'flex', 
+        flexDirection: 'column',
+        backgroundColor: 'var(--bg-main)',
+      },
       
       // Header
       header: {
-        display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start',
-        padding: '1.25rem 2rem', borderBottom: '1px solid var(--border)',
-        backgroundColor: 'var(--bg-card)', position: 'relative', zIndex: 10,
+        padding: '1rem 2rem',
+        borderBottom: '1px solid var(--border)',
+        backgroundColor: 'var(--bg-card)',
       },
       headerLeft: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
-      headerRight: { display: 'flex', alignItems: 'center', gap: '1rem' },
       logoContainer: { display: 'flex', alignItems: 'center' },
       logoText: { fontSize: '1.5rem', fontFamily: "'Fraunces', serif", fontWeight: 400, color: 'var(--text)' },
       tagline: { fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic', marginLeft: '36px' },
-      nav: { display: 'flex', gap: '2px', backgroundColor: 'var(--bg-elevated)', padding: '4px', borderRadius: '10px' },
-      navButton: {
-        padding: '0.45rem 0.875rem', backgroundColor: 'transparent', border: 'none', borderRadius: '8px',
-        color: 'var(--text-muted)', fontSize: '0.8rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer',
-      },
-      navButtonActive: { backgroundColor: 'var(--bg-card)', color: 'var(--text)', boxShadow: '0 1px 3px rgba(0,0,0,0.08)' },
-      themeContainer: { position: 'relative' },
-      themeButton: {
-        width: '36px', height: '36px', borderRadius: '50%', backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--border)', cursor: 'pointer', fontSize: '1rem', color: 'var(--text-light)',
-      },
-      themeDropdown: {
-        position: 'absolute', top: '100%', right: 0, marginTop: '8px',
-        backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px',
-        padding: '0.5rem', minWidth: '140px', boxShadow: '0 10px 40px rgba(0,0,0,0.12)', zIndex: 100,
-      },
-      themeOption: {
-        display: 'flex', alignItems: 'center', gap: '0.75rem', width: '100%', padding: '0.5rem 0.75rem',
-        backgroundColor: 'transparent', border: 'none', borderRadius: '8px', cursor: 'pointer',
-        color: 'var(--text)', fontSize: '0.85rem', textAlign: 'left',
-      },
-      themeSwatch: { width: '16px', height: '16px', borderRadius: '50%' },
 
       // Main layout
-      main: { display: 'grid', gridTemplateColumns: '1fr 380px', height: 'calc(100vh - 80px)', position: 'relative', zIndex: 1 },
-      vizPanel: { padding: '2rem', overflow: 'auto', backgroundColor: 'var(--bg-main)' },
-      chatPanel: { backgroundColor: 'var(--bg-card)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column' },
-      chatMessages: { flex: 1, padding: '1.5rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem' },
-      chatInputArea: { padding: '1rem 1.25rem 1.25rem', borderTop: '1px solid var(--border)' },
-      chatInput: {
-        width: '100%', padding: '0.875rem 1rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)',
-        borderRadius: '12px', color: 'var(--text)', fontSize: '0.9rem', fontFamily: "'DM Sans', sans-serif",
-        resize: 'none', marginBottom: '0.75rem',
+      main: { 
+        display: 'grid', 
+        gridTemplateColumns: '1fr 420px', 
+        flex: 1,
+        height: 'calc(100vh - 70px)',
       },
-      chatActions: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-      progressButton: {
-        padding: '0.5rem 1rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border-dark)',
-        borderRadius: '20px', color: 'var(--text)', fontSize: '0.8rem', fontFamily: "'DM Sans', sans-serif", cursor: 'pointer',
+      
+      // Canvas Panel (Left)
+      canvasPanel: { 
+        padding: '2rem',
+        overflow: 'auto',
+        backgroundColor: 'var(--bg-main)',
       },
-      sendButton: {
-        width: '38px', height: '38px', borderRadius: '50%', backgroundColor: 'var(--accent)', border: 'none',
-        color: 'white', fontSize: '1.125rem', cursor: 'pointer', marginLeft: 'auto',
+      canvasContent: {
+        maxWidth: '600px',
+        margin: '0 auto',
       },
-      sendButtonDisabled: { backgroundColor: 'var(--border)', cursor: 'not-allowed' },
+      yearHeader: {
+        textAlign: 'center',
+        marginBottom: '2rem',
+      },
+      yearTitle: {
+        fontSize: '3rem',
+        fontFamily: "'Fraunces', serif",
+        color: 'var(--text)',
+        marginBottom: '0.25rem',
+      },
+      yearSubtitle: {
+        fontSize: '0.9rem',
+        color: 'var(--text-muted)',
+        fontStyle: 'italic',
+      },
 
-      // Chat
-      chatMessage: { display: 'flex', gap: '0.75rem', alignItems: 'flex-start' },
-      chatAvatar: {
-        width: '32px', height: '32px', borderRadius: '50%', backgroundColor: 'var(--accent-light)',
-        border: '1px solid var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+      // Sections
+      section: {
+        marginBottom: '2rem',
+        transition: 'opacity 0.5s ease',
       },
-      chatAvatarText: { fontFamily: "'Fraunces', serif", fontSize: '0.875rem', color: 'var(--accent)' },
-      chatBubble: { padding: '0.875rem 1rem', borderRadius: '14px', maxWidth: '85%', fontSize: '0.9rem', lineHeight: 1.6 },
-      chatBubbleAssistant: { backgroundColor: 'var(--bg-elevated)', borderTopLeftRadius: '4px', color: 'var(--text)' },
-      chatBubbleUser: { backgroundColor: 'var(--accent)', borderTopRightRadius: '4px', color: 'white' },
-      typingBubble: { padding: '0.875rem 1rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '14px', borderTopLeftRadius: '4px', display: 'flex', gap: '4px' },
-      typingDot: { color: 'var(--accent)', fontSize: '1.25rem', lineHeight: 1, animation: 'pulse 1s infinite' },
-
-      // Year view
-      yearView: { maxWidth: '900px', margin: '0 auto' },
-      yearTitle: { fontSize: '2.5rem', fontFamily: "'Fraunces', serif", color: 'var(--text)', marginBottom: '1.5rem', textAlign: 'center' },
-      yearGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' },
-      miniMonth: {
-        backgroundColor: 'var(--bg-card)', borderRadius: '12px', padding: '0.875rem',
-        border: '1px solid var(--border)', cursor: 'pointer', transition: 'all 0.2s ease',
+      sectionHeader: {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '0.75rem',
       },
-      miniMonthCurrent: { borderColor: 'var(--accent)', boxShadow: '0 0 0 1px var(--accent)' },
-      miniMonthHeader: { fontSize: '0.8rem', fontWeight: 500, color: 'var(--text)', marginBottom: '0.5rem', textAlign: 'center' },
-      miniMonthGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '1px' },
-      miniDayHeader: { fontSize: '0.5rem', color: 'var(--text-muted)', textAlign: 'center', padding: '2px 0' },
-      miniDayEmpty: { aspectRatio: '1' },
-      miniDay: { aspectRatio: '1', fontSize: '0.55rem', color: 'var(--text-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '2px' },
-      miniDayToday: { backgroundColor: 'var(--accent)', color: 'white', fontWeight: 600 },
-      miniDayWithEvent: { backgroundColor: 'var(--accent-light)' },
+      sectionTitle: {
+        fontSize: '0.8rem',
+        textTransform: 'uppercase',
+        letterSpacing: '0.1em',
+        color: 'var(--text-muted)',
+        fontFamily: "'DM Sans', sans-serif",
+        fontWeight: 500,
+      },
+      sectionAdd: {
+        fontSize: '0.75rem',
+        color: 'var(--accent)',
+        background: 'none',
+        border: 'none',
+        cursor: 'pointer',
+      },
 
-      // Common view styles
-      viewContainer: { maxWidth: '700px', margin: '0 auto' },
-      viewTitle: { fontSize: '2rem', fontFamily: "'Fraunces', serif", color: 'var(--text)', marginBottom: '0.5rem', textAlign: 'center' },
-      viewSubtitle: { fontSize: '0.9rem', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '1.5rem' },
-      emptyText: { color: 'var(--text-muted)', textAlign: 'center', padding: '1.5rem', fontStyle: 'italic' },
-      emptyHint: { color: 'var(--text-muted)', textAlign: 'center', fontSize: '0.85rem' },
-      emptyState: { padding: '2rem', textAlign: 'center' },
+      // Ghosted states
+      ghosted: { opacity: 0.25, pointerEvents: 'none' },
+      ghostedSoft: { opacity: 0.4 },
+      ghostedPlaceholder: {
+        display: 'flex',
+        gap: '0.75rem',
+      },
+      ghostedCircle: {
+        width: '60px',
+        height: '32px',
+        borderRadius: '16px',
+        backgroundColor: 'var(--ghost)',
+      },
 
       // Values
-      selectedValues: {
-        backgroundColor: 'var(--bg-card)', borderRadius: '12px', padding: '1.25rem',
-        border: '1px solid var(--border)', marginBottom: '1.5rem', minHeight: '70px',
-        display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignContent: 'flex-start',
+      valuesContainer: {
+        minHeight: '40px',
+      },
+      valuesTags: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '0.5rem',
       },
       valueTag: {
-        display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.875rem',
-        backgroundColor: 'var(--accent)', color: 'white', borderRadius: '20px', fontSize: '0.875rem',
+        display: 'inline-flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        padding: '0.5rem 1rem',
+        backgroundColor: 'var(--accent)',
+        color: 'white',
+        borderRadius: '20px',
+        fontSize: '0.875rem',
       },
-      valueTagRemove: { background: 'none', border: 'none', color: 'white', fontSize: '1rem', cursor: 'pointer', padding: 0, opacity: 0.8 },
-      valueSuggestions: { display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1.5rem', justifyContent: 'center' },
-      valueSuggestion: {
-        padding: '0.5rem 1rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)',
-        borderRadius: '20px', color: 'var(--text)', fontSize: '0.85rem', cursor: 'pointer',
-      },
-      customInput: { textAlign: 'center' },
-      textInput: {
-        padding: '0.75rem 1rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)',
-        borderRadius: '10px', color: 'var(--text)', fontSize: '0.9rem', fontFamily: "'DM Sans', sans-serif", width: '100%',
-      },
-      selectInput: {
-        padding: '0.75rem 1rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)',
-        borderRadius: '10px', color: 'var(--text)', fontSize: '0.9rem', fontFamily: "'DM Sans', sans-serif", width: '100%',
+      valueRemove: {
+        background: 'none',
+        border: 'none',
+        color: 'white',
+        opacity: 0.7,
+        cursor: 'pointer',
+        fontSize: '1rem',
+        padding: 0,
+        marginLeft: '0.25rem',
       },
 
-      // Life areas
-      lifeAreasGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' },
-      lifeAreaCard: { backgroundColor: 'var(--bg-card)', borderRadius: '12px', padding: '1.25rem', border: '1px solid var(--border)' },
-      lifeAreaHeader: { display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' },
-      lifeAreaIcon: { fontSize: '1.25rem' },
-      lifeAreaName: { fontSize: '0.9rem', fontWeight: 500, color: 'var(--text)' },
-      sliderContainer: { display: 'flex', alignItems: 'center', gap: '1rem' },
-      slider: { flex: 1, height: '6px', borderRadius: '3px', cursor: 'pointer' },
-      sliderValue: { fontWeight: 600, fontSize: '1.25rem', minWidth: '24px', textAlign: 'center' },
+      // Life Areas
+      lifeAreasGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(2, 1fr)',
+        gap: '0.5rem',
+      },
+      lifeAreaPill: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        padding: '0.625rem 0.875rem',
+        borderRadius: '10px',
+        border: '1px solid var(--border)',
+        backgroundColor: 'transparent',
+        transition: 'all 0.3s ease',
+      },
+      lifeAreaName: {
+        fontSize: '0.8rem',
+        color: 'var(--text)',
+        flex: 1,
+      },
+      statusDot: {
+        width: '6px',
+        height: '6px',
+        borderRadius: '50%',
+      },
 
-      // Goals
-      goalsHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' },
-      addButton: {
-        padding: '0.5rem 1rem', backgroundColor: 'var(--accent)', border: 'none',
-        borderRadius: '20px', color: 'white', fontSize: '0.8rem', cursor: 'pointer',
+      // Mini Year Calendar
+      miniYearGrid: {
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4, 1fr)',
+        gap: '0.5rem',
       },
-      valuesReminder: { display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem', flexWrap: 'wrap' },
-      valuesReminderLabel: { fontSize: '0.8rem', color: 'var(--text-muted)' },
-      valuesReminderTag: { padding: '0.25rem 0.75rem', backgroundColor: 'var(--accent-light)', borderRadius: '12px', fontSize: '0.75rem', color: 'var(--accent)' },
-      goalsList: { display: 'flex', flexDirection: 'column', gap: '1.5rem' },
-      goalGroup: {},
-      goalGroupHeader: { display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem', fontSize: '0.85rem', fontWeight: 500 },
-      goalCard: {
-        backgroundColor: 'var(--bg-card)', borderRadius: '10px', padding: '1rem',
-        borderLeft: '3px solid', display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '0.5rem',
+      miniMonthCard: {
+        padding: '0.75rem 0.5rem',
+        borderRadius: '8px',
+        backgroundColor: 'var(--bg-card)',
+        border: '1px solid var(--border)',
+        textAlign: 'center',
+        transition: 'all 0.2s ease',
       },
-      goalCheck: {
-        width: '20px', height: '20px', borderRadius: '50%', border: '2px solid',
-        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        fontSize: '0.7rem', color: 'white', flexShrink: 0,
+      miniMonthCurrent: {
+        borderColor: 'var(--accent)',
+        boxShadow: '0 0 0 1px var(--accent)',
       },
-      goalContent: { flex: 1 },
-      goalText: { color: 'var(--text)', fontSize: '0.95rem', marginBottom: '0.25rem' },
-      goalMeta: { display: 'flex', gap: '0.75rem', flexWrap: 'wrap' },
-      goalValue: { fontSize: '0.75rem', color: 'var(--accent)' },
-      goalSeason: { fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'capitalize' },
-      deleteButton: { background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '1.25rem', cursor: 'pointer', opacity: 0.5 },
+      miniMonthWithEvents: {
+        backgroundColor: 'var(--accent-light)',
+      },
+      miniMonthName: {
+        fontSize: '0.75rem',
+        fontWeight: 500,
+        color: 'var(--text)',
+      },
+      miniMonthDots: {
+        display: 'flex',
+        justifyContent: 'center',
+        gap: '3px',
+        marginTop: '4px',
+      },
+      miniMonthDot: {
+        width: '5px',
+        height: '5px',
+        borderRadius: '50%',
+        backgroundColor: 'var(--accent)',
+      },
 
-      // Seasons
-      seasonsGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' },
-      seasonCard: { backgroundColor: 'var(--bg-card)', borderRadius: '12px', padding: '1.25rem', border: '1px solid var(--border)' },
-      seasonCardCurrent: { borderColor: 'var(--accent)', borderWidth: '2px' },
-      seasonHeader: { marginBottom: '0.75rem', textAlign: 'center', position: 'relative' },
-      seasonName: { fontSize: '1.25rem', fontFamily: "'Fraunces', serif", marginBottom: '0.125rem' },
-      seasonMonths: { fontSize: '0.75rem', opacity: 0.7 },
-      currentBadge: { position: 'absolute', top: 0, right: 0, fontSize: '0.65rem', backgroundColor: 'var(--accent)', color: 'white', padding: '0.15rem 0.5rem', borderRadius: '8px' },
-      seasonValues: { marginBottom: '0.75rem' },
-      seasonValuesLabel: { fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: '0.5rem' },
-      seasonValuesTags: { display: 'flex', flexWrap: 'wrap', gap: '0.25rem' },
-      seasonValueTag: { padding: '0.25rem 0.5rem', borderRadius: '10px', fontSize: '0.7rem', border: 'none', cursor: 'pointer' },
-      seasonTextarea: {
-        width: '100%', padding: '0.75rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)',
-        borderRadius: '8px', color: 'var(--text)', fontSize: '0.85rem', fontFamily: "'DM Sans', sans-serif", resize: 'none',
+      // Events List
+      eventsList: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.5rem',
       },
-      seasonGoals: { marginTop: '0.75rem' },
-      seasonGoalsLabel: { fontSize: '0.7rem', color: 'var(--text-muted)', display: 'block', marginBottom: '0.25rem' },
-      seasonGoalTag: { display: 'inline-block', padding: '0.25rem 0.5rem', borderRadius: '6px', fontSize: '0.7rem', border: '1px solid', marginRight: '0.25rem', marginBottom: '0.25rem' },
+      eventItem: {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.75rem',
+        padding: '0.625rem 0.875rem',
+        backgroundColor: 'var(--bg-card)',
+        borderRadius: '8px',
+        border: '1px solid var(--border)',
+      },
+      eventMonth: {
+        fontSize: '0.7rem',
+        fontWeight: 600,
+        color: 'var(--accent)',
+        textTransform: 'uppercase',
+        minWidth: '32px',
+      },
+      eventTitle: {
+        fontSize: '0.875rem',
+        color: 'var(--text)',
+        flex: 1,
+      },
+      eventRemove: {
+        background: 'none',
+        border: 'none',
+        color: 'var(--text-muted)',
+        cursor: 'pointer',
+        fontSize: '1rem',
+        opacity: 0.5,
+      },
 
-      // Month view
-      monthNav: { display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '1rem', marginBottom: '1rem' },
-      monthNavButton: { background: 'none', border: 'none', fontSize: '1.25rem', color: 'var(--text-light)', cursor: 'pointer', padding: '0.5rem' },
-      insightsBar: { display: 'flex', alignItems: 'center', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border)' },
-      insightItem: { display: 'flex', flexDirection: 'column', alignItems: 'center' },
-      insightValue: { fontSize: '1.5rem', fontWeight: 600, color: 'var(--text)' },
-      insightLabel: { fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase' },
-      insightGap: { display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem', color: '#C4836A', marginLeft: 'auto' },
-      insightGapIcon: { fontSize: '1rem' },
-      calendarContainer: { backgroundColor: 'var(--bg-card)', borderRadius: '12px', padding: '1.25rem', marginBottom: '1.5rem', border: '1px solid var(--border)' },
-      calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' },
-      calendarDayHeader: { padding: '0.5rem', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500 },
-      calendarDayEmpty: { aspectRatio: '1' },
-      calendarDay: { aspectRatio: '1', backgroundColor: 'var(--bg-elevated)', borderRadius: '8px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', position: 'relative' },
-      calendarDayToday: { border: '2px solid var(--accent)' },
-      calendarDayNumber: { fontSize: '0.875rem', color: 'var(--text-light)' },
-      calendarDayNumberToday: { color: 'var(--accent)', fontWeight: 600 },
-      calendarDayDots: { display: 'flex', gap: '2px', position: 'absolute', bottom: '4px' },
-      calendarDayDot: { width: '5px', height: '5px', borderRadius: '50%' },
-      eventsList: { backgroundColor: 'var(--bg-card)', borderRadius: '12px', padding: '1.25rem', border: '1px solid var(--border)' },
-      eventsHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' },
-      eventsTitle: { fontSize: '1rem', fontFamily: "'Fraunces', serif", color: 'var(--text)' },
-      addEventButton: { padding: '0.4rem 0.875rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '16px', color: 'white', fontSize: '0.8rem', cursor: 'pointer' },
-      areaBreakdown: { display: 'flex', gap: '1rem', marginBottom: '1rem', justifyContent: 'center' },
-      areaBreakdownItem: { display: 'flex', alignItems: 'center', gap: '0.25rem' },
-      areaBreakdownCount: { fontSize: '0.8rem', color: 'var(--text-light)' },
-      eventsGrid: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
-      eventCard: { borderRadius: '10px', padding: '0.875rem 1rem', borderLeft: '3px solid', backgroundColor: 'var(--bg-elevated)', display: 'flex', justifyContent: 'space-between' },
-      eventType: { fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' },
-      eventTitle: { fontSize: '0.95rem', color: 'var(--text)', fontWeight: 500 },
-      eventDate: { fontSize: '0.8rem', color: 'var(--text-muted)' },
+      // Chat Panel (Right)
+      chatPanel: { 
+        backgroundColor: 'var(--bg-card)', 
+        borderLeft: '1px solid var(--border)', 
+        display: 'flex', 
+        flexDirection: 'column',
+      },
+      chatMessages: { 
+        flex: 1, 
+        padding: '1.5rem', 
+        overflowY: 'auto', 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '1rem',
+      },
+      chatInputArea: { 
+        padding: '1rem 1.5rem 1.5rem', 
+        borderTop: '1px solid var(--border)',
+      },
+      skipButton: {
+        width: '100%',
+        padding: '0.5rem',
+        marginBottom: '0.75rem',
+        backgroundColor: 'transparent',
+        border: '1px solid var(--border)',
+        borderRadius: '8px',
+        color: 'var(--text-muted)',
+        fontSize: '0.8rem',
+        cursor: 'pointer',
+        transition: 'all 0.2s ease',
+      },
+      inputRow: {
+        display: 'flex',
+        gap: '0.75rem',
+        alignItems: 'flex-end',
+      },
+      chatInput: {
+        flex: 1,
+        padding: '0.875rem 1rem',
+        backgroundColor: 'var(--bg-elevated)',
+        border: '1px solid var(--border)',
+        borderRadius: '12px',
+        color: 'var(--text)',
+        fontSize: '0.9rem',
+        fontFamily: "'DM Sans', sans-serif",
+        resize: 'none',
+      },
+      sendButton: {
+        width: '42px',
+        height: '42px',
+        borderRadius: '50%',
+        backgroundColor: 'var(--accent)',
+        border: 'none',
+        color: 'white',
+        fontSize: '1.125rem',
+        cursor: 'pointer',
+        flexShrink: 0,
+      },
+      sendButtonDisabled: { 
+        backgroundColor: 'var(--border)', 
+        cursor: 'not-allowed',
+      },
+
+      // Chat Message
+      chatMessage: { 
+        display: 'flex', 
+        gap: '0.75rem', 
+        alignItems: 'flex-start',
+      },
+      chatAvatar: {
+        width: '32px',
+        height: '32px',
+        borderRadius: '50%',
+        backgroundColor: 'var(--accent-light)',
+        border: '1px solid var(--accent)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+      },
+      chatAvatarText: { 
+        fontFamily: "'Fraunces', serif", 
+        fontSize: '0.875rem', 
+        color: 'var(--accent)',
+      },
+      chatBubble: { 
+        padding: '0.875rem 1rem', 
+        borderRadius: '14px', 
+        maxWidth: '85%', 
+        fontSize: '0.9rem', 
+        lineHeight: 1.6,
+      },
+      chatBubbleAssistant: { 
+        backgroundColor: 'var(--bg-elevated)', 
+        borderTopLeftRadius: '4px', 
+        color: 'var(--text)',
+      },
+      chatBubbleUser: { 
+        backgroundColor: 'var(--accent)', 
+        borderTopRightRadius: '4px', 
+        color: 'white',
+      },
+      typingBubble: { 
+        padding: '0.875rem 1rem', 
+        backgroundColor: 'var(--bg-elevated)', 
+        borderRadius: '14px', 
+        borderTopLeftRadius: '4px', 
+        display: 'flex', 
+        gap: '4px',
+      },
+      typingDot: { 
+        color: 'var(--accent)', 
+        fontSize: '1.25rem', 
+        lineHeight: 1, 
+        animation: 'pulse 1s infinite',
+      },
 
       // Modal
-      modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
-      modal: { backgroundColor: 'var(--bg-card)', borderRadius: '20px', padding: '1.75rem', width: '90%', maxWidth: '420px', border: '1px solid var(--border)' },
-      modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' },
-      modalTitle: { fontSize: '1.25rem', fontFamily: "'Fraunces', serif", color: 'var(--text)' },
-      modalClose: { width: '30px', height: '30px', borderRadius: '50%', backgroundColor: 'var(--bg-elevated)', border: 'none', color: 'var(--text-muted)', fontSize: '1.125rem', cursor: 'pointer' },
-      modalForm: { display: 'flex', flexDirection: 'column', gap: '1.25rem' },
-      formField: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
-      formRow: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' },
-      formLabel: { fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 },
-      typeGrid: { display: 'flex', flexWrap: 'wrap', gap: '0.5rem' },
-      typeButton: {
-        padding: '0.5rem 0.75rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)',
-        borderRadius: '16px', color: 'var(--text)', fontSize: '0.7rem', cursor: 'pointer',
+      modalOverlay: { 
+        position: 'fixed', 
+        top: 0, 
+        left: 0, 
+        right: 0, 
+        bottom: 0, 
+        backgroundColor: 'rgba(0,0,0,0.4)', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        zIndex: 1000,
       },
-      submitButton: { padding: '0.875rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '12px', color: 'white', fontSize: '0.9rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 500, cursor: 'pointer', marginTop: '0.25rem' },
-      submitButtonDisabled: { backgroundColor: 'var(--border-dark)', cursor: 'not-allowed' },
+      modal: { 
+        backgroundColor: 'var(--bg-card)', 
+        borderRadius: '20px', 
+        padding: '1.75rem', 
+        width: '90%', 
+        maxWidth: '400px', 
+        border: '1px solid var(--border)',
+      },
+      modalHeader: { 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        marginBottom: '1.5rem',
+      },
+      modalTitle: { 
+        fontSize: '1.25rem', 
+        fontFamily: "'Fraunces', serif", 
+        color: 'var(--text)',
+      },
+      modalClose: { 
+        width: '30px', 
+        height: '30px', 
+        borderRadius: '50%', 
+        backgroundColor: 'var(--bg-elevated)', 
+        border: 'none', 
+        color: 'var(--text-muted)', 
+        fontSize: '1.125rem', 
+        cursor: 'pointer',
+      },
+      modalForm: { 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '1.25rem',
+      },
+      formField: { 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: '0.5rem',
+      },
+      formLabel: { 
+        fontSize: '0.75rem', 
+        color: 'var(--text-muted)', 
+        textTransform: 'uppercase', 
+        letterSpacing: '0.05em', 
+        fontWeight: 500,
+      },
+      textInput: {
+        padding: '0.75rem 1rem',
+        backgroundColor: 'var(--bg-elevated)',
+        border: '1px solid var(--border)',
+        borderRadius: '10px',
+        color: 'var(--text)',
+        fontSize: '0.9rem',
+        fontFamily: "'DM Sans', sans-serif",
+      },
+      selectInput: {
+        padding: '0.75rem 1rem',
+        backgroundColor: 'var(--bg-elevated)',
+        border: '1px solid var(--border)',
+        borderRadius: '10px',
+        color: 'var(--text)',
+        fontSize: '0.9rem',
+        fontFamily: "'DM Sans', sans-serif",
+      },
+      submitButton: { 
+        padding: '0.875rem', 
+        backgroundColor: 'var(--accent)', 
+        border: 'none', 
+        borderRadius: '12px', 
+        color: 'white', 
+        fontSize: '0.9rem', 
+        fontFamily: "'DM Sans', sans-serif", 
+        fontWeight: 500, 
+        cursor: 'pointer', 
+        marginTop: '0.25rem',
+      },
+      submitButtonDisabled: { 
+        backgroundColor: 'var(--border-dark)', 
+        cursor: 'not-allowed',
+      },
     };
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
