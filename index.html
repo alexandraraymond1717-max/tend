@@ -123,6 +123,8 @@
       const [expandedEvent, setExpandedEvent] = useState(null);
       const [showEventModal, setShowEventModal] = useState(false);
       const [showGoalModal, setShowGoalModal] = useState(false);
+      const [showSettingsModal, setShowSettingsModal] = useState(false);
+      const [apiKey, setApiKey] = useState(() => localStorage.getItem('tend_api_key') || '');
       const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
 
       useEffect(() => {
@@ -655,7 +657,98 @@ Click on the event in the sidebar to add details.`;
         return `Tell me more about that.`;
       };
 
-      const handleSendMessage = () => {
+      // System prompt for Tend AI
+      const getTendSystemPrompt = () => {
+        const currentSeason = (() => {
+          const month = new Date().getMonth();
+          if ([11, 0, 1].includes(month)) return 'winter';
+          if ([2, 3, 4].includes(month)) return 'spring';
+          if ([5, 6, 7].includes(month)) return 'summer';
+          return 'fall';
+        })();
+
+        return `You are Tend, a thoughtful AI companion for intentional living and life design. You help people design their year with intention — not just manage tasks, but create a life aligned with their values.
+
+Your personality:
+- Warm, calm, and grounded — like a wise friend
+- You ask thoughtful questions rather than give prescriptive advice
+- You're concise — 2-4 sentences is often enough, occasionally more for important moments
+- You use gentle emphasis with italics for key words
+- You avoid bullet points in conversation — speak naturally
+
+Current context:
+- The user is designing their 2026
+- Current view: ${centerView}
+- Current sidebar tab: ${activeTab}
+- Current season: ${currentSeason}
+- Their year theme: ${yearTheme || 'not set yet'}
+- Their values: ${values.length > 0 ? values.join(', ') : 'not identified yet'}
+- Their events: ${events.length > 0 ? events.map(e => `${MONTHS[e.month]}: ${e.title}`).join(', ') : 'none yet'}
+- Weekly habits: ${weeklyHabits.length > 0 ? weeklyHabits.map(h => `${h.text} (${h.frequency}x/week)`).join(', ') : 'none yet'}
+- Daily habits: ${dailyHabits.length > 0 ? dailyHabits.map(h => h.text).join(', ') : 'none yet'}
+- Phase: ${phase} (explore = getting to know them, ground = understanding commitments, reveal = unlocking the app, plan = ongoing planning)
+
+View-specific guidance:
+- Year view: Help them find their theme word and see the big picture
+- Seasons view: Help them set intentions for each season's feeling and focus
+- Monthly view: Help them plan specific months, events, and time allocation
+- Weekly view: Help them establish weekly rhythms (exercise, date nights, creative time)
+- Daily view: Help them identify small daily habits that compound
+
+If they're in the EXPLORE phase, focus on understanding what they want from the year and helping them find their theme word.
+If they mention specific months or events, acknowledge those.
+If they seem stuck, offer a gentle prompt or example.
+
+Keep responses focused and conversational. You're not a productivity app — you're helping them live with more intention.`;
+      };
+
+      // Call Claude API
+      const callClaudeAPI = async (userMessage) => {
+        if (!apiKey) {
+          return "I'd love to help you plan, but I need an API key to think deeply. Click the ⚙ settings icon to add your Anthropic API key.";
+        }
+
+        try {
+          const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 500,
+              system: getTendSystemPrompt(),
+              messages: [
+                ...messages.map(m => ({
+                  role: m.role === 'assistant' ? 'assistant' : 'user',
+                  content: m.content.replace(/<[^>]*>/g, '') // Strip HTML for API
+                })),
+                { role: 'user', content: userMessage }
+              ]
+            })
+          });
+
+          if (!response.ok) {
+            const error = await response.json();
+            console.error('API Error:', error);
+            if (response.status === 401) {
+              return "That API key doesn't seem to be working. Check your key in settings (⚙).";
+            }
+            return "Something went wrong connecting to Claude. Try again?";
+          }
+
+          const data = await response.json();
+          return data.content[0].text;
+        } catch (error) {
+          console.error('Fetch error:', error);
+          return "I couldn't connect to Claude. Check your internet connection and try again.";
+        }
+      };
+
+      const handleSendMessage = async () => {
         if (!inputValue.trim()) return;
         
         const userMessage = inputValue.trim();
@@ -664,11 +757,50 @@ Click on the event in the sidebar to add details.`;
         setIsTyping(true);
         setExchangeCount(prev => prev + 1);
 
-        setTimeout(() => {
-          const response = generateResponse(userMessage, phase, exchangeCount + 1);
-          setMessages(prev => [...prev, { role: 'assistant', content: response }]);
-          setIsTyping(false);
-        }, 1200);
+        // Analyze for values/events even with API
+        const detected = analyzeText(userMessage);
+        processAnalysis(detected);
+        
+        // Parse events from message
+        const foundEvents = parseEvents(userMessage);
+        if (foundEvents.length > 0 && phase === PHASES.GROUND) {
+          const newEvents = foundEvents.map((e, i) => ({
+            id: Date.now() + i,
+            title: `Event in ${MONTHS[e.month]}`,
+            month: e.month,
+            lifeArea: 'fun',
+            details: { flights: '', stays: '', activities: '', notes: '' },
+          }));
+          setEvents(prev => [...prev, ...newEvents]);
+        }
+
+        // Check for theme word in early exchanges
+        if (phase === PHASES.EXPLORE && exchangeCount < 3) {
+          const words = userMessage.split(/\s+/).filter(w => w.length > 2 && w.length < 15);
+          const potentialTheme = words.find(w => 
+            /^[a-zA-Z]+$/.test(w) && 
+            !['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something'].includes(w.toLowerCase())
+          );
+          if (potentialTheme && words.length <= 5 && !yearTheme) {
+            setYearTheme(potentialTheme.toLowerCase());
+          }
+        }
+
+        // Progress phases based on exchange count
+        if (phase === PHASES.EXPLORE && exchangeCount >= 2) {
+          setPhase(PHASES.GROUND);
+        }
+        if (phase === PHASES.GROUND && exchangeCount >= 3) {
+          setTimeout(() => {
+            setPhase(PHASES.REVEAL);
+            setRevealed(true);
+          }, 500);
+        }
+
+        // Get response from Claude API
+        const response = await callClaudeAPI(userMessage);
+        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setIsTyping(false);
       };
 
       const handleSkip = () => {
@@ -717,6 +849,13 @@ I'm here to help with any planning.`
               <h1 style={styles.logoText}>tend</h1>
             </div>
             <p style={styles.tagline}>a space for designing your life with intention</p>
+            <button 
+              style={styles.settingsButton} 
+              onClick={() => setShowSettingsModal(true)}
+              title="Settings"
+            >
+              ⚙
+            </button>
           </header>
 
           <main style={styles.main}>
@@ -928,6 +1067,16 @@ I'm here to help with any planning.`
 
           {showEventModal && <EventModal onClose={() => setShowEventModal(false)} onAdd={handleAddEvent} />}
           {showGoalModal && <GoalModal onClose={() => setShowGoalModal(false)} onAdd={handleAddGoal} />}
+          {showSettingsModal && (
+            <SettingsModal 
+              apiKey={apiKey} 
+              setApiKey={(key) => {
+                setApiKey(key);
+                localStorage.setItem('tend_api_key', key);
+              }} 
+              onClose={() => setShowSettingsModal(false)} 
+            />
+          )}
         </div>
       );
     }
@@ -1532,12 +1681,56 @@ I'm here to help with any planning.`
       );
     }
 
+    function SettingsModal({ apiKey, setApiKey, onClose }) {
+      const [key, setKey] = useState(apiKey);
+      
+      const handleSave = () => {
+        setApiKey(key);
+        onClose();
+      };
+
+      return (
+        <div style={styles.modalOverlay} onClick={onClose}>
+          <div style={{...styles.modal, maxWidth: '420px'}} onClick={e => e.stopPropagation()} className="fade-in">
+            <div style={styles.modalHeader}>
+              <h3 style={styles.modalTitle}>Settings</h3>
+              <button style={styles.modalClose} onClick={onClose}>×</button>
+            </div>
+            <div style={styles.modalForm}>
+              <div style={styles.formField}>
+                <label style={styles.formLabel}>Anthropic API Key</label>
+                <input 
+                  type="password" 
+                  style={styles.textInput} 
+                  value={key} 
+                  onChange={(e) => setKey(e.target.value)} 
+                  placeholder="sk-ant-..." 
+                  autoFocus 
+                />
+                <p style={styles.settingsHint}>
+                  Your key is stored locally in your browser only. Get one at{' '}
+                  <a href="https://console.anthropic.com/api-keys" target="_blank" rel="noopener noreferrer" style={styles.settingsLink}>
+                    console.anthropic.com
+                  </a>
+                </p>
+              </div>
+              <button onClick={handleSave} style={styles.submitButton}>Save</button>
+              {apiKey && (
+                <p style={styles.settingsStatus}>✓ API key is set</p>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+
     const styles = {
       container: { height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)', overflow: 'hidden' },
       header: { padding: '0.875rem 2rem', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-card)', display: 'flex', alignItems: 'baseline', gap: '1rem' },
       logoContainer: { display: 'flex', alignItems: 'center' },
       logoText: { fontSize: '1.5rem', fontFamily: "'Fraunces', serif", fontWeight: 400, color: 'var(--text)' },
-      tagline: { fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' },
+      tagline: { fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic', flex: 1 },
+      settingsButton: { background: 'none', border: 'none', fontSize: '1.25rem', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.25rem', opacity: 0.7, transition: 'opacity 0.2s' },
 
       main: { display: 'grid', gridTemplateColumns: '240px 1fr 320px', flex: 1, height: 'calc(100vh - 56px)', overflow: 'hidden' },
 
@@ -1710,6 +1903,9 @@ I'm here to help with any planning.`
       selectInput: { padding: '0.625rem 0.875rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif" },
       submitButton: { padding: '0.75rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '10px', color: 'white', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer', marginTop: '0.5rem' },
       submitButtonDisabled: { backgroundColor: 'var(--border-dark)', cursor: 'not-allowed' },
+      settingsHint: { fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: 1.5 },
+      settingsLink: { color: 'var(--accent)', textDecoration: 'none' },
+      settingsStatus: { fontSize: '0.8rem', color: 'var(--accent)', textAlign: 'center', marginTop: '0.5rem' },
     };
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
