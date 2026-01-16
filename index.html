@@ -110,6 +110,7 @@
       const [lifeAreasMode, setLifeAreasMode] = useState(false);
       const [currentLifeAreaIndex, setCurrentLifeAreaIndex] = useState(0);
       const [waitingForSatisfaction, setWaitingForSatisfaction] = useState(true);
+      const [isLastLifeAreaResponse, setIsLastLifeAreaResponse] = useState(false);
       const lifeAreaOrder = ['health', 'relationships', 'career', 'finances', 'growth', 'fun'];
       const lifeAreaDescriptions = {
         health: 'physical energy, movement, sleep, how your body feels',
@@ -648,7 +649,30 @@ Click on the event in the sidebar to add details.`;
       };
 
       // System prompt for Tend AI
-      const getTendSystemPrompt = () => {
+      const getTendSystemPrompt = (pendingState = {}) => {
+        const { 
+          pendingLifeAreaUpdate, 
+          pendingNextAreaIndex, 
+          pendingWaitingForSatisfaction,
+          pendingIsLastResponse 
+        } = pendingState;
+        
+        // Use pending values if provided, otherwise use current state
+        const effectiveAreaIndex = pendingNextAreaIndex !== undefined ? pendingNextAreaIndex : currentLifeAreaIndex;
+        const effectiveWaitingFor = pendingWaitingForSatisfaction !== undefined ? pendingWaitingForSatisfaction : waitingForSatisfaction;
+        const effectiveIsLast = pendingIsLastResponse || isLastLifeAreaResponse;
+        
+        // Build updated life area ratings including any pending update
+        const effectiveRatings = pendingLifeAreaUpdate 
+          ? {
+              ...lifeAreaRatings,
+              [pendingLifeAreaUpdate.area]: {
+                ...lifeAreaRatings[pendingLifeAreaUpdate.area],
+                [pendingLifeAreaUpdate.field]: pendingLifeAreaUpdate.score
+              }
+            }
+          : lifeAreaRatings;
+
         const currentSeason = (() => {
           const month = new Date().getMonth();
           if ([11, 0, 1].includes(month)) return 'winter';
@@ -658,18 +682,23 @@ Click on the event in the sidebar to add details.`;
         })();
 
         const lifeAreasContext = lifeAreasCompleted 
-          ? Object.entries(lifeAreaRatings).map(([key, val]) => 
+          ? Object.entries(effectiveRatings).map(([key, val]) => 
               `${LIFE_AREAS[key].name}: satisfaction ${val.satisfaction}/10, intention ${val.intention}/10`
             ).join(', ')
-          : 'not assessed yet';
+          : Object.entries(effectiveRatings)
+              .filter(([_, val]) => val.satisfaction !== null || val.intention !== null)
+              .map(([key, val]) => 
+                `${LIFE_AREAS[key].name}: ${val.satisfaction !== null ? `satisfaction ${val.satisfaction}/10` : ''}${val.satisfaction !== null && val.intention !== null ? ', ' : ''}${val.intention !== null ? `intention ${val.intention}/10` : ''}`
+              ).join('; ') || 'not assessed yet';
 
         // Check for misalignments between intentions and actual plans
         const getMisalignments = () => {
-          if (!lifeAreasCompleted) return '';
+          if (!lifeAreasCompleted && !effectiveIsLast) return '';
+          const ratingsToCheck = effectiveIsLast ? effectiveRatings : lifeAreaRatings;
           const misalignments = [];
           
           // High intention areas with low activity
-          Object.entries(lifeAreaRatings).forEach(([key, val]) => {
+          Object.entries(ratingsToCheck).forEach(([key, val]) => {
             if (val.intention >= 7) {
               const relatedHabits = weeklyHabits.filter(h => 
                 h.text.toLowerCase().includes(key) || 
@@ -712,18 +741,19 @@ Current context:
 - Daily habits: ${dailyHabits.length > 0 ? dailyHabits.map(h => h.text).join(', ') : 'none yet'}
 - Phase: ${phase} (explore = getting to know them, ground = understanding commitments, reveal = unlocking the app, plan = ongoing planning)
 - Life areas mode: ${lifeAreasMode ? 'YES - currently doing life areas assessment' : 'no'}
+- Life areas assessment just finished: ${effectiveIsLast ? 'YES - This is the last area (Fun). After acknowledging their intention score, provide a warm summary: note which areas have the biggest gaps between satisfaction and intention (those are their growth areas for the year). Then offer to start planning. Keep it conversational, not a formal report.' : 'no'}
 ${getMisalignments()}
 
 ${lifeAreasMode ? `LIFE AREAS ASSESSMENT MODE:
-You are walking the user through rating their life areas. For each area, ask about:
+${effectiveAreaIndex === 0 && effectiveWaitingFor ? `This is the START of the life areas assessment. First, briefly acknowledge what the user just shared (their plans, thoughts, etc). Then smoothly transition by saying something like "Your year is starting to take shape. Before we go further, I'd like to get a pulse on different areas of your life..." Then explain you'll ask two questions for each area (satisfaction now 1-10, and intention for the year 1-10). Then ask about the first area: Health (${lifeAreaDescriptions.health}). Ask for their satisfaction score first.` : `You are walking the user through rating their life areas. For each area, ask about:
 1. Satisfaction (1-10): How do they feel about this area RIGHT NOW?
 2. Intention (1-10): How much attention do they WANT to give this area this year?
 
-Current area: ${LIFE_AREAS[lifeAreaOrder[currentLifeAreaIndex]]?.name || 'done'}
-Description: ${lifeAreaDescriptions[lifeAreaOrder[currentLifeAreaIndex]] || ''}
-Waiting for: ${waitingForSatisfaction ? 'satisfaction score' : 'intention score'}
+Current area: ${LIFE_AREAS[lifeAreaOrder[effectiveAreaIndex]]?.name || 'done'}
+Description: ${lifeAreaDescriptions[lifeAreaOrder[effectiveAreaIndex]] || ''}
+Waiting for: ${effectiveWaitingFor ? 'satisfaction score' : 'intention score'}
 
-Keep it conversational. After they give a number, briefly acknowledge it and ask the follow-up. When both scores are given, move to the next area.
+Keep it conversational and warm. After they give a number, briefly acknowledge it (don't just say "got it" - reflect what the number might mean), then ask the follow-up. When both scores are given for an area, naturally transition to the next area. Don't use bullet points or formal lists.`}
 ` : ''}
 
 View-specific guidance:
@@ -742,7 +772,7 @@ Keep responses focused and conversational. You're not a productivity app — you
       };
 
       // Call Claude API
-      const callClaudeAPI = async (userMessage) => {
+      const callClaudeAPI = async (userMessage, pendingState = {}) => {
         if (!apiKey) {
           return "I'd love to help you plan, but I need an API key to think deeply. Click the ⚙ settings icon to add your Anthropic API key.";
         }
@@ -759,7 +789,7 @@ Keep responses focused and conversational. You're not a productivity app — you
             body: JSON.stringify({
               model: 'claude-sonnet-4-20250514',
               max_tokens: 500,
-              system: getTendSystemPrompt(),
+              system: getTendSystemPrompt(pendingState),
               messages: [
                 ...messages.map(m => ({
                   role: m.role === 'assistant' ? 'assistant' : 'user',
@@ -797,6 +827,11 @@ Keep responses focused and conversational. You're not a productivity app — you
         setExchangeCount(prev => prev + 1);
 
         // Handle life areas mode - parse numbers
+        let pendingLifeAreaUpdate = null;
+        let pendingNextAreaIndex = currentLifeAreaIndex;
+        let pendingWaitingForSatisfaction = waitingForSatisfaction;
+        let pendingIsLastResponse = false;
+        
         if (lifeAreasMode) {
           const numbers = userMessage.match(/\b([1-9]|10)\b/g);
           if (numbers && numbers.length > 0) {
@@ -804,12 +839,15 @@ Keep responses focused and conversational. You're not a productivity app — you
             const currentArea = lifeAreaOrder[currentLifeAreaIndex];
             
             if (waitingForSatisfaction) {
+              pendingLifeAreaUpdate = { area: currentArea, field: 'satisfaction', score };
               setLifeAreaRatings(prev => ({
                 ...prev,
                 [currentArea]: { ...prev[currentArea], satisfaction: score }
               }));
               setWaitingForSatisfaction(false);
+              pendingWaitingForSatisfaction = false;
             } else {
+              pendingLifeAreaUpdate = { area: currentArea, field: 'intention', score };
               setLifeAreaRatings(prev => ({
                 ...prev,
                 [currentArea]: { ...prev[currentArea], intention: score }
@@ -819,42 +857,12 @@ Keep responses focused and conversational. You're not a productivity app — you
               if (currentLifeAreaIndex < lifeAreaOrder.length - 1) {
                 setCurrentLifeAreaIndex(prev => prev + 1);
                 setWaitingForSatisfaction(true);
+                pendingNextAreaIndex = currentLifeAreaIndex + 1;
+                pendingWaitingForSatisfaction = true;
               } else {
-                // All done!
-                setLifeAreasCompleted(true);
-                setLifeAreasMode(false);
-                
-                // Add completion summary after API response
-                setTimeout(() => {
-                  // Find areas with biggest gaps (intention > satisfaction)
-                  const updatedRatings = {
-                    ...lifeAreaRatings,
-                    [currentArea]: { ...lifeAreaRatings[currentArea], intention: score }
-                  };
-                  const gaps = Object.entries(updatedRatings)
-                    .map(([key, val]) => ({
-                      area: LIFE_AREAS[key].name,
-                      gap: (val.intention || 0) - (val.satisfaction || 0)
-                    }))
-                    .filter(g => g.gap > 2)
-                    .sort((a, b) => b.gap - a.gap);
-                  
-                  const focusAreas = gaps.slice(0, 2).map(g => g.area);
-                  
-                  const summaryMsg = focusAreas.length > 0
-                    ? `I've captured your life area pulse. Looking at the gaps between where you are and where you want to be, <em>${focusAreas.join('</em> and <em>')}</em> stand out as areas wanting more attention this year.
-
-As we plan, I'll keep an eye on whether your events, habits, and time are actually flowing toward these priorities.
-
-Now — what would you like to focus on first?`
-                    : `I've captured your life area pulse. You seem relatively balanced across areas, which is a great foundation.
-
-As we plan, I'll help make sure your time and energy stay aligned with what matters to you.
-
-What would you like to focus on first?`;
-                  
-                  setMessages(prev => [...prev, { role: 'assistant', content: summaryMsg }]);
-                }, 2000);
+                // This is the final area - flag for summary, then complete
+                setIsLastLifeAreaResponse(true);
+                pendingIsLastResponse = true;
               }
             }
           }
@@ -893,37 +901,31 @@ What would you like to focus on first?`;
         if (phase === PHASES.EXPLORE && exchangeCount >= 2) {
           setPhase(PHASES.GROUND);
         }
-        if (phase === PHASES.GROUND && exchangeCount >= 3) {
-          setTimeout(() => {
-            setPhase(PHASES.REVEAL);
-            setRevealed(true);
-            // Trigger life areas after a delay
-            setTimeout(() => {
-              if (!lifeAreasCompleted) {
-                setMessages(prev => [...prev, { 
-                  role: 'assistant', 
-                  content: `Your year is taking shape. Now let's get grounded in where you're at.
-
-I'd like to walk through six areas of life and ask you two questions about each:
-1. How <em>satisfied</em> are you with this area right now? (1-10)
-2. How much <em>attention</em> do you want to give it this year? (1-10)
-
-This helps me understand where you're starting from and where you want to focus.
-
-<strong>Let's start with Health</strong> — ${lifeAreaDescriptions.health}.
-
-On a scale of 1-10, how satisfied are you with your health right now?`
-                }]);
-                setLifeAreasMode(true);
-              }
-            }, 1500);
-          }, 500);
+        if (phase === PHASES.GROUND && exchangeCount >= 3 && !revealed) {
+          setPhase(PHASES.REVEAL);
+          setRevealed(true);
+          // Start life areas mode - Claude will handle the transition naturally via system prompt
+          if (!lifeAreasCompleted) {
+            setLifeAreasMode(true);
+          }
         }
 
         // Get response from Claude API
-        const response = await callClaudeAPI(userMessage);
+        const response = await callClaudeAPI(userMessage, {
+          pendingLifeAreaUpdate,
+          pendingNextAreaIndex,
+          pendingWaitingForSatisfaction,
+          pendingIsLastResponse
+        });
         setMessages(prev => [...prev, { role: 'assistant', content: response }]);
         setIsTyping(false);
+        
+        // Complete life areas after the summary response
+        if (isLastLifeAreaResponse || pendingIsLastResponse) {
+          setLifeAreasCompleted(true);
+          setLifeAreasMode(false);
+          setIsLastLifeAreaResponse(false);
+        }
       };
 
       const handleSkip = () => {
