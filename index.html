@@ -25,14 +25,14 @@
       --accent: #7D9B76;
       --accent-light: #E8F0E6;
       
-      --winter: #5B9BD5;
-      --winter-light: #F0F6FB;
-      --spring: #6BBF59;
-      --spring-light: #F3FAF1;
-      --summer: #F4B942;
-      --summer-light: #FFFBF2;
-      --fall: #D66B4B;
-      --fall-light: #FDF4F1;
+      --winter: #7EB3E0;
+      --winter-light: #F5F9FC;
+      --spring: #8FD4A0;
+      --spring-light: #F5FBF6;
+      --summer: #F9D07A;
+      --summer-light: #FFFDF7;
+      --fall: #E8A090;
+      --fall-light: #FDF7F5;
     }
 
     body {
@@ -132,6 +132,42 @@ Before we get into calendars and planning, I want to understand what you actuall
 What would make 2026 feel like a success? It could be a concrete achievement, a feeling you want to have, a change in how you're living — whatever comes to mind first.`
         }]);
       }, []);
+
+      // Contextual prompts when switching views
+      useEffect(() => {
+        if (!revealed) return; // Only after initial conversation
+        
+        const viewPrompts = {
+          [CENTER_VIEWS.YEAR]: null, // No prompt for year view
+          [CENTER_VIEWS.SEASONS]: {
+            role: 'assistant',
+            content: `You're looking at the seasons now.
+
+Each season has its own rhythm. What do you want <em>this</em> season to feel like? What would make it meaningful?
+
+Think about: the pace you want, what you want to protect, what you want to let go of.`
+          },
+          [CENTER_VIEWS.MONTHLY]: {
+            role: 'assistant', 
+            content: `Let's get into the details.
+
+Looking at <em>${MONTH_FULL[selectedMonth]}</em> — what's already taking shape? Any trips to plan, events to prepare for, or time you want to protect?
+
+I can help you think through the specifics.`
+          }
+        };
+
+        const prompt = viewPrompts[centerView];
+        if (prompt) {
+          // Check if last message is already a view prompt to avoid duplicates
+          const lastMsg = messages[messages.length - 1];
+          if (lastMsg?.content?.includes("You're looking at the seasons") || 
+              lastMsg?.content?.includes("Let's get into the details")) {
+            return;
+          }
+          setMessages(prev => [...prev, prompt]);
+        }
+      }, [centerView, revealed]);
 
       useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -234,6 +270,103 @@ What's missing?`;
         if (currentPhase === PHASES.REVEAL || currentPhase === PHASES.PLAN) {
           setPhase(PHASES.PLAN);
           
+          // Seasons view - help with season intentions
+          if (centerView === CENTER_VIEWS.SEASONS) {
+            const seasonWords = {
+              winter: ['cozy', 'rest', 'reflect', 'hibernate', 'slow', 'quiet', 'warm'],
+              spring: ['renew', 'fresh', 'start', 'bloom', 'energy', 'clean', 'grow'],
+              summer: ['adventure', 'explore', 'freedom', 'play', 'travel', 'sun', 'joy'],
+              fall: ['harvest', 'gather', 'prepare', 'focus', 'transition', 'gratitude', 'settle']
+            };
+            
+            const currentSeasonName = (() => {
+              const month = new Date().getMonth();
+              if ([11, 0, 1].includes(month)) return 'winter';
+              if ([2, 3, 4].includes(month)) return 'spring';
+              if ([5, 6, 7].includes(month)) return 'summer';
+              return 'fall';
+            })();
+
+            if (lower.includes('winter') || lower.includes('cold') || lower.includes('december') || lower.includes('january') || lower.includes('february')) {
+              return `Winter is a time for slowing down.
+
+Some intentions to consider:
+• <em>"Rest without guilt"</em>
+• <em>"Protect my mornings"</em>  
+• <em>"Less doing, more being"</em>
+
+What would make your winter feel nourishing rather than just something to get through?`;
+            }
+            
+            if (lower.includes('spring') || lower.includes('march') || lower.includes('april') || lower.includes('may')) {
+              return `Spring is about emergence and new energy.
+
+Some intentions to consider:
+• <em>"Start one thing I've been putting off"</em>
+• <em>"Clear what's not serving me"</em>
+• <em>"Say yes to something new"</em>
+
+What wants to bloom in your life this spring?`;
+            }
+
+            if (lower.includes('summer') || lower.includes('june') || lower.includes('july') || lower.includes('august')) {
+              return `Summer holds space for expansion and joy.
+
+Some intentions to consider:
+• <em>"Prioritize experiences over tasks"</em>
+• <em>"Protect time for spontaneity"</em>
+• <em>"Be present in the long days"</em>
+
+What would a summer well-lived look like for you?`;
+            }
+
+            if (lower.includes('fall') || lower.includes('autumn') || lower.includes('september') || lower.includes('october') || lower.includes('november')) {
+              return `Fall is a season of gathering and grounding.
+
+Some intentions to consider:
+• <em>"Harvest what I've built"</em>
+• <em>"Simplify before winter"</em>
+• <em>"Celebrate progress, not just goals"</em>
+
+What do you want to carry into the darker months?`;
+            }
+
+            return `Think about what each season needs from you — and what you need from it.
+
+You're in <em>${currentSeasonName}</em> right now. How's it going? What would help this season feel more aligned with what you want?`;
+          }
+
+          // Monthly view - help with specific month planning
+          if (centerView === CENTER_VIEWS.MONTHLY) {
+            const monthName = MONTH_FULL[selectedMonth];
+            
+            if (lower.includes('plan') || lower.includes('suggest') || lower.includes('ideas') || lower.includes('what should')) {
+              return `For <em>${monthName}</em>, let's think about:
+
+<strong>What's already anchored?</strong>
+Work commitments, birthdays, holidays, travel
+
+<strong>What do you want to protect?</strong>
+Rest days, date nights, creative time, nothing-days
+
+<strong>What's one thing that would make this month feel successful?</strong>
+
+Tell me what's on your mind for ${monthName}.`;
+            }
+
+            const monthEvents = events.filter(e => e.month === selectedMonth);
+            if (monthEvents.length > 0) {
+              return `You have <em>${monthEvents.length}</em> thing${monthEvents.length > 1 ? 's' : ''} in ${monthName}: ${monthEvents.map(e => e.title).join(', ')}.
+
+Want me to help you think through any of these? I can suggest activities, help with logistics, or just think through what would make it great.`;
+            }
+
+            return `${monthName} is open — that's possibility.
+
+What would make this month feel intentional rather than just busy? Any trips, goals, or moments you want to create?`;
+          }
+          
+          // Default planning responses
           if (lower.includes('plan') || lower.includes('suggest') || lower.includes('ideas') || lower.includes('activities') || lower.includes('where to stay')) {
             const eventMention = events.find(e => lower.includes(MONTHS[e.month].toLowerCase()) || lower.includes(e.title.toLowerCase()));
             if (eventMention) {
@@ -487,7 +620,15 @@ I'm here to help with any planning.`
                         handleSendMessage();
                       }
                     }}
-                    placeholder={revealed ? "Ask me to help plan..." : "Share what's on your mind..."}
+                    placeholder={
+                      !revealed 
+                        ? "Share what's on your mind..." 
+                        : centerView === CENTER_VIEWS.SEASONS 
+                          ? "How do you want this season to feel?"
+                          : centerView === CENTER_VIEWS.MONTHLY
+                            ? `What's happening in ${MONTH_FULL[selectedMonth]}?`
+                            : "Ask me to help plan..."
+                    }
                     rows={2}
                   />
                   <button 
@@ -539,10 +680,10 @@ I'm here to help with any planning.`
       };
 
       const seasonArcs = [
-        { id: 'winter', start: -60, end: 30, color: '#5B9BD5' },
-        { id: 'spring', start: 30, end: 120, color: '#6BBF59' },
-        { id: 'summer', start: 120, end: 210, color: '#F4B942' },
-        { id: 'fall', start: 210, end: 300, color: '#D66B4B' },
+        { id: 'winter', start: -60, end: 30, color: '#7EB3E0' },
+        { id: 'spring', start: 30, end: 120, color: '#8FD4A0' },
+        { id: 'summer', start: 120, end: 210, color: '#F9D07A' },
+        { id: 'fall', start: 210, end: 300, color: '#E8A090' },
       ];
 
       const hasValues = values.length > 0;
@@ -552,7 +693,7 @@ I'm here to help with any planning.`
         <div style={styles.circleContainer}>
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
             {seasonArcs.map(season => (
-              <path key={season.id} d={describeArc(season.start, season.end, outerRadius)} fill={season.color} opacity={0.45} />
+              <path key={season.id} d={describeArc(season.start, season.end, outerRadius)} fill={season.color} opacity={0.35} />
             ))}
 
             <circle cx={center} cy={center} r={innerRadius} fill="var(--bg-card)" stroke="var(--border)" strokeWidth="1" />
@@ -606,10 +747,10 @@ I'm here to help with any planning.`
     // ============ SEASONS VIEW ============
     function SeasonsView({ seasonIntentions, setSeasonIntentions, revealed }) {
       const seasons = [
-        { id: 'winter', name: 'Winter', months: 'Dec – Feb', color: '#5B9BD5', lightColor: '#F0F6FB', elements: ['❄', '·', '❄', '·', '❄'] },
-        { id: 'spring', name: 'Spring', months: 'Mar – May', color: '#6BBF59', lightColor: '#F3FAF1', elements: ['✿', '·', '❀', '·', '✿'] },
-        { id: 'summer', name: 'Summer', months: 'Jun – Aug', color: '#F4B942', lightColor: '#FFFBF2', elements: ['☀', '~', '☀', '~', '☀'] },
-        { id: 'fall', name: 'Fall', months: 'Sep – Nov', color: '#D66B4B', lightColor: '#FDF4F1', elements: ['🍂', '·', '🍁', '·', '🍂'] },
+        { id: 'winter', name: 'Winter', months: 'Dec – Feb', color: '#7EB3E0', lightColor: '#F5F9FC', elements: ['❄', '·', '❄', '·', '❄'] },
+        { id: 'spring', name: 'Spring', months: 'Mar – May', color: '#8FD4A0', lightColor: '#F5FBF6', elements: ['✿', '·', '❀', '·', '✿'] },
+        { id: 'summer', name: 'Summer', months: 'Jun – Aug', color: '#F9D07A', lightColor: '#FFFDF7', elements: ['☀', '~', '☀', '~', '☀'] },
+        { id: 'fall', name: 'Fall', months: 'Sep – Nov', color: '#E8A090', lightColor: '#FDF7F5', elements: ['🍂', '·', '🍁', '·', '🍂'] },
       ];
 
       const currentSeason = (() => {
@@ -682,10 +823,10 @@ I'm here to help with any planning.`
       const today = new Date().getDate();
 
       const getSeasonColor = (monthIdx) => {
-        if ([11, 0, 1].includes(monthIdx)) return '#5B9BD5';
-        if ([2, 3, 4].includes(monthIdx)) return '#6BBF59';
-        if ([5, 6, 7].includes(monthIdx)) return '#F4B942';
-        return '#D66B4B';
+        if ([11, 0, 1].includes(monthIdx)) return '#7EB3E0';
+        if ([2, 3, 4].includes(monthIdx)) return '#8FD4A0';
+        if ([5, 6, 7].includes(monthIdx)) return '#F9D07A';
+        return '#E8A090';
       };
 
       const seasonColor = getSeasonColor(selectedMonth);
