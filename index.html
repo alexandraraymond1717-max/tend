@@ -140,12 +140,24 @@ What word comes to mind?`
         }]);
       }, []);
 
-      // Contextual prompts when switching views
+      // Contextual prompts when switching views or tabs
       useEffect(() => {
         if (!revealed) return; // Only after initial conversation
         
+        // Check if last message is already a contextual prompt to avoid duplicates
+        const lastMsg = messages[messages.length - 1];
+        const isContextualPrompt = lastMsg?.content?.includes("You're looking at") || 
+              lastMsg?.content?.includes("Let's get into") ||
+              lastMsg?.content?.includes("Weekly rhythms") ||
+              lastMsg?.content?.includes("Daily habits") ||
+              lastMsg?.content?.includes("Let's plan") ||
+              lastMsg?.content?.includes("Notes are") ||
+              lastMsg?.content?.includes("Goals give");
+        
+        if (isContextualPrompt) return;
+
         const viewPrompts = {
-          [CENTER_VIEWS.YEAR]: null, // No prompt for year view
+          [CENTER_VIEWS.YEAR]: null,
           [CENTER_VIEWS.SEASONS]: {
             role: 'assistant',
             content: `You're looking at the seasons now.
@@ -186,15 +198,51 @@ Think about: morning routines, movement, hydration, mindfulness, boundaries with
 
         const prompt = viewPrompts[centerView];
         if (prompt) {
-          // Check if last message is already a view prompt to avoid duplicates
-          const lastMsg = messages[messages.length - 1];
-          if (lastMsg?.content?.includes("You're looking at the seasons") || 
-              lastMsg?.content?.includes("Let's get into the details")) {
-            return;
-          }
           setMessages(prev => [...prev, prompt]);
         }
       }, [centerView, revealed]);
+
+      // Contextual prompts when switching sidebar tabs
+      useEffect(() => {
+        if (!revealed) return;
+        
+        const lastMsg = messages[messages.length - 1];
+        const isTabPrompt = lastMsg?.content?.includes("Let's plan") || 
+              lastMsg?.content?.includes("Notes are") ||
+              lastMsg?.content?.includes("Goals give");
+        
+        if (isTabPrompt) return;
+
+        const tabPrompts = {
+          'events': {
+            role: 'assistant',
+            content: `Let's plan something.
+
+What events do you have coming up — trips, celebrations, deadlines? Or is there something you <em>want</em> to plan but haven't yet?
+
+I can help with ideas, logistics, or just thinking it through.`
+          },
+          'notes': {
+            role: 'assistant',
+            content: `Notes are for the messy stuff — brain dumps, half-formed ideas, things you don't want to forget.
+
+What's floating around in your head that needs a place to land?`
+          },
+          'goals': {
+            role: 'assistant',
+            content: `Goals give direction.
+
+What do you want to accomplish this year? Think about what would make you proud, what would stretch you, or what you've been putting off.
+
+Start with just one or two — you can always add more.`
+          }
+        };
+
+        const prompt = tabPrompts[activeTab];
+        if (prompt) {
+          setMessages(prev => [...prev, prompt]);
+        }
+      }, [activeTab, revealed]);
 
       useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -322,6 +370,116 @@ What's missing?`;
 
         if (currentPhase === PHASES.REVEAL || currentPhase === PHASES.PLAN) {
           setPhase(PHASES.PLAN);
+
+          // Sidebar tabs - Events
+          if (activeTab === 'events') {
+            if (lower.includes('trip') || lower.includes('travel') || lower.includes('vacation') || lower.includes('visit')) {
+              return `A trip! Let's plan it.
+
+Tell me:
+• <em>Where</em> are you thinking?
+• <em>When</em> — which month?
+• <em>Who's going</em> — solo, partner, friends, family?
+
+Once you add it, I can help with activities, stays, and logistics.`;
+            }
+
+            if (lower.includes('birthday') || lower.includes('anniversary') || lower.includes('celebration')) {
+              return `Celebrations deserve planning too.
+
+What would make this one special? Think about:
+• The <em>experience</em> you want to create
+• Who needs to be involved
+• What you want to remember about it
+
+Add it to your events and we can flesh out the details.`;
+            }
+
+            if (lower.includes('deadline') || lower.includes('work') || lower.includes('project') || lower.includes('launch')) {
+              return `Work events anchor the year too.
+
+For this deadline or project:
+• What needs to happen <em>before</em> it?
+• Do you need to protect time leading up to it?
+• What would make it feel successful, not just done?`;
+            }
+
+            const eventCount = events.length;
+            if (eventCount > 0) {
+              return `You have ${eventCount} event${eventCount > 1 ? 's' : ''} planned. Want to add another, or dive deeper into one of these?
+
+I can help with:
+• Activity ideas for any trip
+• Logistics and planning
+• Making sure you're not over-scheduling`;
+            }
+
+            return `What's on the horizon? Trips, celebrations, deadlines, milestones?
+
+Even tentative plans are worth capturing — they help you see the shape of your year.`;
+          }
+
+          // Sidebar tabs - Notes
+          if (activeTab === 'notes') {
+            return `This is your space to think out loud.
+
+You can use it for:
+• Brain dumps when your head is full
+• Ideas you're not ready to act on
+• Reflections on how things are going
+• Anything that doesn't fit elsewhere
+
+What's taking up mental space right now?`;
+          }
+
+          // Sidebar tabs - Goals
+          if (activeTab === 'goals') {
+            if (lower.includes('fitness') || lower.includes('health') || lower.includes('weight') || lower.includes('run') || lower.includes('exercise')) {
+              return `Health goals are foundational.
+
+Make them specific and achievable:
+• <em>"Run a 5K"</em> beats "get in shape"
+• <em>"Workout 3x/week for 3 months"</em> beats "exercise more"
+• <em>"Lose 10 pounds by June"</em> beats "lose weight"
+
+What's your real target?`;
+            }
+
+            if (lower.includes('read') || lower.includes('book') || lower.includes('learn')) {
+              return `Learning goals expand your world.
+
+Some ways to frame them:
+• <em>"Read 12 books"</em> — one a month
+• <em>"Finish one online course"</em>
+• <em>"Learn conversational Spanish"</em>
+
+What do you want to know by year's end?`;
+            }
+
+            if (lower.includes('save') || lower.includes('money') || lower.includes('financial') || lower.includes('invest')) {
+              return `Financial goals create options.
+
+Be specific:
+• <em>"Save $10K for emergency fund"</em>
+• <em>"Max out retirement contribution"</em>
+• <em>"Pay off credit card by August"</em>
+
+What number would make you feel more secure?`;
+            }
+
+            const goalCount = goals.length;
+            if (goalCount > 0) {
+              return `You have ${goalCount} goal${goalCount > 1 ? 's' : ''} set. Want to add another, or talk through how to make progress on one?
+
+Goals work best when they're:
+• Specific enough to know when you've hit them
+• Connected to what actually matters to you`;
+            }
+
+            return `What do you want to be true by the end of this year that isn't true now?
+
+Don't overthink it — you can always refine. Start with what comes to mind.`;
+          }
           
           // Seasons view - help with season intentions
           if (centerView === CENTER_VIEWS.SEASONS) {
@@ -784,15 +942,21 @@ I'm here to help with any planning.`
                     placeholder={
                       !revealed 
                         ? "Share what's on your mind..." 
-                        : centerView === CENTER_VIEWS.SEASONS 
-                          ? "How do you want this season to feel?"
-                          : centerView === CENTER_VIEWS.MONTHLY
-                            ? `What's happening in ${MONTH_FULL[selectedMonth]}?`
-                            : centerView === CENTER_VIEWS.WEEKLY
-                              ? "What do you want to do every week?"
-                              : centerView === CENTER_VIEWS.DAILY
-                                ? "What small daily practice would change everything?"
-                                : "Ask me to help plan..."
+                        : activeTab === 'events'
+                          ? "Tell me about an event to plan..."
+                          : activeTab === 'notes'
+                            ? "What's on your mind?"
+                            : activeTab === 'goals'
+                              ? "What do you want to achieve?"
+                              : centerView === CENTER_VIEWS.SEASONS 
+                                ? "How do you want this season to feel?"
+                                : centerView === CENTER_VIEWS.MONTHLY
+                                  ? `What's happening in ${MONTH_FULL[selectedMonth]}?`
+                                  : centerView === CENTER_VIEWS.WEEKLY
+                                    ? "What do you want to do every week?"
+                                    : centerView === CENTER_VIEWS.DAILY
+                                      ? "What small daily practice would change everything?"
+                                      : "Ask me to help plan..."
                     }
                     rows={2}
                   />
