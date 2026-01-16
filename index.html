@@ -140,107 +140,63 @@ What word comes to mind?`
         }]);
       }, []);
 
-      // Contextual prompts when switching views or tabs
+      // Contextual prompts when switching views
+      const [lastPromptedView, setLastPromptedView] = useState(null);
+      const [lastPromptedTab, setLastPromptedTab] = useState(null);
+
       useEffect(() => {
-        if (!revealed) return; // Only after initial conversation
+        if (!revealed) return;
+        if (centerView === lastPromptedView) return;
+        if (centerView === CENTER_VIEWS.YEAR) {
+          setLastPromptedView(centerView);
+          return;
+        }
         
-        // Check if last message is already a contextual prompt to avoid duplicates
-        const lastMsg = messages[messages.length - 1];
-        const isContextualPrompt = lastMsg?.content?.includes("You're looking at") || 
-              lastMsg?.content?.includes("Let's get into") ||
-              lastMsg?.content?.includes("Weekly rhythms") ||
-              lastMsg?.content?.includes("Daily habits") ||
-              lastMsg?.content?.includes("Let's plan") ||
-              lastMsg?.content?.includes("Notes are") ||
-              lastMsg?.content?.includes("Goals give");
-        
-        if (isContextualPrompt) return;
+        setLastPromptedView(centerView);
 
         const viewPrompts = {
-          [CENTER_VIEWS.YEAR]: null,
-          [CENTER_VIEWS.SEASONS]: {
-            role: 'assistant',
-            content: `You're looking at the seasons now.
+          [CENTER_VIEWS.SEASONS]: `You're looking at the seasons now.
 
-Each season has its own rhythm. What do you want <em>this</em> season to feel like? What would make it meaningful?
+Each season has its own rhythm. What do you want <em>this</em> season to feel like? What would make it meaningful?`,
+          [CENTER_VIEWS.MONTHLY]: `Let's get into the details.
 
-Think about: the pace you want, what you want to protect, what you want to let go of.`
-          },
-          [CENTER_VIEWS.MONTHLY]: {
-            role: 'assistant', 
-            content: `Let's get into the details.
+Looking at <em>${MONTH_FULL[selectedMonth]}</em> — what's already taking shape? Any trips to plan, events to prepare for, or time you want to protect?`,
+          [CENTER_VIEWS.WEEKLY]: `Weekly rhythms are the heartbeat of an intentional life.
 
-Looking at <em>${MONTH_FULL[selectedMonth]}</em> — what's already taking shape? Any trips to plan, events to prepare for, or time you want to protect?
+What do you want to do <em>every week</em>? Think about movement, connection time, creative time, and rest.`,
+          [CENTER_VIEWS.DAILY]: `Daily habits are small, but they compound.
 
-I can help you think through the specifics.`
-          },
-          [CENTER_VIEWS.WEEKLY]: {
-            role: 'assistant',
-            content: `Weekly rhythms are the heartbeat of an intentional life.
-
-What do you want to do <em>every week</em>? Think about:
-• Movement or exercise
-• Connection time (date night, family, friends)
-• Creative or learning time
-• Rest and recovery
-
-What rhythm would support the life you want?`
-          },
-          [CENTER_VIEWS.DAILY]: {
-            role: 'assistant',
-            content: `Daily habits are small, but they compound.
-
-What tiny practices would change everything if you did them <em>every day</em>?
-
-Think about: morning routines, movement, hydration, mindfulness, boundaries with technology, moments of gratitude.`
-          }
+What tiny practices would change everything if you did them <em>every day</em>?`
         };
 
         const prompt = viewPrompts[centerView];
         if (prompt) {
-          setMessages(prev => [...prev, prompt]);
+          setMessages(prev => [...prev, { role: 'assistant', content: prompt }]);
         }
-      }, [centerView, revealed]);
+      }, [centerView, revealed, selectedMonth]);
 
       // Contextual prompts when switching sidebar tabs
       useEffect(() => {
         if (!revealed) return;
+        if (activeTab === lastPromptedTab) return;
         
-        const lastMsg = messages[messages.length - 1];
-        const isTabPrompt = lastMsg?.content?.includes("Let's plan") || 
-              lastMsg?.content?.includes("Notes are") ||
-              lastMsg?.content?.includes("Goals give");
-        
-        if (isTabPrompt) return;
+        setLastPromptedTab(activeTab);
 
         const tabPrompts = {
-          'events': {
-            role: 'assistant',
-            content: `Let's plan something.
+          'events': `Let's plan something.
 
-What events do you have coming up — trips, celebrations, deadlines? Or is there something you <em>want</em> to plan but haven't yet?
+What events do you have coming up — trips, celebrations, deadlines? Or is there something you <em>want</em> to plan but haven't yet?`,
+          'notes': `Notes are for the messy stuff — brain dumps, half-formed ideas, things you don't want to forget.
 
-I can help with ideas, logistics, or just thinking it through.`
-          },
-          'notes': {
-            role: 'assistant',
-            content: `Notes are for the messy stuff — brain dumps, half-formed ideas, things you don't want to forget.
+What's floating around in your head that needs a place to land?`,
+          'goals': `Goals give direction.
 
-What's floating around in your head that needs a place to land?`
-          },
-          'goals': {
-            role: 'assistant',
-            content: `Goals give direction.
-
-What do you want to accomplish this year? Think about what would make you proud, what would stretch you, or what you've been putting off.
-
-Start with just one or two — you can always add more.`
-          }
+What do you want to accomplish this year? Think about what would make you proud, what would stretch you, or what you've been putting off.`
         };
 
         const prompt = tabPrompts[activeTab];
         if (prompt) {
-          setMessages(prev => [...prev, prompt]);
+          setMessages(prev => [...prev, { role: 'assistant', content: prompt }]);
         }
       }, [activeTab, revealed]);
 
@@ -1260,7 +1216,7 @@ I'm here to help with any planning.`
         setNewFrequency(3);
       };
 
-      const daysOfWeek = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const daysOfWeek = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
       return (
         <div style={styles.weeklyContainer}>
@@ -1269,15 +1225,7 @@ I'm here to help with any planning.`
             <p style={styles.weeklySubtitle}>What do you want to do each week?</p>
           </div>
 
-          <div style={styles.weeklyGrid}>
-            {/* Days header */}
-            <div style={styles.weeklyDaysHeader}>
-              {daysOfWeek.map(day => (
-                <span key={day} style={styles.weeklyDayLabel}>{day}</span>
-              ))}
-            </div>
-
-            {/* Habits list */}
+          {weeklyHabits.length > 0 ? (
             <div style={styles.weeklyHabitsList}>
               {weeklyHabits.map(habit => (
                 <div key={habit.id} style={styles.weeklyHabitRow}>
@@ -1291,28 +1239,30 @@ I'm here to help with any planning.`
                     >×</button>
                   </div>
                   <div style={styles.weeklyHabitDays}>
-                    {daysOfWeek.map((_, i) => (
+                    {daysOfWeek.map((day, i) => (
                       <div 
                         key={i} 
                         style={{
                           ...styles.weeklyDayCircle,
-                          backgroundColor: i < habit.frequency ? `${habit.color}40` : 'var(--bg-elevated)',
+                          backgroundColor: i < habit.frequency ? `${habit.color}30` : 'transparent',
                           borderColor: i < habit.frequency ? habit.color : 'var(--border)',
                         }}
-                      ></div>
+                      >
+                        <span style={{ fontSize: '0.65rem', color: i < habit.frequency ? habit.color : 'var(--text-muted)' }}>{day}</span>
+                      </div>
                     ))}
                   </div>
                 </div>
               ))}
-
-              {weeklyHabits.length === 0 && (
-                <p style={styles.emptyText}>No weekly habits yet. What rhythm do you want to create?</p>
-              )}
             </div>
-          </div>
+          ) : (
+            <div style={styles.weeklyEmpty}>
+              <p style={styles.weeklyEmptyText}>No weekly habits yet.</p>
+              <p style={{...styles.weeklyEmptyText, fontStyle: 'normal', color: 'var(--text-light)'}}>What rhythm do you want to create?</p>
+            </div>
+          )}
 
-          {/* Add new habit */}
-          {revealed && (
+          {revealed ? (
             <div style={styles.addHabitSection}>
               <input
                 type="text"
@@ -1328,14 +1278,12 @@ I'm here to help with any planning.`
                 style={styles.addHabitSelect}
               >
                 {[1,2,3,4,5,6,7].map(n => (
-                  <option key={n} value={n}>{n}x per week</option>
+                  <option key={n} value={n}>{n}x/week</option>
                 ))}
               </select>
-              <button onClick={addHabit} style={styles.addHabitButton}>Add</button>
+              <button onClick={addHabit} style={styles.addHabitButton}>+ Add</button>
             </div>
-          )}
-
-          {!revealed && (
+          ) : (
             <p style={styles.lockedText}>Complete the conversation to add weekly habits</p>
           )}
         </div>
@@ -1363,33 +1311,32 @@ I'm here to help with any planning.`
             <p style={styles.dailySubtitle}>Small things that add up to a life well-lived</p>
           </div>
 
-          <div style={styles.dailyList}>
-            {dailyHabits.map(habit => (
-              <div key={habit.id} style={styles.dailyHabitCard}>
-                <div style={{...styles.dailyHabitAccent, backgroundColor: habit.color}}></div>
-                <div style={styles.dailyHabitContent}>
-                  <span style={styles.dailyHabitText}>{habit.text}</span>
-                  <span style={styles.dailyHabitLabel}>every day</span>
+          {dailyHabits.length > 0 ? (
+            <div style={styles.dailyList}>
+              {dailyHabits.map(habit => (
+                <div key={habit.id} style={styles.dailyHabitCard}>
+                  <div style={{...styles.dailyHabitAccent, backgroundColor: habit.color}}></div>
+                  <div style={styles.dailyHabitContent}>
+                    <span style={styles.dailyHabitText}>{habit.text}</span>
+                    <span style={styles.dailyHabitLabel}>every day</span>
+                  </div>
+                  <button 
+                    style={styles.dailyHabitDelete}
+                    onClick={() => setDailyHabits(dailyHabits.filter(h => h.id !== habit.id))}
+                  >×</button>
                 </div>
-                <button 
-                  style={styles.dailyHabitDelete}
-                  onClick={() => setDailyHabits(dailyHabits.filter(h => h.id !== habit.id))}
-                >×</button>
-              </div>
-            ))}
+              ))}
+            </div>
+          ) : (
+            <div style={styles.dailyEmpty}>
+              <p style={styles.dailyEmptyText}>What small daily practices would change your life?</p>
+              <p style={styles.dailyEmptyExamples}>
+                <em>10k steps · Morning pages · 8 glasses of water · Gratitude · Phone-free meals</em>
+              </p>
+            </div>
+          )}
 
-            {dailyHabits.length === 0 && (
-              <div style={styles.dailyEmpty}>
-                <p style={styles.dailyEmptyText}>What small daily practices would change your life?</p>
-                <p style={styles.dailyEmptyExamples}>
-                  <em>10k steps · Morning pages · 8 glasses of water · Gratitude · Phone-free meals</em>
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* Add new habit */}
-          {revealed && (
+          {revealed ? (
             <div style={styles.addDailySection}>
               <input
                 type="text"
@@ -1401,9 +1348,7 @@ I'm here to help with any planning.`
               />
               <button onClick={addHabit} style={styles.addDailyButton}>+ Add Daily Habit</button>
             </div>
-          )}
-
-          {!revealed && (
+          ) : (
             <p style={styles.lockedText}>Complete the conversation to add daily habits</p>
           )}
         </div>
@@ -1632,9 +1577,9 @@ I'm here to help with any planning.`
       goalText: { flex: 1, fontSize: '0.875rem', color: 'var(--text)' },
       goalDelete: { background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem', opacity: 0.5 },
 
-      centerPanel: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.25rem', backgroundColor: 'var(--bg-main)', gap: '1.25rem', overflow: 'auto' },
-      viewSwitcher: { display: 'flex', gap: '4px', backgroundColor: 'var(--bg-card)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border)' },
-      viewButton: { padding: '0.5rem 1.25rem', backgroundColor: 'transparent', border: 'none', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer' },
+      centerPanel: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 1.25rem', backgroundColor: 'var(--bg-main)', gap: '1.5rem', overflow: 'auto' },
+      viewSwitcher: { display: 'flex', gap: '2px', backgroundColor: 'var(--bg-card)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border)' },
+      viewButton: { padding: '0.5rem 1rem', backgroundColor: 'transparent', border: 'none', borderRadius: '10px', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s ease' },
       viewButtonActive: { backgroundColor: 'var(--accent)', color: 'white' },
 
       circleContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' },
@@ -1675,63 +1620,65 @@ I'm here to help with any planning.`
       addEventSmall: { padding: '0.5rem 1rem', backgroundColor: 'transparent', border: '1px solid', borderRadius: '20px', fontSize: '0.8rem', cursor: 'pointer' },
 
       // Weekly
-      weeklyContainer: { width: '100%', maxWidth: '550px', display: 'flex', flexDirection: 'column', gap: '1.25rem' },
-      weeklyHeader: { textAlign: 'center' },
-      weeklyTitle: { fontSize: '1.25rem', fontFamily: "'Fraunces', serif", color: 'var(--text)', marginBottom: '0.25rem' },
-      weeklySubtitle: { fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' },
-      weeklyGrid: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
-      weeklyDaysHeader: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', paddingLeft: '180px' },
-      weeklyDayLabel: { fontSize: '0.65rem', color: 'var(--text-muted)', textAlign: 'center', fontWeight: 500 },
-      weeklyHabitsList: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
-      weeklyHabitRow: { display: 'flex', flexDirection: 'column', gap: '0.375rem', padding: '0.75rem 1rem', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border)' },
-      weeklyHabitInfo: { display: 'flex', alignItems: 'center', gap: '0.5rem' },
-      weeklyHabitDot: { width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0 },
-      weeklyHabitText: { flex: 1, fontSize: '0.9rem', color: 'var(--text)' },
-      weeklyHabitFreq: { fontSize: '0.7rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-elevated)', padding: '0.2rem 0.5rem', borderRadius: '10px' },
-      weeklyHabitDelete: { background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem', opacity: 0.5 },
-      weeklyHabitDays: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', paddingLeft: '12px' },
-      weeklyDayCircle: { width: '28px', height: '28px', borderRadius: '50%', border: '1px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' },
-      addHabitSection: { display: 'flex', gap: '0.5rem', alignItems: 'center' },
-      addHabitInput: { flex: 1, padding: '0.625rem 0.875rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif" },
-      addHabitSelect: { padding: '0.625rem 0.75rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif" },
-      addHabitButton: { padding: '0.625rem 1rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '0.8rem', cursor: 'pointer', fontWeight: 500 },
-      lockedText: { textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic' },
+      weeklyContainer: { width: '100%', maxWidth: '650px', display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1rem' },
+      weeklyHeader: { textAlign: 'center', marginBottom: '0.5rem' },
+      weeklyTitle: { fontSize: '1.5rem', fontFamily: "'Fraunces', serif", color: 'var(--text)', marginBottom: '0.375rem' },
+      weeklySubtitle: { fontSize: '0.9rem', color: 'var(--text-muted)', fontStyle: 'italic' },
+      weeklyGrid: { display: 'flex', flexDirection: 'column', gap: '1rem' },
+      weeklyDaysHeader: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', maxWidth: '350px', margin: '0 auto' },
+      weeklyDayLabel: { fontSize: '0.7rem', color: 'var(--text-muted)', textAlign: 'center', fontWeight: 500 },
+      weeklyHabitsList: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
+      weeklyHabitRow: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1.5rem', padding: '1rem 1.25rem', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border)' },
+      weeklyHabitInfo: { display: 'flex', alignItems: 'center', gap: '0.625rem', flex: '1' },
+      weeklyHabitDot: { width: '10px', height: '10px', borderRadius: '50%', flexShrink: 0 },
+      weeklyHabitText: { fontSize: '0.95rem', color: 'var(--text)', fontWeight: 500 },
+      weeklyHabitFreq: { fontSize: '0.75rem', color: 'var(--text-muted)', backgroundColor: 'var(--bg-elevated)', padding: '0.25rem 0.625rem', borderRadius: '12px', marginLeft: '0.5rem' },
+      weeklyHabitDelete: { background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.125rem', opacity: 0.5, marginLeft: '0.5rem' },
+      weeklyHabitDays: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.5rem', width: '280px', flexShrink: 0 },
+      weeklyDayCircle: { width: '32px', height: '32px', borderRadius: '50%', border: '2px solid', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' },
+      weeklyEmpty: { textAlign: 'center', padding: '3rem 2rem', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px dashed var(--border)' },
+      weeklyEmptyText: { fontSize: '1rem', color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: '0.25rem' },
+      addHabitSection: { display: 'flex', gap: '0.625rem', alignItems: 'center', justifyContent: 'center', flexWrap: 'wrap' },
+      addHabitInput: { flex: '1', minWidth: '200px', maxWidth: '280px', padding: '0.75rem 1rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '0.9rem', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif" },
+      addHabitSelect: { padding: '0.75rem 1rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '0.85rem', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif" },
+      addHabitButton: { padding: '0.75rem 1.5rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '10px', color: 'white', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 500 },
+      lockedText: { textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic', padding: '1rem' },
 
       // Daily
-      dailyContainer: { width: '100%', maxWidth: '450px', display: 'flex', flexDirection: 'column', gap: '1.25rem' },
-      dailyHeader: { textAlign: 'center' },
-      dailyTitle: { fontSize: '1.25rem', fontFamily: "'Fraunces', serif", color: 'var(--text)', marginBottom: '0.25rem' },
-      dailySubtitle: { fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' },
-      dailyList: { display: 'flex', flexDirection: 'column', gap: '0.625rem' },
-      dailyHabitCard: { display: 'flex', alignItems: 'center', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px solid var(--border)', overflow: 'hidden' },
-      dailyHabitAccent: { width: '4px', height: '100%', minHeight: '60px', flexShrink: 0 },
-      dailyHabitContent: { flex: 1, padding: '0.875rem 1rem', display: 'flex', flexDirection: 'column', gap: '0.125rem' },
-      dailyHabitText: { fontSize: '0.95rem', color: 'var(--text)' },
-      dailyHabitLabel: { fontSize: '0.7rem', color: 'var(--text-muted)', fontStyle: 'italic' },
-      dailyHabitDelete: { background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.125rem', padding: '0.875rem', opacity: 0.5 },
-      dailyEmpty: { textAlign: 'center', padding: '2rem 1rem', backgroundColor: 'var(--bg-card)', borderRadius: '12px', border: '1px dashed var(--border)' },
-      dailyEmptyText: { fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '0.5rem' },
-      dailyEmptyExamples: { fontSize: '0.8rem', color: 'var(--text-muted)' },
-      addDailySection: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
-      addDailyInput: { padding: '0.75rem 1rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '0.9rem', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif" },
-      addDailyButton: { padding: '0.625rem 1rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '10px', color: 'white', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 500 },
+      dailyContainer: { width: '100%', maxWidth: '550px', display: 'flex', flexDirection: 'column', gap: '1.5rem', padding: '1rem' },
+      dailyHeader: { textAlign: 'center', marginBottom: '0.5rem' },
+      dailyTitle: { fontSize: '1.5rem', fontFamily: "'Fraunces', serif", color: 'var(--text)', marginBottom: '0.375rem' },
+      dailySubtitle: { fontSize: '0.9rem', color: 'var(--text-muted)', fontStyle: 'italic' },
+      dailyList: { display: 'flex', flexDirection: 'column', gap: '0.75rem' },
+      dailyHabitCard: { display: 'flex', alignItems: 'center', backgroundColor: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)', overflow: 'hidden' },
+      dailyHabitAccent: { width: '5px', height: '100%', minHeight: '70px', flexShrink: 0 },
+      dailyHabitContent: { flex: 1, padding: '1rem 1.25rem', display: 'flex', flexDirection: 'column', gap: '0.2rem' },
+      dailyHabitText: { fontSize: '1rem', color: 'var(--text)', fontWeight: 500 },
+      dailyHabitLabel: { fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' },
+      dailyHabitDelete: { background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1.25rem', padding: '1rem', opacity: 0.5 },
+      dailyEmpty: { textAlign: 'center', padding: '3rem 2rem', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px dashed var(--border)' },
+      dailyEmptyText: { fontSize: '1rem', color: 'var(--text-muted)', marginBottom: '0.75rem' },
+      dailyEmptyExamples: { fontSize: '0.85rem', color: 'var(--text-muted)' },
+      addDailySection: { display: 'flex', flexDirection: 'column', gap: '0.625rem', alignItems: 'center' },
+      addDailyInput: { width: '100%', maxWidth: '400px', padding: '0.875rem 1.125rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '0.95rem', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif", textAlign: 'center' },
+      addDailyButton: { padding: '0.75rem 1.5rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '12px', color: 'white', fontSize: '0.9rem', cursor: 'pointer', fontWeight: 500 },
 
       // Bottom section
-      bottomSection: { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem', width: '100%', maxWidth: '600px', padding: '1.25rem', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)', transition: 'opacity 0.5s ease' },
+      bottomSection: { display: 'grid', gridTemplateColumns: '140px 1fr', gap: '1.5rem', width: '100%', maxWidth: '500px', padding: '1rem 1.25rem', backgroundColor: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)', transition: 'opacity 0.5s ease', marginTop: 'auto' },
       valuesSection: {},
-      sectionLabel: { fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '0.75rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 },
-      valuesTags: { display: 'flex', flexWrap: 'wrap', gap: '0.375rem' },
-      valueTag: { display: 'inline-flex', alignItems: 'center', gap: '0.375rem', padding: '0.375rem 0.75rem', backgroundColor: 'var(--accent)', color: 'white', borderRadius: '14px', fontSize: '0.75rem' },
-      valueRemove: { background: 'none', border: 'none', color: 'white', opacity: 0.7, cursor: 'pointer', fontSize: '0.875rem', padding: 0, lineHeight: 1 },
-      addValueButton: { padding: '0.375rem 0.75rem', backgroundColor: 'transparent', border: '1px dashed var(--border-dark)', borderRadius: '14px', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer' },
+      sectionLabel: { fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '0.5rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 },
+      valuesTags: { display: 'flex', flexWrap: 'wrap', gap: '0.3rem' },
+      valueTag: { display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.3rem 0.6rem', backgroundColor: 'var(--accent)', color: 'white', borderRadius: '12px', fontSize: '0.7rem' },
+      valueRemove: { background: 'none', border: 'none', color: 'white', opacity: 0.7, cursor: 'pointer', fontSize: '0.8rem', padding: 0, lineHeight: 1 },
+      addValueButton: { padding: '0.3rem 0.6rem', backgroundColor: 'transparent', border: '1px dashed var(--border-dark)', borderRadius: '12px', color: 'var(--text-muted)', fontSize: '0.7rem', cursor: 'pointer' },
       lifeAreasSection: {},
-      lifeAreasGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' },
-      lifeAreaItem: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
-      lifeAreaHeader: { display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.7rem' },
-      lifeAreaName: { color: 'var(--text-light)', fontSize: '0.7rem' },
-      slider: { width: '100%', height: '4px', cursor: 'pointer' },
-      sliderPlaceholder: { width: '100%', height: '4px', backgroundColor: 'var(--border)', borderRadius: '2px' },
-      lifeAreaRating: { fontSize: '0.8rem', fontWeight: 600, textAlign: 'center' },
+      lifeAreasGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' },
+      lifeAreaItem: { display: 'flex', flexDirection: 'column', gap: '0.2rem' },
+      lifeAreaHeader: { display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.65rem' },
+      lifeAreaName: { color: 'var(--text-light)', fontSize: '0.65rem' },
+      slider: { width: '100%', height: '3px', cursor: 'pointer' },
+      sliderPlaceholder: { width: '100%', height: '3px', backgroundColor: 'var(--border)', borderRadius: '2px' },
+      lifeAreaRating: { fontSize: '0.7rem', fontWeight: 600, textAlign: 'center' },
 
       // Chat
       chatPanel: { backgroundColor: 'var(--bg-card)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column' },
