@@ -32,22 +32,8 @@
       
       --winter: #7A9CAD;
       --spring: #7D9B76;
-      --summer: #C9A66B;
+      --summer: #D4A857;
       --fall: #C4836A;
-    }
-
-    [data-theme="dark"] {
-      --bg-main: #1a1916;
-      --bg-card: #252320;
-      --bg-elevated: #2d2a26;
-      --text: #F5F0E8;
-      --text-light: #B8B2A8;
-      --text-muted: #8A857C;
-      --border: #3d3a36;
-      --border-dark: #4a4640;
-      --accent: #A8C4A2;
-      --accent-light: #2d332c;
-      --ghost: #3d3a36;
     }
 
     body {
@@ -72,16 +58,12 @@
       to { opacity: 1; }
     }
     @keyframes slideIn {
-      from { opacity: 0; transform: translateX(-10px); }
-      to { opacity: 1; transform: translateX(0); }
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     @keyframes pulse {
       0%, 100% { opacity: 0.4; }
       50% { opacity: 0.7; }
-    }
-    @keyframes gentlePulse {
-      0%, 100% { opacity: 0.15; }
-      50% { opacity: 0.25; }
     }
     .fade-in { animation: fadeIn 0.4s ease-out forwards; }
     .slide-in { animation: slideIn 0.4s ease-out forwards; }
@@ -92,7 +74,7 @@
     }
   </style>
 </head>
-<body data-theme="light">
+<body>
   <div id="root"></div>
 
   <script type="text/babel">
@@ -100,38 +82,29 @@
 
     // ============ CONSTANTS ============
     const LIFE_AREAS = {
-      health: { name: 'Health & Wellness', icon: '◐', color: '#7D9B76', keywords: ['health', 'fitness', 'exercise', 'gym', 'sleep', 'energy', 'body', 'weight', 'diet', 'mental health', 'stress', 'anxiety', 'tired', 'exhausted'] },
-      relationships: { name: 'Relationships', icon: '♡', color: '#C48B8B', keywords: ['partner', 'relationship', 'marriage', 'spouse', 'husband', 'wife', 'boyfriend', 'girlfriend', 'family', 'friends', 'kids', 'children', 'parents', 'dating', 'connection', 'lonely', 'love', 'present'] },
-      career: { name: 'Career & Work', icon: '◆', color: '#7A9CAD', keywords: ['work', 'job', 'career', 'promotion', 'boss', 'office', 'business', 'project', 'deadline', 'meeting', 'professional', 'salary', 'coworkers', 'manager', 'burnout'] },
-      finances: { name: 'Finances', icon: '○', color: '#C9A66B', keywords: ['money', 'financial', 'savings', 'debt', 'budget', 'invest', 'retirement', 'income', 'expenses', 'afford', 'bills', 'wealth'] },
-      growth: { name: 'Personal Growth', icon: '✦', color: '#9B8AAE', keywords: ['learn', 'grow', 'growth', 'read', 'book', 'course', 'skill', 'hobby', 'creative', 'creativity', 'develop', 'improve', 'therapy', 'meditation', 'mindful'] },
-      fun: { name: 'Fun & Adventure', icon: '✺', color: '#C4836A', keywords: ['fun', 'adventure', 'travel', 'trip', 'vacation', 'explore', 'experience', 'play', 'enjoy', 'hobby', 'entertainment', 'relax', 'weekend'] },
+      health: { name: 'Health', icon: '◐', color: '#7D9B76' },
+      relationships: { name: 'Relationships', icon: '♡', color: '#C48B8B' },
+      career: { name: 'Career', icon: '◆', color: '#7A9CAD' },
+      finances: { name: 'Finances', icon: '○', color: '#C9A66B' },
+      growth: { name: 'Growth', icon: '✦', color: '#9B8AAE' },
+      fun: { name: 'Adventure', icon: '✺', color: '#C4836A' },
     };
 
     const VALUE_KEYWORDS = {
-      'Freedom': ['freedom', 'free', 'autonomy', 'independent', 'flexible', 'flexibility', 'control', 'choice'],
-      'Connection': ['connection', 'connected', 'together', 'relationship', 'partner', 'love', 'intimacy', 'close', 'present', 'presence'],
-      'Growth': ['growth', 'grow', 'learn', 'improve', 'better', 'develop', 'progress', 'evolve'],
-      'Peace': ['peace', 'calm', 'peaceful', 'stress', 'less stressed', 'relaxed', 'quiet', 'stillness', 'balance', 'balanced'],
-      'Health': ['health', 'healthy', 'fit', 'strong', 'energy', 'energized', 'well', 'wellness'],
-      'Adventure': ['adventure', 'travel', 'explore', 'new', 'exciting', 'experience', 'spontaneous'],
-      'Creativity': ['creative', 'creativity', 'create', 'art', 'make', 'build', 'design', 'write', 'music'],
-      'Family': ['family', 'kids', 'children', 'parents', 'mom', 'dad', 'siblings', 'home'],
-      'Success': ['success', 'achieve', 'accomplish', 'goal', 'ambitious', 'career', 'promotion'],
-      'Joy': ['joy', 'happy', 'happiness', 'fun', 'laugh', 'enjoy', 'pleasure', 'delight'],
-      'Authenticity': ['authentic', 'real', 'true', 'honest', 'genuine', 'myself', 'who I am'],
-      'Security': ['security', 'secure', 'stable', 'stability', 'safe', 'reliable', 'consistent'],
+      'Freedom': ['freedom', 'free', 'autonomy', 'independent', 'flexible'],
+      'Connection': ['connection', 'connected', 'together', 'relationship', 'partner', 'love', 'present', 'presence'],
+      'Growth': ['growth', 'grow', 'learn', 'improve', 'better', 'develop'],
+      'Peace': ['peace', 'calm', 'peaceful', 'stress', 'less stressed', 'relaxed', 'balance'],
+      'Health': ['health', 'healthy', 'fit', 'strong', 'energy', 'wellness'],
+      'Adventure': ['adventure', 'travel', 'explore', 'new', 'exciting', 'experience'],
+      'Creativity': ['creative', 'creativity', 'create', 'art', 'make', 'build'],
+      'Family': ['family', 'kids', 'children', 'parents', 'home'],
+      'Joy': ['joy', 'happy', 'happiness', 'fun', 'laugh', 'enjoy'],
+      'Security': ['security', 'secure', 'stable', 'stability', 'safe'],
     };
 
     const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const MONTH_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
-    const SEASONS = {
-      winter: { name: 'Winter', months: [11, 0, 1], color: '#7A9CAD' },
-      spring: { name: 'Spring', months: [2, 3, 4], color: '#7D9B76' },
-      summer: { name: 'Summer', months: [5, 6, 7], color: '#C9A66B' },
-      fall: { name: 'Fall', months: [8, 9, 10], color: '#C4836A' },
-    };
 
     const PHASES = {
       EXPLORE: 'explore',
@@ -148,7 +121,7 @@
       const [lifeAreaFocus, setLifeAreaFocus] = useState({});
       const [events, setEvents] = useState([]);
       const [goals, setGoals] = useState([]);
-      const [seasonIntentions, setSeasonIntentions] = useState({});
+      const [notes, setNotes] = useState('');
       
       // Chat state
       const [messages, setMessages] = useState([]);
@@ -159,7 +132,10 @@
 
       // UI state
       const [revealed, setRevealed] = useState(false);
+      const [activeTab, setActiveTab] = useState('events');
+      const [expandedEvent, setExpandedEvent] = useState(null);
       const [showEventModal, setShowEventModal] = useState(false);
+      const [showGoalModal, setShowGoalModal] = useState(false);
 
       // Initialize
       useEffect(() => {
@@ -189,7 +165,8 @@ What would make 2026 feel like a success? It could be a concrete achievement, a 
         });
 
         Object.entries(LIFE_AREAS).forEach(([key, area]) => {
-          if (area.keywords.some(kw => lower.includes(kw))) {
+          const keywords = area.name.toLowerCase().split(' ');
+          if (keywords.some(kw => lower.includes(kw))) {
             detected.lifeAreas.push(key);
           }
         });
@@ -199,15 +176,12 @@ What would make 2026 feel like a success? It could be a concrete achievement, a 
 
       const processAnalysis = (detected) => {
         if (detected.values.length > 0) {
-          setValues(prev => [...new Set([...prev, ...detected.values])].slice(0, 5));
+          setValues(prev => [...new Set([...prev, ...detected.values])].slice(0, 4));
         }
-        
         if (detected.lifeAreas.length > 0) {
           setLifeAreaFocus(prev => {
             const updated = { ...prev };
-            detected.lifeAreas.forEach(area => {
-              if (!updated[area]) updated[area] = 'mentioned';
-            });
+            detected.lifeAreas.forEach(area => { updated[area] = 'active'; });
             return updated;
           });
         }
@@ -216,13 +190,11 @@ What would make 2026 feel like a success? It could be a concrete achievement, a 
       const parseEvents = (text) => {
         const lower = text.toLowerCase();
         const foundEvents = [];
-        
         MONTH_FULL.forEach((month, idx) => {
           if (lower.includes(month.toLowerCase())) {
             foundEvents.push({ month: idx });
           }
         });
-        
         return foundEvents;
       };
 
@@ -230,43 +202,30 @@ What would make 2026 feel like a success? It could be a concrete achievement, a 
       const generateResponse = (userMessage, currentPhase, exchangeNum) => {
         const detected = analyzeText(userMessage);
         processAnalysis(detected);
-        
         const lower = userMessage.toLowerCase();
 
         if (currentPhase === PHASES.EXPLORE) {
           if (exchangeNum === 1) {
             const hasFeeling = ['feel', 'feeling', 'want to be', 'less', 'more'].some(w => lower.includes(w));
-            const hasConcrete = ['achieve', 'goal', 'finish', 'complete', 'start', 'launch', 'build'].some(w => lower.includes(w));
-            
             if (hasFeeling) {
-              return `That's about <em>how</em> you want to feel, not just what you want to do — which is important.
+              return `That's about <em>how</em> you want to feel — which is often more important than what you achieve.
 
-What's getting in the way of that right now? What's creating friction?`;
-            } else if (hasConcrete) {
-              return `That's concrete — I can work with that.
-
-But beyond achieving that, how do you want to <em>feel</em> this year? What would be different about your day-to-day life?`;
-            } else {
-              return `Say more about that. What would that actually look like in your life?`;
+What's getting in the way of that right now?`;
             }
+            return `Tell me more. What would that actually look like in your daily life?`;
           }
           
           if (exchangeNum === 2) {
-            const detectedAreas = Object.keys(lifeAreaFocus);
-            if (detectedAreas.length > 0) {
-              const areaName = LIFE_AREAS[detectedAreas[0]].name;
-              return `So ${areaName.toLowerCase()} is part of this.
+            return `I'm starting to see what matters to you.
 
-If things stayed exactly as they are now for another year, how would that feel?`;
-            }
-            return `I'm starting to get a picture. What would you need to let go of to make space for this?`;
+If nothing changed this year, how would that feel?`;
           }
 
           if (exchangeNum >= 3) {
             setPhase(PHASES.GROUND);
-            return `Before I share what I'm hearing, help me understand what's already on your plate this year.
+            return `Before I share what I'm hearing, help me understand what's already planned.
 
-What's committed — trips, work deadlines, big family events, anything that's already locked in? Just mention the month and what it is.`;
+What's committed this year — trips, big events, deadlines? Just mention the month and what it is.`;
           }
         }
 
@@ -276,9 +235,10 @@ What's committed — trips, work deadlines, big family events, anything that's a
           if (foundEvents.length > 0) {
             const newEvents = foundEvents.map((e, i) => ({
               id: Date.now() + i,
-              title: `Event`,
+              title: `Event in ${MONTHS[e.month]}`,
               month: e.month,
               lifeArea: 'fun',
+              details: { flights: '', stays: '', activities: '', notes: '' },
             }));
             setEvents(prev => [...prev, ...newEvents]);
           }
@@ -290,48 +250,60 @@ What's committed — trips, work deadlines, big family events, anything that's a
 
           const valuesSummary = values.length > 0 
             ? values.slice(0, 3).join(', ')
-            : 'presence, balance, and intention';
+            : 'intention and presence';
 
-          return `Got it. Let me reflect back what I'm hearing.
+          return `<strong>Here's what I'm hearing:</strong>
 
-<strong>Here's what's taking shape:</strong>
-
-Your values this year seem to center around <em>${valuesSummary}</em>.
-
-${Object.keys(lifeAreaFocus).length > 0 
-  ? `${LIFE_AREAS[Object.keys(lifeAreaFocus)[0]].name} is where I'm hearing some tension or desire for change.`
-  : `You're looking for a shift in how you spend your time and energy.`}
+Your values center around <em>${valuesSummary}</em>.
 
 ${foundEvents.length > 0 
-  ? `You've got ${foundEvents.length} thing${foundEvents.length > 1 ? 's' : ''} already anchoring the year.`
-  : `Your calendar sounds relatively open — that's space to be intentional with.`}
+  ? `You have ${foundEvents.length} thing${foundEvents.length > 1 ? 's' : ''} anchoring the year.`
+  : `Your calendar is open — that's space to be intentional.`}
 
-Take a look at what's forming on the left. Does this feel right? You can edit anything directly now.`;
+Take a look at the circle — your year is taking shape. The sidebar on the left is where you can plan the details.
+
+What's missing?`;
         }
 
         if (currentPhase === PHASES.REVEAL || currentPhase === PHASES.PLAN) {
           setPhase(PHASES.PLAN);
           
-          if (lower.includes('yes') || lower.includes('right') || lower.includes('exactly') || lower.includes('good')) {
-            return `Good. Now let's make it real.
+          // Check if asking about event planning
+          if (lower.includes('plan') || lower.includes('suggest') || lower.includes('ideas') || lower.includes('activities') || lower.includes('where to stay') || lower.includes('what to do')) {
+            const eventMention = events.find(e => lower.includes(MONTHS[e.month].toLowerCase()) || lower.includes(e.title.toLowerCase()));
+            if (eventMention) {
+              return `For your ${MONTHS[eventMention.month]} event, here are some thoughts:
 
-Looking at the year — what's missing? ${values.length > 0 ? `If <em>${values[0]}</em> matters, what needs to get on the calendar to protect it?` : `What would make the next few months feel intentional rather than reactive?`}`;
+<strong>Activities:</strong>
+• Explore the local neighborhood on foot the first day
+• Find one "must-do" experience and leave room for spontaneity
+• Schedule downtime — rest is part of the trip
+
+<strong>Stays:</strong>
+• Look for somewhere with a kitchen if you want flexibility
+• Consider location vs. price — being central often saves time
+
+<strong>Getting there:</strong>
+• Book flights 6-8 weeks out for best prices
+• Morning flights = fewer delays
+
+Click on the event in the sidebar to add these details. What else would help?`;
+            }
+            return `What event would you like to plan? I can suggest activities, places to stay, and things to consider.`;
           }
 
-          if (lower.includes('no') || lower.includes('not quite') || lower.includes('change')) {
-            return `That's okay — this is just a starting point. Edit anything on the left that doesn't feel right.
+          if (lower.includes('yes') || lower.includes('right') || lower.includes('good')) {
+            return `Good. Looking at your year — what feels like it needs attention first?
 
-What would you adjust?`;
+I can help you plan any event in detail, or we can think about what's missing.`;
           }
 
-          const planningPrompts = [
-            `What's one thing you've been meaning to schedule but haven't?`,
-            `Looking at the seasons — which one needs the most attention?`,
-            `Is there something that used to bring you joy that's fallen off the calendar?`,
-            `What does rest look like for you, and where does it fit?`,
+          const prompts = [
+            `What's one thing you've been wanting to plan but haven't?`,
+            `Looking at the seasons — where do you need to protect space?`,
+            `Is there a trip or experience you keep pushing off?`,
           ];
-          
-          return planningPrompts[Math.floor(Math.random() * planningPrompts.length)];
+          return prompts[Math.floor(Math.random() * prompts.length)];
         }
 
         return `Tell me more about that.`;
@@ -359,17 +331,34 @@ What would you adjust?`;
         setRevealed(true);
         setMessages(prev => [...prev, {
           role: 'assistant',
-          content: `No problem — let's jump into planning.
+          content: `No problem — let's dive in.
 
-The canvas is yours. Add values that matter to you, check in on different life areas, and start placing intentions on the year.
+Add your values to the center, place events on the year, and use the sidebar to plan details.
 
-I'm here whenever you want to think out loud.`
+I'm here to help — ask me to suggest activities, places to stay, or ideas for any event.`
         }]);
       };
 
       const handleAddEvent = (eventData) => {
-        setEvents(prev => [...prev, { ...eventData, id: Date.now() }]);
+        setEvents(prev => [...prev, { 
+          ...eventData, 
+          id: Date.now(),
+          details: { flights: '', stays: '', activities: '', notes: '' },
+        }]);
         setShowEventModal(false);
+      };
+
+      const handleUpdateEventDetails = (eventId, field, value) => {
+        setEvents(prev => prev.map(e => 
+          e.id === eventId 
+            ? { ...e, details: { ...e.details, [field]: value } }
+            : e
+        ));
+      };
+
+      const handleAddGoal = (goalData) => {
+        setGoals(prev => [...prev, { ...goalData, id: Date.now(), completed: false }]);
+        setShowGoalModal(false);
       };
 
       // ============ RENDER ============
@@ -389,108 +378,62 @@ I'm here whenever you want to think out loud.`
             <p style={styles.tagline}>a space for designing your life with intention</p>
           </header>
 
-          {/* Main Content - Three Columns */}
+          {/* Main Content */}
           <main style={styles.main}>
-            {/* Left Sidebar - Ghosted Placeholders */}
+            {/* Left Sidebar - Practical Tabs */}
             <aside style={styles.sidebar}>
-              <SidebarSection 
-                title="Values" 
-                revealed={revealed}
-                items={values}
-                ghostCount={3}
-                renderItem={(v) => (
-                  <span key={v} style={styles.valueChip} className="slide-in">
-                    {v}
-                    {revealed && (
-                      <button style={styles.chipRemove} onClick={() => setValues(values.filter(x => x !== v))}>×</button>
-                    )}
-                  </span>
-                )}
-                onAdd={revealed ? () => {
-                  const v = prompt('Add a value:');
-                  if (v && !values.includes(v)) setValues([...values, v]);
-                } : null}
-              />
-              
-              <SidebarSection 
-                title="Life Areas" 
-                revealed={revealed}
-                ghostCount={0}
-              >
-                <div style={styles.lifeAreasList}>
-                  {Object.entries(LIFE_AREAS).map(([key, area]) => {
-                    const isActive = revealed || lifeAreaFocus[key];
-                    return (
-                      <div 
-                        key={key}
-                        style={{
-                          ...styles.lifeAreaItem,
-                          opacity: isActive ? 1 : 0.3,
-                          borderColor: lifeAreaFocus[key] ? area.color : 'transparent',
-                        }}
-                      >
-                        <span style={{color: area.color, fontSize: '0.9rem'}}>{area.icon}</span>
-                        <span style={styles.lifeAreaLabel}>{area.name}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </SidebarSection>
+              <div style={styles.tabs}>
+                {['events', 'notes', 'goals'].map(tab => (
+                  <button
+                    key={tab}
+                    style={{
+                      ...styles.tab,
+                      ...(activeTab === tab && styles.tabActive),
+                    }}
+                    onClick={() => setActiveTab(tab)}
+                  >
+                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                  </button>
+                ))}
+              </div>
 
-              <SidebarSection 
-                title="Goals" 
-                revealed={revealed}
-                items={goals}
-                ghostCount={2}
-                renderItem={(g) => (
-                  <div key={g.id} style={styles.goalItem} className="slide-in">
-                    <span>{g.text}</span>
-                    {revealed && (
-                      <button style={styles.chipRemove} onClick={() => setGoals(goals.filter(x => x.id !== g.id))}>×</button>
-                    )}
-                  </div>
+              <div style={styles.tabContent}>
+                {activeTab === 'events' && (
+                  <EventsTab
+                    events={events}
+                    expandedEvent={expandedEvent}
+                    setExpandedEvent={setExpandedEvent}
+                    onUpdateDetails={handleUpdateEventDetails}
+                    onDelete={(id) => setEvents(events.filter(e => e.id !== id))}
+                    onAdd={() => setShowEventModal(true)}
+                    revealed={revealed}
+                  />
                 )}
-                onAdd={revealed ? () => {
-                  const g = prompt('Add a goal:');
-                  if (g) setGoals([...goals, { id: Date.now(), text: g }]);
-                } : null}
-              />
-
-              <SidebarSection 
-                title="Seasons" 
-                revealed={revealed}
-                ghostCount={0}
-              >
-                <div style={styles.seasonsList}>
-                  {Object.entries(SEASONS).map(([key, season]) => (
-                    <div 
-                      key={key}
-                      style={{
-                        ...styles.seasonItem,
-                        opacity: revealed ? 1 : 0.3,
-                        borderLeftColor: season.color,
-                      }}
-                    >
-                      <span style={{color: season.color, fontWeight: 500}}>{season.name}</span>
-                      {revealed && (
-                        <input
-                          type="text"
-                          placeholder="Focus..."
-                          value={seasonIntentions[key] || ''}
-                          onChange={(e) => setSeasonIntentions({...seasonIntentions, [key]: e.target.value})}
-                          style={styles.seasonInput}
-                        />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </SidebarSection>
+                {activeTab === 'notes' && (
+                  <NotesTab
+                    notes={notes}
+                    setNotes={setNotes}
+                    revealed={revealed}
+                  />
+                )}
+                {activeTab === 'goals' && (
+                  <GoalsTab
+                    goals={goals}
+                    setGoals={setGoals}
+                    onAdd={() => setShowGoalModal(true)}
+                    revealed={revealed}
+                  />
+                )}
+              </div>
             </aside>
 
-            {/* Center - Seasons Circle */}
+            {/* Center - Big Seasons Circle */}
             <div style={styles.centerPanel}>
               <SeasonsCircle 
-                events={events} 
+                values={values}
+                setValues={setValues}
+                lifeAreaFocus={lifeAreaFocus}
+                events={events}
                 revealed={revealed}
                 onAddEvent={() => setShowEventModal(true)}
               />
@@ -523,7 +466,7 @@ I'm here whenever you want to think out loud.`
                         handleSendMessage();
                       }
                     }}
-                    placeholder="Share what's on your mind..."
+                    placeholder={revealed ? "Ask me to help plan an event..." : "Share what's on your mind..."}
                     rows={2}
                   />
                   <button 
@@ -541,44 +484,172 @@ I'm here whenever you want to think out loud.`
             </div>
           </main>
 
-          {/* Event Modal */}
+          {/* Modals */}
           {showEventModal && (
-            <EventModal 
-              onClose={() => setShowEventModal(false)}
-              onAdd={handleAddEvent}
-            />
+            <EventModal onClose={() => setShowEventModal(false)} onAdd={handleAddEvent} />
+          )}
+          {showGoalModal && (
+            <GoalModal onClose={() => setShowGoalModal(false)} onAdd={handleAddGoal} />
           )}
         </div>
       );
     }
 
-    // ============ SIDEBAR SECTION ============
-    function SidebarSection({ title, revealed, items = [], ghostCount = 3, renderItem, onAdd, children }) {
-      return (
-        <div style={styles.sidebarSection}>
-          <div style={styles.sectionHeader}>
-            <h3 style={styles.sectionTitle}>{title}</h3>
-            {onAdd && <button style={styles.addButton} onClick={onAdd}>+</button>}
+    // ============ EVENTS TAB ============
+    function EventsTab({ events, expandedEvent, setExpandedEvent, onUpdateDetails, onDelete, onAdd, revealed }) {
+      if (!revealed) {
+        return (
+          <div style={styles.tabPlaceholder}>
+            <p style={styles.placeholderText}>Your events will appear here as you plan them.</p>
           </div>
+        );
+      }
+
+      return (
+        <div style={styles.eventsTab}>
+          <button style={styles.addItemButton} onClick={onAdd}>+ Add Event</button>
           
-          {children ? children : (
-            <div style={styles.sectionContent}>
-              {items.length > 0 ? (
-                items.map(item => renderItem(item))
-              ) : (
-                <div style={styles.ghostedItems}>
-                  {Array.from({ length: ghostCount }).map((_, i) => (
-                    <div 
-                      key={i} 
-                      style={{
-                        ...styles.ghostPill,
-                        width: `${60 + Math.random() * 40}px`,
-                        animationDelay: `${i * 0.2}s`,
-                      }}
-                    />
-                  ))}
+          {events.length === 0 ? (
+            <p style={styles.emptyText}>No events yet. Add one to start planning.</p>
+          ) : (
+            <div style={styles.eventsList}>
+              {events.map(event => (
+                <div key={event.id} style={styles.eventCard}>
+                  <div 
+                    style={styles.eventHeader}
+                    onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
+                  >
+                    <div style={styles.eventHeaderLeft}>
+                      <span style={{...styles.eventMonth, color: LIFE_AREAS[event.lifeArea]?.color}}>
+                        {MONTHS[event.month]}
+                      </span>
+                      <span style={styles.eventTitle}>{event.title}</span>
+                    </div>
+                    <span style={styles.expandIcon}>{expandedEvent === event.id ? '−' : '+'}</span>
+                  </div>
+                  
+                  {expandedEvent === event.id && (
+                    <div style={styles.eventDetails} className="slide-in">
+                      <div style={styles.detailField}>
+                        <label style={styles.detailLabel}>✈ Flights</label>
+                        <textarea
+                          style={styles.detailInput}
+                          value={event.details?.flights || ''}
+                          onChange={(e) => onUpdateDetails(event.id, 'flights', e.target.value)}
+                          placeholder="Flight details, confirmation numbers..."
+                          rows={2}
+                        />
+                      </div>
+                      <div style={styles.detailField}>
+                        <label style={styles.detailLabel}>🏠 Stays</label>
+                        <textarea
+                          style={styles.detailInput}
+                          value={event.details?.stays || ''}
+                          onChange={(e) => onUpdateDetails(event.id, 'stays', e.target.value)}
+                          placeholder="Where you're staying, check-in info..."
+                          rows={2}
+                        />
+                      </div>
+                      <div style={styles.detailField}>
+                        <label style={styles.detailLabel}>⭐ Activities</label>
+                        <textarea
+                          style={styles.detailInput}
+                          value={event.details?.activities || ''}
+                          onChange={(e) => onUpdateDetails(event.id, 'activities', e.target.value)}
+                          placeholder="Things to do, reservations..."
+                          rows={2}
+                        />
+                      </div>
+                      <div style={styles.detailField}>
+                        <label style={styles.detailLabel}>📝 Notes</label>
+                        <textarea
+                          style={styles.detailInput}
+                          value={event.details?.notes || ''}
+                          onChange={(e) => onUpdateDetails(event.id, 'notes', e.target.value)}
+                          placeholder="Anything else to remember..."
+                          rows={2}
+                        />
+                      </div>
+                      <button style={styles.deleteButton} onClick={() => onDelete(event.id)}>
+                        Delete event
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
+            </div>
+          )}
+          
+          <p style={styles.tipText}>💡 Ask the AI to suggest activities or places for any event</p>
+        </div>
+      );
+    }
+
+    // ============ NOTES TAB ============
+    function NotesTab({ notes, setNotes, revealed }) {
+      if (!revealed) {
+        return (
+          <div style={styles.tabPlaceholder}>
+            <p style={styles.placeholderText}>A space for your thoughts, ideas, and reflections.</p>
+          </div>
+        );
+      }
+
+      return (
+        <div style={styles.notesTab}>
+          <textarea
+            style={styles.notesTextarea}
+            value={notes}
+            onChange={(e) => setNotes(e.target.value)}
+            placeholder="Brain dumps, reflections, ideas for the year..."
+          />
+        </div>
+      );
+    }
+
+    // ============ GOALS TAB ============
+    function GoalsTab({ goals, setGoals, onAdd, revealed }) {
+      if (!revealed) {
+        return (
+          <div style={styles.tabPlaceholder}>
+            <p style={styles.placeholderText}>Your goals and milestones will live here.</p>
+          </div>
+        );
+      }
+
+      const toggleGoal = (id) => {
+        setGoals(goals.map(g => g.id === id ? {...g, completed: !g.completed} : g));
+      };
+
+      return (
+        <div style={styles.goalsTab}>
+          <button style={styles.addItemButton} onClick={onAdd}>+ Add Goal</button>
+          
+          {goals.length === 0 ? (
+            <p style={styles.emptyText}>No goals yet. What do you want to achieve?</p>
+          ) : (
+            <div style={styles.goalsList}>
+              {goals.map(goal => (
+                <div key={goal.id} style={{...styles.goalCard, opacity: goal.completed ? 0.6 : 1}}>
+                  <button
+                    style={{
+                      ...styles.goalCheck,
+                      backgroundColor: goal.completed ? 'var(--accent)' : 'transparent',
+                    }}
+                    onClick={() => toggleGoal(goal.id)}
+                  >
+                    {goal.completed && '✓'}
+                  </button>
+                  <span style={{
+                    ...styles.goalText,
+                    textDecoration: goal.completed ? 'line-through' : 'none',
+                  }}>{goal.text}</span>
+                  <button 
+                    style={styles.goalDelete}
+                    onClick={() => setGoals(goals.filter(g => g.id !== goal.id))}
+                  >×</button>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -586,19 +657,17 @@ I'm here whenever you want to think out loud.`
     }
 
     // ============ SEASONS CIRCLE ============
-    function SeasonsCircle({ events, revealed, onAddEvent }) {
-      const size = 380;
+    function SeasonsCircle({ values, setValues, lifeAreaFocus, events, revealed, onAddEvent }) {
+      const size = 480;
       const center = size / 2;
-      const outerRadius = 170;
-      const innerRadius = 80;
-      const monthRadius = 150;
+      const outerRadius = 210;
+      const innerRadius = 100;
+      const monthRadius = 175;
+      const lifeAreaRadius = 225;
 
       const currentMonth = new Date().getMonth();
 
-      // Calculate month positions around the circle
       const getMonthPosition = (monthIndex) => {
-        // Start from top (12 o'clock) and go clockwise
-        // Month 0 (Jan) should be at roughly 1 o'clock position
         const angle = ((monthIndex - 2) / 12) * 2 * Math.PI - Math.PI / 2;
         return {
           x: center + Math.cos(angle) * monthRadius,
@@ -608,19 +677,28 @@ I'm here whenever you want to think out loud.`
 
       const getEventPosition = (monthIndex, eventIndex = 0) => {
         const angle = ((monthIndex - 2) / 12) * 2 * Math.PI - Math.PI / 2;
-        const radius = innerRadius + 25 + (eventIndex * 12);
+        const radius = innerRadius + 30 + (eventIndex * 14);
         return {
           x: center + Math.cos(angle) * radius,
           y: center + Math.sin(angle) * radius,
         };
       };
 
-      const seasonArcs = [
-        { id: 'winter', start: -60, end: 30, color: '#7A9CAD' },
-        { id: 'spring', start: 30, end: 120, color: '#7D9B76' },
-        { id: 'summer', start: 120, end: 210, color: '#C9A66B' },
-        { id: 'fall', start: 210, end: 300, color: '#C4836A' },
-      ];
+      const getLifeAreaPosition = (index, total) => {
+        const angle = (index / total) * 2 * Math.PI - Math.PI / 2;
+        return {
+          x: center + Math.cos(angle) * lifeAreaRadius,
+          y: center + Math.sin(angle) * lifeAreaRadius,
+        };
+      };
+
+      const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
+        const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+        return {
+          x: centerX + (radius * Math.cos(angleInRadians)),
+          y: centerY + (radius * Math.sin(angleInRadians))
+        };
+      };
 
       const describeArc = (startAngle, endAngle, radius) => {
         const start = polarToCartesian(center, center, radius, endAngle);
@@ -634,27 +712,58 @@ I'm here whenever you want to think out loud.`
         ].join(" ");
       };
 
-      const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
-        const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
-        return {
-          x: centerX + (radius * Math.cos(angleInRadians)),
-          y: centerY + (radius * Math.sin(angleInRadians))
-        };
-      };
+      const seasonArcs = [
+        { id: 'winter', start: -60, end: 30, color: '#7A9CAD' },
+        { id: 'spring', start: 30, end: 120, color: '#7D9B76' },
+        { id: 'summer', start: 120, end: 210, color: '#D4A857' },
+        { id: 'fall', start: 210, end: 300, color: '#C4836A' },
+      ];
+
+      const lifeAreaEntries = Object.entries(LIFE_AREAS);
 
       return (
         <div style={styles.circleContainer}>
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-            {/* Season arcs */}
+            {/* Season arcs - bolder colors */}
             {seasonArcs.map(season => (
               <path
                 key={season.id}
                 d={describeArc(season.start, season.end, outerRadius)}
                 fill={season.color}
-                opacity={revealed ? 0.15 : 0.08}
+                opacity={revealed ? 0.35 : 0.15}
                 style={{ transition: 'opacity 0.5s ease' }}
               />
             ))}
+
+            {/* Life Area ring */}
+            {lifeAreaEntries.map(([key, area], idx) => {
+              const pos = getLifeAreaPosition(idx, lifeAreaEntries.length);
+              const isActive = lifeAreaFocus[key];
+              return (
+                <g key={key}>
+                  <circle
+                    cx={pos.x}
+                    cy={pos.y}
+                    r={isActive ? 18 : 14}
+                    fill={isActive ? area.color : 'var(--bg-card)'}
+                    stroke={area.color}
+                    strokeWidth={isActive ? 2 : 1}
+                    opacity={revealed || isActive ? 1 : 0.3}
+                    style={{ transition: 'all 0.3s ease' }}
+                  />
+                  <text
+                    x={pos.x}
+                    y={pos.y}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill={isActive ? 'white' : area.color}
+                    style={{ fontSize: '0.75rem' }}
+                  >
+                    {area.icon}
+                  </text>
+                </g>
+              );
+            })}
 
             {/* Inner circle */}
             <circle
@@ -669,14 +778,40 @@ I'm here whenever you want to think out loud.`
             {/* Year text */}
             <text
               x={center}
-              y={center}
+              y={center - 20}
               textAnchor="middle"
               dominantBaseline="middle"
               fill="var(--text)"
-              style={{ fontFamily: "'Fraunces', serif", fontSize: '2rem' }}
+              style={{ fontFamily: "'Fraunces', serif", fontSize: '2.25rem' }}
             >
               2026
             </text>
+
+            {/* Values in center */}
+            {values.length > 0 && (
+              <text
+                x={center}
+                y={center + 20}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill="var(--text-muted)"
+                style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.7rem' }}
+              >
+                {values.slice(0, 3).join(' · ')}
+              </text>
+            )}
+            {values.length === 0 && revealed && (
+              <text
+                x={center}
+                y={center + 20}
+                textAnchor="middle"
+                dominantBaseline="middle"
+                fill="var(--text-muted)"
+                style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.65rem', fontStyle: 'italic' }}
+              >
+                your values here
+              </text>
+            )}
 
             {/* Month labels */}
             {MONTHS.map((month, idx) => {
@@ -689,23 +824,15 @@ I'm here whenever you want to think out loud.`
                     y={pos.y}
                     textAnchor="middle"
                     dominantBaseline="middle"
-                    fill={isCurrent ? 'var(--accent)' : 'var(--text-muted)'}
+                    fill={isCurrent ? 'var(--accent)' : 'var(--text-light)'}
                     style={{ 
                       fontFamily: "'DM Sans', sans-serif", 
-                      fontSize: '0.7rem',
+                      fontSize: '0.8rem',
                       fontWeight: isCurrent ? 600 : 400,
                     }}
                   >
                     {month}
                   </text>
-                  {isCurrent && (
-                    <circle
-                      cx={pos.x}
-                      cy={pos.y + 12}
-                      r="2"
-                      fill="var(--accent)"
-                    />
-                  )}
                 </g>
               );
             })}
@@ -715,22 +842,18 @@ I'm here whenever you want to think out loud.`
               const monthEvents = events.filter(e => e.month === event.month);
               const eventIndex = monthEvents.indexOf(event);
               const pos = getEventPosition(event.month, eventIndex);
+              const color = LIFE_AREAS[event.lifeArea]?.color || 'var(--accent)';
               return (
-                <circle
-                  key={event.id}
-                  cx={pos.x}
-                  cy={pos.y}
-                  r="5"
-                  fill="var(--accent)"
-                  className="fade-in"
-                />
+                <g key={event.id} className="fade-in">
+                  <circle cx={pos.x} cy={pos.y} r="8" fill={color} />
+                  <circle cx={pos.x} cy={pos.y} r="4" fill="white" opacity="0.4" />
+                </g>
               );
             })}
           </svg>
 
-          {/* Add event button */}
           {revealed && (
-            <button style={styles.addEventButton} onClick={onAddEvent}>
+            <button style={styles.circleAddButton} onClick={onAddEvent}>
               + Add Event
             </button>
           )}
@@ -756,13 +879,10 @@ I'm here whenever you want to think out loud.`
       );
     }
 
-    // ============ TYPING INDICATOR ============
     function TypingIndicator() {
       return (
         <div style={styles.chatMessage} className="fade-in">
-          <div style={styles.chatAvatar}>
-            <span style={styles.chatAvatarText}>T</span>
-          </div>
+          <div style={styles.chatAvatar}><span style={styles.chatAvatarText}>T</span></div>
           <div style={styles.typingBubble}>
             <span style={{...styles.typingDot, animationDelay: '0s'}}>•</span>
             <span style={{...styles.typingDot, animationDelay: '0.15s'}}>•</span>
@@ -772,7 +892,7 @@ I'm here whenever you want to think out loud.`
       );
     }
 
-    // ============ EVENT MODAL ============
+    // ============ MODALS ============
     function EventModal({ onClose, onAdd }) {
       const [title, setTitle] = useState('');
       const [month, setMonth] = useState(new Date().getMonth());
@@ -785,51 +905,51 @@ I'm here whenever you want to think out loud.`
               <h3 style={styles.modalTitle}>Add an event</h3>
               <button style={styles.modalClose} onClick={onClose}>×</button>
             </div>
-            <form onSubmit={(e) => { 
-              e.preventDefault(); 
-              if (title) onAdd({ title, month, lifeArea });
-            }} style={styles.modalForm}>
+            <form onSubmit={(e) => { e.preventDefault(); if (title) onAdd({ title, month, lifeArea }); }} style={styles.modalForm}>
               <div style={styles.formField}>
                 <label style={styles.formLabel}>What is it?</label>
-                <input 
-                  type="text" 
-                  style={styles.textInput} 
-                  value={title} 
-                  onChange={(e) => setTitle(e.target.value)} 
-                  placeholder="Trip to Italy, birthday, deadline..." 
-                  autoFocus
-                />
+                <input type="text" style={styles.textInput} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Trip to Italy, birthday, deadline..." autoFocus />
               </div>
               <div style={styles.formField}>
                 <label style={styles.formLabel}>When?</label>
-                <select 
-                  style={styles.selectInput} 
-                  value={month} 
-                  onChange={(e) => setMonth(parseInt(e.target.value))}
-                >
-                  {MONTHS.map((m, i) => (
-                    <option key={i} value={i}>{m} 2026</option>
-                  ))}
+                <select style={styles.selectInput} value={month} onChange={(e) => setMonth(parseInt(e.target.value))}>
+                  {MONTHS.map((m, i) => <option key={i} value={i}>{m} 2026</option>)}
                 </select>
               </div>
               <div style={styles.formField}>
                 <label style={styles.formLabel}>Life Area</label>
-                <select 
-                  style={styles.selectInput} 
-                  value={lifeArea} 
-                  onChange={(e) => setLifeArea(e.target.value)}
-                >
+                <select style={styles.selectInput} value={lifeArea} onChange={(e) => setLifeArea(e.target.value)}>
                   {Object.entries(LIFE_AREAS).map(([key, area]) => (
                     <option key={key} value={key}>{area.icon} {area.name}</option>
                   ))}
                 </select>
               </div>
-              <button 
-                type="submit" 
-                style={{...styles.submitButton, ...(!title ? styles.submitButtonDisabled : {})}}
-                disabled={!title}
-              >
+              <button type="submit" style={{...styles.submitButton, ...(!title ? styles.submitButtonDisabled : {})}} disabled={!title}>
                 Add to year
+              </button>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
+    function GoalModal({ onClose, onAdd }) {
+      const [text, setText] = useState('');
+
+      return (
+        <div style={styles.modalOverlay} onClick={onClose}>
+          <div style={styles.modal} onClick={e => e.stopPropagation()} className="fade-in">
+            <div style={styles.modalHeader}>
+              <h3 style={styles.modalTitle}>Add a goal</h3>
+              <button style={styles.modalClose} onClick={onClose}>×</button>
+            </div>
+            <form onSubmit={(e) => { e.preventDefault(); if (text) onAdd({ text }); }} style={styles.modalForm}>
+              <div style={styles.formField}>
+                <label style={styles.formLabel}>What do you want to achieve?</label>
+                <input type="text" style={styles.textInput} value={text} onChange={(e) => setText(e.target.value)} placeholder="Run a 5K, read 12 books..." autoFocus />
+              </div>
+              <button type="submit" style={{...styles.submitButton, ...(!text ? styles.submitButtonDisabled : {})}} disabled={!text}>
+                Add goal
               </button>
             </form>
           </div>
@@ -839,16 +959,10 @@ I'm here whenever you want to think out loud.`
 
     // ============ STYLES ============
     const styles = {
-      container: { 
-        minHeight: '100vh', 
-        display: 'flex', 
-        flexDirection: 'column',
-        backgroundColor: 'var(--bg-main)',
-      },
+      container: { minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)' },
       
-      // Header
       header: {
-        padding: '1rem 2rem',
+        padding: '0.875rem 2rem',
         borderBottom: '1px solid var(--border)',
         backgroundColor: 'var(--bg-card)',
         display: 'flex',
@@ -859,143 +973,165 @@ I'm here whenever you want to think out loud.`
       logoText: { fontSize: '1.5rem', fontFamily: "'Fraunces', serif", fontWeight: 400, color: 'var(--text)' },
       tagline: { fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' },
 
-      // Main three-column layout
-      main: { 
-        display: 'grid', 
-        gridTemplateColumns: '220px 1fr 360px', 
-        flex: 1,
-        height: 'calc(100vh - 60px)',
-      },
+      main: { display: 'grid', gridTemplateColumns: '280px 1fr 340px', flex: 1, height: 'calc(100vh - 56px)' },
 
-      // Left Sidebar
+      // Sidebar
       sidebar: {
-        padding: '1.5rem 1rem',
-        borderRight: '1px solid var(--border)',
         backgroundColor: 'var(--bg-card)',
-        overflowY: 'auto',
-      },
-      sidebarSection: {
-        marginBottom: '1.5rem',
-      },
-      sectionHeader: {
+        borderRight: '1px solid var(--border)',
         display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '0.75rem',
+        flexDirection: 'column',
       },
-      sectionTitle: {
-        fontSize: '0.7rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em',
-        color: 'var(--text-muted)',
-        fontFamily: "'DM Sans', sans-serif",
-        fontWeight: 600,
+      tabs: {
+        display: 'flex',
+        borderBottom: '1px solid var(--border)',
       },
-      addButton: {
-        width: '20px',
-        height: '20px',
-        borderRadius: '50%',
-        border: '1px solid var(--border)',
+      tab: {
+        flex: 1,
+        padding: '0.875rem',
         backgroundColor: 'transparent',
+        border: 'none',
+        borderBottom: '2px solid transparent',
         color: 'var(--text-muted)',
-        fontSize: '0.875rem',
+        fontSize: '0.8rem',
+        fontWeight: 500,
         cursor: 'pointer',
+        transition: 'all 0.2s ease',
+      },
+      tabActive: {
+        color: 'var(--text)',
+        borderBottomColor: 'var(--accent)',
+      },
+      tabContent: {
+        flex: 1,
+        overflow: 'auto',
+        padding: '1rem',
+      },
+      tabPlaceholder: {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
+        height: '100%',
+        padding: '2rem',
       },
-      sectionContent: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '0.5rem',
-      },
-      ghostedItems: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '0.5rem',
-      },
-      ghostPill: {
-        height: '28px',
-        borderRadius: '14px',
-        backgroundColor: 'var(--ghost)',
-        animation: 'gentlePulse 3s ease-in-out infinite',
-      },
-      valueChip: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '0.375rem',
-        padding: '0.375rem 0.75rem',
-        backgroundColor: 'var(--accent)',
-        color: 'white',
-        borderRadius: '14px',
-        fontSize: '0.8rem',
-      },
-      chipRemove: {
-        background: 'none',
-        border: 'none',
-        color: 'white',
-        opacity: 0.7,
-        cursor: 'pointer',
-        fontSize: '0.875rem',
-        padding: 0,
-        lineHeight: 1,
+      placeholderText: {
+        color: 'var(--text-muted)',
+        fontSize: '0.85rem',
+        textAlign: 'center',
+        fontStyle: 'italic',
       },
 
-      // Life Areas in sidebar
-      lifeAreasList: {
+      // Events Tab
+      eventsTab: { display: 'flex', flexDirection: 'column', gap: '1rem' },
+      addItemButton: {
+        padding: '0.625rem 1rem',
+        backgroundColor: 'var(--accent)',
+        border: 'none',
+        borderRadius: '8px',
+        color: 'white',
+        fontSize: '0.8rem',
+        cursor: 'pointer',
+        alignSelf: 'flex-start',
+      },
+      eventsList: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+      eventCard: {
+        backgroundColor: 'var(--bg-elevated)',
+        borderRadius: '10px',
+        overflow: 'hidden',
+      },
+      eventHeader: {
+        padding: '0.875rem 1rem',
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        cursor: 'pointer',
+      },
+      eventHeaderLeft: { display: 'flex', alignItems: 'center', gap: '0.75rem' },
+      eventMonth: { fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase' },
+      eventTitle: { fontSize: '0.875rem', color: 'var(--text)' },
+      expandIcon: { color: 'var(--text-muted)', fontSize: '1rem' },
+      eventDetails: {
+        padding: '0 1rem 1rem',
         display: 'flex',
         flexDirection: 'column',
-        gap: '0.25rem',
+        gap: '0.75rem',
+        borderTop: '1px solid var(--border)',
+        paddingTop: '0.875rem',
       },
-      lifeAreaItem: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.5rem',
-        padding: '0.375rem 0.5rem',
+      detailField: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
+      detailLabel: { fontSize: '0.7rem', color: 'var(--text-muted)' },
+      detailInput: {
+        padding: '0.5rem 0.75rem',
+        backgroundColor: 'var(--bg-card)',
+        border: '1px solid var(--border)',
         borderRadius: '6px',
-        borderLeft: '2px solid transparent',
-        transition: 'all 0.3s ease',
-      },
-      lifeAreaLabel: {
-        fontSize: '0.75rem',
+        fontSize: '0.8rem',
         color: 'var(--text)',
+        fontFamily: "'DM Sans', sans-serif",
+        resize: 'none',
+      },
+      deleteButton: {
+        padding: '0.5rem',
+        backgroundColor: 'transparent',
+        border: '1px solid var(--border)',
+        borderRadius: '6px',
+        color: 'var(--text-muted)',
+        fontSize: '0.75rem',
+        cursor: 'pointer',
+        marginTop: '0.5rem',
+      },
+      emptyText: { color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic' },
+      tipText: { color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 'auto', paddingTop: '1rem' },
+
+      // Notes Tab
+      notesTab: { height: '100%' },
+      notesTextarea: {
+        width: '100%',
+        height: '100%',
+        minHeight: '300px',
+        padding: '1rem',
+        backgroundColor: 'var(--bg-elevated)',
+        border: '1px solid var(--border)',
+        borderRadius: '10px',
+        fontSize: '0.875rem',
+        color: 'var(--text)',
+        fontFamily: "'DM Sans', sans-serif",
+        resize: 'none',
+        lineHeight: 1.7,
       },
 
-      // Goals in sidebar
-      goalItem: {
+      // Goals Tab
+      goalsTab: { display: 'flex', flexDirection: 'column', gap: '1rem' },
+      goalsList: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+      goalCard: {
         display: 'flex',
         alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '0.5rem',
-        padding: '0.5rem 0.75rem',
+        gap: '0.75rem',
+        padding: '0.75rem 1rem',
         backgroundColor: 'var(--bg-elevated)',
         borderRadius: '8px',
-        fontSize: '0.8rem',
-        color: 'var(--text)',
-        width: '100%',
       },
-
-      // Seasons in sidebar
-      seasonsList: {
+      goalCheck: {
+        width: '20px',
+        height: '20px',
+        borderRadius: '50%',
+        border: '2px solid var(--accent)',
         display: 'flex',
-        flexDirection: 'column',
-        gap: '0.5rem',
+        alignItems: 'center',
+        justifyContent: 'center',
+        cursor: 'pointer',
+        color: 'white',
+        fontSize: '0.7rem',
+        flexShrink: 0,
       },
-      seasonItem: {
-        padding: '0.5rem',
-        borderLeft: '3px solid',
-        paddingLeft: '0.75rem',
-        transition: 'opacity 0.3s ease',
-      },
-      seasonInput: {
-        width: '100%',
-        marginTop: '0.25rem',
-        padding: '0.375rem 0.5rem',
-        border: '1px solid var(--border)',
-        borderRadius: '4px',
-        backgroundColor: 'var(--bg-elevated)',
-        fontSize: '0.75rem',
-        color: 'var(--text)',
+      goalText: { flex: 1, fontSize: '0.875rem', color: 'var(--text)' },
+      goalDelete: {
+        background: 'none',
+        border: 'none',
+        color: 'var(--text-muted)',
+        cursor: 'pointer',
+        fontSize: '1rem',
+        opacity: 0.5,
       },
 
       // Center Panel
@@ -1003,18 +1139,17 @@ I'm here whenever you want to think out loud.`
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        padding: '2rem',
+        padding: '1.5rem',
         backgroundColor: 'var(--bg-main)',
       },
       circleContainer: {
-        position: 'relative',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '1.5rem',
+        gap: '1.25rem',
       },
-      addEventButton: {
-        padding: '0.5rem 1.25rem',
+      circleAddButton: {
+        padding: '0.625rem 1.5rem',
         backgroundColor: 'var(--accent)',
         border: 'none',
         borderRadius: '20px',
@@ -1080,17 +1215,9 @@ I'm here whenever you want to think out loud.`
         cursor: 'pointer',
         flexShrink: 0,
       },
-      sendButtonDisabled: { 
-        backgroundColor: 'var(--border)', 
-        cursor: 'not-allowed',
-      },
+      sendButtonDisabled: { backgroundColor: 'var(--border)', cursor: 'not-allowed' },
 
-      // Chat Message
-      chatMessage: { 
-        display: 'flex', 
-        gap: '0.625rem', 
-        alignItems: 'flex-start',
-      },
+      chatMessage: { display: 'flex', gap: '0.625rem', alignItems: 'flex-start' },
       chatAvatar: {
         width: '28px',
         height: '28px',
@@ -1102,133 +1229,26 @@ I'm here whenever you want to think out loud.`
         justifyContent: 'center',
         flexShrink: 0,
       },
-      chatAvatarText: { 
-        fontFamily: "'Fraunces', serif", 
-        fontSize: '0.75rem', 
-        color: 'var(--accent)',
-      },
-      chatBubble: { 
-        padding: '0.75rem 1rem', 
-        borderRadius: '14px', 
-        maxWidth: '88%', 
-        fontSize: '0.875rem', 
-        lineHeight: 1.55,
-      },
-      chatBubbleAssistant: { 
-        backgroundColor: 'var(--bg-elevated)', 
-        borderTopLeftRadius: '4px', 
-        color: 'var(--text)',
-      },
-      chatBubbleUser: { 
-        backgroundColor: 'var(--accent)', 
-        borderTopRightRadius: '4px', 
-        color: 'white',
-      },
-      typingBubble: { 
-        padding: '0.75rem 1rem', 
-        backgroundColor: 'var(--bg-elevated)', 
-        borderRadius: '14px', 
-        borderTopLeftRadius: '4px', 
-        display: 'flex', 
-        gap: '4px',
-      },
-      typingDot: { 
-        color: 'var(--accent)', 
-        fontSize: '1.125rem', 
-        lineHeight: 1, 
-        animation: 'pulse 1s infinite',
-      },
+      chatAvatarText: { fontFamily: "'Fraunces', serif", fontSize: '0.75rem', color: 'var(--accent)' },
+      chatBubble: { padding: '0.75rem 1rem', borderRadius: '14px', maxWidth: '88%', fontSize: '0.875rem', lineHeight: 1.55 },
+      chatBubbleAssistant: { backgroundColor: 'var(--bg-elevated)', borderTopLeftRadius: '4px', color: 'var(--text)' },
+      chatBubbleUser: { backgroundColor: 'var(--accent)', borderTopRightRadius: '4px', color: 'white' },
+      typingBubble: { padding: '0.75rem 1rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '14px', borderTopLeftRadius: '4px', display: 'flex', gap: '4px' },
+      typingDot: { color: 'var(--accent)', fontSize: '1.125rem', lineHeight: 1, animation: 'pulse 1s infinite' },
 
       // Modal
-      modalOverlay: { 
-        position: 'fixed', 
-        top: 0, left: 0, right: 0, bottom: 0, 
-        backgroundColor: 'rgba(0,0,0,0.4)', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center', 
-        zIndex: 1000,
-      },
-      modal: { 
-        backgroundColor: 'var(--bg-card)', 
-        borderRadius: '16px', 
-        padding: '1.5rem', 
-        width: '90%', 
-        maxWidth: '360px', 
-        border: '1px solid var(--border)',
-      },
-      modalHeader: { 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        marginBottom: '1.25rem',
-      },
-      modalTitle: { 
-        fontSize: '1.125rem', 
-        fontFamily: "'Fraunces', serif", 
-        color: 'var(--text)',
-      },
-      modalClose: { 
-        width: '28px', 
-        height: '28px', 
-        borderRadius: '50%', 
-        backgroundColor: 'var(--bg-elevated)', 
-        border: 'none', 
-        color: 'var(--text-muted)', 
-        fontSize: '1rem', 
-        cursor: 'pointer',
-      },
-      modalForm: { 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '1rem',
-      },
-      formField: { 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '0.375rem',
-      },
-      formLabel: { 
-        fontSize: '0.7rem', 
-        color: 'var(--text-muted)', 
-        textTransform: 'uppercase', 
-        letterSpacing: '0.05em', 
-        fontWeight: 500,
-      },
-      textInput: {
-        padding: '0.625rem 0.875rem',
-        backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--border)',
-        borderRadius: '8px',
-        color: 'var(--text)',
-        fontSize: '0.875rem',
-        fontFamily: "'DM Sans', sans-serif",
-      },
-      selectInput: {
-        padding: '0.625rem 0.875rem',
-        backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--border)',
-        borderRadius: '8px',
-        color: 'var(--text)',
-        fontSize: '0.875rem',
-        fontFamily: "'DM Sans', sans-serif",
-      },
-      submitButton: { 
-        padding: '0.75rem', 
-        backgroundColor: 'var(--accent)', 
-        border: 'none', 
-        borderRadius: '10px', 
-        color: 'white', 
-        fontSize: '0.875rem', 
-        fontFamily: "'DM Sans', sans-serif", 
-        fontWeight: 500, 
-        cursor: 'pointer', 
-        marginTop: '0.5rem',
-      },
-      submitButtonDisabled: { 
-        backgroundColor: 'var(--border-dark)', 
-        cursor: 'not-allowed',
-      },
+      modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
+      modal: { backgroundColor: 'var(--bg-card)', borderRadius: '16px', padding: '1.5rem', width: '90%', maxWidth: '360px', border: '1px solid var(--border)' },
+      modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' },
+      modalTitle: { fontSize: '1.125rem', fontFamily: "'Fraunces', serif", color: 'var(--text)' },
+      modalClose: { width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--bg-elevated)', border: 'none', color: 'var(--text-muted)', fontSize: '1rem', cursor: 'pointer' },
+      modalForm: { display: 'flex', flexDirection: 'column', gap: '1rem' },
+      formField: { display: 'flex', flexDirection: 'column', gap: '0.375rem' },
+      formLabel: { fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', fontWeight: 500 },
+      textInput: { padding: '0.625rem 0.875rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif" },
+      selectInput: { padding: '0.625rem 0.875rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text)', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif" },
+      submitButton: { padding: '0.75rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '10px', color: 'white', fontSize: '0.875rem', fontWeight: 500, cursor: 'pointer', marginTop: '0.5rem' },
+      submitButtonDisabled: { backgroundColor: 'var(--border-dark)', cursor: 'not-allowed' },
     };
 
     const root = ReactDOM.createRoot(document.getElementById('root'));
