@@ -26,9 +26,13 @@
       --accent-light: #E8F0E6;
       
       --winter: #5B9BD5;
+      --winter-light: #E8F1F8;
       --spring: #6BBF59;
+      --spring-light: #EDF7EB;
       --summer: #F4B942;
+      --summer-light: #FEF6E6;
       --fall: #D66B4B;
+      --fall-light: #FBEEE9;
     }
 
     body {
@@ -48,6 +52,7 @@
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.7; } }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
     .fade-in { animation: fadeIn 0.4s ease-out forwards; }
     .slide-in { animation: slideIn 0.4s ease-out forwards; }
 
@@ -91,7 +96,6 @@
 
     // ============ MAIN APP ============
     function TendApp() {
-      // Core state
       const [phase, setPhase] = useState(PHASES.EXPLORE);
       const [values, setValues] = useState([]);
       const [lifeAreaRatings, setLifeAreaRatings] = useState({
@@ -104,23 +108,20 @@
         winter: '', spring: '', summer: '', fall: ''
       });
       
-      // Chat state
       const [messages, setMessages] = useState([]);
       const [inputValue, setInputValue] = useState('');
       const [isTyping, setIsTyping] = useState(false);
       const [exchangeCount, setExchangeCount] = useState(0);
       const messagesEndRef = useRef(null);
 
-      // UI state
       const [revealed, setRevealed] = useState(false);
       const [activeTab, setActiveTab] = useState('events');
       const [centerView, setCenterView] = useState(CENTER_VIEWS.YEAR);
       const [expandedEvent, setExpandedEvent] = useState(null);
       const [showEventModal, setShowEventModal] = useState(false);
       const [showGoalModal, setShowGoalModal] = useState(false);
-      const [selectedMonth, setSelectedMonth] = useState(null);
+      const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
 
-      // Initialize
       useEffect(() => {
         setMessages([{
           role: 'assistant',
@@ -136,7 +137,6 @@ What would make 2026 feel like a success? It could be a concrete achievement, a 
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, [messages]);
 
-      // ============ TEXT ANALYSIS ============
       const analyzeText = (text) => {
         const lower = text.toLowerCase();
         const detected = { values: [] };
@@ -165,7 +165,6 @@ What would make 2026 feel like a success? It could be a concrete achievement, a 
         return foundEvents;
       };
 
-      // ============ CONVERSATION LOGIC ============
       const generateResponse = (userMessage, currentPhase, exchangeNum) => {
         const detected = analyzeText(userMessage);
         processAnalysis(detected);
@@ -227,7 +226,7 @@ ${foundEvents.length > 0
   ? `You have ${foundEvents.length} thing${foundEvents.length > 1 ? 's' : ''} anchoring the year.`
   : `Your calendar is open — that's space to be intentional.`}
 
-Your year is taking shape. Switch between Year, Seasons, and Monthly views to see it from different angles. Use the sidebar to plan event details.
+Your year is taking shape. Switch between Year, Seasons, and Monthly views to explore different perspectives.
 
 What's missing?`;
         }
@@ -238,30 +237,20 @@ What's missing?`;
           if (lower.includes('plan') || lower.includes('suggest') || lower.includes('ideas') || lower.includes('activities') || lower.includes('where to stay')) {
             const eventMention = events.find(e => lower.includes(MONTHS[e.month].toLowerCase()) || lower.includes(e.title.toLowerCase()));
             if (eventMention) {
-              return `For your ${MONTHS[eventMention.month]} event, here are some thoughts:
+              return `For your ${MONTHS[eventMention.month]} event:
 
 <strong>Activities:</strong>
-• Explore the local neighborhood on foot the first day
-• Find one "must-do" experience and leave room for spontaneity
+• Explore the local neighborhood on foot
+• Find one "must-do" and leave room for spontaneity
 • Schedule downtime — rest is part of the trip
 
 <strong>Stays:</strong>
-• Look for somewhere with a kitchen if you want flexibility
-• Consider location vs. price — being central often saves time
+• Look for somewhere with a kitchen for flexibility
+• Consider location vs. price
 
-<strong>Getting there:</strong>
-• Book flights 6-8 weeks out for best prices
-• Morning flights = fewer delays
-
-Click on the event in the sidebar to add these details.`;
+Click on the event in the sidebar to add details.`;
             }
             return `What event would you like to plan? I can suggest activities, places to stay, and things to consider.`;
-          }
-
-          if (lower.includes('yes') || lower.includes('right') || lower.includes('good')) {
-            return `Good. Looking at your year — what feels like it needs attention first?
-
-Try the Seasons view to set intentions for each part of the year.`;
           }
 
           const prompts = [
@@ -275,7 +264,6 @@ Try the Seasons view to set intentions for each part of the year.`;
         return `Tell me more about that.`;
       };
 
-      // ============ HANDLERS ============
       const handleSendMessage = () => {
         if (!inputValue.trim()) return;
         
@@ -299,9 +287,9 @@ Try the Seasons view to set intentions for each part of the year.`;
           role: 'assistant',
           content: `No problem — let's dive in.
 
-Use the view switcher above the circle to explore your year differently. Add events, set season intentions, and plan the details in the sidebar.
+Use the view switcher to explore your year. Add events, set season intentions, and plan the details.
 
-I'm here to help — ask me to suggest activities or ideas for any event.`
+I'm here to help with any planning.`
         }]);
       };
 
@@ -325,10 +313,8 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
         setShowGoalModal(false);
       };
 
-      // ============ RENDER ============
       return (
         <div style={styles.container}>
-          {/* Header */}
           <header style={styles.header}>
             <div style={styles.logoContainer}>
               <svg width="28" height="28" viewBox="0 0 32 32" fill="none" style={{ marginRight: '8px' }}>
@@ -342,9 +328,7 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
             <p style={styles.tagline}>a space for designing your life with intention</p>
           </header>
 
-          {/* Main Content */}
           <main style={styles.main}>
-            {/* Left Sidebar */}
             <aside style={styles.sidebar}>
               <div style={styles.tabs}>
                 {['events', 'notes', 'goals'].map(tab => (
@@ -384,9 +368,7 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
               </div>
             </aside>
 
-            {/* Center Panel */}
             <div style={styles.centerPanel}>
-              {/* View Switcher */}
               <div style={styles.viewSwitcher}>
                 {[
                   { id: CENTER_VIEWS.YEAR, label: 'Year' },
@@ -395,21 +377,14 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
                 ].map(view => (
                   <button
                     key={view.id}
-                    style={{
-                      ...styles.viewButton,
-                      ...(centerView === view.id && styles.viewButtonActive),
-                    }}
-                    onClick={() => {
-                      setCenterView(view.id);
-                      if (view.id !== CENTER_VIEWS.MONTHLY) setSelectedMonth(null);
-                    }}
+                    style={{...styles.viewButton, ...(centerView === view.id && styles.viewButtonActive)}}
+                    onClick={() => setCenterView(view.id)}
                   >
                     {view.label}
                   </button>
                 ))}
               </div>
 
-              {/* Center Views */}
               {centerView === CENTER_VIEWS.YEAR && (
                 <YearCircleView 
                   values={values}
@@ -435,7 +410,6 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
                 />
               )}
 
-              {/* Values & Life Areas */}
               <div style={{...styles.bottomSection, opacity: revealed ? 1 : 0.4}}>
                 <div style={styles.valuesSection}>
                   <h3 style={styles.sectionLabel}>Values</h3>
@@ -454,8 +428,8 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
                         if (v && !values.includes(v)) setValues([...values, v]);
                       }}>+ Add</button>
                     )}
-                    {values.length === 0 && !revealed && (
-                      <span style={styles.placeholderText}>Values will appear as you share...</span>
+                    {values.length === 0 && (
+                      <span style={styles.placeholderText}>Values appear as you share...</span>
                     )}
                   </div>
                 </div>
@@ -471,9 +445,7 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
                         </div>
                         {revealed ? (
                           <input
-                            type="range"
-                            min="1"
-                            max="10"
+                            type="range" min="1" max="10"
                             value={lifeAreaRatings[key]}
                             onChange={(e) => setLifeAreaRatings({...lifeAreaRatings, [key]: parseInt(e.target.value)})}
                             style={{...styles.slider, accentColor: area.color}}
@@ -491,7 +463,6 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
               </div>
             </div>
 
-            {/* Right - Chat */}
             <div style={styles.chatPanel}>
               <div style={styles.chatMessages}>
                 {messages.map((msg, idx) => (
@@ -516,7 +487,7 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
                         handleSendMessage();
                       }
                     }}
-                    placeholder={revealed ? "Ask me to help plan an event..." : "Share what's on your mind..."}
+                    placeholder={revealed ? "Ask me to help plan..." : "Share what's on your mind..."}
                     rows={2}
                   />
                   <button 
@@ -529,7 +500,6 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
             </div>
           </main>
 
-          {/* Modals */}
           {showEventModal && <EventModal onClose={() => setShowEventModal(false)} onAdd={handleAddEvent} />}
           {showGoalModal && <GoalModal onClose={() => setShowGoalModal(false)} onAdd={handleAddGoal} />}
         </div>
@@ -543,24 +513,17 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
       const outerRadius = 175;
       const innerRadius = 70;
       const monthRadius = 145;
-
       const currentMonth = new Date().getMonth();
 
       const getMonthPosition = (monthIndex) => {
         const angle = ((monthIndex - 2) / 12) * 2 * Math.PI - Math.PI / 2;
-        return {
-          x: center + Math.cos(angle) * monthRadius,
-          y: center + Math.sin(angle) * monthRadius,
-        };
+        return { x: center + Math.cos(angle) * monthRadius, y: center + Math.sin(angle) * monthRadius };
       };
 
       const getEventPosition = (monthIndex, eventIndex = 0) => {
         const angle = ((monthIndex - 2) / 12) * 2 * Math.PI - Math.PI / 2;
         const radius = innerRadius + 18 + (eventIndex * 12);
-        return {
-          x: center + Math.cos(angle) * radius,
-          y: center + Math.sin(angle) * radius,
-        };
+        return { x: center + Math.cos(angle) * radius, y: center + Math.sin(angle) * radius };
       };
 
       const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
@@ -588,29 +551,24 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
       return (
         <div style={styles.circleContainer}>
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-            {/* Season arcs - more opaque */}
             {seasonArcs.map(season => (
-              <path key={season.id} d={describeArc(season.start, season.end, outerRadius)} fill={season.color} opacity={0.75} />
+              <path key={season.id} d={describeArc(season.start, season.end, outerRadius)} fill={season.color} opacity={0.9} />
             ))}
 
-            {/* Inner circle */}
             <circle cx={center} cy={center} r={innerRadius} fill="var(--bg-card)" stroke="var(--border)" strokeWidth="1" />
 
-            {/* Year */}
             <text x={center} y={yearY} textAnchor="middle" dominantBaseline="middle" fill="var(--text)"
-              style={{ fontFamily: "'Fraunces', serif", fontSize: '1.875rem', transition: 'all 0.5s ease' }}>
+              style={{ fontFamily: "'Fraunces', serif", fontSize: '1.875rem' }}>
               2026
             </text>
 
-            {/* Values */}
             {hasValues && (
               <text x={center} y={center + 16} textAnchor="middle" dominantBaseline="middle" fill="var(--text-muted)"
-                style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.6rem', letterSpacing: '0.02em' }} className="fade-in">
+                style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.6rem' }} className="fade-in">
                 {values.slice(0, 3).join('  ·  ')}
               </text>
             )}
 
-            {/* Month labels */}
             {MONTHS.map((month, idx) => {
               const pos = getMonthPosition(idx);
               const isCurrent = idx === currentMonth;
@@ -626,7 +584,6 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
               );
             })}
 
-            {/* Events */}
             {events.map((event) => {
               const monthEvents = events.filter(e => e.month === event.month);
               const eventIndex = monthEvents.indexOf(event);
@@ -641,9 +598,7 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
             })}
           </svg>
 
-          {revealed && (
-            <button style={styles.circleAddButton} onClick={onAddEvent}>+ Add Event</button>
-          )}
+          {revealed && <button style={styles.circleAddButton} onClick={onAddEvent}>+ Add Event</button>}
         </div>
       );
     }
@@ -651,10 +606,10 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
     // ============ SEASONS VIEW ============
     function SeasonsView({ seasonIntentions, setSeasonIntentions, revealed }) {
       const seasons = [
-        { id: 'winter', name: 'Winter', months: 'Dec – Feb', color: '#5B9BD5' },
-        { id: 'spring', name: 'Spring', months: 'Mar – May', color: '#6BBF59' },
-        { id: 'summer', name: 'Summer', months: 'Jun – Aug', color: '#F4B942' },
-        { id: 'fall', name: 'Fall', months: 'Sep – Nov', color: '#D66B4B' },
+        { id: 'winter', name: 'Winter', months: 'Dec – Feb', color: '#5B9BD5', lightColor: '#E8F1F8', elements: ['❄', '·', '❄', '·', '❄'] },
+        { id: 'spring', name: 'Spring', months: 'Mar – May', color: '#6BBF59', lightColor: '#EDF7EB', elements: ['✿', '·', '❀', '·', '✿'] },
+        { id: 'summer', name: 'Summer', months: 'Jun – Aug', color: '#F4B942', lightColor: '#FEF6E6', elements: ['☀', '~', '☀', '~', '☀'] },
+        { id: 'fall', name: 'Fall', months: 'Sep – Nov', color: '#D66B4B', lightColor: '#FBEEE9', elements: ['🍂', '·', '🍁', '·', '🍂'] },
       ];
 
       const currentSeason = (() => {
@@ -665,14 +620,6 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
         return 'fall';
       })();
 
-      if (!revealed) {
-        return (
-          <div style={styles.seasonsPlaceholder}>
-            <p style={styles.placeholderText}>Set intentions for each season after you share what matters to you.</p>
-          </div>
-        );
-      }
-
       return (
         <div style={styles.seasonsContainer}>
           <div style={styles.seasonsGrid}>
@@ -681,25 +628,43 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
                 key={season.id} 
                 style={{
                   ...styles.seasonCard,
-                  borderColor: season.id === currentSeason ? season.color : 'var(--border)',
-                  borderWidth: season.id === currentSeason ? '2px' : '1px',
+                  backgroundColor: season.lightColor,
+                  borderColor: season.id === currentSeason ? season.color : 'transparent',
+                  borderWidth: '2px',
                 }}
               >
-                <div style={styles.seasonCardHeader}>
-                  <div style={{...styles.seasonColorDot, backgroundColor: season.color}}></div>
-                  <div>
+                {/* Decorative top */}
+                <div style={{...styles.seasonDecorative, color: season.color}}>
+                  {season.elements.map((el, i) => (
+                    <span key={i} style={{opacity: i % 2 === 0 ? 1 : 0.5}}>{el}</span>
+                  ))}
+                </div>
+
+                <div style={styles.seasonCardContent}>
+                  <div style={styles.seasonCardHeader}>
                     <h3 style={{...styles.seasonName, color: season.color}}>{season.name}</h3>
                     <span style={styles.seasonMonths}>{season.months}</span>
+                    {season.id === currentSeason && (
+                      <span style={{...styles.currentBadge, backgroundColor: season.color}}>Now</span>
+                    )}
                   </div>
-                  {season.id === currentSeason && <span style={styles.currentBadge}>Now</span>}
+                  
+                  <div style={styles.seasonIntentionBox}>
+                    <label style={{...styles.seasonLabel, color: season.color}}>How do you want this season to feel?</label>
+                    <textarea
+                      style={{
+                        ...styles.seasonTextarea,
+                        borderColor: revealed ? season.color : 'var(--border)',
+                        opacity: revealed ? 1 : 0.6,
+                      }}
+                      value={seasonIntentions[season.id] || ''}
+                      onChange={(e) => setSeasonIntentions({...seasonIntentions, [season.id]: e.target.value})}
+                      placeholder={revealed ? 'Set your intention...' : 'Complete conversation to unlock'}
+                      disabled={!revealed}
+                      rows={2}
+                    />
+                  </div>
                 </div>
-                <textarea
-                  style={styles.seasonTextarea}
-                  value={seasonIntentions[season.id] || ''}
-                  onChange={(e) => setSeasonIntentions({...seasonIntentions, [season.id]: e.target.value})}
-                  placeholder={`How do you want ${season.name.toLowerCase()} to feel? What do you want to focus on?`}
-                  rows={3}
-                />
               </div>
             ))}
           </div>
@@ -710,92 +675,88 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
     // ============ MONTHLY VIEW ============
     function MonthlyView({ events, selectedMonth, setSelectedMonth, revealed, onAddEvent }) {
       const year = 2026;
-
-      if (!revealed) {
-        return (
-          <div style={styles.monthlyPlaceholder}>
-            <p style={styles.placeholderText}>Your monthly calendar will appear here.</p>
-          </div>
-        );
-      }
-
-      // If no month selected, show all months grid
-      if (selectedMonth === null) {
-        return (
-          <div style={styles.monthsOverview}>
-            <div style={styles.monthsGrid}>
-              {MONTHS.map((month, idx) => {
-                const monthEvents = events.filter(e => e.month === idx);
-                return (
-                  <div 
-                    key={idx} 
-                    style={styles.monthCard}
-                    onClick={() => setSelectedMonth(idx)}
-                  >
-                    <span style={styles.monthCardName}>{month}</span>
-                    {monthEvents.length > 0 && (
-                      <div style={styles.monthCardDots}>
-                        {monthEvents.slice(0, 3).map((e, i) => (
-                          <span key={i} style={{...styles.monthCardDot, backgroundColor: LIFE_AREAS[e.lifeArea]?.color}}></span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-            <button style={styles.circleAddButton} onClick={onAddEvent}>+ Add Event</button>
-          </div>
-        );
-      }
-
-      // Single month view
       const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
       const firstDayOfMonth = new Date(year, selectedMonth, 1).getDay();
       const monthEvents = events.filter(e => e.month === selectedMonth);
+      const currentMonth = new Date().getMonth();
+      const today = new Date().getDate();
+
+      const getSeasonColor = (monthIdx) => {
+        if ([11, 0, 1].includes(monthIdx)) return '#5B9BD5';
+        if ([2, 3, 4].includes(monthIdx)) return '#6BBF59';
+        if ([5, 6, 7].includes(monthIdx)) return '#F4B942';
+        return '#D66B4B';
+      };
+
+      const seasonColor = getSeasonColor(selectedMonth);
 
       return (
-        <div style={styles.singleMonthView}>
-          <div style={styles.monthHeader}>
-            <button style={styles.backButton} onClick={() => setSelectedMonth(null)}>← All Months</button>
-            <div style={styles.monthNavigation}>
-              <button style={styles.monthNavBtn} onClick={() => setSelectedMonth(selectedMonth === 0 ? 11 : selectedMonth - 1)}>‹</button>
-              <h2 style={styles.monthTitle}>{MONTH_FULL[selectedMonth]}</h2>
-              <button style={styles.monthNavBtn} onClick={() => setSelectedMonth(selectedMonth === 11 ? 0 : selectedMonth + 1)}>›</button>
+        <div style={styles.monthlyContainer}>
+          {/* Month selector strip */}
+          <div style={styles.monthStrip}>
+            {MONTHS.map((month, idx) => (
+              <button
+                key={idx}
+                style={{
+                  ...styles.monthStripButton,
+                  backgroundColor: selectedMonth === idx ? getSeasonColor(idx) : 'transparent',
+                  color: selectedMonth === idx ? 'white' : 'var(--text-muted)',
+                }}
+                onClick={() => setSelectedMonth(idx)}
+              >
+                {month}
+              </button>
+            ))}
+          </div>
+
+          {/* Calendar */}
+          <div style={{...styles.calendarWrapper, borderColor: seasonColor}}>
+            <div style={{...styles.calendarHeader, backgroundColor: seasonColor}}>
+              <button style={styles.calendarNav} onClick={() => setSelectedMonth(selectedMonth === 0 ? 11 : selectedMonth - 1)}>‹</button>
+              <h2 style={styles.calendarTitle}>{MONTH_FULL[selectedMonth]} 2026</h2>
+              <button style={styles.calendarNav} onClick={() => setSelectedMonth(selectedMonth === 11 ? 0 : selectedMonth + 1)}>›</button>
+            </div>
+
+            <div style={styles.calendarBody}>
+              <div style={styles.calendarGrid}>
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, i) => (
+                  <div key={i} style={styles.calendarDayHeader}>{day}</div>
+                ))}
+                {Array.from({ length: firstDayOfMonth }, (_, i) => (
+                  <div key={`empty-${i}`} style={styles.calendarDayEmpty}></div>
+                ))}
+                {Array.from({ length: daysInMonth }, (_, i) => {
+                  const day = i + 1;
+                  const isToday = selectedMonth === currentMonth && day === today;
+                  return (
+                    <div key={day} style={{
+                      ...styles.calendarDay, 
+                      ...(isToday && {...styles.calendarDayToday, backgroundColor: seasonColor})
+                    }}>
+                      {day}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          <div style={styles.calendarGrid}>
-            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, i) => (
-              <div key={i} style={styles.calendarDayHeader}>{day}</div>
-            ))}
-            {Array.from({ length: firstDayOfMonth }, (_, i) => (
-              <div key={`empty-${i}`} style={styles.calendarDayEmpty}></div>
-            ))}
-            {Array.from({ length: daysInMonth }, (_, i) => {
-              const day = i + 1;
-              const isToday = selectedMonth === new Date().getMonth() && day === new Date().getDate();
-              return (
-                <div key={day} style={{...styles.calendarDay, ...(isToday && styles.calendarDayToday)}}>
-                  {day}
-                </div>
-              );
-            })}
+          {/* Events for this month */}
+          <div style={styles.monthEventsSection}>
+            {monthEvents.length > 0 ? (
+              <div style={styles.monthEventsList}>
+                {monthEvents.map(event => (
+                  <div key={event.id} style={styles.monthEventItem}>
+                    <span style={{...styles.eventDot, backgroundColor: LIFE_AREAS[event.lifeArea]?.color}}></span>
+                    <span>{event.title}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={styles.noEventsText}>No events in {MONTH_FULL[selectedMonth]}</p>
+            )}
+            {revealed && <button style={{...styles.addEventSmall, borderColor: seasonColor, color: seasonColor}} onClick={onAddEvent}>+ Add Event</button>}
           </div>
-
-          {monthEvents.length > 0 && (
-            <div style={styles.monthEventsList}>
-              <h4 style={styles.monthEventsTitle}>Events This Month</h4>
-              {monthEvents.map(event => (
-                <div key={event.id} style={styles.monthEventItem}>
-                  <span style={{...styles.eventDot, backgroundColor: LIFE_AREAS[event.lifeArea]?.color}}></span>
-                  <span>{event.title}</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          <button style={styles.circleAddButton} onClick={onAddEvent}>+ Add Event</button>
         </div>
       );
     }
@@ -841,7 +802,7 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
                           />
                         </div>
                       ))}
-                      <button style={styles.deleteEventButton} onClick={() => onDelete(event.id)}>Delete event</button>
+                      <button style={styles.deleteEventButton} onClick={() => onDelete(event.id)}>Delete</button>
                     </div>
                   )}
                 </div>
@@ -849,15 +810,14 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
             </div>
           )}
           
-          <p style={styles.tipText}>💡 Ask the AI to suggest activities or places</p>
+          <p style={styles.tipText}>💡 Ask AI to suggest activities</p>
         </div>
       );
     }
 
-    // ============ NOTES TAB ============
     function NotesTab({ notes, setNotes, revealed }) {
       if (!revealed) {
-        return <div style={styles.tabPlaceholder}><p style={styles.placeholderText}>A space for your thoughts and reflections.</p></div>;
+        return <div style={styles.tabPlaceholder}><p style={styles.placeholderText}>A space for your thoughts.</p></div>;
       }
       return (
         <div style={styles.notesTab}>
@@ -866,7 +826,6 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
       );
     }
 
-    // ============ GOALS TAB ============
     function GoalsTab({ goals, setGoals, onAdd, revealed }) {
       if (!revealed) {
         return <div style={styles.tabPlaceholder}><p style={styles.placeholderText}>Your goals will live here.</p></div>;
@@ -895,7 +854,6 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
       );
     }
 
-    // ============ CHAT ============
     function ChatMessage({ message }) {
       const isAssistant = message.role === 'assistant';
       return (
@@ -921,7 +879,6 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
       );
     }
 
-    // ============ MODALS ============
     function EventModal({ onClose, onAdd }) {
       const [title, setTitle] = useState('');
       const [month, setMonth] = useState(new Date().getMonth());
@@ -981,10 +938,8 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
       );
     }
 
-    // ============ STYLES ============
     const styles = {
       container: { minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)' },
-      
       header: { padding: '0.875rem 2rem', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-card)', display: 'flex', alignItems: 'baseline', gap: '1rem' },
       logoContainer: { display: 'flex', alignItems: 'center' },
       logoText: { fontSize: '1.5rem', fontFamily: "'Fraunces', serif", fontWeight: 400, color: 'var(--text)' },
@@ -992,7 +947,6 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
 
       main: { display: 'grid', gridTemplateColumns: '240px 1fr 320px', flex: 1, height: 'calc(100vh - 56px)' },
 
-      // Sidebar
       sidebar: { backgroundColor: 'var(--bg-card)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column' },
       tabs: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderBottom: '1px solid var(--border)' },
       tab: { padding: '0.875rem 0.5rem', backgroundColor: 'transparent', border: 'none', borderBottom: '2px solid transparent', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer' },
@@ -1001,14 +955,13 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
       tabPlaceholder: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '2rem' },
       placeholderText: { color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', fontStyle: 'italic' },
 
-      // Events
       eventsTab: { display: 'flex', flexDirection: 'column', gap: '1rem' },
       addItemButton: { padding: '0.625rem 1rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '0.8rem', cursor: 'pointer', alignSelf: 'flex-start' },
       eventsList: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
       eventCard: { backgroundColor: 'var(--bg-elevated)', borderRadius: '10px', overflow: 'hidden' },
       eventHeader: { padding: '0.875rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' },
       eventHeaderLeft: { display: 'flex', alignItems: 'center', gap: '0.625rem' },
-      eventDot: { width: '8px', height: '8px', borderRadius: '50%' },
+      eventDot: { width: '8px', height: '8px', borderRadius: '50%', flexShrink: 0 },
       eventMonth: { fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' },
       eventTitle: { fontSize: '0.875rem', color: 'var(--text)' },
       expandIcon: { color: 'var(--text-muted)', fontSize: '1rem' },
@@ -1016,15 +969,13 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
       detailField: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
       detailLabel: { fontSize: '0.7rem', color: 'var(--text-muted)' },
       detailInput: { padding: '0.5rem 0.75rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '6px', fontSize: '0.8rem', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif", resize: 'none' },
-      deleteEventButton: { padding: '0.5rem', backgroundColor: 'transparent', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer', marginTop: '0.5rem' },
+      deleteEventButton: { padding: '0.5rem', backgroundColor: 'transparent', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer', marginTop: '0.25rem' },
       emptyText: { color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic' },
       tipText: { color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 'auto', paddingTop: '1rem' },
 
-      // Notes
       notesTab: { height: '100%' },
       notesTextarea: { width: '100%', height: '100%', minHeight: '300px', padding: '1rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '0.875rem', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif", resize: 'none', lineHeight: 1.7 },
 
-      // Goals
       goalsTab: { display: 'flex', flexDirection: 'column', gap: '1rem' },
       goalsList: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
       goalCard: { display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '8px' },
@@ -1032,55 +983,49 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
       goalText: { flex: 1, fontSize: '0.875rem', color: 'var(--text)' },
       goalDelete: { background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem', opacity: 0.5 },
 
-      // Center
       centerPanel: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.25rem', backgroundColor: 'var(--bg-main)', gap: '1.25rem', overflow: 'auto' },
-      
-      // View Switcher
       viewSwitcher: { display: 'flex', gap: '4px', backgroundColor: 'var(--bg-card)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border)' },
       viewButton: { padding: '0.5rem 1.25rem', backgroundColor: 'transparent', border: 'none', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer' },
       viewButtonActive: { backgroundColor: 'var(--accent)', color: 'white' },
 
-      // Circle
       circleContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' },
       circleAddButton: { padding: '0.5rem 1.25rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '20px', color: 'white', fontSize: '0.8rem', cursor: 'pointer' },
 
-      // Seasons View
-      seasonsPlaceholder: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' },
-      seasonsContainer: { width: '100%', maxWidth: '600px' },
+      // Seasons
+      seasonsContainer: { width: '100%', maxWidth: '580px' },
       seasonsGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' },
-      seasonCard: { backgroundColor: 'var(--bg-card)', borderRadius: '12px', padding: '1.25rem', border: '1px solid var(--border)' },
-      seasonCardHeader: { display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '1rem', position: 'relative' },
-      seasonColorDot: { width: '12px', height: '12px', borderRadius: '50%', marginTop: '4px' },
+      seasonCard: { borderRadius: '16px', overflow: 'hidden', border: '2px solid transparent' },
+      seasonDecorative: { padding: '0.75rem', display: 'flex', justifyContent: 'center', gap: '0.75rem', fontSize: '1rem' },
+      seasonCardContent: { padding: '1rem', backgroundColor: 'var(--bg-card)', borderBottomLeftRadius: '14px', borderBottomRightRadius: '14px' },
+      seasonCardHeader: { marginBottom: '0.75rem', position: 'relative' },
       seasonName: { fontSize: '1.125rem', fontFamily: "'Fraunces', serif", marginBottom: '0.125rem' },
       seasonMonths: { fontSize: '0.75rem', color: 'var(--text-muted)' },
-      currentBadge: { position: 'absolute', top: 0, right: 0, fontSize: '0.65rem', backgroundColor: 'var(--accent)', color: 'white', padding: '0.2rem 0.5rem', borderRadius: '8px' },
-      seasonTextarea: { width: '100%', padding: '0.75rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif", resize: 'none', lineHeight: 1.6 },
+      currentBadge: { position: 'absolute', top: 0, right: 0, fontSize: '0.6rem', color: 'white', padding: '0.2rem 0.5rem', borderRadius: '8px' },
+      seasonIntentionBox: { },
+      seasonLabel: { fontSize: '0.7rem', fontWeight: 500, display: 'block', marginBottom: '0.375rem' },
+      seasonTextarea: { width: '100%', padding: '0.625rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif", resize: 'none', lineHeight: 1.5 },
 
-      // Monthly View
-      monthlyPlaceholder: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' },
-      monthsOverview: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' },
-      monthsGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', width: '100%', maxWidth: '500px' },
-      monthCard: { backgroundColor: 'var(--bg-card)', borderRadius: '10px', padding: '1rem', border: '1px solid var(--border)', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s ease' },
-      monthCardName: { fontSize: '0.9rem', fontWeight: 500, color: 'var(--text)' },
-      monthCardDots: { display: 'flex', justifyContent: 'center', gap: '4px', marginTop: '0.5rem' },
-      monthCardDot: { width: '6px', height: '6px', borderRadius: '50%' },
-
-      singleMonthView: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', width: '100%', maxWidth: '400px' },
-      monthHeader: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', width: '100%' },
-      backButton: { background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer', alignSelf: 'flex-start' },
-      monthNavigation: { display: 'flex', alignItems: 'center', gap: '1rem' },
-      monthNavBtn: { background: 'none', border: 'none', fontSize: '1.5rem', color: 'var(--text-light)', cursor: 'pointer' },
-      monthTitle: { fontSize: '1.25rem', fontFamily: "'Fraunces', serif", color: 'var(--text)', minWidth: '120px', textAlign: 'center' },
-      calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', width: '100%' },
-      calendarDayHeader: { padding: '0.5rem', textAlign: 'center', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 },
+      // Monthly
+      monthlyContainer: { width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '1rem' },
+      monthStrip: { display: 'flex', gap: '2px', backgroundColor: 'var(--bg-card)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border)' },
+      monthStripButton: { flex: 1, padding: '0.5rem 0.25rem', border: 'none', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s ease' },
+      calendarWrapper: { backgroundColor: 'var(--bg-card)', borderRadius: '16px', overflow: 'hidden', border: '2px solid' },
+      calendarHeader: { padding: '0.875rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+      calendarNav: { background: 'none', border: 'none', color: 'white', fontSize: '1.25rem', cursor: 'pointer', padding: '0 0.5rem' },
+      calendarTitle: { color: 'white', fontSize: '1rem', fontFamily: "'Fraunces', serif" },
+      calendarBody: { padding: '1rem' },
+      calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' },
+      calendarDayHeader: { padding: '0.5rem', textAlign: 'center', fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500 },
       calendarDayEmpty: { aspectRatio: '1' },
-      calendarDay: { aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', color: 'var(--text-light)', backgroundColor: 'var(--bg-card)', borderRadius: '6px', border: '1px solid var(--border)' },
-      calendarDayToday: { backgroundColor: 'var(--accent)', color: 'white', fontWeight: 600, border: 'none' },
-      monthEventsList: { width: '100%', marginTop: '0.5rem' },
-      monthEventsTitle: { fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' },
-      monthEventItem: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', backgroundColor: 'var(--bg-card)', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '0.25rem', border: '1px solid var(--border)' },
+      calendarDay: { aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', color: 'var(--text-light)', backgroundColor: 'var(--bg-elevated)', borderRadius: '8px' },
+      calendarDayToday: { color: 'white', fontWeight: 600 },
+      monthEventsSection: { display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' },
+      monthEventsList: { width: '100%', display: 'flex', flexDirection: 'column', gap: '0.375rem' },
+      monthEventItem: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.625rem 0.875rem', backgroundColor: 'var(--bg-card)', borderRadius: '8px', fontSize: '0.85rem', border: '1px solid var(--border)' },
+      noEventsText: { color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic' },
+      addEventSmall: { padding: '0.5rem 1rem', backgroundColor: 'transparent', border: '1px solid', borderRadius: '20px', fontSize: '0.8rem', cursor: 'pointer' },
 
-      // Bottom Section
+      // Bottom section
       bottomSection: { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem', width: '100%', maxWidth: '600px', padding: '1.25rem', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)', transition: 'opacity 0.5s ease' },
       valuesSection: {},
       sectionLabel: { fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '0.75rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 },
@@ -1115,7 +1060,6 @@ I'm here to help — ask me to suggest activities or ideas for any event.`
       typingBubble: { padding: '0.75rem 1rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '14px', borderTopLeftRadius: '4px', display: 'flex', gap: '4px' },
       typingDot: { color: 'var(--accent)', fontSize: '1.125rem', lineHeight: 1, animation: 'pulse 1s infinite' },
 
-      // Modal
       modalOverlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 },
       modal: { backgroundColor: 'var(--bg-card)', borderRadius: '16px', padding: '1.5rem', width: '90%', maxWidth: '360px', border: '1px solid var(--border)' },
       modalHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' },
