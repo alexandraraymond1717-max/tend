@@ -29,6 +29,11 @@
       --accent: #7D9B76;
       --accent-light: #E8F0E6;
       --ghost: #E8E2D9;
+      
+      --winter: #7A9CAD;
+      --spring: #7D9B76;
+      --summer: #C9A66B;
+      --fall: #C4836A;
     }
 
     [data-theme="dark"] {
@@ -51,7 +56,6 @@
       color: var(--text);
       line-height: 1.6;
       min-height: 100vh;
-      transition: background-color 0.3s ease, color 0.3s ease;
     }
 
     h1, h2, h3, h4 {
@@ -59,55 +63,32 @@
       font-weight: 400;
     }
 
-    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: 3px; }
 
-    @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
     @keyframes fadeIn {
       from { opacity: 0; }
       to { opacity: 1; }
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 0.4; }
-      50% { opacity: 0.7; }
     }
     @keyframes slideIn {
       from { opacity: 0; transform: translateX(-10px); }
       to { opacity: 1; transform: translateX(0); }
     }
-    @keyframes revealSection {
-      from { opacity: 0.3; transform: scale(0.98); }
-      to { opacity: 1; transform: scale(1); }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 0.7; }
     }
-    .fade-up { animation: fadeUp 0.6s ease-out forwards; }
+    @keyframes gentlePulse {
+      0%, 100% { opacity: 0.15; }
+      50% { opacity: 0.25; }
+    }
     .fade-in { animation: fadeIn 0.4s ease-out forwards; }
     .slide-in { animation: slideIn 0.4s ease-out forwards; }
-    .reveal { animation: revealSection 0.6s ease-out forwards; }
 
     input:focus, textarea:focus, select:focus {
       outline: none;
       border-color: var(--accent) !important;
-    }
-
-    /* Ghosted state */
-    .ghosted {
-      opacity: 0.3;
-      pointer-events: none;
-    }
-    .ghosted-soft {
-      opacity: 0.5;
-    }
-    .emerging {
-      opacity: 0.7;
-      transition: opacity 0.5s ease;
-    }
-    .revealed {
-      opacity: 1;
-      transition: opacity 0.5s ease;
     }
   </style>
 </head>
@@ -115,14 +96,14 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef, useMemo } = React;
+    const { useState, useEffect, useRef } = React;
 
     // ============ CONSTANTS ============
     const LIFE_AREAS = {
       health: { name: 'Health & Wellness', icon: '◐', color: '#7D9B76', keywords: ['health', 'fitness', 'exercise', 'gym', 'sleep', 'energy', 'body', 'weight', 'diet', 'mental health', 'stress', 'anxiety', 'tired', 'exhausted'] },
-      relationships: { name: 'Relationships', icon: '♡', color: '#C48B8B', keywords: ['partner', 'relationship', 'marriage', 'spouse', 'husband', 'wife', 'boyfriend', 'girlfriend', 'family', 'friends', 'kids', 'children', 'parents', 'dating', 'connection', 'lonely', 'love'] },
+      relationships: { name: 'Relationships', icon: '♡', color: '#C48B8B', keywords: ['partner', 'relationship', 'marriage', 'spouse', 'husband', 'wife', 'boyfriend', 'girlfriend', 'family', 'friends', 'kids', 'children', 'parents', 'dating', 'connection', 'lonely', 'love', 'present'] },
       career: { name: 'Career & Work', icon: '◆', color: '#7A9CAD', keywords: ['work', 'job', 'career', 'promotion', 'boss', 'office', 'business', 'project', 'deadline', 'meeting', 'professional', 'salary', 'coworkers', 'manager', 'burnout'] },
-      finances: { name: 'Finances', icon: '○', color: '#C9A66B', keywords: ['money', 'financial', 'savings', 'debt', 'budget', 'invest', 'retirement', 'income', 'expenses', 'afford', 'bills', 'salary', 'wealth'] },
+      finances: { name: 'Finances', icon: '○', color: '#C9A66B', keywords: ['money', 'financial', 'savings', 'debt', 'budget', 'invest', 'retirement', 'income', 'expenses', 'afford', 'bills', 'wealth'] },
       growth: { name: 'Personal Growth', icon: '✦', color: '#9B8AAE', keywords: ['learn', 'grow', 'growth', 'read', 'book', 'course', 'skill', 'hobby', 'creative', 'creativity', 'develop', 'improve', 'therapy', 'meditation', 'mindful'] },
       fun: { name: 'Fun & Adventure', icon: '✺', color: '#C4836A', keywords: ['fun', 'adventure', 'travel', 'trip', 'vacation', 'explore', 'experience', 'play', 'enjoy', 'hobby', 'entertainment', 'relax', 'weekend'] },
     };
@@ -142,6 +123,16 @@
       'Security': ['security', 'secure', 'stable', 'stability', 'safe', 'reliable', 'consistent'],
     };
 
+    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const MONTH_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+    const SEASONS = {
+      winter: { name: 'Winter', months: [11, 0, 1], color: '#7A9CAD' },
+      spring: { name: 'Spring', months: [2, 3, 4], color: '#7D9B76' },
+      summer: { name: 'Summer', months: [5, 6, 7], color: '#C9A66B' },
+      fall: { name: 'Fall', months: [8, 9, 10], color: '#C4836A' },
+    };
+
     const PHASES = {
       EXPLORE: 'explore',
       GROUND: 'ground',
@@ -149,17 +140,15 @@
       PLAN: 'plan',
     };
 
-    const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-
     // ============ MAIN APP ============
     function TendApp() {
       // Core state
       const [phase, setPhase] = useState(PHASES.EXPLORE);
       const [values, setValues] = useState([]);
-      const [lifeAreaFocus, setLifeAreaFocus] = useState({}); // { health: 'needs-attention', career: 'overloaded' }
+      const [lifeAreaFocus, setLifeAreaFocus] = useState({});
       const [events, setEvents] = useState([]);
       const [goals, setGoals] = useState([]);
-      const [seasonFocus, setSeasonFocus] = useState({});
+      const [seasonIntentions, setSeasonIntentions] = useState({});
       
       // Chat state
       const [messages, setMessages] = useState([]);
@@ -171,7 +160,6 @@
       // UI state
       const [revealed, setRevealed] = useState(false);
       const [showEventModal, setShowEventModal] = useState(false);
-      const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
 
       // Initialize
       useEffect(() => {
@@ -192,45 +180,23 @@ What would make 2026 feel like a success? It could be a concrete achievement, a 
       // ============ TEXT ANALYSIS ============
       const analyzeText = (text) => {
         const lower = text.toLowerCase();
-        const detected = { values: [], lifeAreas: [], events: [] };
+        const detected = { values: [], lifeAreas: [] };
 
-        // Detect values
         Object.entries(VALUE_KEYWORDS).forEach(([value, keywords]) => {
           if (keywords.some(kw => lower.includes(kw)) && !values.includes(value)) {
             detected.values.push(value);
           }
         });
 
-        // Detect life area mentions
         Object.entries(LIFE_AREAS).forEach(([key, area]) => {
           if (area.keywords.some(kw => lower.includes(kw))) {
             detected.lifeAreas.push(key);
           }
         });
 
-        // Detect events (simple month detection)
-        const monthPatterns = [
-          /(?:in|during|around)\s+(january|february|march|april|may|june|july|august|september|october|november|december)/gi,
-          /(january|february|march|april|may|june|july|august|september|october|november|december)\s+\d+/gi,
-        ];
-        
-        const monthMap = { january: 0, february: 1, march: 2, april: 3, may: 4, june: 5, 
-                          july: 6, august: 7, september: 8, october: 9, november: 10, december: 11 };
-        
-        monthPatterns.forEach(pattern => {
-          const matches = text.matchAll(pattern);
-          for (const match of matches) {
-            const monthName = match[1]?.toLowerCase();
-            if (monthName && monthMap[monthName] !== undefined) {
-              detected.events.push({ month: monthMap[monthName], text: match[0] });
-            }
-          }
-        });
-
         return detected;
       };
 
-      // Update state based on analysis
       const processAnalysis = (detected) => {
         if (detected.values.length > 0) {
           setValues(prev => [...new Set([...prev, ...detected.values])].slice(0, 5));
@@ -247,6 +213,19 @@ What would make 2026 feel like a success? It could be a concrete achievement, a 
         }
       };
 
+      const parseEvents = (text) => {
+        const lower = text.toLowerCase();
+        const foundEvents = [];
+        
+        MONTH_FULL.forEach((month, idx) => {
+          if (lower.includes(month.toLowerCase())) {
+            foundEvents.push({ month: idx });
+          }
+        });
+        
+        return foundEvents;
+      };
+
       // ============ CONVERSATION LOGIC ============
       const generateResponse = (userMessage, currentPhase, exchangeNum) => {
         const detected = analyzeText(userMessage);
@@ -254,10 +233,8 @@ What would make 2026 feel like a success? It could be a concrete achievement, a 
         
         const lower = userMessage.toLowerCase();
 
-        // Phase-specific responses
         if (currentPhase === PHASES.EXPLORE) {
           if (exchangeNum === 1) {
-            // First response - dig deeper
             const hasFeeling = ['feel', 'feeling', 'want to be', 'less', 'more'].some(w => lower.includes(w));
             const hasConcrete = ['achieve', 'goal', 'finish', 'complete', 'start', 'launch', 'build'].some(w => lower.includes(w));
             
@@ -275,7 +252,6 @@ But beyond achieving that, how do you want to <em>feel</em> this year? What woul
           }
           
           if (exchangeNum === 2) {
-            // Second response - identify the tension
             const detectedAreas = Object.keys(lifeAreaFocus);
             if (detectedAreas.length > 0) {
               const areaName = LIFE_AREAS[detectedAreas[0]].name;
@@ -287,43 +263,26 @@ If things stayed exactly as they are now for another year, how would that feel?`
           }
 
           if (exchangeNum >= 3) {
-            // Transition to GROUND phase
             setPhase(PHASES.GROUND);
             return `Before I share what I'm hearing, help me understand what's already on your plate this year.
 
-What's committed — trips, work deadlines, big family events, anything that's already locked in?`;
+What's committed — trips, work deadlines, big family events, anything that's already locked in? Just mention the month and what it is.`;
           }
         }
 
         if (currentPhase === PHASES.GROUND) {
-          // Parse events from their response
-          const eventMentions = [];
-          const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 
-                             'july', 'august', 'september', 'october', 'november', 'december'];
+          const foundEvents = parseEvents(userMessage);
           
-          monthNames.forEach((month, idx) => {
-            if (lower.includes(month)) {
-              // Try to extract what the event is
-              const regex = new RegExp(`([\\w\\s]+?)(?:in|during|around)?\\s*${month}|${month}[\\s\\w]*?(?:for|:)?\\s*([\\w\\s]+)`, 'i');
-              const match = userMessage.match(regex);
-              eventMentions.push({ month: idx, raw: match ? match[0] : month });
-            }
-          });
-
-          if (eventMentions.length > 0) {
-            // Add events
-            const newEvents = eventMentions.map((e, i) => ({
+          if (foundEvents.length > 0) {
+            const newEvents = foundEvents.map((e, i) => ({
               id: Date.now() + i,
-              title: `Event in ${MONTHS[e.month]}`,
+              title: `Event`,
               month: e.month,
-              lifeArea: 'fun', // default
-              startDate: `2026-${String(e.month + 1).padStart(2, '0')}-15`,
-              endDate: `2026-${String(e.month + 1).padStart(2, '0')}-15`,
+              lifeArea: 'fun',
             }));
             setEvents(prev => [...prev, ...newEvents]);
           }
 
-          // Transition to REVEAL
           setTimeout(() => {
             setPhase(PHASES.REVEAL);
             setRevealed(true);
@@ -332,50 +291,44 @@ What's committed — trips, work deadlines, big family events, anything that's a
           const valuesSummary = values.length > 0 
             ? values.slice(0, 3).join(', ')
             : 'presence, balance, and intention';
-          
-          const areasSummary = Object.keys(lifeAreaFocus).length > 0
-            ? Object.keys(lifeAreaFocus).map(k => LIFE_AREAS[k].name.toLowerCase()).join(' and ')
-            : 'how you spend your time and energy';
 
           return `Got it. Let me reflect back what I'm hearing.
 
-<strong>Here's what I'm hearing:</strong>
+<strong>Here's what's taking shape:</strong>
 
-Your values this year center around <em>${valuesSummary}</em>.
+Your values this year seem to center around <em>${valuesSummary}</em>.
 
 ${Object.keys(lifeAreaFocus).length > 0 
-  ? `${LIFE_AREAS[Object.keys(lifeAreaFocus)[0]].name} seems to be where the tension lives — ${Object.keys(lifeAreaFocus).length > 1 ? `and ${LIFE_AREAS[Object.keys(lifeAreaFocus)[1]].name} is connected to what you want more of` : 'it needs attention'}.`
-  : `You're looking for a shift in ${areasSummary}.`}
+  ? `${LIFE_AREAS[Object.keys(lifeAreaFocus)[0]].name} is where I'm hearing some tension or desire for change.`
+  : `You're looking for a shift in how you spend your time and energy.`}
 
-${events.length > 0 
-  ? `You've got ${events.length} thing${events.length > 1 ? 's' : ''} already on the calendar.`
-  : `Your calendar is relatively open — that's either freedom or something to fill intentionally.`}
+${foundEvents.length > 0 
+  ? `You've got ${foundEvents.length} thing${foundEvents.length > 1 ? 's' : ''} already anchoring the year.`
+  : `Your calendar sounds relatively open — that's space to be intentional with.`}
 
-Take a look at what's taking shape on the left. Does this feel right?`;
+Take a look at what's forming on the left. Does this feel right? You can edit anything directly now.`;
         }
 
         if (currentPhase === PHASES.REVEAL || currentPhase === PHASES.PLAN) {
           setPhase(PHASES.PLAN);
           
-          // Contextual planning responses
-          if (lower.includes('yes') || lower.includes('right') || lower.includes('exactly') || lower.includes('that\'s it')) {
+          if (lower.includes('yes') || lower.includes('right') || lower.includes('exactly') || lower.includes('good')) {
             return `Good. Now let's make it real.
 
-Looking at your calendar — what's missing? ${values.length > 0 ? `If ${values[0]} matters, what needs to get scheduled to protect it?` : `What would make the next few months feel intentional rather than reactive?`}`;
+Looking at the year — what's missing? ${values.length > 0 ? `If <em>${values[0]}</em> matters, what needs to get on the calendar to protect it?` : `What would make the next few months feel intentional rather than reactive?`}`;
           }
 
           if (lower.includes('no') || lower.includes('not quite') || lower.includes('change')) {
-            return `That's okay — this is a starting point. You can edit anything on the left directly.
+            return `That's okay — this is just a starting point. Edit anything on the left that doesn't feel right.
 
-What feels off? What would you adjust?`;
+What would you adjust?`;
           }
 
-          // General planning responses
           const planningPrompts = [
             `What's one thing you've been meaning to schedule but haven't?`,
-            `Which month feels most open right now? What could you protect that space for?`,
+            `Looking at the seasons — which one needs the most attention?`,
             `Is there something that used to bring you joy that's fallen off the calendar?`,
-            `Looking at the balance of your time — what's missing?`,
+            `What does rest look like for you, and where does it fit?`,
           ];
           
           return planningPrompts[Math.floor(Math.random() * planningPrompts.length)];
@@ -408,9 +361,9 @@ What feels off? What would you adjust?`;
           role: 'assistant',
           content: `No problem — let's jump into planning.
 
-The canvas on the left is yours to shape. Add your values, rate how different areas of life are going, and start putting things on the calendar.
+The canvas is yours. Add values that matter to you, check in on different life areas, and start placing intentions on the year.
 
-I'm here if you want to talk through any of it.`
+I'm here whenever you want to think out loud.`
         }]);
       };
 
@@ -424,139 +377,126 @@ I'm here if you want to talk through any of it.`
         <div style={styles.container}>
           {/* Header */}
           <header style={styles.header}>
-            <div style={styles.headerLeft}>
-              <div style={styles.logoContainer}>
-                <svg width="28" height="28" viewBox="0 0 32 32" fill="none" style={{ marginRight: '8px' }}>
-                  <path d="M16 26 Q16 18 16 14" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" fill="none"/>
-                  <path d="M16 18 Q10 16 8 10 Q14 12 16 18" fill="var(--accent)" opacity="0.5"/>
-                  <path d="M16 14 Q22 10 24 4 Q18 8 16 14" fill="var(--accent)"/>
-                  <path d="M16 10 Q14 6 16 2 Q18 6 16 10" fill="var(--accent)" opacity="0.7"/>
-                </svg>
-                <h1 style={styles.logoText}>tend</h1>
-              </div>
-              <p style={styles.tagline}>a space for designing your life with intention</p>
+            <div style={styles.logoContainer}>
+              <svg width="28" height="28" viewBox="0 0 32 32" fill="none" style={{ marginRight: '8px' }}>
+                <path d="M16 26 Q16 18 16 14" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+                <path d="M16 18 Q10 16 8 10 Q14 12 16 18" fill="var(--accent)" opacity="0.5"/>
+                <path d="M16 14 Q22 10 24 4 Q18 8 16 14" fill="var(--accent)"/>
+                <path d="M16 10 Q14 6 16 2 Q18 6 16 10" fill="var(--accent)" opacity="0.7"/>
+              </svg>
+              <h1 style={styles.logoText}>tend</h1>
             </div>
+            <p style={styles.tagline}>a space for designing your life with intention</p>
           </header>
 
-          {/* Main Content */}
+          {/* Main Content - Three Columns */}
           <main style={styles.main}>
-            {/* Left Panel - The Canvas */}
-            <div style={styles.canvasPanel}>
-              <div style={styles.canvasContent}>
-                {/* Year Header */}
-                <div style={styles.yearHeader}>
-                  <h2 style={styles.yearTitle}>2026</h2>
-                  <p style={styles.yearSubtitle}>Your year is taking shape</p>
-                </div>
-
-                {/* Values Section */}
-                <div style={{...styles.section, ...(revealed ? {} : styles.ghosted)}}>
-                  <div style={styles.sectionHeader}>
-                    <h3 style={styles.sectionTitle}>Values</h3>
-                    {revealed && values.length < 5 && (
-                      <button style={styles.sectionAdd} onClick={() => {
-                        const newValue = prompt('Add a value:');
-                        if (newValue && !values.includes(newValue)) {
-                          setValues([...values, newValue]);
-                        }
-                      }}>+ Add</button>
-                    )}
-                  </div>
-                  <div style={styles.valuesContainer}>
-                    {values.length === 0 ? (
-                      <div style={styles.ghostedPlaceholder}>
-                        <span style={styles.ghostedCircle}></span>
-                        <span style={styles.ghostedCircle}></span>
-                        <span style={styles.ghostedCircle}></span>
-                      </div>
-                    ) : (
-                      <div style={styles.valuesTags}>
-                        {values.map((v, i) => (
-                          <span key={v} style={styles.valueTag} className="slide-in">
-                            {v}
-                            {revealed && (
-                              <button 
-                                style={styles.valueRemove}
-                                onClick={() => setValues(values.filter(x => x !== v))}
-                              >×</button>
-                            )}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Life Areas Section */}
-                <div style={{...styles.section, ...(revealed ? {} : styles.ghostedSoft)}}>
-                  <div style={styles.sectionHeader}>
-                    <h3 style={styles.sectionTitle}>Life Areas</h3>
-                  </div>
-                  <div style={styles.lifeAreasGrid}>
-                    {Object.entries(LIFE_AREAS).map(([key, area]) => {
-                      const status = lifeAreaFocus[key];
-                      const isActive = revealed || status;
-                      return (
-                        <div 
-                          key={key} 
-                          style={{
-                            ...styles.lifeAreaPill,
-                            opacity: isActive ? 1 : 0.3,
-                            borderColor: status ? area.color : 'var(--border)',
-                            backgroundColor: status ? `${area.color}15` : 'transparent',
-                          }}
-                          className={status ? 'slide-in' : ''}
-                        >
-                          <span style={{color: area.color}}>{area.icon}</span>
-                          <span style={styles.lifeAreaName}>{area.name}</span>
-                          {status && <span style={{...styles.statusDot, backgroundColor: area.color}}></span>}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Mini Calendar */}
-                <div style={{...styles.section, ...(revealed ? {} : styles.ghostedSoft)}}>
-                  <div style={styles.sectionHeader}>
-                    <h3 style={styles.sectionTitle}>The Year</h3>
+            {/* Left Sidebar - Ghosted Placeholders */}
+            <aside style={styles.sidebar}>
+              <SidebarSection 
+                title="Values" 
+                revealed={revealed}
+                items={values}
+                ghostCount={3}
+                renderItem={(v) => (
+                  <span key={v} style={styles.valueChip} className="slide-in">
+                    {v}
                     {revealed && (
-                      <button style={styles.sectionAdd} onClick={() => setShowEventModal(true)}>+ Add Event</button>
+                      <button style={styles.chipRemove} onClick={() => setValues(values.filter(x => x !== v))}>×</button>
                     )}
-                  </div>
-                  <MiniYearCalendar 
-                    events={events} 
-                    revealed={revealed}
-                    onMonthClick={(month) => setSelectedMonth(month)}
-                  />
+                  </span>
+                )}
+                onAdd={revealed ? () => {
+                  const v = prompt('Add a value:');
+                  if (v && !values.includes(v)) setValues([...values, v]);
+                } : null}
+              />
+              
+              <SidebarSection 
+                title="Life Areas" 
+                revealed={revealed}
+                ghostCount={0}
+              >
+                <div style={styles.lifeAreasList}>
+                  {Object.entries(LIFE_AREAS).map(([key, area]) => {
+                    const isActive = revealed || lifeAreaFocus[key];
+                    return (
+                      <div 
+                        key={key}
+                        style={{
+                          ...styles.lifeAreaItem,
+                          opacity: isActive ? 1 : 0.3,
+                          borderColor: lifeAreaFocus[key] ? area.color : 'transparent',
+                        }}
+                      >
+                        <span style={{color: area.color, fontSize: '0.9rem'}}>{area.icon}</span>
+                        <span style={styles.lifeAreaLabel}>{area.name}</span>
+                      </div>
+                    );
+                  })}
                 </div>
+              </SidebarSection>
 
-                {/* Events List */}
-                {events.length > 0 && (
-                  <div style={{...styles.section}} className="fade-in">
-                    <div style={styles.sectionHeader}>
-                      <h3 style={styles.sectionTitle}>Planned</h3>
-                    </div>
-                    <div style={styles.eventsList}>
-                      {events.map(event => (
-                        <div key={event.id} style={styles.eventItem}>
-                          <span style={styles.eventMonth}>{MONTHS[event.month]}</span>
-                          <span style={styles.eventTitle}>{event.title}</span>
-                          {revealed && (
-                            <button 
-                              style={styles.eventRemove}
-                              onClick={() => setEvents(events.filter(e => e.id !== event.id))}
-                            >×</button>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+              <SidebarSection 
+                title="Goals" 
+                revealed={revealed}
+                items={goals}
+                ghostCount={2}
+                renderItem={(g) => (
+                  <div key={g.id} style={styles.goalItem} className="slide-in">
+                    <span>{g.text}</span>
+                    {revealed && (
+                      <button style={styles.chipRemove} onClick={() => setGoals(goals.filter(x => x.id !== g.id))}>×</button>
+                    )}
                   </div>
                 )}
-              </div>
+                onAdd={revealed ? () => {
+                  const g = prompt('Add a goal:');
+                  if (g) setGoals([...goals, { id: Date.now(), text: g }]);
+                } : null}
+              />
+
+              <SidebarSection 
+                title="Seasons" 
+                revealed={revealed}
+                ghostCount={0}
+              >
+                <div style={styles.seasonsList}>
+                  {Object.entries(SEASONS).map(([key, season]) => (
+                    <div 
+                      key={key}
+                      style={{
+                        ...styles.seasonItem,
+                        opacity: revealed ? 1 : 0.3,
+                        borderLeftColor: season.color,
+                      }}
+                    >
+                      <span style={{color: season.color, fontWeight: 500}}>{season.name}</span>
+                      {revealed && (
+                        <input
+                          type="text"
+                          placeholder="Focus..."
+                          value={seasonIntentions[key] || ''}
+                          onChange={(e) => setSeasonIntentions({...seasonIntentions, [key]: e.target.value})}
+                          style={styles.seasonInput}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </SidebarSection>
+            </aside>
+
+            {/* Center - Seasons Circle */}
+            <div style={styles.centerPanel}>
+              <SeasonsCircle 
+                events={events} 
+                revealed={revealed}
+                onAddEvent={() => setShowEventModal(true)}
+              />
             </div>
 
-            {/* Chat Panel */}
+            {/* Right - Chat Panel */}
             <div style={styles.chatPanel}>
               <div style={styles.chatMessages}>
                 {messages.map((msg, idx) => (
@@ -612,43 +552,188 @@ I'm here if you want to talk through any of it.`
       );
     }
 
-    // ============ MINI YEAR CALENDAR ============
-    function MiniYearCalendar({ events, revealed, onMonthClick }) {
-      const currentMonth = new Date().getMonth();
-      const currentYear = new Date().getFullYear();
+    // ============ SIDEBAR SECTION ============
+    function SidebarSection({ title, revealed, items = [], ghostCount = 3, renderItem, onAdd, children }) {
+      return (
+        <div style={styles.sidebarSection}>
+          <div style={styles.sectionHeader}>
+            <h3 style={styles.sectionTitle}>{title}</h3>
+            {onAdd && <button style={styles.addButton} onClick={onAdd}>+</button>}
+          </div>
+          
+          {children ? children : (
+            <div style={styles.sectionContent}>
+              {items.length > 0 ? (
+                items.map(item => renderItem(item))
+              ) : (
+                <div style={styles.ghostedItems}>
+                  {Array.from({ length: ghostCount }).map((_, i) => (
+                    <div 
+                      key={i} 
+                      style={{
+                        ...styles.ghostPill,
+                        width: `${60 + Math.random() * 40}px`,
+                        animationDelay: `${i * 0.2}s`,
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
 
-      const getEventsForMonth = (monthIndex) => {
-        return events.filter(e => e.month === monthIndex);
+    // ============ SEASONS CIRCLE ============
+    function SeasonsCircle({ events, revealed, onAddEvent }) {
+      const size = 380;
+      const center = size / 2;
+      const outerRadius = 170;
+      const innerRadius = 80;
+      const monthRadius = 150;
+
+      const currentMonth = new Date().getMonth();
+
+      // Calculate month positions around the circle
+      const getMonthPosition = (monthIndex) => {
+        // Start from top (12 o'clock) and go clockwise
+        // Month 0 (Jan) should be at roughly 1 o'clock position
+        const angle = ((monthIndex - 2) / 12) * 2 * Math.PI - Math.PI / 2;
+        return {
+          x: center + Math.cos(angle) * monthRadius,
+          y: center + Math.sin(angle) * monthRadius,
+        };
+      };
+
+      const getEventPosition = (monthIndex, eventIndex = 0) => {
+        const angle = ((monthIndex - 2) / 12) * 2 * Math.PI - Math.PI / 2;
+        const radius = innerRadius + 25 + (eventIndex * 12);
+        return {
+          x: center + Math.cos(angle) * radius,
+          y: center + Math.sin(angle) * radius,
+        };
+      };
+
+      const seasonArcs = [
+        { id: 'winter', start: -60, end: 30, color: '#7A9CAD' },
+        { id: 'spring', start: 30, end: 120, color: '#7D9B76' },
+        { id: 'summer', start: 120, end: 210, color: '#C9A66B' },
+        { id: 'fall', start: 210, end: 300, color: '#C4836A' },
+      ];
+
+      const describeArc = (startAngle, endAngle, radius) => {
+        const start = polarToCartesian(center, center, radius, endAngle);
+        const end = polarToCartesian(center, center, radius, startAngle);
+        const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
+        return [
+          "M", start.x, start.y,
+          "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y,
+          "L", center, center,
+          "Z"
+        ].join(" ");
+      };
+
+      const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
+        const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
+        return {
+          x: centerX + (radius * Math.cos(angleInRadians)),
+          y: centerY + (radius * Math.sin(angleInRadians))
+        };
       };
 
       return (
-        <div style={styles.miniYearGrid}>
-          {MONTHS.map((monthName, idx) => {
-            const monthEvents = getEventsForMonth(idx);
-            const isCurrent = idx === currentMonth;
-            
-            return (
-              <div 
-                key={idx}
-                style={{
-                  ...styles.miniMonthCard,
-                  ...(isCurrent && styles.miniMonthCurrent),
-                  ...(monthEvents.length > 0 && styles.miniMonthWithEvents),
-                  cursor: revealed ? 'pointer' : 'default',
-                }}
-                onClick={() => revealed && onMonthClick(idx)}
-              >
-                <span style={styles.miniMonthName}>{monthName}</span>
-                {monthEvents.length > 0 && (
-                  <div style={styles.miniMonthDots}>
-                    {monthEvents.slice(0, 3).map((_, i) => (
-                      <span key={i} style={styles.miniMonthDot}></span>
-                    ))}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+        <div style={styles.circleContainer}>
+          <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+            {/* Season arcs */}
+            {seasonArcs.map(season => (
+              <path
+                key={season.id}
+                d={describeArc(season.start, season.end, outerRadius)}
+                fill={season.color}
+                opacity={revealed ? 0.15 : 0.08}
+                style={{ transition: 'opacity 0.5s ease' }}
+              />
+            ))}
+
+            {/* Inner circle */}
+            <circle
+              cx={center}
+              cy={center}
+              r={innerRadius}
+              fill="var(--bg-card)"
+              stroke="var(--border)"
+              strokeWidth="1"
+            />
+
+            {/* Year text */}
+            <text
+              x={center}
+              y={center}
+              textAnchor="middle"
+              dominantBaseline="middle"
+              fill="var(--text)"
+              style={{ fontFamily: "'Fraunces', serif", fontSize: '2rem' }}
+            >
+              2026
+            </text>
+
+            {/* Month labels */}
+            {MONTHS.map((month, idx) => {
+              const pos = getMonthPosition(idx);
+              const isCurrent = idx === currentMonth;
+              return (
+                <g key={month}>
+                  <text
+                    x={pos.x}
+                    y={pos.y}
+                    textAnchor="middle"
+                    dominantBaseline="middle"
+                    fill={isCurrent ? 'var(--accent)' : 'var(--text-muted)'}
+                    style={{ 
+                      fontFamily: "'DM Sans', sans-serif", 
+                      fontSize: '0.7rem',
+                      fontWeight: isCurrent ? 600 : 400,
+                    }}
+                  >
+                    {month}
+                  </text>
+                  {isCurrent && (
+                    <circle
+                      cx={pos.x}
+                      cy={pos.y + 12}
+                      r="2"
+                      fill="var(--accent)"
+                    />
+                  )}
+                </g>
+              );
+            })}
+
+            {/* Event dots */}
+            {events.map((event, idx) => {
+              const monthEvents = events.filter(e => e.month === event.month);
+              const eventIndex = monthEvents.indexOf(event);
+              const pos = getEventPosition(event.month, eventIndex);
+              return (
+                <circle
+                  key={event.id}
+                  cx={pos.x}
+                  cy={pos.y}
+                  r="5"
+                  fill="var(--accent)"
+                  className="fade-in"
+                />
+              );
+            })}
+          </svg>
+
+          {/* Add event button */}
+          {revealed && (
+            <button style={styles.addEventButton} onClick={onAddEvent}>
+              + Add Event
+            </button>
+          )}
         </div>
       );
     }
@@ -695,22 +780,14 @@ I'm here if you want to talk through any of it.`
 
       return (
         <div style={styles.modalOverlay} onClick={onClose}>
-          <div style={styles.modal} onClick={e => e.stopPropagation()} className="fade-up">
+          <div style={styles.modal} onClick={e => e.stopPropagation()} className="fade-in">
             <div style={styles.modalHeader}>
               <h3 style={styles.modalTitle}>Add an event</h3>
               <button style={styles.modalClose} onClick={onClose}>×</button>
             </div>
             <form onSubmit={(e) => { 
               e.preventDefault(); 
-              if (title) {
-                onAdd({ 
-                  title, 
-                  month,
-                  lifeArea,
-                  startDate: `2026-${String(month + 1).padStart(2, '0')}-15`,
-                  endDate: `2026-${String(month + 1).padStart(2, '0')}-15`,
-                });
-              }
+              if (title) onAdd({ title, month, lifeArea });
             }} style={styles.modalForm}>
               <div style={styles.formField}>
                 <label style={styles.formLabel}>What is it?</label>
@@ -719,7 +796,7 @@ I'm here if you want to talk through any of it.`
                   style={styles.textInput} 
                   value={title} 
                   onChange={(e) => setTitle(e.target.value)} 
-                  placeholder="Trip to Italy, work conference, birthday..." 
+                  placeholder="Trip to Italy, birthday, deadline..." 
                   autoFocus
                 />
               </div>
@@ -752,7 +829,7 @@ I'm here if you want to talk through any of it.`
                 style={{...styles.submitButton, ...(!title ? styles.submitButtonDisabled : {})}}
                 disabled={!title}
               >
-                Add to calendar
+                Add to year
               </button>
             </form>
           </div>
@@ -774,50 +851,31 @@ I'm here if you want to talk through any of it.`
         padding: '1rem 2rem',
         borderBottom: '1px solid var(--border)',
         backgroundColor: 'var(--bg-card)',
+        display: 'flex',
+        alignItems: 'baseline',
+        gap: '1rem',
       },
-      headerLeft: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
       logoContainer: { display: 'flex', alignItems: 'center' },
       logoText: { fontSize: '1.5rem', fontFamily: "'Fraunces', serif", fontWeight: 400, color: 'var(--text)' },
-      tagline: { fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic', marginLeft: '36px' },
+      tagline: { fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' },
 
-      // Main layout
+      // Main three-column layout
       main: { 
         display: 'grid', 
-        gridTemplateColumns: '1fr 420px', 
+        gridTemplateColumns: '220px 1fr 360px', 
         flex: 1,
-        height: 'calc(100vh - 70px)',
-      },
-      
-      // Canvas Panel (Left)
-      canvasPanel: { 
-        padding: '2rem',
-        overflow: 'auto',
-        backgroundColor: 'var(--bg-main)',
-      },
-      canvasContent: {
-        maxWidth: '600px',
-        margin: '0 auto',
-      },
-      yearHeader: {
-        textAlign: 'center',
-        marginBottom: '2rem',
-      },
-      yearTitle: {
-        fontSize: '3rem',
-        fontFamily: "'Fraunces', serif",
-        color: 'var(--text)',
-        marginBottom: '0.25rem',
-      },
-      yearSubtitle: {
-        fontSize: '0.9rem',
-        color: 'var(--text-muted)',
-        fontStyle: 'italic',
+        height: 'calc(100vh - 60px)',
       },
 
-      // Sections
-      section: {
-        marginBottom: '2rem',
-        transition: 'opacity 0.5s ease',
+      // Left Sidebar
+      sidebar: {
+        padding: '1.5rem 1rem',
+        borderRight: '1px solid var(--border)',
+        backgroundColor: 'var(--bg-card)',
+        overflowY: 'auto',
+      },
+      sidebarSection: {
+        marginBottom: '1.5rem',
       },
       sectionHeader: {
         display: 'flex',
@@ -826,168 +884,146 @@ I'm here if you want to talk through any of it.`
         marginBottom: '0.75rem',
       },
       sectionTitle: {
-        fontSize: '0.8rem',
+        fontSize: '0.7rem',
         textTransform: 'uppercase',
         letterSpacing: '0.1em',
         color: 'var(--text-muted)',
         fontFamily: "'DM Sans', sans-serif",
-        fontWeight: 500,
+        fontWeight: 600,
       },
-      sectionAdd: {
-        fontSize: '0.75rem',
-        color: 'var(--accent)',
-        background: 'none',
-        border: 'none',
+      addButton: {
+        width: '20px',
+        height: '20px',
+        borderRadius: '50%',
+        border: '1px solid var(--border)',
+        backgroundColor: 'transparent',
+        color: 'var(--text-muted)',
+        fontSize: '0.875rem',
         cursor: 'pointer',
-      },
-
-      // Ghosted states
-      ghosted: { opacity: 0.25, pointerEvents: 'none' },
-      ghostedSoft: { opacity: 0.4 },
-      ghostedPlaceholder: {
         display: 'flex',
-        gap: '0.75rem',
+        alignItems: 'center',
+        justifyContent: 'center',
       },
-      ghostedCircle: {
-        width: '60px',
-        height: '32px',
-        borderRadius: '16px',
-        backgroundColor: 'var(--ghost)',
-      },
-
-      // Values
-      valuesContainer: {
-        minHeight: '40px',
-      },
-      valuesTags: {
+      sectionContent: {
         display: 'flex',
         flexWrap: 'wrap',
         gap: '0.5rem',
       },
-      valueTag: {
+      ghostedItems: {
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: '0.5rem',
+      },
+      ghostPill: {
+        height: '28px',
+        borderRadius: '14px',
+        backgroundColor: 'var(--ghost)',
+        animation: 'gentlePulse 3s ease-in-out infinite',
+      },
+      valueChip: {
         display: 'inline-flex',
         alignItems: 'center',
-        gap: '0.5rem',
-        padding: '0.5rem 1rem',
+        gap: '0.375rem',
+        padding: '0.375rem 0.75rem',
         backgroundColor: 'var(--accent)',
         color: 'white',
-        borderRadius: '20px',
-        fontSize: '0.875rem',
+        borderRadius: '14px',
+        fontSize: '0.8rem',
       },
-      valueRemove: {
+      chipRemove: {
         background: 'none',
         border: 'none',
         color: 'white',
         opacity: 0.7,
         cursor: 'pointer',
-        fontSize: '1rem',
+        fontSize: '0.875rem',
         padding: 0,
-        marginLeft: '0.25rem',
+        lineHeight: 1,
       },
 
-      // Life Areas
-      lifeAreasGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(2, 1fr)',
-        gap: '0.5rem',
+      // Life Areas in sidebar
+      lifeAreasList: {
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.25rem',
       },
-      lifeAreaPill: {
+      lifeAreaItem: {
         display: 'flex',
         alignItems: 'center',
         gap: '0.5rem',
-        padding: '0.625rem 0.875rem',
-        borderRadius: '10px',
-        border: '1px solid var(--border)',
-        backgroundColor: 'transparent',
+        padding: '0.375rem 0.5rem',
+        borderRadius: '6px',
+        borderLeft: '2px solid transparent',
         transition: 'all 0.3s ease',
       },
-      lifeAreaName: {
+      lifeAreaLabel: {
+        fontSize: '0.75rem',
+        color: 'var(--text)',
+      },
+
+      // Goals in sidebar
+      goalItem: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '0.5rem',
+        padding: '0.5rem 0.75rem',
+        backgroundColor: 'var(--bg-elevated)',
+        borderRadius: '8px',
         fontSize: '0.8rem',
         color: 'var(--text)',
-        flex: 1,
-      },
-      statusDot: {
-        width: '6px',
-        height: '6px',
-        borderRadius: '50%',
+        width: '100%',
       },
 
-      // Mini Year Calendar
-      miniYearGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        gap: '0.5rem',
-      },
-      miniMonthCard: {
-        padding: '0.75rem 0.5rem',
-        borderRadius: '8px',
-        backgroundColor: 'var(--bg-card)',
-        border: '1px solid var(--border)',
-        textAlign: 'center',
-        transition: 'all 0.2s ease',
-      },
-      miniMonthCurrent: {
-        borderColor: 'var(--accent)',
-        boxShadow: '0 0 0 1px var(--accent)',
-      },
-      miniMonthWithEvents: {
-        backgroundColor: 'var(--accent-light)',
-      },
-      miniMonthName: {
-        fontSize: '0.75rem',
-        fontWeight: 500,
-        color: 'var(--text)',
-      },
-      miniMonthDots: {
-        display: 'flex',
-        justifyContent: 'center',
-        gap: '3px',
-        marginTop: '4px',
-      },
-      miniMonthDot: {
-        width: '5px',
-        height: '5px',
-        borderRadius: '50%',
-        backgroundColor: 'var(--accent)',
-      },
-
-      // Events List
-      eventsList: {
+      // Seasons in sidebar
+      seasonsList: {
         display: 'flex',
         flexDirection: 'column',
         gap: '0.5rem',
       },
-      eventItem: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-        padding: '0.625rem 0.875rem',
-        backgroundColor: 'var(--bg-card)',
-        borderRadius: '8px',
+      seasonItem: {
+        padding: '0.5rem',
+        borderLeft: '3px solid',
+        paddingLeft: '0.75rem',
+        transition: 'opacity 0.3s ease',
+      },
+      seasonInput: {
+        width: '100%',
+        marginTop: '0.25rem',
+        padding: '0.375rem 0.5rem',
         border: '1px solid var(--border)',
-      },
-      eventMonth: {
-        fontSize: '0.7rem',
-        fontWeight: 600,
-        color: 'var(--accent)',
-        textTransform: 'uppercase',
-        minWidth: '32px',
-      },
-      eventTitle: {
-        fontSize: '0.875rem',
+        borderRadius: '4px',
+        backgroundColor: 'var(--bg-elevated)',
+        fontSize: '0.75rem',
         color: 'var(--text)',
-        flex: 1,
-      },
-      eventRemove: {
-        background: 'none',
-        border: 'none',
-        color: 'var(--text-muted)',
-        cursor: 'pointer',
-        fontSize: '1rem',
-        opacity: 0.5,
       },
 
-      // Chat Panel (Right)
+      // Center Panel
+      centerPanel: {
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '2rem',
+        backgroundColor: 'var(--bg-main)',
+      },
+      circleContainer: {
+        position: 'relative',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        gap: '1.5rem',
+      },
+      addEventButton: {
+        padding: '0.5rem 1.25rem',
+        backgroundColor: 'var(--accent)',
+        border: 'none',
+        borderRadius: '20px',
+        color: 'white',
+        fontSize: '0.85rem',
+        cursor: 'pointer',
+      },
+
+      // Chat Panel
       chatPanel: { 
         backgroundColor: 'var(--bg-card)', 
         borderLeft: '1px solid var(--border)', 
@@ -996,14 +1032,14 @@ I'm here if you want to talk through any of it.`
       },
       chatMessages: { 
         flex: 1, 
-        padding: '1.5rem', 
+        padding: '1.25rem', 
         overflowY: 'auto', 
         display: 'flex', 
         flexDirection: 'column', 
-        gap: '1rem',
+        gap: '0.875rem',
       },
       chatInputArea: { 
-        padding: '1rem 1.5rem 1.5rem', 
+        padding: '1rem 1.25rem 1.25rem', 
         borderTop: '1px solid var(--border)',
       },
       skipButton: {
@@ -1016,32 +1052,31 @@ I'm here if you want to talk through any of it.`
         color: 'var(--text-muted)',
         fontSize: '0.8rem',
         cursor: 'pointer',
-        transition: 'all 0.2s ease',
       },
       inputRow: {
         display: 'flex',
-        gap: '0.75rem',
+        gap: '0.625rem',
         alignItems: 'flex-end',
       },
       chatInput: {
         flex: 1,
-        padding: '0.875rem 1rem',
+        padding: '0.75rem 1rem',
         backgroundColor: 'var(--bg-elevated)',
         border: '1px solid var(--border)',
         borderRadius: '12px',
         color: 'var(--text)',
-        fontSize: '0.9rem',
+        fontSize: '0.875rem',
         fontFamily: "'DM Sans', sans-serif",
         resize: 'none',
       },
       sendButton: {
-        width: '42px',
-        height: '42px',
+        width: '40px',
+        height: '40px',
         borderRadius: '50%',
         backgroundColor: 'var(--accent)',
         border: 'none',
         color: 'white',
-        fontSize: '1.125rem',
+        fontSize: '1rem',
         cursor: 'pointer',
         flexShrink: 0,
       },
@@ -1053,12 +1088,12 @@ I'm here if you want to talk through any of it.`
       // Chat Message
       chatMessage: { 
         display: 'flex', 
-        gap: '0.75rem', 
+        gap: '0.625rem', 
         alignItems: 'flex-start',
       },
       chatAvatar: {
-        width: '32px',
-        height: '32px',
+        width: '28px',
+        height: '28px',
         borderRadius: '50%',
         backgroundColor: 'var(--accent-light)',
         border: '1px solid var(--accent)',
@@ -1069,15 +1104,15 @@ I'm here if you want to talk through any of it.`
       },
       chatAvatarText: { 
         fontFamily: "'Fraunces', serif", 
-        fontSize: '0.875rem', 
+        fontSize: '0.75rem', 
         color: 'var(--accent)',
       },
       chatBubble: { 
-        padding: '0.875rem 1rem', 
+        padding: '0.75rem 1rem', 
         borderRadius: '14px', 
-        maxWidth: '85%', 
-        fontSize: '0.9rem', 
-        lineHeight: 1.6,
+        maxWidth: '88%', 
+        fontSize: '0.875rem', 
+        lineHeight: 1.55,
       },
       chatBubbleAssistant: { 
         backgroundColor: 'var(--bg-elevated)', 
@@ -1090,7 +1125,7 @@ I'm here if you want to talk through any of it.`
         color: 'white',
       },
       typingBubble: { 
-        padding: '0.875rem 1rem', 
+        padding: '0.75rem 1rem', 
         backgroundColor: 'var(--bg-elevated)', 
         borderRadius: '14px', 
         borderTopLeftRadius: '4px', 
@@ -1099,7 +1134,7 @@ I'm here if you want to talk through any of it.`
       },
       typingDot: { 
         color: 'var(--accent)', 
-        fontSize: '1.25rem', 
+        fontSize: '1.125rem', 
         lineHeight: 1, 
         animation: 'pulse 1s infinite',
       },
@@ -1107,10 +1142,7 @@ I'm here if you want to talk through any of it.`
       // Modal
       modalOverlay: { 
         position: 'fixed', 
-        top: 0, 
-        left: 0, 
-        right: 0, 
-        bottom: 0, 
+        top: 0, left: 0, right: 0, bottom: 0, 
         backgroundColor: 'rgba(0,0,0,0.4)', 
         display: 'flex', 
         alignItems: 'center', 
@@ -1119,79 +1151,79 @@ I'm here if you want to talk through any of it.`
       },
       modal: { 
         backgroundColor: 'var(--bg-card)', 
-        borderRadius: '20px', 
-        padding: '1.75rem', 
+        borderRadius: '16px', 
+        padding: '1.5rem', 
         width: '90%', 
-        maxWidth: '400px', 
+        maxWidth: '360px', 
         border: '1px solid var(--border)',
       },
       modalHeader: { 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'center', 
-        marginBottom: '1.5rem',
+        marginBottom: '1.25rem',
       },
       modalTitle: { 
-        fontSize: '1.25rem', 
+        fontSize: '1.125rem', 
         fontFamily: "'Fraunces', serif", 
         color: 'var(--text)',
       },
       modalClose: { 
-        width: '30px', 
-        height: '30px', 
+        width: '28px', 
+        height: '28px', 
         borderRadius: '50%', 
         backgroundColor: 'var(--bg-elevated)', 
         border: 'none', 
         color: 'var(--text-muted)', 
-        fontSize: '1.125rem', 
+        fontSize: '1rem', 
         cursor: 'pointer',
       },
       modalForm: { 
         display: 'flex', 
         flexDirection: 'column', 
-        gap: '1.25rem',
+        gap: '1rem',
       },
       formField: { 
         display: 'flex', 
         flexDirection: 'column', 
-        gap: '0.5rem',
+        gap: '0.375rem',
       },
       formLabel: { 
-        fontSize: '0.75rem', 
+        fontSize: '0.7rem', 
         color: 'var(--text-muted)', 
         textTransform: 'uppercase', 
         letterSpacing: '0.05em', 
         fontWeight: 500,
       },
       textInput: {
-        padding: '0.75rem 1rem',
+        padding: '0.625rem 0.875rem',
         backgroundColor: 'var(--bg-elevated)',
         border: '1px solid var(--border)',
-        borderRadius: '10px',
+        borderRadius: '8px',
         color: 'var(--text)',
-        fontSize: '0.9rem',
+        fontSize: '0.875rem',
         fontFamily: "'DM Sans', sans-serif",
       },
       selectInput: {
-        padding: '0.75rem 1rem',
+        padding: '0.625rem 0.875rem',
         backgroundColor: 'var(--bg-elevated)',
         border: '1px solid var(--border)',
-        borderRadius: '10px',
+        borderRadius: '8px',
         color: 'var(--text)',
-        fontSize: '0.9rem',
+        fontSize: '0.875rem',
         fontFamily: "'DM Sans', sans-serif",
       },
       submitButton: { 
-        padding: '0.875rem', 
+        padding: '0.75rem', 
         backgroundColor: 'var(--accent)', 
         border: 'none', 
-        borderRadius: '12px', 
+        borderRadius: '10px', 
         color: 'white', 
-        fontSize: '0.9rem', 
+        fontSize: '0.875rem', 
         fontFamily: "'DM Sans', sans-serif", 
         fontWeight: 500, 
         cursor: 'pointer', 
-        marginTop: '0.25rem',
+        marginTop: '0.5rem',
       },
       submitButtonDisabled: { 
         backgroundColor: 'var(--border-dark)', 
