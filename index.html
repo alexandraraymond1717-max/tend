@@ -142,65 +142,7 @@ What word comes to mind?`
         }]);
       }, []);
 
-      // Contextual prompts when switching views
-      const [lastPromptedView, setLastPromptedView] = useState(null);
-      const [lastPromptedTab, setLastPromptedTab] = useState(null);
-
-      useEffect(() => {
-        if (!revealed) return;
-        if (centerView === lastPromptedView) return;
-        if (centerView === CENTER_VIEWS.YEAR) {
-          setLastPromptedView(centerView);
-          return;
-        }
-        
-        setLastPromptedView(centerView);
-
-        const viewPrompts = {
-          [CENTER_VIEWS.SEASONS]: `You're looking at the seasons now.
-
-Each season has its own rhythm. What do you want <em>this</em> season to feel like? What would make it meaningful?`,
-          [CENTER_VIEWS.MONTHLY]: `Let's get into the details.
-
-Looking at <em>${MONTH_FULL[selectedMonth]}</em> — what's already taking shape? Any trips to plan, events to prepare for, or time you want to protect?`,
-          [CENTER_VIEWS.WEEKLY]: `Weekly rhythms are the heartbeat of an intentional life.
-
-What do you want to do <em>every week</em>? Think about movement, connection time, creative time, and rest.`,
-          [CENTER_VIEWS.DAILY]: `Daily habits are small, but they compound.
-
-What tiny practices would change everything if you did them <em>every day</em>?`
-        };
-
-        const prompt = viewPrompts[centerView];
-        if (prompt) {
-          setMessages(prev => [...prev, { role: 'assistant', content: prompt }]);
-        }
-      }, [centerView, revealed, selectedMonth]);
-
-      // Contextual prompts when switching sidebar tabs
-      useEffect(() => {
-        if (!revealed) return;
-        if (activeTab === lastPromptedTab) return;
-        
-        setLastPromptedTab(activeTab);
-
-        const tabPrompts = {
-          'events': `Let's plan something.
-
-What events do you have coming up — trips, celebrations, deadlines? Or is there something you <em>want</em> to plan but haven't yet?`,
-          'notes': `Notes are for the messy stuff — brain dumps, half-formed ideas, things you don't want to forget.
-
-What's floating around in your head that needs a place to land?`,
-          'goals': `Goals give direction.
-
-What do you want to accomplish this year? Think about what would make you proud, what would stretch you, or what you've been putting off.`
-        };
-
-        const prompt = tabPrompts[activeTab];
-        if (prompt) {
-          setMessages(prev => [...prev, { role: 'assistant', content: prompt }]);
-        }
-      }, [activeTab, revealed]);
+      // Track view/tab for system prompt context (no auto-messages)
 
       useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
