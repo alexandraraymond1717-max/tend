@@ -1533,19 +1533,19 @@ I'm here to help with any planning.`
     }
 
     const styles = {
-      container: { minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)' },
+      container: { height: '100vh', maxHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)', overflow: 'hidden' },
       header: { padding: '0.875rem 2rem', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-card)', display: 'flex', alignItems: 'baseline', gap: '1rem' },
       logoContainer: { display: 'flex', alignItems: 'center' },
       logoText: { fontSize: '1.5rem', fontFamily: "'Fraunces', serif", fontWeight: 400, color: 'var(--text)' },
       tagline: { fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' },
 
-      main: { display: 'grid', gridTemplateColumns: '240px 1fr 320px', flex: 1, height: 'calc(100vh - 56px)' },
+      main: { display: 'grid', gridTemplateColumns: '240px 1fr 320px', flex: 1, height: 'calc(100vh - 56px)', overflow: 'hidden' },
 
-      sidebar: { backgroundColor: 'var(--bg-card)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column' },
+      sidebar: { backgroundColor: 'var(--bg-card)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' },
       tabs: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderBottom: '1px solid var(--border)' },
       tab: { padding: '0.875rem 0.5rem', backgroundColor: 'transparent', border: 'none', borderBottom: '2px solid transparent', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer' },
       tabActive: { color: 'var(--text)', borderBottomColor: 'var(--accent)' },
-      tabContent: { flex: 1, overflow: 'auto', padding: '1rem' },
+      tabContent: { flex: 1, overflow: 'auto', padding: '1rem', minHeight: 0 },
       tabPlaceholder: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '2rem' },
       placeholderText: { color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', fontStyle: 'italic' },
 
@@ -1577,7 +1577,7 @@ I'm here to help with any planning.`
       goalText: { flex: 1, fontSize: '0.875rem', color: 'var(--text)' },
       goalDelete: { background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem', opacity: 0.5 },
 
-      centerPanel: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 1.25rem', backgroundColor: 'var(--bg-main)', gap: '1.5rem', overflow: 'auto' },
+      centerPanel: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 1.25rem', backgroundColor: 'var(--bg-main)', gap: '1.5rem', overflow: 'auto', height: '100%', minHeight: 0 },
       viewSwitcher: { display: 'flex', gap: '2px', backgroundColor: 'var(--bg-card)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border)' },
       viewButton: { padding: '0.5rem 1rem', backgroundColor: 'transparent', border: 'none', borderRadius: '10px', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s ease' },
       viewButtonActive: { backgroundColor: 'var(--accent)', color: 'white' },
@@ -1681,8 +1681,8 @@ I'm here to help with any planning.`
       lifeAreaRating: { fontSize: '0.7rem', fontWeight: 600, textAlign: 'center' },
 
       // Chat
-      chatPanel: { backgroundColor: 'var(--bg-card)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column' },
-      chatMessages: { flex: 1, padding: '1.25rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.875rem' },
+      chatPanel: { backgroundColor: 'var(--bg-card)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' },
+      chatMessages: { flex: 1, padding: '1.25rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.875rem', minHeight: 0 },
       chatInputArea: { padding: '1rem 1.25rem 1.25rem', borderTop: '1px solid var(--border)' },
       skipButton: { width: '100%', padding: '0.5rem', marginBottom: '0.75rem', backgroundColor: 'transparent', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer' },
       inputRow: { display: 'flex', gap: '0.625rem', alignItems: 'flex-end' },
