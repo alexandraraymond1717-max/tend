@@ -26,13 +26,13 @@
       --accent-light: #E8F0E6;
       
       --winter: #5B9BD5;
-      --winter-light: #E8F1F8;
+      --winter-light: #F0F6FB;
       --spring: #6BBF59;
-      --spring-light: #EDF7EB;
+      --spring-light: #F3FAF1;
       --summer: #F4B942;
-      --summer-light: #FEF6E6;
+      --summer-light: #FFFBF2;
       --fall: #D66B4B;
-      --fall-light: #FBEEE9;
+      --fall-light: #FDF4F1;
     }
 
     body {
@@ -552,7 +552,7 @@ I'm here to help with any planning.`
         <div style={styles.circleContainer}>
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
             {seasonArcs.map(season => (
-              <path key={season.id} d={describeArc(season.start, season.end, outerRadius)} fill={season.color} opacity={0.9} />
+              <path key={season.id} d={describeArc(season.start, season.end, outerRadius)} fill={season.color} opacity={0.45} />
             ))}
 
             <circle cx={center} cy={center} r={innerRadius} fill="var(--bg-card)" stroke="var(--border)" strokeWidth="1" />
@@ -606,10 +606,10 @@ I'm here to help with any planning.`
     // ============ SEASONS VIEW ============
     function SeasonsView({ seasonIntentions, setSeasonIntentions, revealed }) {
       const seasons = [
-        { id: 'winter', name: 'Winter', months: 'Dec – Feb', color: '#5B9BD5', lightColor: '#E8F1F8', elements: ['❄', '·', '❄', '·', '❄'] },
-        { id: 'spring', name: 'Spring', months: 'Mar – May', color: '#6BBF59', lightColor: '#EDF7EB', elements: ['✿', '·', '❀', '·', '✿'] },
-        { id: 'summer', name: 'Summer', months: 'Jun – Aug', color: '#F4B942', lightColor: '#FEF6E6', elements: ['☀', '~', '☀', '~', '☀'] },
-        { id: 'fall', name: 'Fall', months: 'Sep – Nov', color: '#D66B4B', lightColor: '#FBEEE9', elements: ['🍂', '·', '🍁', '·', '🍂'] },
+        { id: 'winter', name: 'Winter', months: 'Dec – Feb', color: '#5B9BD5', lightColor: '#F0F6FB', elements: ['❄', '·', '❄', '·', '❄'] },
+        { id: 'spring', name: 'Spring', months: 'Mar – May', color: '#6BBF59', lightColor: '#F3FAF1', elements: ['✿', '·', '❀', '·', '✿'] },
+        { id: 'summer', name: 'Summer', months: 'Jun – Aug', color: '#F4B942', lightColor: '#FFFBF2', elements: ['☀', '~', '☀', '~', '☀'] },
+        { id: 'fall', name: 'Fall', months: 'Sep – Nov', color: '#D66B4B', lightColor: '#FDF4F1', elements: ['🍂', '·', '🍁', '·', '🍂'] },
       ];
 
       const currentSeason = (() => {
@@ -645,7 +645,7 @@ I'm here to help with any planning.`
                     <h3 style={{...styles.seasonName, color: season.color}}>{season.name}</h3>
                     <span style={styles.seasonMonths}>{season.months}</span>
                     {season.id === currentSeason && (
-                      <span style={{...styles.currentBadge, backgroundColor: season.color}}>Now</span>
+                      <span style={{...styles.currentBadge, backgroundColor: `${season.color}90`}}>Now</span>
                     )}
                   </div>
                   
@@ -699,8 +699,9 @@ I'm here to help with any planning.`
                 key={idx}
                 style={{
                   ...styles.monthStripButton,
-                  backgroundColor: selectedMonth === idx ? getSeasonColor(idx) : 'transparent',
-                  color: selectedMonth === idx ? 'white' : 'var(--text-muted)',
+                  backgroundColor: selectedMonth === idx ? `${getSeasonColor(idx)}40` : 'transparent',
+                  color: selectedMonth === idx ? getSeasonColor(idx) : 'var(--text-muted)',
+                  fontWeight: selectedMonth === idx ? 600 : 400,
                 }}
                 onClick={() => setSelectedMonth(idx)}
               >
@@ -711,7 +712,7 @@ I'm here to help with any planning.`
 
           {/* Calendar */}
           <div style={{...styles.calendarWrapper, borderColor: seasonColor}}>
-            <div style={{...styles.calendarHeader, backgroundColor: seasonColor}}>
+            <div style={{...styles.calendarHeader, backgroundColor: `${seasonColor}90`}}>
               <button style={styles.calendarNav} onClick={() => setSelectedMonth(selectedMonth === 0 ? 11 : selectedMonth - 1)}>‹</button>
               <h2 style={styles.calendarTitle}>{MONTH_FULL[selectedMonth]} 2026</h2>
               <button style={styles.calendarNav} onClick={() => setSelectedMonth(selectedMonth === 11 ? 0 : selectedMonth + 1)}>›</button>
@@ -731,7 +732,7 @@ I'm here to help with any planning.`
                   return (
                     <div key={day} style={{
                       ...styles.calendarDay, 
-                      ...(isToday && {...styles.calendarDayToday, backgroundColor: seasonColor})
+                      ...(isToday && {...styles.calendarDayToday, backgroundColor: `${seasonColor}70`})
                     }}>
                       {day}
                     </div>
@@ -995,7 +996,7 @@ I'm here to help with any planning.`
       seasonsContainer: { width: '100%', maxWidth: '580px' },
       seasonsGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' },
       seasonCard: { borderRadius: '16px', overflow: 'hidden', border: '2px solid transparent' },
-      seasonDecorative: { padding: '0.75rem', display: 'flex', justifyContent: 'center', gap: '0.75rem', fontSize: '1rem' },
+      seasonDecorative: { padding: '0.75rem', display: 'flex', justifyContent: 'center', gap: '0.75rem', fontSize: '1rem', opacity: 0.7 },
       seasonCardContent: { padding: '1rem', backgroundColor: 'var(--bg-card)', borderBottomLeftRadius: '14px', borderBottomRightRadius: '14px' },
       seasonCardHeader: { marginBottom: '0.75rem', position: 'relative' },
       seasonName: { fontSize: '1.125rem', fontFamily: "'Fraunces', serif", marginBottom: '0.125rem' },
@@ -1009,9 +1010,9 @@ I'm here to help with any planning.`
       monthlyContainer: { width: '100%', maxWidth: '500px', display: 'flex', flexDirection: 'column', gap: '1rem' },
       monthStrip: { display: 'flex', gap: '2px', backgroundColor: 'var(--bg-card)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border)' },
       monthStripButton: { flex: 1, padding: '0.5rem 0.25rem', border: 'none', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s ease' },
-      calendarWrapper: { backgroundColor: 'var(--bg-card)', borderRadius: '16px', overflow: 'hidden', border: '2px solid' },
-      calendarHeader: { padding: '0.875rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-      calendarNav: { background: 'none', border: 'none', color: 'white', fontSize: '1.25rem', cursor: 'pointer', padding: '0 0.5rem' },
+      calendarWrapper: { backgroundColor: 'var(--bg-card)', borderRadius: '16px', overflow: 'hidden', border: '1px solid var(--border)' },
+      calendarHeader: { padding: '0.875rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', opacity: 0.85 },
+      calendarNav: { background: 'none', border: 'none', color: 'white', fontSize: '1.25rem', cursor: 'pointer', padding: '0 0.5rem', opacity: 0.9 },
       calendarTitle: { color: 'white', fontSize: '1rem', fontFamily: "'Fraunces', serif" },
       calendarBody: { padding: '1rem' },
       calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px' },
