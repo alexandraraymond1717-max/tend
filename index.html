@@ -11,11 +11,7 @@
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
 
     :root {
       --bg-main: #FAF8F5;
@@ -43,34 +39,19 @@
       min-height: 100vh;
     }
 
-    h1, h2, h3, h4 {
-      font-family: 'Fraunces', serif;
-      font-weight: 400;
-    }
+    h1, h2, h3, h4 { font-family: 'Fraunces', serif; font-weight: 400; }
 
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: 3px; }
 
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 0.4; }
-      50% { opacity: 0.7; }
-    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.7; } }
     .fade-in { animation: fadeIn 0.4s ease-out forwards; }
     .slide-in { animation: slideIn 0.4s ease-out forwards; }
 
-    input:focus, textarea:focus, select:focus {
-      outline: none;
-      border-color: var(--accent) !important;
-    }
+    input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent) !important; }
   </style>
 </head>
 <body>
@@ -105,12 +86,8 @@
     const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     const MONTH_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
-    const PHASES = {
-      EXPLORE: 'explore',
-      GROUND: 'ground',
-      REVEAL: 'reveal',
-      PLAN: 'plan',
-    };
+    const PHASES = { EXPLORE: 'explore', GROUND: 'ground', REVEAL: 'reveal', PLAN: 'plan' };
+    const CENTER_VIEWS = { YEAR: 'year', SEASONS: 'seasons', MONTHLY: 'monthly' };
 
     // ============ MAIN APP ============
     function TendApp() {
@@ -123,6 +100,9 @@
       const [events, setEvents] = useState([]);
       const [goals, setGoals] = useState([]);
       const [notes, setNotes] = useState('');
+      const [seasonIntentions, setSeasonIntentions] = useState({
+        winter: '', spring: '', summer: '', fall: ''
+      });
       
       // Chat state
       const [messages, setMessages] = useState([]);
@@ -134,10 +114,11 @@
       // UI state
       const [revealed, setRevealed] = useState(false);
       const [activeTab, setActiveTab] = useState('events');
+      const [centerView, setCenterView] = useState(CENTER_VIEWS.YEAR);
       const [expandedEvent, setExpandedEvent] = useState(null);
       const [showEventModal, setShowEventModal] = useState(false);
       const [showGoalModal, setShowGoalModal] = useState(false);
-      const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+      const [selectedMonth, setSelectedMonth] = useState(null);
 
       // Initialize
       useEffect(() => {
@@ -159,13 +140,11 @@ What would make 2026 feel like a success? It could be a concrete achievement, a 
       const analyzeText = (text) => {
         const lower = text.toLowerCase();
         const detected = { values: [] };
-
         Object.entries(VALUE_KEYWORDS).forEach(([value, keywords]) => {
           if (keywords.some(kw => lower.includes(kw)) && !values.includes(value)) {
             detected.values.push(value);
           }
         });
-
         return detected;
       };
 
@@ -248,7 +227,7 @@ ${foundEvents.length > 0
   ? `You have ${foundEvents.length} thing${foundEvents.length > 1 ? 's' : ''} anchoring the year.`
   : `Your calendar is open — that's space to be intentional.`}
 
-Take a look at the circle — your year is taking shape. Use the sidebar to plan details, and check in on your life areas below.
+Your year is taking shape. Switch between Year, Seasons, and Monthly views to see it from different angles. Use the sidebar to plan event details.
 
 What's missing?`;
         }
@@ -256,7 +235,7 @@ What's missing?`;
         if (currentPhase === PHASES.REVEAL || currentPhase === PHASES.PLAN) {
           setPhase(PHASES.PLAN);
           
-          if (lower.includes('plan') || lower.includes('suggest') || lower.includes('ideas') || lower.includes('activities') || lower.includes('where to stay') || lower.includes('what to do')) {
+          if (lower.includes('plan') || lower.includes('suggest') || lower.includes('ideas') || lower.includes('activities') || lower.includes('where to stay')) {
             const eventMention = events.find(e => lower.includes(MONTHS[e.month].toLowerCase()) || lower.includes(e.title.toLowerCase()));
             if (eventMention) {
               return `For your ${MONTHS[eventMention.month]} event, here are some thoughts:
@@ -274,7 +253,7 @@ What's missing?`;
 • Book flights 6-8 weeks out for best prices
 • Morning flights = fewer delays
 
-Click on the event in the sidebar to add these details. What else would help?`;
+Click on the event in the sidebar to add these details.`;
             }
             return `What event would you like to plan? I can suggest activities, places to stay, and things to consider.`;
           }
@@ -282,7 +261,7 @@ Click on the event in the sidebar to add these details. What else would help?`;
           if (lower.includes('yes') || lower.includes('right') || lower.includes('good')) {
             return `Good. Looking at your year — what feels like it needs attention first?
 
-I can help you plan any event in detail, or we can think about what's missing.`;
+Try the Seasons view to set intentions for each part of the year.`;
           }
 
           const prompts = [
@@ -320,9 +299,9 @@ I can help you plan any event in detail, or we can think about what's missing.`;
           role: 'assistant',
           content: `No problem — let's dive in.
 
-Add your values, place events on the year, and use the sidebar to plan details.
+Use the view switcher above the circle to explore your year differently. Add events, set season intentions, and plan the details in the sidebar.
 
-I'm here to help — ask me to suggest activities, places to stay, or ideas for any event.`
+I'm here to help — ask me to suggest activities or ideas for any event.`
         }]);
       };
 
@@ -337,9 +316,7 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
 
       const handleUpdateEventDetails = (eventId, field, value) => {
         setEvents(prev => prev.map(e => 
-          e.id === eventId 
-            ? { ...e, details: { ...e.details, [field]: value } }
-            : e
+          e.id === eventId ? { ...e, details: { ...e.details, [field]: value } } : e
         ));
       };
 
@@ -370,13 +347,10 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
             {/* Left Sidebar */}
             <aside style={styles.sidebar}>
               <div style={styles.tabs}>
-                {['events', 'monthly', 'notes', 'goals'].map(tab => (
+                {['events', 'notes', 'goals'].map(tab => (
                   <button
                     key={tab}
-                    style={{
-                      ...styles.tab,
-                      ...(activeTab === tab && styles.tabActive),
-                    }}
+                    style={{...styles.tab, ...(activeTab === tab && styles.tabActive)}}
                     onClick={() => setActiveTab(tab)}
                   >
                     {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -396,14 +370,6 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
                     revealed={revealed}
                   />
                 )}
-                {activeTab === 'monthly' && (
-                  <MonthlyTab
-                    events={events}
-                    selectedMonth={selectedMonth}
-                    setSelectedMonth={setSelectedMonth}
-                    revealed={revealed}
-                  />
-                )}
                 {activeTab === 'notes' && (
                   <NotesTab notes={notes} setNotes={setNotes} revealed={revealed} />
                 )}
@@ -418,20 +384,58 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
               </div>
             </aside>
 
-            {/* Center - Circle + Values/Life Areas */}
+            {/* Center Panel */}
             <div style={styles.centerPanel}>
-              <SeasonsCircle 
-                values={values}
-                events={events}
-                revealed={revealed}
-                onAddEvent={() => setShowEventModal(true)}
-                onMonthClick={(month) => {
-                  setSelectedMonth(month);
-                  setActiveTab('monthly');
-                }}
-              />
-              
-              {/* Values & Life Areas Section */}
+              {/* View Switcher */}
+              <div style={styles.viewSwitcher}>
+                {[
+                  { id: CENTER_VIEWS.YEAR, label: 'Year' },
+                  { id: CENTER_VIEWS.SEASONS, label: 'Seasons' },
+                  { id: CENTER_VIEWS.MONTHLY, label: 'Monthly' },
+                ].map(view => (
+                  <button
+                    key={view.id}
+                    style={{
+                      ...styles.viewButton,
+                      ...(centerView === view.id && styles.viewButtonActive),
+                    }}
+                    onClick={() => {
+                      setCenterView(view.id);
+                      if (view.id !== CENTER_VIEWS.MONTHLY) setSelectedMonth(null);
+                    }}
+                  >
+                    {view.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Center Views */}
+              {centerView === CENTER_VIEWS.YEAR && (
+                <YearCircleView 
+                  values={values}
+                  events={events}
+                  revealed={revealed}
+                  onAddEvent={() => setShowEventModal(true)}
+                />
+              )}
+              {centerView === CENTER_VIEWS.SEASONS && (
+                <SeasonsView 
+                  seasonIntentions={seasonIntentions}
+                  setSeasonIntentions={setSeasonIntentions}
+                  revealed={revealed}
+                />
+              )}
+              {centerView === CENTER_VIEWS.MONTHLY && (
+                <MonthlyView 
+                  events={events}
+                  selectedMonth={selectedMonth}
+                  setSelectedMonth={setSelectedMonth}
+                  revealed={revealed}
+                  onAddEvent={() => setShowEventModal(true)}
+                />
+              )}
+
+              {/* Values & Life Areas */}
               <div style={{...styles.bottomSection, opacity: revealed ? 1 : 0.4}}>
                 <div style={styles.valuesSection}>
                   <h3 style={styles.sectionLabel}>Values</h3>
@@ -440,21 +444,15 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
                       <span key={v} style={styles.valueTag} className="fade-in">
                         {v}
                         {revealed && (
-                          <button 
-                            style={styles.valueRemove}
-                            onClick={() => setValues(values.filter(x => x !== v))}
-                          >×</button>
+                          <button style={styles.valueRemove} onClick={() => setValues(values.filter(x => x !== v))}>×</button>
                         )}
                       </span>
                     ))}
                     {revealed && values.length < 4 && (
-                      <button 
-                        style={styles.addValueButton}
-                        onClick={() => {
-                          const v = prompt('Add a value:');
-                          if (v && !values.includes(v)) setValues([...values, v]);
-                        }}
-                      >+ Add</button>
+                      <button style={styles.addValueButton} onClick={() => {
+                        const v = prompt('Add a value:');
+                        if (v && !values.includes(v)) setValues([...values, v]);
+                      }}>+ Add</button>
                     )}
                     {values.length === 0 && !revealed && (
                       <span style={styles.placeholderText}>Values will appear as you share...</span>
@@ -493,7 +491,7 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
               </div>
             </div>
 
-            {/* Right - Chat Panel */}
+            {/* Right - Chat */}
             <div style={styles.chatPanel}>
               <div style={styles.chatMessages}>
                 {messages.map((msg, idx) => (
@@ -505,9 +503,7 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
               
               <div style={styles.chatInputArea}>
                 {!revealed && phase === PHASES.EXPLORE && (
-                  <button style={styles.skipButton} onClick={handleSkip}>
-                    Skip to planning →
-                  </button>
+                  <button style={styles.skipButton} onClick={handleSkip}>Skip to planning →</button>
                 )}
                 <div style={styles.inputRow}>
                   <textarea
@@ -524,39 +520,29 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
                     rows={2}
                   />
                   <button 
-                    style={{
-                      ...styles.sendButton,
-                      ...(inputValue.trim() ? {} : styles.sendButtonDisabled)
-                    }}
+                    style={{...styles.sendButton, ...(inputValue.trim() ? {} : styles.sendButtonDisabled)}}
                     onClick={handleSendMessage}
                     disabled={!inputValue.trim()}
-                  >
-                    ↑
-                  </button>
+                  >↑</button>
                 </div>
               </div>
             </div>
           </main>
 
           {/* Modals */}
-          {showEventModal && (
-            <EventModal onClose={() => setShowEventModal(false)} onAdd={handleAddEvent} />
-          )}
-          {showGoalModal && (
-            <GoalModal onClose={() => setShowGoalModal(false)} onAdd={handleAddGoal} />
-          )}
+          {showEventModal && <EventModal onClose={() => setShowEventModal(false)} onAdd={handleAddEvent} />}
+          {showGoalModal && <GoalModal onClose={() => setShowGoalModal(false)} onAdd={handleAddGoal} />}
         </div>
       );
     }
 
-    // ============ SEASONS CIRCLE ============
-    function SeasonsCircle({ values, events, revealed, onAddEvent, onMonthClick }) {
-      const size = 420;
+    // ============ YEAR CIRCLE VIEW ============
+    function YearCircleView({ values, events, revealed, onAddEvent }) {
+      const size = 400;
       const center = size / 2;
-      const outerRadius = 185;
-      const innerRadius = 75;
-      const monthRadius = 155;
-      const seasonLabelRadius = 125;
+      const outerRadius = 175;
+      const innerRadius = 70;
+      const monthRadius = 145;
 
       const currentMonth = new Date().getMonth();
 
@@ -570,132 +556,56 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
 
       const getEventPosition = (monthIndex, eventIndex = 0) => {
         const angle = ((monthIndex - 2) / 12) * 2 * Math.PI - Math.PI / 2;
-        const radius = innerRadius + 20 + (eventIndex * 12);
+        const radius = innerRadius + 18 + (eventIndex * 12);
         return {
           x: center + Math.cos(angle) * radius,
           y: center + Math.sin(angle) * radius,
         };
       };
 
-      const getSeasonLabelPosition = (seasonIndex) => {
-        const angles = [-30, 60, 150, 240]; // Winter, Spring, Summer, Fall
-        const angle = (angles[seasonIndex] - 90) * Math.PI / 180;
-        return {
-          x: center + Math.cos(angle) * seasonLabelRadius,
-          y: center + Math.sin(angle) * seasonLabelRadius,
-        };
-      };
-
       const polarToCartesian = (centerX, centerY, radius, angleInDegrees) => {
         const angleInRadians = (angleInDegrees - 90) * Math.PI / 180.0;
-        return {
-          x: centerX + (radius * Math.cos(angleInRadians)),
-          y: centerY + (radius * Math.sin(angleInRadians))
-        };
+        return { x: centerX + radius * Math.cos(angleInRadians), y: centerY + radius * Math.sin(angleInRadians) };
       };
 
       const describeArc = (startAngle, endAngle, radius) => {
         const start = polarToCartesian(center, center, radius, endAngle);
         const end = polarToCartesian(center, center, radius, startAngle);
         const largeArcFlag = endAngle - startAngle <= 180 ? "0" : "1";
-        return [
-          "M", start.x, start.y,
-          "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y,
-          "L", center, center,
-          "Z"
-        ].join(" ");
+        return `M ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 0 ${end.x} ${end.y} L ${center} ${center} Z`;
       };
 
       const seasonArcs = [
-        { id: 'winter', name: 'Winter', start: -60, end: 30, color: '#5B9BD5' },
-        { id: 'spring', name: 'Spring', start: 30, end: 120, color: '#6BBF59' },
-        { id: 'summer', name: 'Summer', start: 120, end: 210, color: '#F4B942' },
-        { id: 'fall', name: 'Fall', start: 210, end: 300, color: '#D66B4B' },
+        { id: 'winter', start: -60, end: 30, color: '#5B9BD5' },
+        { id: 'spring', start: 30, end: 120, color: '#6BBF59' },
+        { id: 'summer', start: 120, end: 210, color: '#F4B942' },
+        { id: 'fall', start: 210, end: 300, color: '#D66B4B' },
       ];
 
-      // Dynamic center Y position based on whether values exist
       const hasValues = values.length > 0;
-      const yearY = hasValues ? center - 15 : center;
-      const valuesY = center + 18;
+      const yearY = hasValues ? center - 12 : center;
 
       return (
         <div style={styles.circleContainer}>
           <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-            {/* Season arcs */}
+            {/* Season arcs - more opaque */}
             {seasonArcs.map(season => (
-              <path
-                key={season.id}
-                d={describeArc(season.start, season.end, outerRadius)}
-                fill={season.color}
-                opacity={0.5}
-              />
+              <path key={season.id} d={describeArc(season.start, season.end, outerRadius)} fill={season.color} opacity={0.75} />
             ))}
 
-            {/* Season labels */}
-            {seasonArcs.map((season, idx) => {
-              const pos = getSeasonLabelPosition(idx);
-              return (
-                <text
-                  key={`label-${season.id}`}
-                  x={pos.x}
-                  y={pos.y}
-                  textAnchor="middle"
-                  dominantBaseline="middle"
-                  fill={season.color}
-                  style={{ 
-                    fontFamily: "'Fraunces', serif", 
-                    fontSize: '0.85rem',
-                    fontWeight: 400,
-                    textTransform: 'lowercase',
-                    letterSpacing: '0.05em',
-                  }}
-                >
-                  {season.name}
-                </text>
-              );
-            })}
-
             {/* Inner circle */}
-            <circle
-              cx={center}
-              cy={center}
-              r={innerRadius}
-              fill="var(--bg-card)"
-              stroke="var(--border)"
-              strokeWidth="1"
-            />
+            <circle cx={center} cy={center} r={innerRadius} fill="var(--bg-card)" stroke="var(--border)" strokeWidth="1" />
 
-            {/* Year - shifts up when values appear */}
-            <text
-              x={center}
-              y={yearY}
-              textAnchor="middle"
-              dominantBaseline="middle"
-              fill="var(--text)"
-              style={{ 
-                fontFamily: "'Fraunces', serif", 
-                fontSize: '2rem',
-                transition: 'y 0.5s ease',
-              }}
-            >
+            {/* Year */}
+            <text x={center} y={yearY} textAnchor="middle" dominantBaseline="middle" fill="var(--text)"
+              style={{ fontFamily: "'Fraunces', serif", fontSize: '1.875rem', transition: 'all 0.5s ease' }}>
               2026
             </text>
 
-            {/* Values in center (if any) */}
+            {/* Values */}
             {hasValues && (
-              <text
-                x={center}
-                y={valuesY}
-                textAnchor="middle"
-                dominantBaseline="middle"
-                fill="var(--text-muted)"
-                style={{ 
-                  fontFamily: "'DM Sans', sans-serif", 
-                  fontSize: '0.65rem',
-                  letterSpacing: '0.02em',
-                }}
-                className="fade-in"
-              >
+              <text x={center} y={center + 16} textAnchor="middle" dominantBaseline="middle" fill="var(--text-muted)"
+                style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.6rem', letterSpacing: '0.02em' }} className="fade-in">
                 {values.slice(0, 3).join('  ·  ')}
               </text>
             )}
@@ -705,33 +615,18 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
               const pos = getMonthPosition(idx);
               const isCurrent = idx === currentMonth;
               return (
-                <g 
-                  key={month} 
-                  style={{ cursor: 'pointer' }}
-                  onClick={() => onMonthClick(idx)}
-                >
-                  <text
-                    x={pos.x}
-                    y={pos.y}
-                    textAnchor="middle"
-                    dominantBaseline="middle"
+                <g key={month}>
+                  <text x={pos.x} y={pos.y} textAnchor="middle" dominantBaseline="middle"
                     fill={isCurrent ? 'var(--text)' : 'var(--text-light)'}
-                    style={{ 
-                      fontFamily: "'DM Sans', sans-serif", 
-                      fontSize: '0.75rem',
-                      fontWeight: isCurrent ? 600 : 400,
-                    }}
-                  >
+                    style={{ fontFamily: "'DM Sans', sans-serif", fontSize: '0.7rem', fontWeight: isCurrent ? 600 : 400 }}>
                     {month}
                   </text>
-                  {isCurrent && (
-                    <circle cx={pos.x} cy={pos.y + 12} r="2" fill="var(--accent)" />
-                  )}
+                  {isCurrent && <circle cx={pos.x} cy={pos.y + 10} r="2" fill="var(--accent)" />}
                 </g>
               );
             })}
 
-            {/* Event dots */}
+            {/* Events */}
             {events.map((event) => {
               const monthEvents = events.filter(e => e.month === event.month);
               const eventIndex = monthEvents.indexOf(event);
@@ -739,18 +634,168 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
               const color = LIFE_AREAS[event.lifeArea]?.color || 'var(--accent)';
               return (
                 <g key={event.id} className="fade-in">
-                  <circle cx={pos.x} cy={pos.y} r="7" fill={color} />
-                  <circle cx={pos.x} cy={pos.y} r="3" fill="white" opacity="0.5" />
+                  <circle cx={pos.x} cy={pos.y} r="6" fill={color} />
+                  <circle cx={pos.x} cy={pos.y} r="2.5" fill="white" opacity="0.5" />
                 </g>
               );
             })}
           </svg>
 
           {revealed && (
-            <button style={styles.circleAddButton} onClick={onAddEvent}>
-              + Add Event
-            </button>
+            <button style={styles.circleAddButton} onClick={onAddEvent}>+ Add Event</button>
           )}
+        </div>
+      );
+    }
+
+    // ============ SEASONS VIEW ============
+    function SeasonsView({ seasonIntentions, setSeasonIntentions, revealed }) {
+      const seasons = [
+        { id: 'winter', name: 'Winter', months: 'Dec – Feb', color: '#5B9BD5' },
+        { id: 'spring', name: 'Spring', months: 'Mar – May', color: '#6BBF59' },
+        { id: 'summer', name: 'Summer', months: 'Jun – Aug', color: '#F4B942' },
+        { id: 'fall', name: 'Fall', months: 'Sep – Nov', color: '#D66B4B' },
+      ];
+
+      const currentSeason = (() => {
+        const month = new Date().getMonth();
+        if ([11, 0, 1].includes(month)) return 'winter';
+        if ([2, 3, 4].includes(month)) return 'spring';
+        if ([5, 6, 7].includes(month)) return 'summer';
+        return 'fall';
+      })();
+
+      if (!revealed) {
+        return (
+          <div style={styles.seasonsPlaceholder}>
+            <p style={styles.placeholderText}>Set intentions for each season after you share what matters to you.</p>
+          </div>
+        );
+      }
+
+      return (
+        <div style={styles.seasonsContainer}>
+          <div style={styles.seasonsGrid}>
+            {seasons.map(season => (
+              <div 
+                key={season.id} 
+                style={{
+                  ...styles.seasonCard,
+                  borderColor: season.id === currentSeason ? season.color : 'var(--border)',
+                  borderWidth: season.id === currentSeason ? '2px' : '1px',
+                }}
+              >
+                <div style={styles.seasonCardHeader}>
+                  <div style={{...styles.seasonColorDot, backgroundColor: season.color}}></div>
+                  <div>
+                    <h3 style={{...styles.seasonName, color: season.color}}>{season.name}</h3>
+                    <span style={styles.seasonMonths}>{season.months}</span>
+                  </div>
+                  {season.id === currentSeason && <span style={styles.currentBadge}>Now</span>}
+                </div>
+                <textarea
+                  style={styles.seasonTextarea}
+                  value={seasonIntentions[season.id] || ''}
+                  onChange={(e) => setSeasonIntentions({...seasonIntentions, [season.id]: e.target.value})}
+                  placeholder={`How do you want ${season.name.toLowerCase()} to feel? What do you want to focus on?`}
+                  rows={3}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // ============ MONTHLY VIEW ============
+    function MonthlyView({ events, selectedMonth, setSelectedMonth, revealed, onAddEvent }) {
+      const year = 2026;
+
+      if (!revealed) {
+        return (
+          <div style={styles.monthlyPlaceholder}>
+            <p style={styles.placeholderText}>Your monthly calendar will appear here.</p>
+          </div>
+        );
+      }
+
+      // If no month selected, show all months grid
+      if (selectedMonth === null) {
+        return (
+          <div style={styles.monthsOverview}>
+            <div style={styles.monthsGrid}>
+              {MONTHS.map((month, idx) => {
+                const monthEvents = events.filter(e => e.month === idx);
+                return (
+                  <div 
+                    key={idx} 
+                    style={styles.monthCard}
+                    onClick={() => setSelectedMonth(idx)}
+                  >
+                    <span style={styles.monthCardName}>{month}</span>
+                    {monthEvents.length > 0 && (
+                      <div style={styles.monthCardDots}>
+                        {monthEvents.slice(0, 3).map((e, i) => (
+                          <span key={i} style={{...styles.monthCardDot, backgroundColor: LIFE_AREAS[e.lifeArea]?.color}}></span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            <button style={styles.circleAddButton} onClick={onAddEvent}>+ Add Event</button>
+          </div>
+        );
+      }
+
+      // Single month view
+      const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
+      const firstDayOfMonth = new Date(year, selectedMonth, 1).getDay();
+      const monthEvents = events.filter(e => e.month === selectedMonth);
+
+      return (
+        <div style={styles.singleMonthView}>
+          <div style={styles.monthHeader}>
+            <button style={styles.backButton} onClick={() => setSelectedMonth(null)}>← All Months</button>
+            <div style={styles.monthNavigation}>
+              <button style={styles.monthNavBtn} onClick={() => setSelectedMonth(selectedMonth === 0 ? 11 : selectedMonth - 1)}>‹</button>
+              <h2 style={styles.monthTitle}>{MONTH_FULL[selectedMonth]}</h2>
+              <button style={styles.monthNavBtn} onClick={() => setSelectedMonth(selectedMonth === 11 ? 0 : selectedMonth + 1)}>›</button>
+            </div>
+          </div>
+
+          <div style={styles.calendarGrid}>
+            {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, i) => (
+              <div key={i} style={styles.calendarDayHeader}>{day}</div>
+            ))}
+            {Array.from({ length: firstDayOfMonth }, (_, i) => (
+              <div key={`empty-${i}`} style={styles.calendarDayEmpty}></div>
+            ))}
+            {Array.from({ length: daysInMonth }, (_, i) => {
+              const day = i + 1;
+              const isToday = selectedMonth === new Date().getMonth() && day === new Date().getDate();
+              return (
+                <div key={day} style={{...styles.calendarDay, ...(isToday && styles.calendarDayToday)}}>
+                  {day}
+                </div>
+              );
+            })}
+          </div>
+
+          {monthEvents.length > 0 && (
+            <div style={styles.monthEventsList}>
+              <h4 style={styles.monthEventsTitle}>Events This Month</h4>
+              {monthEvents.map(event => (
+                <div key={event.id} style={styles.monthEventItem}>
+                  <span style={{...styles.eventDot, backgroundColor: LIFE_AREAS[event.lifeArea]?.color}}></span>
+                  <span>{event.title}</span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          <button style={styles.circleAddButton} onClick={onAddEvent}>+ Add Event</button>
         </div>
       );
     }
@@ -758,11 +803,7 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
     // ============ EVENTS TAB ============
     function EventsTab({ events, expandedEvent, setExpandedEvent, onUpdateDetails, onDelete, onAdd, revealed }) {
       if (!revealed) {
-        return (
-          <div style={styles.tabPlaceholder}>
-            <p style={styles.placeholderText}>Your events will appear here as you plan them.</p>
-          </div>
-        );
+        return <div style={styles.tabPlaceholder}><p style={styles.placeholderText}>Your events will appear here.</p></div>;
       }
 
       return (
@@ -770,15 +811,12 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
           <button style={styles.addItemButton} onClick={onAdd}>+ Add Event</button>
           
           {events.length === 0 ? (
-            <p style={styles.emptyText}>No events yet. Add one to start planning.</p>
+            <p style={styles.emptyText}>No events yet.</p>
           ) : (
             <div style={styles.eventsList}>
               {events.map(event => (
                 <div key={event.id} style={styles.eventCard}>
-                  <div 
-                    style={styles.eventHeader}
-                    onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}
-                  >
+                  <div style={styles.eventHeader} onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}>
                     <div style={styles.eventHeaderLeft}>
                       <span style={{...styles.eventDot, backgroundColor: LIFE_AREAS[event.lifeArea]?.color}}></span>
                       <span style={styles.eventMonth}>{MONTHS[event.month]}</span>
@@ -789,49 +827,21 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
                   
                   {expandedEvent === event.id && (
                     <div style={styles.eventDetails} className="slide-in">
-                      <div style={styles.detailField}>
-                        <label style={styles.detailLabel}>✈ Flights</label>
-                        <textarea
-                          style={styles.detailInput}
-                          value={event.details?.flights || ''}
-                          onChange={(e) => onUpdateDetails(event.id, 'flights', e.target.value)}
-                          placeholder="Flight details, confirmation numbers..."
-                          rows={2}
-                        />
-                      </div>
-                      <div style={styles.detailField}>
-                        <label style={styles.detailLabel}>🏠 Stays</label>
-                        <textarea
-                          style={styles.detailInput}
-                          value={event.details?.stays || ''}
-                          onChange={(e) => onUpdateDetails(event.id, 'stays', e.target.value)}
-                          placeholder="Where you're staying, check-in info..."
-                          rows={2}
-                        />
-                      </div>
-                      <div style={styles.detailField}>
-                        <label style={styles.detailLabel}>⭐ Activities</label>
-                        <textarea
-                          style={styles.detailInput}
-                          value={event.details?.activities || ''}
-                          onChange={(e) => onUpdateDetails(event.id, 'activities', e.target.value)}
-                          placeholder="Things to do, reservations..."
-                          rows={2}
-                        />
-                      </div>
-                      <div style={styles.detailField}>
-                        <label style={styles.detailLabel}>📝 Notes</label>
-                        <textarea
-                          style={styles.detailInput}
-                          value={event.details?.notes || ''}
-                          onChange={(e) => onUpdateDetails(event.id, 'notes', e.target.value)}
-                          placeholder="Anything else..."
-                          rows={2}
-                        />
-                      </div>
-                      <button style={styles.deleteEventButton} onClick={() => onDelete(event.id)}>
-                        Delete event
-                      </button>
+                      {['flights', 'stays', 'activities', 'notes'].map(field => (
+                        <div key={field} style={styles.detailField}>
+                          <label style={styles.detailLabel}>
+                            {field === 'flights' ? '✈' : field === 'stays' ? '🏠' : field === 'activities' ? '⭐' : '📝'} {field.charAt(0).toUpperCase() + field.slice(1)}
+                          </label>
+                          <textarea
+                            style={styles.detailInput}
+                            value={event.details?.[field] || ''}
+                            onChange={(e) => onUpdateDetails(event.id, field, e.target.value)}
+                            placeholder={`Add ${field}...`}
+                            rows={2}
+                          />
+                        </div>
+                      ))}
+                      <button style={styles.deleteEventButton} onClick={() => onDelete(event.id)}>Delete event</button>
                     </div>
                   )}
                 </div>
@@ -839,75 +849,7 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
             </div>
           )}
           
-          <p style={styles.tipText}>💡 Ask the AI to suggest activities or places for any event</p>
-        </div>
-      );
-    }
-
-    // ============ MONTHLY TAB ============
-    function MonthlyTab({ events, selectedMonth, setSelectedMonth, revealed }) {
-      const year = 2026;
-      const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
-      const firstDayOfMonth = new Date(year, selectedMonth, 1).getDay();
-      const monthEvents = events.filter(e => e.month === selectedMonth);
-
-      if (!revealed) {
-        return (
-          <div style={styles.tabPlaceholder}>
-            <p style={styles.placeholderText}>Your monthly calendar view will appear here.</p>
-          </div>
-        );
-      }
-
-      return (
-        <div style={styles.monthlyTab}>
-          <div style={styles.monthNav}>
-            <button 
-              style={styles.monthNavButton}
-              onClick={() => setSelectedMonth(selectedMonth === 0 ? 11 : selectedMonth - 1)}
-            >←</button>
-            <h3 style={styles.monthTitle}>{MONTH_FULL[selectedMonth]} 2026</h3>
-            <button 
-              style={styles.monthNavButton}
-              onClick={() => setSelectedMonth(selectedMonth === 11 ? 0 : selectedMonth + 1)}
-            >→</button>
-          </div>
-
-          <div style={styles.calendarGrid}>
-            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-              <div key={i} style={styles.calendarDayHeader}>{day}</div>
-            ))}
-            {Array.from({ length: firstDayOfMonth }, (_, i) => (
-              <div key={`empty-${i}`} style={styles.calendarDayEmpty}></div>
-            ))}
-            {Array.from({ length: daysInMonth }, (_, i) => {
-              const day = i + 1;
-              const isToday = selectedMonth === new Date().getMonth() && day === new Date().getDate();
-              return (
-                <div 
-                  key={day} 
-                  style={{
-                    ...styles.calendarDay,
-                    ...(isToday && styles.calendarDayToday),
-                  }}
-                >
-                  {day}
-                </div>
-              );
-            })}
-          </div>
-
-          {monthEvents.length > 0 && (
-            <div style={styles.monthEventsList}>
-              <h4 style={styles.monthEventsTitle}>This Month</h4>
-              {monthEvents.map(event => (
-                <div key={event.id} style={styles.monthEventItem}>
-                  <span style={{...styles.eventDot, backgroundColor: LIFE_AREAS[event.lifeArea]?.color}}></span>
-                  <span>{event.title}</span>
-                </div>
-              ))}
-            </div>
-          )}
+          <p style={styles.tipText}>💡 Ask the AI to suggest activities or places</p>
         </div>
       );
     }
@@ -915,21 +857,11 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
     // ============ NOTES TAB ============
     function NotesTab({ notes, setNotes, revealed }) {
       if (!revealed) {
-        return (
-          <div style={styles.tabPlaceholder}>
-            <p style={styles.placeholderText}>A space for your thoughts, ideas, and reflections.</p>
-          </div>
-        );
+        return <div style={styles.tabPlaceholder}><p style={styles.placeholderText}>A space for your thoughts and reflections.</p></div>;
       }
-
       return (
         <div style={styles.notesTab}>
-          <textarea
-            style={styles.notesTextarea}
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Brain dumps, reflections, ideas for the year..."
-          />
+          <textarea style={styles.notesTextarea} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Brain dumps, reflections, ideas..." />
         </div>
       );
     }
@@ -937,44 +869,24 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
     // ============ GOALS TAB ============
     function GoalsTab({ goals, setGoals, onAdd, revealed }) {
       if (!revealed) {
-        return (
-          <div style={styles.tabPlaceholder}>
-            <p style={styles.placeholderText}>Your goals and milestones will live here.</p>
-          </div>
-        );
+        return <div style={styles.tabPlaceholder}><p style={styles.placeholderText}>Your goals will live here.</p></div>;
       }
-
-      const toggleGoal = (id) => {
-        setGoals(goals.map(g => g.id === id ? {...g, completed: !g.completed} : g));
-      };
 
       return (
         <div style={styles.goalsTab}>
           <button style={styles.addItemButton} onClick={onAdd}>+ Add Goal</button>
-          
           {goals.length === 0 ? (
-            <p style={styles.emptyText}>No goals yet. What do you want to achieve?</p>
+            <p style={styles.emptyText}>No goals yet.</p>
           ) : (
             <div style={styles.goalsList}>
               {goals.map(goal => (
                 <div key={goal.id} style={{...styles.goalCard, opacity: goal.completed ? 0.6 : 1}}>
                   <button
-                    style={{
-                      ...styles.goalCheck,
-                      backgroundColor: goal.completed ? 'var(--accent)' : 'transparent',
-                    }}
-                    onClick={() => toggleGoal(goal.id)}
-                  >
-                    {goal.completed && '✓'}
-                  </button>
-                  <span style={{
-                    ...styles.goalText,
-                    textDecoration: goal.completed ? 'line-through' : 'none',
-                  }}>{goal.text}</span>
-                  <button 
-                    style={styles.goalDelete}
-                    onClick={() => setGoals(goals.filter(g => g.id !== goal.id))}
-                  >×</button>
+                    style={{...styles.goalCheck, backgroundColor: goal.completed ? 'var(--accent)' : 'transparent'}}
+                    onClick={() => setGoals(goals.map(g => g.id === goal.id ? {...g, completed: !g.completed} : g))}
+                  >{goal.completed && '✓'}</button>
+                  <span style={{...styles.goalText, textDecoration: goal.completed ? 'line-through' : 'none'}}>{goal.text}</span>
+                  <button style={styles.goalDelete} onClick={() => setGoals(goals.filter(g => g.id !== goal.id))}>×</button>
                 </div>
               ))}
             </div>
@@ -983,14 +895,12 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
       );
     }
 
-    // ============ CHAT COMPONENTS ============
+    // ============ CHAT ============
     function ChatMessage({ message }) {
       const isAssistant = message.role === 'assistant';
       return (
         <div style={{...styles.chatMessage, justifyContent: isAssistant ? 'flex-start' : 'flex-end'}} className="fade-in">
-          {isAssistant && (
-            <div style={styles.chatAvatar}><span style={styles.chatAvatarText}>T</span></div>
-          )}
+          {isAssistant && <div style={styles.chatAvatar}><span style={styles.chatAvatarText}>T</span></div>}
           <div style={{...styles.chatBubble, ...(isAssistant ? styles.chatBubbleAssistant : styles.chatBubbleUser)}}>
             <div dangerouslySetInnerHTML={{ __html: message.content.replace(/\n/g, '<br/>') }} />
           </div>
@@ -1027,7 +937,7 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
             <form onSubmit={(e) => { e.preventDefault(); if (title) onAdd({ title, month, lifeArea }); }} style={styles.modalForm}>
               <div style={styles.formField}>
                 <label style={styles.formLabel}>What is it?</label>
-                <input type="text" style={styles.textInput} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Trip to Italy, birthday, deadline..." autoFocus />
+                <input type="text" style={styles.textInput} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Trip, birthday, deadline..." autoFocus />
               </div>
               <div style={styles.formField}>
                 <label style={styles.formLabel}>When?</label>
@@ -1043,9 +953,7 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
                   ))}
                 </select>
               </div>
-              <button type="submit" style={{...styles.submitButton, ...(!title ? styles.submitButtonDisabled : {})}} disabled={!title}>
-                Add to year
-              </button>
+              <button type="submit" style={{...styles.submitButton, ...(!title ? styles.submitButtonDisabled : {})}} disabled={!title}>Add to year</button>
             </form>
           </div>
         </div>
@@ -1066,9 +974,7 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
                 <label style={styles.formLabel}>What do you want to achieve?</label>
                 <input type="text" style={styles.textInput} value={text} onChange={(e) => setText(e.target.value)} placeholder="Run a 5K, read 12 books..." autoFocus />
               </div>
-              <button type="submit" style={{...styles.submitButton, ...(!text ? styles.submitButtonDisabled : {})}} disabled={!text}>
-                Add goal
-              </button>
+              <button type="submit" style={{...styles.submitButton, ...(!text ? styles.submitButtonDisabled : {})}} disabled={!text}>Add goal</button>
             </form>
           </div>
         </div>
@@ -1079,78 +985,25 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
     const styles = {
       container: { minHeight: '100vh', display: 'flex', flexDirection: 'column', backgroundColor: 'var(--bg-main)' },
       
-      header: {
-        padding: '0.875rem 2rem',
-        borderBottom: '1px solid var(--border)',
-        backgroundColor: 'var(--bg-card)',
-        display: 'flex',
-        alignItems: 'baseline',
-        gap: '1rem',
-      },
+      header: { padding: '0.875rem 2rem', borderBottom: '1px solid var(--border)', backgroundColor: 'var(--bg-card)', display: 'flex', alignItems: 'baseline', gap: '1rem' },
       logoContainer: { display: 'flex', alignItems: 'center' },
       logoText: { fontSize: '1.5rem', fontFamily: "'Fraunces', serif", fontWeight: 400, color: 'var(--text)' },
       tagline: { fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic' },
 
-      main: { display: 'grid', gridTemplateColumns: '260px 1fr 340px', flex: 1, height: 'calc(100vh - 56px)' },
+      main: { display: 'grid', gridTemplateColumns: '240px 1fr 320px', flex: 1, height: 'calc(100vh - 56px)' },
 
       // Sidebar
-      sidebar: {
-        backgroundColor: 'var(--bg-card)',
-        borderRight: '1px solid var(--border)',
-        display: 'flex',
-        flexDirection: 'column',
-      },
-      tabs: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(4, 1fr)',
-        borderBottom: '1px solid var(--border)',
-      },
-      tab: {
-        padding: '0.75rem 0.25rem',
-        backgroundColor: 'transparent',
-        border: 'none',
-        borderBottom: '2px solid transparent',
-        color: 'var(--text-muted)',
-        fontSize: '0.7rem',
-        fontWeight: 500,
-        cursor: 'pointer',
-        transition: 'all 0.2s ease',
-      },
-      tabActive: {
-        color: 'var(--text)',
-        borderBottomColor: 'var(--accent)',
-      },
-      tabContent: {
-        flex: 1,
-        overflow: 'auto',
-        padding: '1rem',
-      },
-      tabPlaceholder: {
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        height: '100%',
-        padding: '2rem',
-      },
-      placeholderText: {
-        color: 'var(--text-muted)',
-        fontSize: '0.85rem',
-        textAlign: 'center',
-        fontStyle: 'italic',
-      },
+      sidebar: { backgroundColor: 'var(--bg-card)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column' },
+      tabs: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderBottom: '1px solid var(--border)' },
+      tab: { padding: '0.875rem 0.5rem', backgroundColor: 'transparent', border: 'none', borderBottom: '2px solid transparent', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer' },
+      tabActive: { color: 'var(--text)', borderBottomColor: 'var(--accent)' },
+      tabContent: { flex: 1, overflow: 'auto', padding: '1rem' },
+      tabPlaceholder: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '2rem' },
+      placeholderText: { color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center', fontStyle: 'italic' },
 
-      // Events Tab
+      // Events
       eventsTab: { display: 'flex', flexDirection: 'column', gap: '1rem' },
-      addItemButton: {
-        padding: '0.625rem 1rem',
-        backgroundColor: 'var(--accent)',
-        border: 'none',
-        borderRadius: '8px',
-        color: 'white',
-        fontSize: '0.8rem',
-        cursor: 'pointer',
-        alignSelf: 'flex-start',
-      },
+      addItemButton: { padding: '0.625rem 1rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '0.8rem', cursor: 'pointer', alignSelf: 'flex-start' },
       eventsList: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
       eventCard: { backgroundColor: 'var(--bg-elevated)', borderRadius: '10px', overflow: 'hidden' },
       eventHeader: { padding: '0.875rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', cursor: 'pointer' },
@@ -1167,25 +1020,11 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
       emptyText: { color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic' },
       tipText: { color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 'auto', paddingTop: '1rem' },
 
-      // Monthly Tab
-      monthlyTab: { display: 'flex', flexDirection: 'column', gap: '1rem' },
-      monthNav: { display: 'flex', alignItems: 'center', justifyContent: 'space-between' },
-      monthNavButton: { background: 'none', border: 'none', fontSize: '1.25rem', color: 'var(--text-light)', cursor: 'pointer', padding: '0.25rem 0.5rem' },
-      monthTitle: { fontSize: '1rem', fontFamily: "'Fraunces', serif", color: 'var(--text)' },
-      calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '2px' },
-      calendarDayHeader: { padding: '0.5rem', textAlign: 'center', fontSize: '0.65rem', color: 'var(--text-muted)', fontWeight: 500 },
-      calendarDayEmpty: { aspectRatio: '1', padding: '0.25rem' },
-      calendarDay: { aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: 'var(--text-light)', backgroundColor: 'var(--bg-elevated)', borderRadius: '4px' },
-      calendarDayToday: { backgroundColor: 'var(--accent)', color: 'white', fontWeight: 600 },
-      monthEventsList: { marginTop: '0.5rem' },
-      monthEventsTitle: { fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' },
-      monthEventItem: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '6px', fontSize: '0.8rem', marginBottom: '0.25rem' },
-
-      // Notes Tab
+      // Notes
       notesTab: { height: '100%' },
       notesTextarea: { width: '100%', height: '100%', minHeight: '300px', padding: '1rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '10px', fontSize: '0.875rem', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif", resize: 'none', lineHeight: 1.7 },
 
-      // Goals Tab
+      // Goals
       goalsTab: { display: 'flex', flexDirection: 'column', gap: '1rem' },
       goalsList: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
       goalCard: { display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem 1rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '8px' },
@@ -1193,199 +1032,82 @@ I'm here to help — ask me to suggest activities, places to stay, or ideas for 
       goalText: { flex: 1, fontSize: '0.875rem', color: 'var(--text)' },
       goalDelete: { background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem', opacity: 0.5 },
 
-      // Center Panel
-      centerPanel: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: '1.5rem',
-        backgroundColor: 'var(--bg-main)',
-        gap: '1.5rem',
-        overflow: 'auto',
-      },
-      circleContainer: {
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center',
-        gap: '1rem',
-      },
-      circleAddButton: {
-        padding: '0.5rem 1.25rem',
-        backgroundColor: 'var(--accent)',
-        border: 'none',
-        borderRadius: '20px',
-        color: 'white',
-        fontSize: '0.8rem',
-        cursor: 'pointer',
-      },
+      // Center
+      centerPanel: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.25rem', backgroundColor: 'var(--bg-main)', gap: '1.25rem', overflow: 'auto' },
+      
+      // View Switcher
+      viewSwitcher: { display: 'flex', gap: '4px', backgroundColor: 'var(--bg-card)', padding: '4px', borderRadius: '10px', border: '1px solid var(--border)' },
+      viewButton: { padding: '0.5rem 1.25rem', backgroundColor: 'transparent', border: 'none', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer' },
+      viewButtonActive: { backgroundColor: 'var(--accent)', color: 'white' },
 
-      // Bottom Section - Values & Life Areas
-      bottomSection: {
-        display: 'grid',
-        gridTemplateColumns: '1fr 2fr',
-        gap: '1.5rem',
-        width: '100%',
-        maxWidth: '600px',
-        padding: '1.25rem',
-        backgroundColor: 'var(--bg-card)',
-        borderRadius: '16px',
-        border: '1px solid var(--border)',
-        transition: 'opacity 0.5s ease',
-      },
+      // Circle
+      circleContainer: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' },
+      circleAddButton: { padding: '0.5rem 1.25rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '20px', color: 'white', fontSize: '0.8rem', cursor: 'pointer' },
+
+      // Seasons View
+      seasonsPlaceholder: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' },
+      seasonsContainer: { width: '100%', maxWidth: '600px' },
+      seasonsGrid: { display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' },
+      seasonCard: { backgroundColor: 'var(--bg-card)', borderRadius: '12px', padding: '1.25rem', border: '1px solid var(--border)' },
+      seasonCardHeader: { display: 'flex', alignItems: 'flex-start', gap: '0.75rem', marginBottom: '1rem', position: 'relative' },
+      seasonColorDot: { width: '12px', height: '12px', borderRadius: '50%', marginTop: '4px' },
+      seasonName: { fontSize: '1.125rem', fontFamily: "'Fraunces', serif", marginBottom: '0.125rem' },
+      seasonMonths: { fontSize: '0.75rem', color: 'var(--text-muted)' },
+      currentBadge: { position: 'absolute', top: 0, right: 0, fontSize: '0.65rem', backgroundColor: 'var(--accent)', color: 'white', padding: '0.2rem 0.5rem', borderRadius: '8px' },
+      seasonTextarea: { width: '100%', padding: '0.75rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif", resize: 'none', lineHeight: 1.6 },
+
+      // Monthly View
+      monthlyPlaceholder: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '300px' },
+      monthsOverview: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' },
+      monthsGrid: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '0.75rem', width: '100%', maxWidth: '500px' },
+      monthCard: { backgroundColor: 'var(--bg-card)', borderRadius: '10px', padding: '1rem', border: '1px solid var(--border)', cursor: 'pointer', textAlign: 'center', transition: 'all 0.2s ease' },
+      monthCardName: { fontSize: '0.9rem', fontWeight: 500, color: 'var(--text)' },
+      monthCardDots: { display: 'flex', justifyContent: 'center', gap: '4px', marginTop: '0.5rem' },
+      monthCardDot: { width: '6px', height: '6px', borderRadius: '50%' },
+
+      singleMonthView: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem', width: '100%', maxWidth: '400px' },
+      monthHeader: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', width: '100%' },
+      backButton: { background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer', alignSelf: 'flex-start' },
+      monthNavigation: { display: 'flex', alignItems: 'center', gap: '1rem' },
+      monthNavBtn: { background: 'none', border: 'none', fontSize: '1.5rem', color: 'var(--text-light)', cursor: 'pointer' },
+      monthTitle: { fontSize: '1.25rem', fontFamily: "'Fraunces', serif", color: 'var(--text)', minWidth: '120px', textAlign: 'center' },
+      calendarGrid: { display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', width: '100%' },
+      calendarDayHeader: { padding: '0.5rem', textAlign: 'center', fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 },
+      calendarDayEmpty: { aspectRatio: '1' },
+      calendarDay: { aspectRatio: '1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', color: 'var(--text-light)', backgroundColor: 'var(--bg-card)', borderRadius: '6px', border: '1px solid var(--border)' },
+      calendarDayToday: { backgroundColor: 'var(--accent)', color: 'white', fontWeight: 600, border: 'none' },
+      monthEventsList: { width: '100%', marginTop: '0.5rem' },
+      monthEventsTitle: { fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.5rem' },
+      monthEventItem: { display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 0.75rem', backgroundColor: 'var(--bg-card)', borderRadius: '6px', fontSize: '0.85rem', marginBottom: '0.25rem', border: '1px solid var(--border)' },
+
+      // Bottom Section
+      bottomSection: { display: 'grid', gridTemplateColumns: '1fr 2fr', gap: '1.5rem', width: '100%', maxWidth: '600px', padding: '1.25rem', backgroundColor: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)', transition: 'opacity 0.5s ease' },
       valuesSection: {},
-      sectionLabel: {
-        fontSize: '0.7rem',
-        textTransform: 'uppercase',
-        letterSpacing: '0.1em',
-        color: 'var(--text-muted)',
-        marginBottom: '0.75rem',
-        fontFamily: "'DM Sans', sans-serif",
-        fontWeight: 600,
-      },
-      valuesTags: {
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: '0.375rem',
-      },
-      valueTag: {
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '0.375rem',
-        padding: '0.375rem 0.75rem',
-        backgroundColor: 'var(--accent)',
-        color: 'white',
-        borderRadius: '14px',
-        fontSize: '0.75rem',
-      },
-      valueRemove: {
-        background: 'none',
-        border: 'none',
-        color: 'white',
-        opacity: 0.7,
-        cursor: 'pointer',
-        fontSize: '0.875rem',
-        padding: 0,
-        lineHeight: 1,
-      },
-      addValueButton: {
-        padding: '0.375rem 0.75rem',
-        backgroundColor: 'transparent',
-        border: '1px dashed var(--border-dark)',
-        borderRadius: '14px',
-        color: 'var(--text-muted)',
-        fontSize: '0.75rem',
-        cursor: 'pointer',
-      },
+      sectionLabel: { fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '0.75rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 },
+      valuesTags: { display: 'flex', flexWrap: 'wrap', gap: '0.375rem' },
+      valueTag: { display: 'inline-flex', alignItems: 'center', gap: '0.375rem', padding: '0.375rem 0.75rem', backgroundColor: 'var(--accent)', color: 'white', borderRadius: '14px', fontSize: '0.75rem' },
+      valueRemove: { background: 'none', border: 'none', color: 'white', opacity: 0.7, cursor: 'pointer', fontSize: '0.875rem', padding: 0, lineHeight: 1 },
+      addValueButton: { padding: '0.375rem 0.75rem', backgroundColor: 'transparent', border: '1px dashed var(--border-dark)', borderRadius: '14px', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer' },
       lifeAreasSection: {},
-      lifeAreasGrid: {
-        display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
-        gap: '0.75rem',
-      },
-      lifeAreaItem: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.25rem',
-      },
-      lifeAreaHeader: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.375rem',
-        fontSize: '0.7rem',
-      },
-      lifeAreaName: {
-        color: 'var(--text-light)',
-        fontSize: '0.7rem',
-      },
-      slider: {
-        width: '100%',
-        height: '4px',
-        cursor: 'pointer',
-      },
-      sliderPlaceholder: {
-        width: '100%',
-        height: '4px',
-        backgroundColor: 'var(--border)',
-        borderRadius: '2px',
-      },
-      lifeAreaRating: {
-        fontSize: '0.8rem',
-        fontWeight: 600,
-        textAlign: 'center',
-      },
+      lifeAreasGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.75rem' },
+      lifeAreaItem: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
+      lifeAreaHeader: { display: 'flex', alignItems: 'center', gap: '0.375rem', fontSize: '0.7rem' },
+      lifeAreaName: { color: 'var(--text-light)', fontSize: '0.7rem' },
+      slider: { width: '100%', height: '4px', cursor: 'pointer' },
+      sliderPlaceholder: { width: '100%', height: '4px', backgroundColor: 'var(--border)', borderRadius: '2px' },
+      lifeAreaRating: { fontSize: '0.8rem', fontWeight: 600, textAlign: 'center' },
 
-      // Chat Panel
-      chatPanel: { 
-        backgroundColor: 'var(--bg-card)', 
-        borderLeft: '1px solid var(--border)', 
-        display: 'flex', 
-        flexDirection: 'column',
-      },
-      chatMessages: { 
-        flex: 1, 
-        padding: '1.25rem', 
-        overflowY: 'auto', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        gap: '0.875rem',
-      },
-      chatInputArea: { 
-        padding: '1rem 1.25rem 1.25rem', 
-        borderTop: '1px solid var(--border)',
-      },
-      skipButton: {
-        width: '100%',
-        padding: '0.5rem',
-        marginBottom: '0.75rem',
-        backgroundColor: 'transparent',
-        border: '1px solid var(--border)',
-        borderRadius: '8px',
-        color: 'var(--text-muted)',
-        fontSize: '0.8rem',
-        cursor: 'pointer',
-      },
-      inputRow: {
-        display: 'flex',
-        gap: '0.625rem',
-        alignItems: 'flex-end',
-      },
-      chatInput: {
-        flex: 1,
-        padding: '0.75rem 1rem',
-        backgroundColor: 'var(--bg-elevated)',
-        border: '1px solid var(--border)',
-        borderRadius: '12px',
-        color: 'var(--text)',
-        fontSize: '0.875rem',
-        fontFamily: "'DM Sans', sans-serif",
-        resize: 'none',
-      },
-      sendButton: {
-        width: '40px',
-        height: '40px',
-        borderRadius: '50%',
-        backgroundColor: 'var(--accent)',
-        border: 'none',
-        color: 'white',
-        fontSize: '1rem',
-        cursor: 'pointer',
-        flexShrink: 0,
-      },
+      // Chat
+      chatPanel: { backgroundColor: 'var(--bg-card)', borderLeft: '1px solid var(--border)', display: 'flex', flexDirection: 'column' },
+      chatMessages: { flex: 1, padding: '1.25rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.875rem' },
+      chatInputArea: { padding: '1rem 1.25rem 1.25rem', borderTop: '1px solid var(--border)' },
+      skipButton: { width: '100%', padding: '0.5rem', marginBottom: '0.75rem', backgroundColor: 'transparent', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer' },
+      inputRow: { display: 'flex', gap: '0.625rem', alignItems: 'flex-end' },
+      chatInput: { flex: 1, padding: '0.75rem 1rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '12px', color: 'var(--text)', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif", resize: 'none' },
+      sendButton: { width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--accent)', border: 'none', color: 'white', fontSize: '1rem', cursor: 'pointer', flexShrink: 0 },
       sendButtonDisabled: { backgroundColor: 'var(--border)', cursor: 'not-allowed' },
-
       chatMessage: { display: 'flex', gap: '0.625rem', alignItems: 'flex-start' },
-      chatAvatar: {
-        width: '28px',
-        height: '28px',
-        borderRadius: '50%',
-        backgroundColor: 'var(--accent-light)',
-        border: '1px solid var(--accent)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 0,
-      },
+      chatAvatar: { width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'var(--accent-light)', border: '1px solid var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 },
       chatAvatarText: { fontFamily: "'Fraunces', serif", fontSize: '0.75rem', color: 'var(--accent)' },
       chatBubble: { padding: '0.75rem 1rem', borderRadius: '14px', maxWidth: '88%', fontSize: '0.875rem', lineHeight: 1.55 },
       chatBubbleAssistant: { backgroundColor: 'var(--bg-elevated)', borderTopLeftRadius: '4px', color: 'var(--text)' },
