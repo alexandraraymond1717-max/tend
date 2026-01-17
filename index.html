@@ -1546,7 +1546,7 @@ I'm here to help with any planning.`
             </button>
           </header>
 
-          <main style={{...styles.main, gridTemplateColumns: `240px 1fr ${chatWidth}px`}}>
+          <main style={{...styles.main, gridTemplateColumns: `${sidebarExpanded ? '240px' : '48px'} 1fr ${chatWidth}px`}}>
             <aside style={{
               ...styles.sidebar,
               width: sidebarExpanded ? '240px' : '48px',
