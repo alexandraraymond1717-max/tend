@@ -463,18 +463,17 @@
                 <circle cx="40" cy="70" r="3" fill="none" stroke="var(--accent)" strokeWidth="1.5"/>
               </svg>
               <h1 style={vlqStyles.introTitle}>Welcome to Tend</h1>
+              <p style={{...vlqStyles.introText, marginBottom: '1.5rem'}}>
+                Tend helps you design a life aligned with your values — not just manage tasks, but actually live the way you want to live.
+              </p>
               <p style={vlqStyles.introText}>
-                Before we start planning, let's understand what truly matters to you.
-                <br /><br />
-                You'll reflect on <strong>10 areas of life</strong>. For each one, you'll rate:
+                To get started, you'll reflect on <strong>10 areas of life</strong>. For each one, you'll rate:
                 <br /><br />
                 <em>How important is this to you?</em>
                 <br />
                 <em>How consistently have you been living it?</em>
                 <br /><br />
                 Think deeply, but don't worry about perfection — you can reassess your values anytime.
-                <br /><br />
-                <span style={{color: 'var(--text-muted)', fontSize: '0.9em'}}>This helps Tend be fully personal to you, so it can support what actually matters.</span>
               </p>
               <button style={vlqStyles.startButton} onClick={() => setVlqStep(0)}>
                 Let's Begin
