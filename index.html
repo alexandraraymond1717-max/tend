@@ -66,6 +66,71 @@
     const { useState, useEffect, useRef } = React;
 
     // ============ CONSTANTS ============
+    const VLQ_DOMAINS = {
+      family: { 
+        name: 'Family', 
+        description: 'Parents, siblings, children, extended family — feeling connected to and supported by your family.',
+        icon: '👨‍👩‍👧',
+        color: '#E8A090'
+      },
+      partner: { 
+        name: 'Partner & Romance', 
+        description: 'Romantic relationship, intimacy, partnership — feeling loved and loving fully.',
+        icon: '💕',
+        color: '#E88B9C'
+      },
+      friendships: { 
+        name: 'Friendships', 
+        description: 'Close friends, social connections — feeling known, supported, and part of a community.',
+        icon: '👯',
+        color: '#F9D07A'
+      },
+      career: { 
+        name: 'Work & Career', 
+        description: 'Professional growth, meaningful work, financial stability — feeling purposeful in your work.',
+        icon: '💼',
+        color: '#7EB3E0'
+      },
+      education: { 
+        name: 'Learning & Growth', 
+        description: 'Knowledge, skills, intellectual curiosity — feeling like you\'re growing and developing.',
+        icon: '📚',
+        color: '#B8A9C9'
+      },
+      recreation: { 
+        name: 'Recreation & Fun', 
+        description: 'Hobbies, play, leisure, relaxation — feeling joy and lightness in life.',
+        icon: '🎨',
+        color: '#8FD4A0'
+      },
+      spirituality: { 
+        name: 'Spirituality & Meaning', 
+        description: 'Purpose, faith, inner life, connection to something larger — feeling grounded in meaning.',
+        icon: '✨',
+        color: '#C4B5D4'
+      },
+      community: { 
+        name: 'Community & Citizenship', 
+        description: 'Giving back, volunteering, social responsibility — feeling like you contribute to the world.',
+        icon: '🌍',
+        color: '#8BC4A0'
+      },
+      health: { 
+        name: 'Physical Health', 
+        description: 'Body, movement, sleep, nutrition — feeling strong, energized, and well.',
+        icon: '💪',
+        color: '#6BBF59'
+      },
+      mentalHealth: { 
+        name: 'Mental Health', 
+        description: 'Emotional wellbeing, self-care, inner peace — feeling balanced and at ease with yourself.',
+        icon: '🧠',
+        color: '#7EB3E0'
+      },
+    };
+
+    const VLQ_ORDER = ['family', 'partner', 'friendships', 'career', 'education', 'recreation', 'spirituality', 'community', 'health', 'mentalHealth'];
+
     const LIFE_AREAS = {
       health: { name: 'Health & Wellness', icon: '◐', color: '#6BBF59' },
       relationships: { name: 'Relationships', icon: '♡', color: '#E88B9C' },
@@ -95,8 +160,519 @@
     const CENTER_VIEWS = { YEAR: 'year', SEASONS: 'seasons', MONTHLY: 'monthly', WEEKLY: 'weekly', DAILY: 'daily' };
 
     // ============ MAIN APP ============
+    // ============ VLQ ASSESSMENT ============
+    function VLQAssessment({ vlqScores, setVlqScores, vlqStep, setVlqStep, onComplete }) {
+      const currentDomain = VLQ_ORDER[vlqStep];
+      const domainInfo = VLQ_DOMAINS[currentDomain];
+      const currentScores = vlqScores[currentDomain] || { importance: null, consistency: null };
+      
+      const [localImportance, setLocalImportance] = useState(currentScores.importance || 5);
+      const [localConsistency, setLocalConsistency] = useState(currentScores.consistency || 5);
+      const [showConsistency, setShowConsistency] = useState(false);
+
+      // Reset when domain changes
+      useEffect(() => {
+        const scores = vlqScores[VLQ_ORDER[vlqStep]];
+        setLocalImportance(scores?.importance || 5);
+        setLocalConsistency(scores?.consistency || 5);
+        setShowConsistency(false);
+      }, [vlqStep]);
+
+      const handleImportanceNext = () => {
+        setVlqScores(prev => ({
+          ...prev,
+          [currentDomain]: { ...prev[currentDomain], importance: localImportance }
+        }));
+        setShowConsistency(true);
+      };
+
+      const handleConsistencyNext = () => {
+        setVlqScores(prev => ({
+          ...prev,
+          [currentDomain]: { ...prev[currentDomain], importance: localImportance, consistency: localConsistency }
+        }));
+        
+        if (vlqStep < VLQ_ORDER.length - 1) {
+          setVlqStep(vlqStep + 1);
+        } else {
+          setVlqStep(10); // Go to summary
+        }
+      };
+
+      const handleBack = () => {
+        if (showConsistency) {
+          setShowConsistency(false);
+        } else if (vlqStep > 0) {
+          setVlqStep(vlqStep - 1);
+          setShowConsistency(true); // Go back to consistency of previous
+        }
+      };
+
+      // Calculate gaps for summary
+      const getGaps = () => {
+        return VLQ_ORDER.map(key => ({
+          key,
+          name: VLQ_DOMAINS[key].name,
+          icon: VLQ_DOMAINS[key].icon,
+          color: VLQ_DOMAINS[key].color,
+          importance: vlqScores[key]?.importance || 0,
+          consistency: vlqScores[key]?.consistency || 0,
+          gap: (vlqScores[key]?.importance || 0) - (vlqScores[key]?.consistency || 0)
+        })).sort((a, b) => b.gap - a.gap);
+      };
+
+      const vlqStyles = {
+        container: {
+          minHeight: '100vh',
+          backgroundColor: 'var(--bg-main)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem',
+          fontFamily: "'DM Sans', sans-serif",
+        },
+        card: {
+          backgroundColor: 'var(--bg-card)',
+          borderRadius: '24px',
+          padding: '3rem',
+          maxWidth: '500px',
+          width: '100%',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+          border: '1px solid var(--border)',
+        },
+        progress: {
+          display: 'flex',
+          gap: '6px',
+          justifyContent: 'center',
+          marginBottom: '2rem',
+        },
+        progressDot: {
+          width: '8px',
+          height: '8px',
+          borderRadius: '50%',
+          backgroundColor: 'var(--border)',
+          transition: 'all 0.3s ease',
+        },
+        progressDotActive: {
+          backgroundColor: 'var(--accent)',
+          transform: 'scale(1.2)',
+        },
+        progressDotComplete: {
+          backgroundColor: 'var(--accent)',
+          opacity: 0.5,
+        },
+        icon: {
+          fontSize: '3rem',
+          textAlign: 'center',
+          marginBottom: '1rem',
+        },
+        title: {
+          fontSize: '1.75rem',
+          fontFamily: "'Fraunces', serif",
+          textAlign: 'center',
+          color: 'var(--text)',
+          marginBottom: '0.75rem',
+        },
+        description: {
+          fontSize: '0.95rem',
+          color: 'var(--text-muted)',
+          textAlign: 'center',
+          lineHeight: 1.6,
+          marginBottom: '2.5rem',
+        },
+        question: {
+          fontSize: '1rem',
+          color: 'var(--text)',
+          textAlign: 'center',
+          marginBottom: '1.5rem',
+          fontWeight: 500,
+        },
+        sliderContainer: {
+          marginBottom: '2rem',
+        },
+        sliderLabels: {
+          display: 'flex',
+          justifyContent: 'space-between',
+          fontSize: '0.75rem',
+          color: 'var(--text-muted)',
+          marginBottom: '0.5rem',
+        },
+        slider: {
+          width: '100%',
+          height: '8px',
+          borderRadius: '4px',
+          appearance: 'none',
+          background: 'var(--bg-elevated)',
+          outline: 'none',
+          cursor: 'pointer',
+        },
+        sliderValue: {
+          fontSize: '2.5rem',
+          fontFamily: "'Fraunces', serif",
+          textAlign: 'center',
+          marginTop: '1rem',
+          marginBottom: '0.5rem',
+        },
+        sliderValueLabel: {
+          fontSize: '0.85rem',
+          color: 'var(--text-muted)',
+          textAlign: 'center',
+        },
+        buttons: {
+          display: 'flex',
+          gap: '1rem',
+          marginTop: '1.5rem',
+        },
+        backButton: {
+          flex: 1,
+          padding: '1rem',
+          backgroundColor: 'transparent',
+          border: '1px solid var(--border)',
+          borderRadius: '12px',
+          color: 'var(--text-muted)',
+          fontSize: '0.95rem',
+          cursor: 'pointer',
+          fontFamily: "'DM Sans', sans-serif",
+        },
+        nextButton: {
+          flex: 2,
+          padding: '1rem',
+          backgroundColor: 'var(--accent)',
+          border: 'none',
+          borderRadius: '12px',
+          color: 'white',
+          fontSize: '0.95rem',
+          fontWeight: 500,
+          cursor: 'pointer',
+          fontFamily: "'DM Sans', sans-serif",
+        },
+        // Summary styles
+        summaryTitle: {
+          fontSize: '1.5rem',
+          fontFamily: "'Fraunces', serif",
+          textAlign: 'center',
+          color: 'var(--text)',
+          marginBottom: '0.5rem',
+        },
+        summarySubtitle: {
+          fontSize: '0.9rem',
+          color: 'var(--text-muted)',
+          textAlign: 'center',
+          marginBottom: '2rem',
+        },
+        summarySection: {
+          marginBottom: '1.5rem',
+        },
+        summarySectionTitle: {
+          fontSize: '0.75rem',
+          fontWeight: 600,
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
+          color: 'var(--text-muted)',
+          marginBottom: '0.75rem',
+        },
+        summaryItem: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.75rem',
+          padding: '0.75rem',
+          backgroundColor: 'var(--bg-elevated)',
+          borderRadius: '10px',
+          marginBottom: '0.5rem',
+        },
+        summaryItemIcon: {
+          fontSize: '1.25rem',
+        },
+        summaryItemName: {
+          flex: 1,
+          fontSize: '0.9rem',
+          color: 'var(--text)',
+        },
+        summaryItemScores: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.375rem',
+          fontSize: '0.85rem',
+        },
+        summaryItemGap: {
+          fontSize: '0.75rem',
+          padding: '0.2rem 0.5rem',
+          borderRadius: '8px',
+          fontWeight: 500,
+        },
+        intro: {
+          textAlign: 'center',
+        },
+        introIcon: {
+          fontSize: '4rem',
+          marginBottom: '1.5rem',
+        },
+        introTitle: {
+          fontSize: '2rem',
+          fontFamily: "'Fraunces', serif",
+          color: 'var(--text)',
+          marginBottom: '1rem',
+        },
+        introText: {
+          fontSize: '1rem',
+          color: 'var(--text-muted)',
+          lineHeight: 1.7,
+          marginBottom: '2rem',
+        },
+        startButton: {
+          padding: '1rem 3rem',
+          backgroundColor: 'var(--accent)',
+          border: 'none',
+          borderRadius: '12px',
+          color: 'white',
+          fontSize: '1rem',
+          fontWeight: 500,
+          cursor: 'pointer',
+          fontFamily: "'DM Sans', sans-serif",
+        },
+      };
+
+      const getValueLabel = (value, type) => {
+        if (type === 'importance') {
+          if (value <= 2) return 'Not important';
+          if (value <= 4) return 'Slightly important';
+          if (value <= 6) return 'Moderately important';
+          if (value <= 8) return 'Very important';
+          return 'Extremely important';
+        } else {
+          if (value <= 2) return 'Not at all';
+          if (value <= 4) return 'Rarely';
+          if (value <= 6) return 'Sometimes';
+          if (value <= 8) return 'Often';
+          return 'Fully living it';
+        }
+      };
+
+      // Intro screen
+      if (vlqStep === -1) {
+        return (
+          <div style={vlqStyles.container}>
+            <div style={{...vlqStyles.card, ...vlqStyles.intro}}>
+              <div style={vlqStyles.introIcon}>🌱</div>
+              <h1 style={vlqStyles.introTitle}>Welcome to Tend</h1>
+              <p style={vlqStyles.introText}>
+                Before we start planning, let's understand what truly matters to you.
+                <br /><br />
+                You'll reflect on 10 areas of life. For each one, you'll rate:
+                <br /><br />
+                <strong>How important</strong> is this to you?
+                <br />
+                <strong>How consistently</strong> have you been living it?
+                <br /><br />
+                This takes about 5 minutes and helps Tend support what matters most.
+              </p>
+              <button style={vlqStyles.startButton} onClick={() => setVlqStep(0)}>
+                Let's Begin
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // Summary screen
+      if (vlqStep === 10) {
+        const gaps = getGaps();
+        const growthAreas = gaps.filter(g => g.gap >= 3);
+        const strengths = gaps.filter(g => g.importance >= 7 && g.consistency >= 7);
+        const lowerPriority = gaps.filter(g => g.importance <= 5);
+
+        return (
+          <div style={vlqStyles.container}>
+            <div style={vlqStyles.card}>
+              <h2 style={vlqStyles.summaryTitle}>Your Values Landscape</h2>
+              <p style={vlqStyles.summarySubtitle}>
+                Here's what you shared about what matters and where you are.
+              </p>
+
+              {growthAreas.length > 0 && (
+                <div style={vlqStyles.summarySection}>
+                  <h3 style={vlqStyles.summarySectionTitle}>🌱 Growth Areas</h3>
+                  <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontStyle: 'italic'}}>
+                    High importance, room to grow
+                  </p>
+                  {growthAreas.map(item => (
+                    <div key={item.key} style={vlqStyles.summaryItem}>
+                      <span style={vlqStyles.summaryItemIcon}>{item.icon}</span>
+                      <span style={vlqStyles.summaryItemName}>{item.name}</span>
+                      <div style={vlqStyles.summaryItemScores}>
+                        <span style={{color: 'var(--text-muted)'}}>{item.consistency}</span>
+                        <span style={{color: 'var(--text-muted)'}}>→</span>
+                        <span style={{color: item.color, fontWeight: 600}}>{item.importance}</span>
+                      </div>
+                      <span style={{
+                        ...vlqStyles.summaryItemGap,
+                        backgroundColor: `${item.color}20`,
+                        color: item.color
+                      }}>
+                        +{item.gap}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {strengths.length > 0 && (
+                <div style={vlqStyles.summarySection}>
+                  <h3 style={vlqStyles.summarySectionTitle}>💪 Strengths</h3>
+                  <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontStyle: 'italic'}}>
+                    Important and you're living it
+                  </p>
+                  {strengths.map(item => (
+                    <div key={item.key} style={vlqStyles.summaryItem}>
+                      <span style={vlqStyles.summaryItemIcon}>{item.icon}</span>
+                      <span style={vlqStyles.summaryItemName}>{item.name}</span>
+                      <div style={vlqStyles.summaryItemScores}>
+                        <span style={{color: item.color, fontWeight: 600}}>{item.consistency}</span>
+                        <span style={{color: 'var(--text-muted)'}}>/</span>
+                        <span style={{color: item.color, fontWeight: 600}}>{item.importance}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {lowerPriority.length > 0 && (
+                <div style={vlqStyles.summarySection}>
+                  <h3 style={vlqStyles.summarySectionTitle}>⚪ Lower Priority Right Now</h3>
+                  {lowerPriority.slice(0, 3).map(item => (
+                    <div key={item.key} style={{...vlqStyles.summaryItem, opacity: 0.7}}>
+                      <span style={vlqStyles.summaryItemIcon}>{item.icon}</span>
+                      <span style={vlqStyles.summaryItemName}>{item.name}</span>
+                      <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>{item.importance}/10</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button style={vlqStyles.nextButton} onClick={onComplete}>
+                Continue to Planning →
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // Domain assessment screen
+      return (
+        <div style={vlqStyles.container}>
+          <div style={vlqStyles.card}>
+            {/* Progress dots */}
+            <div style={vlqStyles.progress}>
+              {VLQ_ORDER.map((_, i) => (
+                <div 
+                  key={i} 
+                  style={{
+                    ...vlqStyles.progressDot,
+                    ...(i === vlqStep ? vlqStyles.progressDotActive : {}),
+                    ...(i < vlqStep ? vlqStyles.progressDotComplete : {}),
+                  }} 
+                />
+              ))}
+            </div>
+
+            {/* Domain info */}
+            <div style={vlqStyles.icon}>{domainInfo.icon}</div>
+            <h2 style={vlqStyles.title}>{domainInfo.name}</h2>
+            <p style={vlqStyles.description}>{domainInfo.description}</p>
+
+            {!showConsistency ? (
+              <>
+                {/* Importance slider */}
+                <p style={vlqStyles.question}>How important is this to you?</p>
+                <div style={vlqStyles.sliderContainer}>
+                  <div style={vlqStyles.sliderLabels}>
+                    <span>Not at all</span>
+                    <span>Extremely</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={localImportance}
+                    onChange={(e) => setLocalImportance(parseInt(e.target.value))}
+                    style={{...vlqStyles.slider, accentColor: domainInfo.color}}
+                  />
+                  <div style={{...vlqStyles.sliderValue, color: domainInfo.color}}>
+                    {localImportance}
+                  </div>
+                  <div style={vlqStyles.sliderValueLabel}>
+                    {getValueLabel(localImportance, 'importance')}
+                  </div>
+                </div>
+
+                <div style={vlqStyles.buttons}>
+                  {vlqStep > 0 && (
+                    <button style={vlqStyles.backButton} onClick={handleBack}>
+                      Back
+                    </button>
+                  )}
+                  <button style={vlqStyles.nextButton} onClick={handleImportanceNext}>
+                    Next
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                {/* Consistency slider */}
+                <p style={vlqStyles.question}>How consistently have you been living this lately?</p>
+                <div style={vlqStyles.sliderContainer}>
+                  <div style={vlqStyles.sliderLabels}>
+                    <span>Not at all</span>
+                    <span>Fully</span>
+                  </div>
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={localConsistency}
+                    onChange={(e) => setLocalConsistency(parseInt(e.target.value))}
+                    style={{...vlqStyles.slider, accentColor: domainInfo.color}}
+                  />
+                  <div style={{...vlqStyles.sliderValue, color: domainInfo.color}}>
+                    {localConsistency}
+                  </div>
+                  <div style={vlqStyles.sliderValueLabel}>
+                    {getValueLabel(localConsistency, 'consistency')}
+                  </div>
+                </div>
+
+                <div style={vlqStyles.buttons}>
+                  <button style={vlqStyles.backButton} onClick={handleBack}>
+                    Back
+                  </button>
+                  <button style={vlqStyles.nextButton} onClick={handleConsistencyNext}>
+                    {vlqStep < VLQ_ORDER.length - 1 ? 'Next' : 'See Results'}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      );
+    }
+
     function TendApp() {
       const [phase, setPhase] = useState(PHASES.EXPLORE);
+      const [vlqScores, setVlqScores] = useState({
+        family: { importance: null, consistency: null },
+        partner: { importance: null, consistency: null },
+        friendships: { importance: null, consistency: null },
+        career: { importance: null, consistency: null },
+        education: { importance: null, consistency: null },
+        recreation: { importance: null, consistency: null },
+        spirituality: { importance: null, consistency: null },
+        community: { importance: null, consistency: null },
+        health: { importance: null, consistency: null },
+        mentalHealth: { importance: null, consistency: null },
+      });
+      const [vlqCompleted, setVlqCompleted] = useState(false);
+      const [vlqStep, setVlqStep] = useState(-1); // -1 for intro, 0-9 for domains, 10 for summary
       const [values, setValues] = useState([]);
       const [lifeAreaRatings, setLifeAreaRatings] = useState({
         health: { satisfaction: null, intention: null },
@@ -149,19 +725,32 @@
       const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
 
       useEffect(() => {
-        setMessages([{
-          role: 'assistant',
-          content: `Welcome to Tend.
+        // Only set initial message after VLQ is complete
+        if (vlqCompleted && messages.length === 0) {
+          // Find top growth areas
+          const gaps = VLQ_ORDER.map(key => ({
+            name: VLQ_DOMAINS[key].name,
+            gap: (vlqScores[key]?.importance || 0) - (vlqScores[key]?.consistency || 0)
+          })).filter(g => g.gap >= 3).sort((a, b) => b.gap - a.gap);
+          
+          const growthMention = gaps.length > 0
+            ? `I can see <em>${gaps[0].name}</em>${gaps.length > 1 ? ` and <em>${gaps[1].name}</em>` : ''} are areas where you want to grow.`
+            : '';
 
-Let's start with something simple but powerful: <strong>if you could choose one word to guide your year, what would it be?</strong>
+          setMessages([{
+            role: 'assistant',
+            content: `Thank you for sharing what matters to you. ${growthMention}
 
-This isn't a resolution or a goal — it's a compass. A word that captures how you want to feel, who you want to become, or what you want to prioritize.
+Now let's give your year some shape. <strong>If you could choose one word to guide 2026, what would it be?</strong>
+
+Not a resolution or goal — a compass. A word that captures how you want to feel, who you want to become, or what you want to prioritize.
 
 Some examples: <em>ease, courage, presence, joy, depth, adventure, roots, flow</em>
 
 What word comes to mind?`
-        }]);
-      }, []);
+          }]);
+        }
+      }, [vlqCompleted]);
 
       // Track view/tab for system prompt context (no auto-messages)
 
@@ -681,15 +1270,13 @@ Click on the event in the sidebar to add details.`;
           return 'fall';
         })();
 
-        const lifeAreasContext = lifeAreasCompleted 
-          ? Object.entries(effectiveRatings).map(([key, val]) => 
-              `${LIFE_AREAS[key].name}: satisfaction ${val.satisfaction}/10, intention ${val.intention}/10`
-            ).join(', ')
-          : Object.entries(effectiveRatings)
-              .filter(([_, val]) => val.satisfaction !== null || val.intention !== null)
-              .map(([key, val]) => 
-                `${LIFE_AREAS[key].name}: ${val.satisfaction !== null ? `satisfaction ${val.satisfaction}/10` : ''}${val.satisfaction !== null && val.intention !== null ? ', ' : ''}${val.intention !== null ? `intention ${val.intention}/10` : ''}`
-              ).join('; ') || 'not assessed yet';
+        const lifeAreasContext = vlqCompleted 
+          ? VLQ_ORDER.map(key => {
+              const scores = vlqScores[key];
+              const gap = (scores?.importance || 0) - (scores?.consistency || 0);
+              return `${VLQ_DOMAINS[key].name}: importance ${scores?.importance}/10, consistency ${scores?.consistency}/10${gap >= 3 ? ' (GROWTH AREA)' : ''}`;
+            }).join('; ')
+          : 'not assessed yet';
 
         // Check for misalignments between intentions and actual plans
         const getMisalignments = () => {
@@ -735,26 +1322,14 @@ Current context:
 - Current season: ${currentSeason}
 - Their year theme: ${yearTheme || 'not set yet'}
 - Their values: ${values.length > 0 ? values.join(', ') : 'not identified yet'}
-- Life areas: ${lifeAreasContext}
+- Life areas (from VLQ): ${lifeAreasContext}
 - Their events: ${events.length > 0 ? events.map(e => `${MONTHS[e.month]}: ${e.title}`).join(', ') : 'none yet'}
 - Weekly habits: ${weeklyHabits.length > 0 ? weeklyHabits.map(h => `${h.text} (${h.frequency}x/week)`).join(', ') : 'none yet'}
 - Daily habits: ${dailyHabits.length > 0 ? dailyHabits.map(h => h.text).join(', ') : 'none yet'}
 - Phase: ${phase} (explore = getting to know them, ground = understanding commitments, reveal = unlocking the app, plan = ongoing planning)
-- Life areas mode: ${lifeAreasMode ? 'YES - currently doing life areas assessment' : 'no'}
-- Life areas assessment just finished: ${effectiveIsLast ? 'YES - This is the last area (Fun). After acknowledging their intention score, provide a warm summary: note which areas have the biggest gaps between satisfaction and intention (those are their growth areas for the year). Then offer to start planning. Keep it conversational, not a formal report.' : 'no'}
 ${getMisalignments()}
 
-${lifeAreasMode ? `LIFE AREAS ASSESSMENT MODE:
-${effectiveAreaIndex === 0 && effectiveWaitingFor ? `This is the START of the life areas assessment. First, briefly acknowledge what the user just shared (their plans, thoughts, etc). Then smoothly transition by saying something like "Your year is starting to take shape. Before we go further, I'd like to get a pulse on different areas of your life..." Then explain you'll ask two questions for each area (satisfaction now 1-10, and intention for the year 1-10). Then ask about the first area: Health (${lifeAreaDescriptions.health}). Ask for their satisfaction score first.` : `You are walking the user through rating their life areas. For each area, ask about:
-1. Satisfaction (1-10): How do they feel about this area RIGHT NOW?
-2. Intention (1-10): How much attention do they WANT to give this area this year?
-
-Current area: ${LIFE_AREAS[lifeAreaOrder[effectiveAreaIndex]]?.name || 'done'}
-Description: ${lifeAreaDescriptions[lifeAreaOrder[effectiveAreaIndex]] || ''}
-Waiting for: ${effectiveWaitingFor ? 'satisfaction score' : 'intention score'}
-
-Keep it conversational and warm. After they give a number, briefly acknowledge it (don't just say "got it" - reflect what the number might mean), then ask the follow-up. When both scores are given for an area, naturally transition to the next area. Don't use bullet points or formal lists.`}
-` : ''}
+The user has already completed the VLQ (Valued Living Questionnaire) assessment before this chat. You know their values - use this knowledge to personalize your guidance. Reference their growth areas when relevant.
 
 View-specific guidance:
 - Year view: Help them find their theme word and see the big picture
@@ -766,7 +1341,7 @@ View-specific guidance:
 If they're in the EXPLORE phase, focus on understanding what they want from the year and helping them find their theme word.
 If they mention specific months or events, acknowledge those.
 If they seem stuck, offer a gentle prompt or example.
-If you notice a misalignment between their life area intentions and their actual plans, gently bring it up.
+If you notice a misalignment between their VLQ values (high importance areas) and their actual plans, gently bring it up.
 
 Keep responses focused and conversational. You're not a productivity app — you're helping them live with more intention.`;
       };
@@ -961,6 +1536,30 @@ I'm here to help with any planning.`
         setShowGoalModal(false);
       };
 
+      const handleVlqComplete = () => {
+        setVlqCompleted(true);
+        // Pre-fill values based on high-importance domains
+        const highImportance = VLQ_ORDER
+          .filter(key => vlqScores[key]?.importance >= 7)
+          .map(key => VLQ_DOMAINS[key].name.split(' ')[0]);
+        if (highImportance.length > 0) {
+          setValues(highImportance.slice(0, 3));
+        }
+      };
+
+      // Show VLQ assessment first
+      if (!vlqCompleted) {
+        return (
+          <VLQAssessment
+            vlqScores={vlqScores}
+            setVlqScores={setVlqScores}
+            vlqStep={vlqStep}
+            setVlqStep={setVlqStep}
+            onComplete={handleVlqComplete}
+          />
+        );
+      }
+
       return (
         <div style={styles.container}>
           <header style={styles.header}>
@@ -1107,37 +1706,47 @@ I'm here to help with any planning.`
                 </div>
                 
                 <div style={styles.lifeAreasSection}>
-                  <h3 style={styles.sectionLabel}>Life Areas</h3>
-                  {lifeAreasCompleted ? (
-                    <div style={styles.lifeAreasGrid}>
-                      {Object.entries(LIFE_AREAS).map(([key, area]) => (
-                        <div key={key} style={styles.lifeAreaItem}>
-                          <div style={styles.lifeAreaHeader}>
-                            <span style={{color: area.color}}>{area.icon}</span>
-                            <span style={styles.lifeAreaName}>{area.name.split(' ')[0]}</span>
+                  <h3 style={styles.sectionLabel}>Values (VLQ)</h3>
+                  <div style={styles.vlqGrid}>
+                    {VLQ_ORDER.slice(0, 5).map(key => {
+                      const domain = VLQ_DOMAINS[key];
+                      const scores = vlqScores[key];
+                      const gap = (scores?.importance || 0) - (scores?.consistency || 0);
+                      return (
+                        <div key={key} style={styles.vlqItem}>
+                          <div style={styles.vlqItemHeader}>
+                            <span style={{fontSize: '0.9rem'}}>{domain.icon}</span>
+                            <span style={styles.vlqItemName}>{domain.name.split(' ')[0]}</span>
                           </div>
-                          <div style={styles.lifeAreaScores}>
-                            <span style={styles.lifeAreaScore} title="Current satisfaction">
-                              {lifeAreaRatings[key]?.satisfaction || '–'}
+                          <div style={styles.vlqItemScores}>
+                            <span style={{color: 'var(--text-muted)', fontSize: '0.75rem'}}>
+                              {scores?.consistency || 0}
                             </span>
-                            <span style={styles.lifeAreaArrow}>→</span>
-                            <span style={{...styles.lifeAreaScore, color: area.color, fontWeight: 600}} title="Intention for this year">
-                              {lifeAreaRatings[key]?.intention || '–'}
+                            <span style={{color: 'var(--text-muted)', fontSize: '0.6rem'}}>→</span>
+                            <span style={{color: domain.color, fontSize: '0.75rem', fontWeight: 600}}>
+                              {scores?.importance || 0}
                             </span>
+                            {gap >= 3 && (
+                              <span style={{
+                                fontSize: '0.6rem',
+                                color: domain.color,
+                                backgroundColor: `${domain.color}20`,
+                                padding: '0.1rem 0.3rem',
+                                borderRadius: '4px',
+                                marginLeft: '0.25rem'
+                              }}>+{gap}</span>
+                            )}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div style={styles.lifeAreasPlaceholder}>
-                      <p style={styles.lifeAreasPlaceholderText}>
-                        {lifeAreasMode 
-                          ? `Assessing: ${LIFE_AREAS[lifeAreaOrder[currentLifeAreaIndex]]?.name}...`
-                          : 'Complete the conversation to reflect on your life areas'
-                        }
-                      </p>
-                    </div>
-                  )}
+                      );
+                    })}
+                  </div>
+                  <button 
+                    style={styles.reassessButton}
+                    onClick={() => { setVlqStep(-1); setVlqCompleted(false); }}
+                  >
+                    Reassess Values
+                  </button>
                 </div>
               </div>
             </div>
@@ -1983,7 +2592,23 @@ I'm here to help with any planning.`
       valueTag: { display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.3rem 0.6rem', backgroundColor: 'var(--accent)', color: 'white', borderRadius: '12px', fontSize: '0.7rem' },
       valueRemove: { background: 'none', border: 'none', color: 'white', opacity: 0.7, cursor: 'pointer', fontSize: '0.8rem', padding: 0, lineHeight: 1 },
       addValueButton: { padding: '0.3rem 0.6rem', backgroundColor: 'transparent', border: '1px dashed var(--border-dark)', borderRadius: '12px', color: 'var(--text-muted)', fontSize: '0.7rem', cursor: 'pointer' },
-      lifeAreasSection: {},
+      lifeAreasSection: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
+      vlqGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.375rem' },
+      vlqItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem' },
+      vlqItemHeader: { display: 'flex', alignItems: 'center', gap: '0.25rem' },
+      vlqItemName: { fontSize: '0.6rem', color: 'var(--text-muted)' },
+      vlqItemScores: { display: 'flex', alignItems: 'center', gap: '0.2rem' },
+      reassessButton: { 
+        marginTop: '0.5rem', 
+        padding: '0.4rem 0.75rem', 
+        backgroundColor: 'transparent', 
+        border: '1px dashed var(--border)', 
+        borderRadius: '8px', 
+        color: 'var(--text-muted)', 
+        fontSize: '0.65rem', 
+        cursor: 'pointer',
+        alignSelf: 'center'
+      },
       lifeAreasGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.625rem' },
       lifeAreaItem: { display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' },
       lifeAreaHeader: { display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.65rem' },
