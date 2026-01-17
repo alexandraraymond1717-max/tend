@@ -162,52 +162,7 @@
     // ============ MAIN APP ============
     // ============ VLQ ASSESSMENT ============
     function VLQAssessment({ vlqScores, setVlqScores, vlqStep, setVlqStep, onComplete }) {
-      const currentDomain = VLQ_ORDER[vlqStep];
-      const domainInfo = VLQ_DOMAINS[currentDomain];
-      const currentScores = vlqScores[currentDomain] || { importance: null, consistency: null };
       
-      const [localImportance, setLocalImportance] = useState(currentScores.importance || 5);
-      const [localConsistency, setLocalConsistency] = useState(currentScores.consistency || 5);
-      const [showConsistency, setShowConsistency] = useState(false);
-
-      // Reset when domain changes
-      useEffect(() => {
-        const scores = vlqScores[VLQ_ORDER[vlqStep]];
-        setLocalImportance(scores?.importance || 5);
-        setLocalConsistency(scores?.consistency || 5);
-        setShowConsistency(false);
-      }, [vlqStep]);
-
-      const handleImportanceNext = () => {
-        setVlqScores(prev => ({
-          ...prev,
-          [currentDomain]: { ...prev[currentDomain], importance: localImportance }
-        }));
-        setShowConsistency(true);
-      };
-
-      const handleConsistencyNext = () => {
-        setVlqScores(prev => ({
-          ...prev,
-          [currentDomain]: { ...prev[currentDomain], importance: localImportance, consistency: localConsistency }
-        }));
-        
-        if (vlqStep < VLQ_ORDER.length - 1) {
-          setVlqStep(vlqStep + 1);
-        } else {
-          setVlqStep(10); // Go to summary
-        }
-      };
-
-      const handleBack = () => {
-        if (showConsistency) {
-          setShowConsistency(false);
-        } else if (vlqStep > 0) {
-          setVlqStep(vlqStep - 1);
-          setShowConsistency(true); // Go back to consistency of previous
-        }
-      };
-
       // Calculate gaps for summary
       const getGaps = () => {
         return VLQ_ORDER.map(key => ({
@@ -215,9 +170,9 @@
           name: VLQ_DOMAINS[key].name,
           icon: VLQ_DOMAINS[key].icon,
           color: VLQ_DOMAINS[key].color,
-          importance: vlqScores[key]?.importance || 0,
-          consistency: vlqScores[key]?.consistency || 0,
-          gap: (vlqScores[key]?.importance || 0) - (vlqScores[key]?.consistency || 0)
+          importance: vlqScores[key]?.importance || 5,
+          consistency: vlqScores[key]?.consistency || 5,
+          gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)
         })).sort((a, b) => b.gap - a.gap);
       };
 
@@ -235,98 +190,84 @@
         card: {
           backgroundColor: 'var(--bg-card)',
           borderRadius: '24px',
-          padding: '3rem',
-          maxWidth: '500px',
+          padding: '2.5rem',
+          maxWidth: '700px',
           width: '100%',
           boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
           border: '1px solid var(--border)',
         },
-        progress: {
-          display: 'flex',
-          gap: '6px',
-          justifyContent: 'center',
+        header: {
+          textAlign: 'center',
           marginBottom: '2rem',
         },
-        progressDot: {
-          width: '8px',
-          height: '8px',
-          borderRadius: '50%',
-          backgroundColor: 'var(--border)',
-          transition: 'all 0.3s ease',
-        },
-        progressDotActive: {
-          backgroundColor: 'var(--accent)',
-          transform: 'scale(1.2)',
-        },
-        progressDotComplete: {
-          backgroundColor: 'var(--accent)',
-          opacity: 0.5,
-        },
-        icon: {
-          fontSize: '3rem',
-          textAlign: 'center',
-          marginBottom: '1rem',
-        },
-        title: {
-          fontSize: '1.75rem',
-          fontFamily: "'Fraunces', serif",
-          textAlign: 'center',
-          color: 'var(--text)',
-          marginBottom: '0.75rem',
-        },
-        description: {
-          fontSize: '0.95rem',
-          color: 'var(--text-muted)',
-          textAlign: 'center',
-          lineHeight: 1.6,
-          marginBottom: '2.5rem',
-        },
-        question: {
-          fontSize: '1rem',
-          color: 'var(--text)',
-          textAlign: 'center',
-          marginBottom: '1.5rem',
-          fontWeight: 500,
-        },
-        sliderContainer: {
-          marginBottom: '2rem',
-        },
-        sliderLabels: {
-          display: 'flex',
-          justifyContent: 'space-between',
+        stepIndicator: {
           fontSize: '0.75rem',
           color: 'var(--text-muted)',
+          textTransform: 'uppercase',
+          letterSpacing: '0.1em',
           marginBottom: '0.5rem',
+        },
+        title: {
+          fontSize: '1.5rem',
+          fontFamily: "'Fraunces', serif",
+          color: 'var(--text)',
+          marginBottom: '0.5rem',
+        },
+        subtitle: {
+          fontSize: '0.9rem',
+          color: 'var(--text-muted)',
+          lineHeight: 1.5,
+        },
+        valuesGrid: {
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.75rem',
+          marginBottom: '2rem',
+        },
+        valueRow: {
+          display: 'grid',
+          gridTemplateColumns: '140px 1fr 40px',
+          alignItems: 'center',
+          gap: '1rem',
+          padding: '0.75rem 1rem',
+          backgroundColor: 'var(--bg-elevated)',
+          borderRadius: '12px',
+        },
+        valueInfo: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+        },
+        valueIcon: {
+          fontSize: '1.1rem',
+        },
+        valueName: {
+          fontSize: '0.85rem',
+          color: 'var(--text)',
+          fontWeight: 500,
         },
         slider: {
           width: '100%',
-          height: '8px',
-          borderRadius: '4px',
+          height: '6px',
+          borderRadius: '3px',
           appearance: 'none',
-          background: 'var(--bg-elevated)',
+          background: 'var(--border)',
           outline: 'none',
           cursor: 'pointer',
         },
-        sliderValue: {
-          fontSize: '2.5rem',
+        valueScore: {
+          fontSize: '1.1rem',
+          fontWeight: 600,
+          textAlign: 'center',
           fontFamily: "'Fraunces', serif",
-          textAlign: 'center',
-          marginTop: '1rem',
-          marginBottom: '0.5rem',
-        },
-        sliderValueLabel: {
-          fontSize: '0.85rem',
-          color: 'var(--text-muted)',
-          textAlign: 'center',
         },
         buttons: {
           display: 'flex',
           gap: '1rem',
-          marginTop: '1.5rem',
+          justifyContent: 'center',
         },
         backButton: {
-          flex: 1,
-          padding: '1rem',
+          padding: '0.875rem 2rem',
           backgroundColor: 'transparent',
           border: '1px solid var(--border)',
           borderRadius: '12px',
@@ -336,8 +277,7 @@
           fontFamily: "'DM Sans', sans-serif",
         },
         nextButton: {
-          flex: 2,
-          padding: '1rem',
+          padding: '0.875rem 2.5rem',
           backgroundColor: 'var(--accent)',
           border: 'none',
           borderRadius: '12px',
@@ -347,20 +287,14 @@
           cursor: 'pointer',
           fontFamily: "'DM Sans', sans-serif",
         },
-        // Summary styles
-        summaryTitle: {
-          fontSize: '1.5rem',
-          fontFamily: "'Fraunces', serif",
+        hint: {
           textAlign: 'center',
-          color: 'var(--text)',
-          marginBottom: '0.5rem',
-        },
-        summarySubtitle: {
-          fontSize: '0.9rem',
+          fontSize: '0.8rem',
           color: 'var(--text-muted)',
-          textAlign: 'center',
-          marginBottom: '2rem',
+          marginBottom: '1.5rem',
+          fontStyle: 'italic',
         },
+        // Summary styles
         summarySection: {
           marginBottom: '1.5rem',
         },
@@ -404,10 +338,6 @@
         intro: {
           textAlign: 'center',
         },
-        introIcon: {
-          fontSize: '4rem',
-          marginBottom: '1.5rem',
-        },
         introTitle: {
           fontSize: '2rem',
           fontFamily: "'Fraunces', serif",
@@ -433,27 +363,25 @@
         },
       };
 
-      const getValueLabel = (value, type) => {
-        if (type === 'importance') {
-          if (value <= 2) return 'Not important';
-          if (value <= 4) return 'Slightly important';
-          if (value <= 6) return 'Moderately important';
-          if (value <= 8) return 'Very important';
-          return 'Extremely important';
-        } else {
-          if (value <= 2) return 'Not at all';
-          if (value <= 4) return 'Rarely';
-          if (value <= 6) return 'Sometimes';
-          if (value <= 8) return 'Often';
-          return 'Fully living it';
-        }
+      const handleImportanceChange = (key, value) => {
+        setVlqScores(prev => ({
+          ...prev,
+          [key]: { ...prev[key], importance: value }
+        }));
+      };
+
+      const handleConsistencyChange = (key, value) => {
+        setVlqScores(prev => ({
+          ...prev,
+          [key]: { ...prev[key], consistency: value }
+        }));
       };
 
       // Intro screen
       if (vlqStep === -1) {
         return (
           <div style={vlqStyles.container}>
-            <div style={{...vlqStyles.card, ...vlqStyles.intro}}>
+            <div style={{...vlqStyles.card, ...vlqStyles.intro, maxWidth: '500px'}}>
               <svg width="80" height="80" viewBox="0 0 80 80" fill="none" style={{marginBottom: '1.5rem', opacity: 0.8}}>
                 <path d="M40 70 L40 45" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round"/>
                 <path d="M40 55 Q30 50 25 40 Q35 45 40 55" stroke="var(--accent)" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
@@ -483,8 +411,124 @@
         );
       }
 
-      // Summary screen
-      if (vlqStep === 10) {
+      // Step 0: Importance ratings for all values
+      if (vlqStep === 0) {
+        return (
+          <div style={vlqStyles.container}>
+            <div style={vlqStyles.card}>
+              <div style={vlqStyles.header}>
+                <div style={vlqStyles.stepIndicator}>Step 1 of 2</div>
+                <h2 style={vlqStyles.title}>How important is each area to you?</h2>
+                <p style={vlqStyles.subtitle}>
+                  Rate each value from 1 (not important) to 10 (extremely important).
+                </p>
+              </div>
+              
+              <p style={vlqStyles.hint}>
+                Not everything can be a 10 — what truly matters most?
+              </p>
+
+              <div style={vlqStyles.valuesGrid}>
+                {VLQ_ORDER.map(key => {
+                  const domain = VLQ_DOMAINS[key];
+                  const score = vlqScores[key]?.importance || 5;
+                  return (
+                    <div key={key} style={vlqStyles.valueRow}>
+                      <div style={vlqStyles.valueInfo}>
+                        <span style={vlqStyles.valueIcon}>{domain.icon}</span>
+                        <span style={vlqStyles.valueName}>{domain.name}</span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        value={score}
+                        onChange={(e) => handleImportanceChange(key, parseInt(e.target.value))}
+                        style={{...vlqStyles.slider, accentColor: domain.color}}
+                      />
+                      <span style={{...vlqStyles.valueScore, color: domain.color}}>
+                        {score}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={vlqStyles.buttons}>
+                <button style={vlqStyles.backButton} onClick={() => setVlqStep(-1)}>
+                  Back
+                </button>
+                <button style={vlqStyles.nextButton} onClick={() => setVlqStep(1)}>
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Step 1: Consistency ratings for all values
+      if (vlqStep === 1) {
+        return (
+          <div style={vlqStyles.container}>
+            <div style={vlqStyles.card}>
+              <div style={vlqStyles.header}>
+                <div style={vlqStyles.stepIndicator}>Step 2 of 2</div>
+                <h2 style={vlqStyles.title}>How consistently have you been living each value?</h2>
+                <p style={vlqStyles.subtitle}>
+                  Rate from 1 (not at all) to 10 (fully living it).
+                </p>
+              </div>
+              
+              <p style={vlqStyles.hint}>
+                Be honest with yourself — this is about where you are, not where you want to be.
+              </p>
+
+              <div style={vlqStyles.valuesGrid}>
+                {VLQ_ORDER.map(key => {
+                  const domain = VLQ_DOMAINS[key];
+                  const score = vlqScores[key]?.consistency || 5;
+                  const importance = vlqScores[key]?.importance || 5;
+                  return (
+                    <div key={key} style={vlqStyles.valueRow}>
+                      <div style={vlqStyles.valueInfo}>
+                        <span style={vlqStyles.valueIcon}>{domain.icon}</span>
+                        <span style={vlqStyles.valueName}>{domain.name}</span>
+                        <span style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.25rem'}}>
+                          (imp: {importance})
+                        </span>
+                      </div>
+                      <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        value={score}
+                        onChange={(e) => handleConsistencyChange(key, parseInt(e.target.value))}
+                        style={{...vlqStyles.slider, accentColor: domain.color}}
+                      />
+                      <span style={{...vlqStyles.valueScore, color: domain.color}}>
+                        {score}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={vlqStyles.buttons}>
+                <button style={vlqStyles.backButton} onClick={() => setVlqStep(0)}>
+                  Back
+                </button>
+                <button style={vlqStyles.nextButton} onClick={() => setVlqStep(2)}>
+                  See Results
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Step 2: Summary screen
+      if (vlqStep === 2) {
         const gaps = getGaps();
         const growthAreas = gaps.filter(g => g.gap >= 3);
         const strengths = gaps.filter(g => g.importance >= 7 && g.consistency >= 7);
@@ -493,10 +537,12 @@
         return (
           <div style={vlqStyles.container}>
             <div style={vlqStyles.card}>
-              <h2 style={vlqStyles.summaryTitle}>Your Values Landscape</h2>
-              <p style={vlqStyles.summarySubtitle}>
-                Here's what you shared about what matters and where you are.
-              </p>
+              <div style={vlqStyles.header}>
+                <h2 style={vlqStyles.title}>Your Values Landscape</h2>
+                <p style={vlqStyles.subtitle}>
+                  Here's what you shared about what matters and where you are.
+                </p>
+              </div>
 
               {growthAreas.length > 0 && (
                 <div style={vlqStyles.summarySection}>
@@ -558,111 +604,20 @@
                 </div>
               )}
 
-              <button style={vlqStyles.nextButton} onClick={onComplete}>
-                Continue to Planning →
-              </button>
+              <div style={vlqStyles.buttons}>
+                <button style={vlqStyles.backButton} onClick={() => setVlqStep(1)}>
+                  Back
+                </button>
+                <button style={vlqStyles.nextButton} onClick={onComplete}>
+                  Continue to Planning →
+                </button>
+              </div>
             </div>
           </div>
         );
       }
 
-      // Domain assessment screen
-      return (
-        <div style={vlqStyles.container}>
-          <div style={vlqStyles.card}>
-            {/* Progress dots */}
-            <div style={vlqStyles.progress}>
-              {VLQ_ORDER.map((_, i) => (
-                <div 
-                  key={i} 
-                  style={{
-                    ...vlqStyles.progressDot,
-                    ...(i === vlqStep ? vlqStyles.progressDotActive : {}),
-                    ...(i < vlqStep ? vlqStyles.progressDotComplete : {}),
-                  }} 
-                />
-              ))}
-            </div>
-
-            {/* Domain info */}
-            <div style={vlqStyles.icon}>{domainInfo.icon}</div>
-            <h2 style={vlqStyles.title}>{domainInfo.name}</h2>
-            <p style={vlqStyles.description}>{domainInfo.description}</p>
-
-            {!showConsistency ? (
-              <>
-                {/* Importance slider */}
-                <p style={vlqStyles.question}>How important is this to you?</p>
-                <div style={vlqStyles.sliderContainer}>
-                  <div style={vlqStyles.sliderLabels}>
-                    <span>Not at all</span>
-                    <span>Extremely</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={localImportance}
-                    onChange={(e) => setLocalImportance(parseInt(e.target.value))}
-                    style={{...vlqStyles.slider, accentColor: domainInfo.color}}
-                  />
-                  <div style={{...vlqStyles.sliderValue, color: domainInfo.color}}>
-                    {localImportance}
-                  </div>
-                  <div style={vlqStyles.sliderValueLabel}>
-                    {getValueLabel(localImportance, 'importance')}
-                  </div>
-                </div>
-
-                <div style={vlqStyles.buttons}>
-                  {vlqStep > 0 && (
-                    <button style={vlqStyles.backButton} onClick={handleBack}>
-                      Back
-                    </button>
-                  )}
-                  <button style={vlqStyles.nextButton} onClick={handleImportanceNext}>
-                    Next
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                {/* Consistency slider */}
-                <p style={vlqStyles.question}>How consistently have you been living this lately?</p>
-                <div style={vlqStyles.sliderContainer}>
-                  <div style={vlqStyles.sliderLabels}>
-                    <span>Not at all</span>
-                    <span>Fully</span>
-                  </div>
-                  <input
-                    type="range"
-                    min="1"
-                    max="10"
-                    value={localConsistency}
-                    onChange={(e) => setLocalConsistency(parseInt(e.target.value))}
-                    style={{...vlqStyles.slider, accentColor: domainInfo.color}}
-                  />
-                  <div style={{...vlqStyles.sliderValue, color: domainInfo.color}}>
-                    {localConsistency}
-                  </div>
-                  <div style={vlqStyles.sliderValueLabel}>
-                    {getValueLabel(localConsistency, 'consistency')}
-                  </div>
-                </div>
-
-                <div style={vlqStyles.buttons}>
-                  <button style={vlqStyles.backButton} onClick={handleBack}>
-                    Back
-                  </button>
-                  <button style={vlqStyles.nextButton} onClick={handleConsistencyNext}>
-                    {vlqStep < VLQ_ORDER.length - 1 ? 'Next' : 'See Results'}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
-      );
+      return null;
     }
 
     function TendApp() {
