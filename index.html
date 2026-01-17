@@ -677,6 +677,7 @@
 
       const [revealed, setRevealed] = useState(false);
       const [activeTab, setActiveTab] = useState('events');
+      const [sidebarExpanded, setSidebarExpanded] = useState(false);
       const [centerView, setCenterView] = useState(CENTER_VIEWS.YEAR);
       const [expandedEvent, setExpandedEvent] = useState(null);
       const [showEventModal, setShowEventModal] = useState(false);
@@ -1546,43 +1547,93 @@ I'm here to help with any planning.`
           </header>
 
           <main style={{...styles.main, gridTemplateColumns: `240px 1fr ${chatWidth}px`}}>
-            <aside style={styles.sidebar}>
-              <div style={styles.tabs}>
-                {['events', 'notes', 'goals'].map(tab => (
-                  <button
-                    key={tab}
-                    style={{...styles.tab, ...(activeTab === tab && styles.tabActive)}}
-                    onClick={() => setActiveTab(tab)}
+            <aside style={{
+              ...styles.sidebar,
+              width: sidebarExpanded ? '240px' : '48px',
+              transition: 'width 0.2s ease'
+            }}>
+              {!sidebarExpanded ? (
+                <div style={styles.collapsedSidebar}>
+                  <button 
+                    style={styles.expandButton}
+                    onClick={() => setSidebarExpanded(true)}
+                    title="Expand sidebar"
                   >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                    ☰
                   </button>
-                ))}
-              </div>
+                  <div style={styles.collapsedIcons}>
+                    <button 
+                      style={{...styles.collapsedIcon, ...(activeTab === 'events' && styles.collapsedIconActive)}}
+                      onClick={() => { setActiveTab('events'); setSidebarExpanded(true); }}
+                      title="Events"
+                    >📅</button>
+                    <button 
+                      style={{...styles.collapsedIcon, ...(activeTab === 'journal' && styles.collapsedIconActive)}}
+                      onClick={() => { setActiveTab('journal'); setSidebarExpanded(true); }}
+                      title="Journal"
+                    >📝</button>
+                    <button 
+                      style={{...styles.collapsedIcon, ...(activeTab === 'lifeareas' && styles.collapsedIconActive)}}
+                      onClick={() => { setActiveTab('lifeareas'); setSidebarExpanded(true); }}
+                      title="Life Areas"
+                    >🌱</button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div style={styles.sidebarHeader}>
+                    <div style={styles.tabs}>
+                      {[
+                        { id: 'events', label: 'Events' },
+                        { id: 'journal', label: 'Journal' },
+                        { id: 'lifeareas', label: 'Life Areas' }
+                      ].map(tab => (
+                        <button
+                          key={tab.id}
+                          style={{...styles.tab, ...(activeTab === tab.id && styles.tabActive)}}
+                          onClick={() => setActiveTab(tab.id)}
+                        >
+                          {tab.label}
+                        </button>
+                      ))}
+                    </div>
+                    <button 
+                      style={styles.collapseButton}
+                      onClick={() => setSidebarExpanded(false)}
+                      title="Collapse sidebar"
+                    >
+                      ◀
+                    </button>
+                  </div>
 
-              <div style={styles.tabContent}>
-                {activeTab === 'events' && (
-                  <EventsTab
-                    events={events}
-                    expandedEvent={expandedEvent}
-                    setExpandedEvent={setExpandedEvent}
-                    onUpdateDetails={handleUpdateEventDetails}
-                    onDelete={(id) => setEvents(events.filter(e => e.id !== id))}
-                    onAdd={() => setShowEventModal(true)}
-                    revealed={revealed}
-                  />
-                )}
-                {activeTab === 'notes' && (
-                  <NotesTab notes={notes} setNotes={setNotes} revealed={revealed} />
-                )}
-                {activeTab === 'goals' && (
-                  <GoalsTab
-                    goals={goals}
-                    setGoals={setGoals}
-                    onAdd={() => setShowGoalModal(true)}
-                    revealed={revealed}
-                  />
-                )}
-              </div>
+                  <div style={styles.tabContent}>
+                    {activeTab === 'events' && (
+                      <EventsTab
+                        events={events}
+                        expandedEvent={expandedEvent}
+                        setExpandedEvent={setExpandedEvent}
+                        onUpdateDetails={handleUpdateEventDetails}
+                        onDelete={(id) => setEvents(events.filter(e => e.id !== id))}
+                        onAdd={() => setShowEventModal(true)}
+                        revealed={revealed}
+                      />
+                    )}
+                    {activeTab === 'journal' && (
+                      <NotesTab notes={notes} setNotes={setNotes} revealed={revealed} />
+                    )}
+                    {activeTab === 'lifeareas' && (
+                      <LifeAreasTab 
+                        vlqScores={vlqScores}
+                        goals={goals}
+                        setGoals={setGoals}
+                        onReassess={() => { setVlqStep(-1); setVlqCompleted(false); }}
+                        onAddGoal={() => setShowGoalModal(true)}
+                        revealed={revealed}
+                      />
+                    )}
+                  </div>
+                </>
+              )}
             </aside>
 
             <div style={styles.centerPanel}>
@@ -1644,72 +1695,39 @@ I'm here to help with any planning.`
                 />
               )}
 
-              <div style={{...styles.bottomSection, opacity: revealed ? 1 : 0.4}}>
-                <div style={styles.valuesSection}>
-                  <h3 style={styles.sectionLabel}>Values</h3>
-                  <div style={styles.valuesTags}>
-                    {values.map(v => (
-                      <span key={v} style={styles.valueTag} className="fade-in">
-                        {v}
-                        {revealed && (
-                          <button style={styles.valueRemove} onClick={() => setValues(values.filter(x => x !== v))}>×</button>
-                        )}
-                      </span>
-                    ))}
-                    {revealed && values.length < 4 && (
-                      <button style={styles.addValueButton} onClick={() => {
-                        const v = prompt('Add a value:');
-                        if (v && !values.includes(v)) setValues([...values, v]);
-                      }}>+ Add</button>
-                    )}
-                    {values.length === 0 && (
-                      <span style={styles.placeholderText}>Values appear as you share...</span>
-                    )}
+              <div style={styles.bottomSection}>
+                <div style={styles.vlqSummary}>
+                  <div style={styles.vlqSummaryColumn}>
+                    <span style={styles.vlqSummaryLabel}>🌱 Focus on</span>
+                    <div style={styles.vlqSummaryItems}>
+                      {VLQ_ORDER
+                        .map(key => ({key, ...VLQ_DOMAINS[key], gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)}))
+                        .filter(a => a.gap >= 2)
+                        .sort((a, b) => b.gap - a.gap)
+                        .slice(0, 3)
+                        .map(area => (
+                          <span key={area.key} style={{...styles.vlqSummaryTag, borderColor: area.color, color: area.color}}>
+                            {area.icon} {area.name.split(' ')[0]}
+                          </span>
+                        ))
+                      }
+                    </div>
                   </div>
-                </div>
-                
-                <div style={styles.lifeAreasSection}>
-                  <h3 style={styles.sectionLabel}>Values (VLQ)</h3>
-                  <div style={styles.vlqGrid}>
-                    {VLQ_ORDER.slice(0, 5).map(key => {
-                      const domain = VLQ_DOMAINS[key];
-                      const scores = vlqScores[key];
-                      const gap = (scores?.importance || 0) - (scores?.consistency || 0);
-                      return (
-                        <div key={key} style={styles.vlqItem}>
-                          <div style={styles.vlqItemHeader}>
-                            <span style={{fontSize: '0.9rem'}}>{domain.icon}</span>
-                            <span style={styles.vlqItemName}>{domain.name.split(' ')[0]}</span>
-                          </div>
-                          <div style={styles.vlqItemScores}>
-                            <span style={{color: 'var(--text-muted)', fontSize: '0.75rem'}}>
-                              {scores?.consistency || 0}
-                            </span>
-                            <span style={{color: 'var(--text-muted)', fontSize: '0.6rem'}}>→</span>
-                            <span style={{color: domain.color, fontSize: '0.75rem', fontWeight: 600}}>
-                              {scores?.importance || 0}
-                            </span>
-                            {gap >= 3 && (
-                              <span style={{
-                                fontSize: '0.6rem',
-                                color: domain.color,
-                                backgroundColor: `${domain.color}20`,
-                                padding: '0.1rem 0.3rem',
-                                borderRadius: '4px',
-                                marginLeft: '0.25rem'
-                              }}>+{gap}</span>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
+                  <div style={styles.vlqSummaryColumn}>
+                    <span style={styles.vlqSummaryLabel}>💪 Thriving in</span>
+                    <div style={styles.vlqSummaryItems}>
+                      {VLQ_ORDER
+                        .map(key => ({key, ...VLQ_DOMAINS[key], importance: vlqScores[key]?.importance || 5, consistency: vlqScores[key]?.consistency || 5}))
+                        .filter(a => a.importance >= 7 && a.consistency >= 6)
+                        .slice(0, 3)
+                        .map(area => (
+                          <span key={area.key} style={{...styles.vlqSummaryTag, borderColor: area.color, color: area.color, opacity: 0.8}}>
+                            {area.icon} {area.name.split(' ')[0]}
+                          </span>
+                        ))
+                      }
+                    </div>
                   </div>
-                  <button 
-                    style={styles.reassessButton}
-                    onClick={() => { setVlqStep(-1); setVlqCompleted(false); }}
-                  >
-                    Reassess Values
-                  </button>
                 </div>
               </div>
             </div>
@@ -1883,10 +1901,42 @@ I'm here to help with any planning.`
     // ============ SEASONS VIEW ============
     function SeasonsView({ seasonIntentions, setSeasonIntentions, revealed }) {
       const seasons = [
-        { id: 'winter', name: 'Winter', months: 'Dec – Feb', color: '#7EB3E0', lightColor: '#F5F9FC', elements: ['❄', '·', '❄', '·', '❄'] },
-        { id: 'spring', name: 'Spring', months: 'Mar – May', color: '#8FD4A0', lightColor: '#F5FBF6', elements: ['✿', '·', '❀', '·', '✿'] },
-        { id: 'summer', name: 'Summer', months: 'Jun – Aug', color: '#F9D07A', lightColor: '#FFFDF7', elements: ['☀', '~', '☀', '~', '☀'] },
-        { id: 'fall', name: 'Fall', months: 'Sep – Nov', color: '#E8A090', lightColor: '#FDF7F5', elements: ['🍂', '·', '🍁', '·', '🍂'] },
+        { 
+          id: 'winter', 
+          name: 'Winter', 
+          months: 'Dec – Feb', 
+          color: '#7EB3E0', 
+          lightColor: '#F5F9FC', 
+          elements: ['❄', '·', '❄', '·', '❄'],
+          description: 'A time for rest, reflection, and turning inward. Shorter days invite quiet planning, cozy routines, and nurturing what matters most.'
+        },
+        { 
+          id: 'spring', 
+          name: 'Spring', 
+          months: 'Mar – May', 
+          color: '#8FD4A0', 
+          lightColor: '#F5FBF6', 
+          elements: ['✿', '·', '❀', '·', '✿'],
+          description: 'A time for new beginnings and fresh energy. Nature awakens — a good season to plant seeds, start projects, and embrace growth.'
+        },
+        { 
+          id: 'summer', 
+          name: 'Summer', 
+          months: 'Jun – Aug', 
+          color: '#F9D07A', 
+          lightColor: '#FFFDF7', 
+          elements: ['☀', '~', '☀', '~', '☀'],
+          description: 'A time for expansion, adventure, and connection. Long days invite travel, outdoor activities, and making memories with others.'
+        },
+        { 
+          id: 'fall', 
+          name: 'Fall', 
+          months: 'Sep – Nov', 
+          color: '#E8A090', 
+          lightColor: '#FDF7F5', 
+          elements: ['🍂', '·', '🍁', '·', '🍂'],
+          description: 'A time for harvest and gratitude. Energy turns toward completion, gathering, and preparing for the quieter months ahead.'
+        },
       ];
 
       const currentSeason = (() => {
@@ -1926,8 +1976,10 @@ I'm here to help with any planning.`
                     )}
                   </div>
                   
+                  <p style={styles.seasonDescription}>{season.description}</p>
+                  
                   <div style={styles.seasonIntentionBox}>
-                    <label style={{...styles.seasonLabel, color: season.color}}>How do you want this season to feel?</label>
+                    <label style={{...styles.seasonLabel, color: season.color}}>What do you envision for this season?</label>
                     <textarea
                       style={{
                         ...styles.seasonTextarea,
@@ -1936,7 +1988,7 @@ I'm here to help with any planning.`
                       }}
                       value={seasonIntentions[season.id] || ''}
                       onChange={(e) => setSeasonIntentions({...seasonIntentions, [season.id]: e.target.value})}
-                      placeholder={revealed ? 'Set your intention...' : 'Complete conversation to unlock'}
+                      placeholder={revealed ? 'Your intention for this season...' : 'Complete conversation to unlock'}
                       disabled={!revealed}
                       rows={2}
                     />
@@ -2288,6 +2340,149 @@ I'm here to help with any planning.`
       );
     }
 
+    function LifeAreasTab({ vlqScores, goals, setGoals, onReassess, onAddGoal, revealed }) {
+      // Calculate growth areas and strengths from VLQ
+      const sortedAreas = VLQ_ORDER.map(key => ({
+        key,
+        ...VLQ_DOMAINS[key],
+        importance: vlqScores[key]?.importance || 5,
+        consistency: vlqScores[key]?.consistency || 5,
+        gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)
+      })).sort((a, b) => b.gap - a.gap);
+
+      const growthAreas = sortedAreas.filter(a => a.gap >= 2);
+      const strengths = sortedAreas.filter(a => a.importance >= 7 && a.consistency >= 6);
+
+      return (
+        <div style={{padding: '1rem', display: 'flex', flexDirection: 'column', gap: '1.25rem', height: '100%', overflowY: 'auto'}}>
+          {/* Growth Areas */}
+          <div>
+            <h3 style={{fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.625rem'}}>
+              🌱 Growth Areas
+            </h3>
+            {growthAreas.length > 0 ? growthAreas.slice(0, 4).map(area => (
+              <div key={area.key} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.5rem 0.625rem',
+                backgroundColor: 'var(--bg-elevated)',
+                borderRadius: '8px',
+                marginBottom: '0.375rem',
+                borderLeft: `3px solid ${area.color}`
+              }}>
+                <span style={{fontSize: '0.9rem'}}>{area.icon}</span>
+                <span style={{flex: 1, fontSize: '0.8rem', color: 'var(--text)'}}>{area.name.split(' ')[0]}</span>
+                <span style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>{area.consistency}→{area.importance}</span>
+              </div>
+            )) : (
+              <p style={{fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic'}}>
+                You're well-aligned across areas!
+              </p>
+            )}
+          </div>
+
+          {/* Strengths */}
+          <div>
+            <h3 style={{fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '0.625rem'}}>
+              💪 Strengths
+            </h3>
+            {strengths.length > 0 ? strengths.slice(0, 3).map(area => (
+              <div key={area.key} style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                padding: '0.5rem 0.625rem',
+                backgroundColor: 'var(--bg-elevated)',
+                borderRadius: '8px',
+                marginBottom: '0.375rem',
+                opacity: 0.85
+              }}>
+                <span style={{fontSize: '0.9rem'}}>{area.icon}</span>
+                <span style={{flex: 1, fontSize: '0.8rem', color: 'var(--text)'}}>{area.name.split(' ')[0]}</span>
+                <span style={{fontSize: '0.7rem', color: area.color}}>✓</span>
+              </div>
+            )) : (
+              <p style={{fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic'}}>
+                Keep building!
+              </p>
+            )}
+          </div>
+
+          {/* Goals */}
+          <div style={{flex: 1}}>
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.625rem'}}>
+              <h3 style={{fontSize: '0.7rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)'}}>
+                🎯 Goals
+              </h3>
+              {revealed && <button style={{
+                padding: '0.25rem 0.5rem',
+                backgroundColor: 'var(--bg-elevated)',
+                border: '1px solid var(--border)',
+                borderRadius: '6px',
+                color: 'var(--text-muted)',
+                fontSize: '0.7rem',
+                cursor: 'pointer'
+              }} onClick={onAddGoal}>+ Add</button>}
+            </div>
+            {goals.length === 0 ? (
+              <p style={{fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic'}}>
+                No goals yet — chat about what you want to achieve
+              </p>
+            ) : (
+              <div style={{display: 'flex', flexDirection: 'column', gap: '0.375rem'}}>
+                {goals.map(goal => (
+                  <div key={goal.id} style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.5rem 0.625rem',
+                    backgroundColor: 'var(--bg-elevated)',
+                    borderRadius: '8px',
+                    opacity: goal.completed ? 0.5 : 1
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={goal.completed}
+                      onChange={() => setGoals(goals.map(g => g.id === goal.id ? {...g, completed: !g.completed} : g))}
+                      style={{margin: 0, cursor: 'pointer', accentColor: 'var(--accent)'}}
+                    />
+                    <span style={{
+                      fontSize: '0.8rem',
+                      textDecoration: goal.completed ? 'line-through' : 'none',
+                      flex: 1,
+                      color: 'var(--text)'
+                    }}>{goal.text}</span>
+                    <button 
+                      style={{background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem'}}
+                      onClick={() => setGoals(goals.filter(g => g.id !== goal.id))}
+                    >×</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Reassess Button */}
+          <button 
+            style={{
+              padding: '0.625rem',
+              backgroundColor: 'transparent',
+              border: '1px dashed var(--border)',
+              borderRadius: '8px',
+              color: 'var(--text-muted)',
+              fontSize: '0.75rem',
+              cursor: 'pointer',
+              marginTop: 'auto'
+            }}
+            onClick={onReassess}
+          >
+            Reassess My Values
+          </button>
+        </div>
+      );
+    }
+
     function ChatMessage({ message }) {
       const isAssistant = message.role === 'assistant';
       return (
@@ -2423,11 +2618,18 @@ I'm here to help with any planning.`
       tagline: { fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic', flex: 1 },
       settingsButton: { background: 'none', border: 'none', fontSize: '1.25rem', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.25rem', opacity: 0.7, transition: 'opacity 0.2s' },
 
-      main: { display: 'grid', gridTemplateColumns: '240px 1fr 320px', flex: 1, height: 'calc(100vh - 56px)', overflow: 'hidden' },
+      main: { display: 'grid', gridTemplateColumns: '48px 1fr 320px', flex: 1, height: 'calc(100vh - 56px)', overflow: 'hidden' },
 
       sidebar: { backgroundColor: 'var(--bg-card)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' },
-      tabs: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', borderBottom: '1px solid var(--border)' },
-      tab: { padding: '0.875rem 0.5rem', backgroundColor: 'transparent', border: 'none', borderBottom: '2px solid transparent', color: 'var(--text-muted)', fontSize: '0.75rem', fontWeight: 500, cursor: 'pointer' },
+      collapsedSidebar: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0.5rem 0', gap: '0.5rem' },
+      expandButton: { background: 'none', border: 'none', fontSize: '1.1rem', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.5rem', borderRadius: '8px' },
+      collapsedIcons: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
+      collapsedIcon: { background: 'none', border: 'none', fontSize: '1rem', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.625rem', borderRadius: '8px' },
+      collapsedIconActive: { backgroundColor: 'var(--bg-elevated)', color: 'var(--accent)' },
+      sidebarHeader: { display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--border)' },
+      collapseButton: { background: 'none', border: 'none', fontSize: '0.75rem', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.75rem 0.5rem' },
+      tabs: { display: 'flex', flex: 1 },
+      tab: { flex: 1, padding: '0.875rem 0.375rem', backgroundColor: 'transparent', border: 'none', borderBottom: '2px solid transparent', color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' },
       tabActive: { color: 'var(--text)', borderBottomColor: 'var(--accent)' },
       tabContent: { flex: 1, overflow: 'auto', padding: '1rem', minHeight: 0 },
       tabPlaceholder: { display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%', padding: '2rem' },
@@ -2475,10 +2677,11 @@ I'm here to help with any planning.`
       seasonCard: { borderRadius: '16px', overflow: 'hidden', border: '2px solid transparent' },
       seasonDecorative: { padding: '0.75rem', display: 'flex', justifyContent: 'center', gap: '0.75rem', fontSize: '1rem', opacity: 0.7 },
       seasonCardContent: { padding: '1rem', backgroundColor: 'var(--bg-card)', borderBottomLeftRadius: '14px', borderBottomRightRadius: '14px' },
-      seasonCardHeader: { marginBottom: '0.75rem', position: 'relative' },
+      seasonCardHeader: { marginBottom: '0.5rem', position: 'relative' },
       seasonName: { fontSize: '1.125rem', fontFamily: "'Fraunces', serif", marginBottom: '0.125rem' },
       seasonMonths: { fontSize: '0.75rem', color: 'var(--text-muted)' },
       currentBadge: { position: 'absolute', top: 0, right: 0, fontSize: '0.6rem', color: 'white', padding: '0.2rem 0.5rem', borderRadius: '8px' },
+      seasonDescription: { fontSize: '0.75rem', color: 'var(--text-muted)', lineHeight: 1.5, marginBottom: '0.75rem', fontStyle: 'italic' },
       seasonIntentionBox: { },
       seasonLabel: { fontSize: '0.7rem', fontWeight: 500, display: 'block', marginBottom: '0.375rem' },
       seasonTextarea: { width: '100%', padding: '0.625rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '8px', fontSize: '0.8rem', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif", resize: 'none', lineHeight: 1.5 },
@@ -2547,40 +2750,14 @@ I'm here to help with any planning.`
       addDailyInput: { width: '100%', maxWidth: '400px', padding: '0.875rem 1.125rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', fontSize: '0.95rem', color: 'var(--text)', fontFamily: "'DM Sans', sans-serif", textAlign: 'center' },
       addDailyButton: { padding: '0.75rem 1.5rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '12px', color: 'white', fontSize: '0.9rem', cursor: 'pointer', fontWeight: 500 },
 
-      // Bottom section
-      bottomSection: { display: 'grid', gridTemplateColumns: '140px 1fr', gap: '1.5rem', width: '100%', maxWidth: '500px', padding: '1rem 1.25rem', backgroundColor: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)', transition: 'opacity 0.5s ease', marginTop: 'auto' },
-      valuesSection: {},
+      // Bottom section - VLQ Summary
+      bottomSection: { display: 'flex', justifyContent: 'center', gap: '2rem', width: '100%', maxWidth: '600px', padding: '1rem 1.5rem', backgroundColor: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)', marginTop: 'auto' },
+      vlqSummary: { display: 'flex', gap: '2.5rem', justifyContent: 'center', width: '100%' },
+      vlqSummaryColumn: { display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'center' },
+      vlqSummaryLabel: { fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 500 },
+      vlqSummaryItems: { display: 'flex', flexWrap: 'wrap', gap: '0.375rem', justifyContent: 'center' },
+      vlqSummaryTag: { display: 'inline-flex', alignItems: 'center', gap: '0.25rem', padding: '0.3rem 0.6rem', backgroundColor: 'transparent', border: '1px solid', borderRadius: '12px', fontSize: '0.7rem' },
       sectionLabel: { fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: '0.5rem', fontFamily: "'DM Sans', sans-serif", fontWeight: 600 },
-      valuesTags: { display: 'flex', flexWrap: 'wrap', gap: '0.3rem' },
-      valueTag: { display: 'inline-flex', alignItems: 'center', gap: '0.3rem', padding: '0.3rem 0.6rem', backgroundColor: 'var(--accent)', color: 'white', borderRadius: '12px', fontSize: '0.7rem' },
-      valueRemove: { background: 'none', border: 'none', color: 'white', opacity: 0.7, cursor: 'pointer', fontSize: '0.8rem', padding: 0, lineHeight: 1 },
-      addValueButton: { padding: '0.3rem 0.6rem', backgroundColor: 'transparent', border: '1px dashed var(--border-dark)', borderRadius: '12px', color: 'var(--text-muted)', fontSize: '0.7rem', cursor: 'pointer' },
-      lifeAreasSection: { display: 'flex', flexDirection: 'column', gap: '0.5rem' },
-      vlqGrid: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '0.375rem' },
-      vlqItem: { display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.2rem' },
-      vlqItemHeader: { display: 'flex', alignItems: 'center', gap: '0.25rem' },
-      vlqItemName: { fontSize: '0.6rem', color: 'var(--text-muted)' },
-      vlqItemScores: { display: 'flex', alignItems: 'center', gap: '0.2rem' },
-      reassessButton: { 
-        marginTop: '0.5rem', 
-        padding: '0.4rem 0.75rem', 
-        backgroundColor: 'transparent', 
-        border: '1px dashed var(--border)', 
-        borderRadius: '8px', 
-        color: 'var(--text-muted)', 
-        fontSize: '0.65rem', 
-        cursor: 'pointer',
-        alignSelf: 'center'
-      },
-      lifeAreasGrid: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.625rem' },
-      lifeAreaItem: { display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'center' },
-      lifeAreaHeader: { display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.65rem' },
-      lifeAreaName: { color: 'var(--text-light)', fontSize: '0.65rem' },
-      lifeAreaScores: { display: 'flex', alignItems: 'center', gap: '0.25rem' },
-      lifeAreaScore: { fontSize: '0.8rem', color: 'var(--text-muted)' },
-      lifeAreaArrow: { fontSize: '0.6rem', color: 'var(--text-muted)' },
-      lifeAreasPlaceholder: { padding: '1rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '8px', textAlign: 'center' },
-      lifeAreasPlaceholderText: { fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic' },
       slider: { width: '100%', height: '3px', cursor: 'pointer' },
 
       // Chat
