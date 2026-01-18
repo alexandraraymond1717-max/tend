@@ -1355,16 +1355,33 @@ IMPORTANT - Theme Word Discovery Process (in EXPLORE phase):
    - Then suggest: "Based on what you've shared about [summarize key themes], I think your word might be *[word]*. It captures [specific reason tied to what they said]."
    - Ask: "Does that resonate? Feel free to try it on, adjust it, or suggest something else."
 4. Let them accept, modify, or suggest alternatives
-5. Once they have a word they like, celebrate it briefly and transition to planning
+5. Once they have a word they like, celebrate it briefly and let them know they can explore the other tabs (Seasons, Monthly, Weekly, Daily) to plan in more detail
 
-View-specific guidance:
-- Year view: Help them discover their theme word through conversation, then see the big picture
-- Seasons view: Help them set intentions for each season's feeling and focus
-- Monthly view: Help them plan specific months, events, and time allocation
-- Weekly view: Help them establish weekly rhythms (exercise, date nights, creative time)
-- Daily view: Help them identify small daily habits that compound
-
-If they mention specific months or events, acknowledge those and help add them.
+CURRENT VIEW: ${centerView.toUpperCase()}
+${centerView === 'year' ? `
+You're on the YEAR view. ${yearTheme ? `Their theme word is "${yearTheme}". Help them see how their year could unfold around this theme. If they want to change it, that's fine.` : `Focus on discovering their theme word through conversation. Don't ask directly - explore their VLQ results and what they want from the year, then suggest a word.`}
+` : ''}${centerView === 'seasons' ? `
+You're on the SEASONS view. Help them think about what each season could feel like and hold for them. Ask about:
+- What's already planned for each season?
+- How do they want each season to feel?
+- Are there natural rhythms they want to honor (rest in winter, growth in spring, adventure in summer, harvest in fall)?
+` : ''}${centerView === 'monthly' ? `
+You're on the MONTHLY view. Help them plan specific events and commitments. Ask about:
+- What trips, events, or milestones are coming up?
+- Are there months that feel too full or too empty?
+- What needs to be scheduled to honor their values?
+` : ''}${centerView === 'weekly' ? `
+You're on the WEEKLY view. Help them establish weekly rhythms and recurring commitments. Ask about:
+- What weekly habits would support their values? (exercise, date nights, creative time, rest)
+- What's a realistic frequency for each?
+- How can they protect time for what matters?
+` : ''}${centerView === 'daily' ? `
+You're on the DAILY view. Help them identify small daily habits that compound over time. Ask about:
+- What tiny habits would make the biggest difference?
+- What do they want their mornings or evenings to look like?
+- What daily practice would support their theme word?
+` : ''}
+If they mention specific events, habits, or plans, acknowledge those and help them think through the details.
 If they seem stuck, offer a gentle prompt or example.
 If you notice a misalignment between their VLQ values (high importance areas) and their actual plans, gently bring it up.
 
@@ -1907,26 +1924,18 @@ I'm here to help with any planning.`
               2026
             </text>
 
-            {/* Theme word or placeholder */}
-            <foreignObject x={center - 50} y={center + 4} width="100" height="30">
-              <input
-                type="text"
-                value={yearTheme}
-                onChange={(e) => setYearTheme(e.target.value.toLowerCase())}
-                placeholder="theme"
-                style={{
-                  width: '100%',
-                  textAlign: 'center',
-                  border: 'none',
-                  background: 'transparent',
-                  fontFamily: "'Fraunces', serif",
-                  fontSize: '0.85rem',
-                  color: yearTheme ? 'var(--accent)' : 'var(--text-muted)',
-                  fontStyle: yearTheme ? 'normal' : 'italic',
-                  outline: 'none',
-                }}
-              />
-            </foreignObject>
+            {/* Theme word - only show if set */}
+            {yearTheme && (
+              <text x={center} y={center + 18} textAnchor="middle" dominantBaseline="middle" 
+                fill="var(--accent)"
+                style={{ fontFamily: "'Fraunces', serif", fontSize: '0.95rem', fontStyle: 'italic', cursor: 'pointer' }}
+                onClick={() => {
+                  const newTheme = prompt('Edit your theme word:', yearTheme);
+                  if (newTheme !== null) setYearTheme(newTheme.toLowerCase());
+                }}>
+                {yearTheme}
+              </text>
+            )}
 
             {MONTHS.map((month, idx) => {
               const pos = getMonthPosition(idx);
@@ -1956,8 +1965,6 @@ I'm here to help with any planning.`
               );
             })}
           </svg>
-
-          {revealed && <button style={styles.circleAddButton} onClick={onAddEvent}>+ Add Event</button>}
         </div>
       );
     }
