@@ -392,7 +392,7 @@
               </svg>
               <h1 style={vlqStyles.introTitle}>Welcome to Tend</h1>
               <p style={{...vlqStyles.introText, marginBottom: '1.5rem'}}>
-                Tend helps you design a life aligned with your values — not just manage tasks, but actually live the way you want to live.
+                Tend helps you design a life aligned with your values — not just survive, but live intentionally and mindfully.
               </p>
               <p style={vlqStyles.introText}>
                 To get started, you'll reflect on <strong>10 areas of life</strong>. For each one, you'll rate:
@@ -1317,7 +1317,7 @@ Click on the event in the sidebar to add details.`;
             : '';
         };
 
-        return `You are Tend, a thoughtful AI companion for intentional living and life design. You help people design their year with intention — not just manage tasks, but create a life aligned with their values.
+        return `You are Tend, a thoughtful AI companion for intentional living and life design. You help people design their year with intention — not just survive, but live intentionally and mindfully.
 
 Your personality:
 - Warm, calm, and grounded — like a wise friend
@@ -1350,10 +1350,12 @@ IMPORTANT - Theme Word Discovery Process (in EXPLORE phase):
    - Ask what's been getting in the way
    - Ask what they wish was different
    - Ask what they want more of
-3. After 4-6 exchanges of genuine conversation, SUGGEST a theme word based on what you've learned
-   - Say something like: "Based on what you've shared, I'm thinking your word might be *[word]*. It captures [reason]. What do you think — does that resonate?"
+3. After 4-6 exchanges of genuine conversation, SUGGEST a theme word based on what you've learned. Frame it like this:
+   - Explain what a theme word is: "A theme word is like a compass — one guiding word you can return to throughout the year to center yourself and make decisions."
+   - Then suggest: "Based on what you've shared about [summarize key themes], I think your word might be *[word]*. It captures [specific reason tied to what they said]."
+   - Ask: "Does that resonate? Feel free to try it on, adjust it, or suggest something else."
 4. Let them accept, modify, or suggest alternatives
-5. Once they have a word they like, celebrate it and transition to planning
+5. Once they have a word they like, celebrate it briefly and transition to planning
 
 View-specific guidance:
 - Year view: Help them discover their theme word through conversation, then see the big picture
@@ -1750,25 +1752,37 @@ I'm here to help with any planning.`
                   <div style={styles.vlqSummaryColumn}>
                     <span style={styles.vlqSummaryLabel}>🌱 Focus on</span>
                     <div style={styles.vlqSummaryItems}>
-                      {VLQ_ORDER
-                        .map(key => ({key, ...VLQ_DOMAINS[key], gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)}))
-                        .filter(a => a.gap >= 2)
-                        .sort((a, b) => b.gap - a.gap)
-                        .slice(0, 3)
-                        .map(area => (
-                          <span key={area.key} style={{...styles.vlqSummaryTag, borderColor: area.color, color: area.color}}>
-                            {area.icon} {area.name.split(' ')[0]}
-                          </span>
-                        ))
-                      }
+                      {(() => {
+                        const allAreas = VLQ_ORDER.map(key => ({
+                          key, 
+                          ...VLQ_DOMAINS[key], 
+                          importance: vlqScores[key]?.importance || 5,
+                          consistency: vlqScores[key]?.consistency || 5,
+                          gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)
+                        }));
+                        // Strengths: high importance AND consistency is close to importance (gap < 2)
+                        const strengthKeys = allAreas
+                          .filter(a => a.importance >= 7 && a.consistency >= 6 && a.gap < 2)
+                          .map(a => a.key);
+                        // Growth: gap >= 2 AND not already a strength
+                        return allAreas
+                          .filter(a => a.gap >= 2 && !strengthKeys.includes(a.key))
+                          .sort((a, b) => b.gap - a.gap)
+                          .slice(0, 3)
+                          .map(area => (
+                            <span key={area.key} style={{...styles.vlqSummaryTag, borderColor: area.color, color: area.color}}>
+                              {area.icon} {area.name.split(' ')[0]}
+                            </span>
+                          ));
+                      })()}
                     </div>
                   </div>
                   <div style={styles.vlqSummaryColumn}>
                     <span style={styles.vlqSummaryLabel}>💪 Thriving in</span>
                     <div style={styles.vlqSummaryItems}>
                       {VLQ_ORDER
-                        .map(key => ({key, ...VLQ_DOMAINS[key], importance: vlqScores[key]?.importance || 5, consistency: vlqScores[key]?.consistency || 5}))
-                        .filter(a => a.importance >= 7 && a.consistency >= 6)
+                        .map(key => ({key, ...VLQ_DOMAINS[key], importance: vlqScores[key]?.importance || 5, consistency: vlqScores[key]?.consistency || 5, gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)}))
+                        .filter(a => a.importance >= 7 && a.consistency >= 6 && a.gap < 2)
                         .slice(0, 3)
                         .map(area => (
                           <span key={area.key} style={{...styles.vlqSummaryTag, borderColor: area.color, color: area.color, opacity: 0.8}}>
