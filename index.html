@@ -998,29 +998,23 @@
       };
 
       // Show loading while checking auth
-      if (authLoading) {
-        return (
-          <div style={{
-            minHeight: '100vh',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            backgroundColor: 'var(--bg-main)',
-            fontFamily: "'DM Sans', sans-serif",
-          }}>
-            <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🌱</div>
-              <div>Loading...</div>
-            </div>
+      const loadingScreen = (
+        <div style={{
+          minHeight: '100vh',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: 'var(--bg-main)',
+          fontFamily: "'DM Sans', sans-serif",
+        }}>
+          <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🌱</div>
+            <div>Loading...</div>
           </div>
-        );
-      }
+        </div>
+      );
 
-      // Show auth screen if not logged in
-      if (!user) {
-        return <AuthModal onSuccess={() => {}} />;
-      }
-
+      // Initial chat message after VLQ
       useEffect(() => {
         // Only set initial message after VLQ is complete
         if (vlqCompleted && messages.length === 0) {
@@ -1919,6 +1913,16 @@ I'm here to help with any planning.`
           setValues(highImportance.slice(0, 3));
         }
       };
+
+      // Show loading while checking auth
+      if (authLoading) {
+        return loadingScreen;
+      }
+
+      // Show auth screen if not logged in
+      if (!user) {
+        return <AuthModal onSuccess={() => {}} />;
+      }
 
       // Show VLQ assessment first
       if (!vlqCompleted) {
