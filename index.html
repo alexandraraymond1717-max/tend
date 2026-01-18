@@ -678,6 +678,8 @@
       const [revealed, setRevealed] = useState(false);
       const [activeTab, setActiveTab] = useState('events');
       const [sidebarExpanded, setSidebarExpanded] = useState(false);
+      const [sidebarWidth, setSidebarWidth] = useState(240);
+      const [isResizingSidebar, setIsResizingSidebar] = useState(false);
       const [centerView, setCenterView] = useState(CENTER_VIEWS.YEAR);
       const [expandedEvent, setExpandedEvent] = useState(null);
       const [showEventModal, setShowEventModal] = useState(false);
@@ -697,21 +699,38 @@
             gap: (vlqScores[key]?.importance || 0) - (vlqScores[key]?.consistency || 0)
           })).filter(g => g.gap >= 3).sort((a, b) => b.gap - a.gap);
           
-          const growthMention = gaps.length > 0
-            ? `I can see <em>${gaps[0].name}</em>${gaps.length > 1 ? ` and <em>${gaps[1].name}</em>` : ''} are areas where you want to grow.`
-            : '';
+          // Find the biggest growth area to explore
+          const biggestGap = gaps[0];
+          const topStrength = VLQ_ORDER.map(key => ({
+            key,
+            name: VLQ_DOMAINS[key].name,
+            importance: vlqScores[key]?.importance || 5,
+            consistency: vlqScores[key]?.consistency || 5
+          })).filter(a => a.importance >= 7 && a.consistency >= 6).sort((a, b) => b.importance - a.importance)[0];
+
+          let openingMessage = `Thank you for sharing what matters to you.`;
+          
+          if (biggestGap && biggestGap.gap >= 3) {
+            openingMessage += `
+
+I noticed <em>${biggestGap.name}</em> really matters to you (${biggestGap.importance}/10), but you rated your consistency there as ${biggestGap.consistency}/10. That gap tells me something important.
+
+What's been getting in the way? Or what would it look like if that area was thriving?`;
+          } else if (topStrength) {
+            openingMessage += `
+
+I see <em>${topStrength.name}</em> is both important to you and something you're living well. That's a real strength.
+
+What helps you stay consistent there? And are there other areas you'd like to bring that same energy to?`;
+          } else {
+            openingMessage += `
+
+Looking at your values, I'm curious — what's been on your mind lately? What do you wish had more space in your life this year?`;
+          }
 
           setMessages([{
             role: 'assistant',
-            content: `Thank you for sharing what matters to you. ${growthMention}
-
-Now let's give your year some shape. <strong>If you could choose one word to guide 2026, what would it be?</strong>
-
-Not a resolution or goal — a compass. A word that captures how you want to feel, who you want to become, or what you want to prioritize.
-
-Some examples: <em>ease, courage, presence, joy, depth, adventure, roots, flow</em>
-
-What word comes to mind?`
+            content: openingMessage
           }]);
         }
       }, [vlqCompleted]);
@@ -745,6 +764,34 @@ What word comes to mind?`
           document.removeEventListener('mouseup', handleMouseUp);
         };
       }, [isResizing]);
+
+      // Sidebar resize handlers
+      const handleSidebarMouseDown = (e) => {
+        setIsResizingSidebar(true);
+        e.preventDefault();
+      };
+
+      useEffect(() => {
+        const handleSidebarMouseMove = (e) => {
+          if (!isResizingSidebar) return;
+          const newWidth = e.clientX;
+          setSidebarWidth(Math.min(Math.max(200, newWidth), 400));
+        };
+
+        const handleSidebarMouseUp = () => {
+          setIsResizingSidebar(false);
+        };
+
+        if (isResizingSidebar) {
+          document.addEventListener('mousemove', handleSidebarMouseMove);
+          document.addEventListener('mouseup', handleSidebarMouseUp);
+        }
+
+        return () => {
+          document.removeEventListener('mousemove', handleSidebarMouseMove);
+          document.removeEventListener('mouseup', handleSidebarMouseUp);
+        };
+      }, [isResizingSidebar]);
 
       useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -1276,7 +1323,7 @@ Your personality:
 - Warm, calm, and grounded — like a wise friend
 - You ask thoughtful questions rather than give prescriptive advice
 - You're concise — 2-4 sentences is often enough, occasionally more for important moments
-- You use gentle emphasis with italics for key words
+- You use gentle emphasis with *italics* for key words (use asterisks for italics)
 - You avoid bullet points in conversation — speak naturally
 
 Current context:
@@ -1291,19 +1338,31 @@ Current context:
 - Weekly habits: ${weeklyHabits.length > 0 ? weeklyHabits.map(h => `${h.text} (${h.frequency}x/week)`).join(', ') : 'none yet'}
 - Daily habits: ${dailyHabits.length > 0 ? dailyHabits.map(h => h.text).join(', ') : 'none yet'}
 - Phase: ${phase} (explore = getting to know them, ground = understanding commitments, reveal = unlocking the app, plan = ongoing planning)
+- Conversation length: ${messages.length} messages so far
 ${getMisalignments()}
 
-The user has already completed the VLQ (Valued Living Questionnaire) assessment before this chat. You know their values - use this knowledge to personalize your guidance. Reference their growth areas when relevant.
+The user has already completed the VLQ (Valued Living Questionnaire) assessment. You know their values - use this knowledge to personalize your guidance.
+
+IMPORTANT - Theme Word Discovery Process (in EXPLORE phase):
+1. DO NOT ask the user "what word do you want for your year" upfront
+2. Instead, EXPLORE their VLQ results through conversation:
+   - Ask about their growth areas (high importance, low consistency)
+   - Ask what's been getting in the way
+   - Ask what they wish was different
+   - Ask what they want more of
+3. After 4-6 exchanges of genuine conversation, SUGGEST a theme word based on what you've learned
+   - Say something like: "Based on what you've shared, I'm thinking your word might be *[word]*. It captures [reason]. What do you think — does that resonate?"
+4. Let them accept, modify, or suggest alternatives
+5. Once they have a word they like, celebrate it and transition to planning
 
 View-specific guidance:
-- Year view: Help them find their theme word and see the big picture
+- Year view: Help them discover their theme word through conversation, then see the big picture
 - Seasons view: Help them set intentions for each season's feeling and focus
 - Monthly view: Help them plan specific months, events, and time allocation
 - Weekly view: Help them establish weekly rhythms (exercise, date nights, creative time)
 - Daily view: Help them identify small daily habits that compound
 
-If they're in the EXPLORE phase, focus on understanding what they want from the year and helping them find their theme word.
-If they mention specific months or events, acknowledge those.
+If they mention specific months or events, acknowledge those and help add them.
 If they seem stuck, offer a gentle prompt or example.
 If you notice a misalignment between their VLQ values (high importance areas) and their actual plans, gently bring it up.
 
@@ -1546,93 +1605,84 @@ I'm here to help with any planning.`
             </button>
           </header>
 
-          <main style={{...styles.main, gridTemplateColumns: `${sidebarExpanded ? '240px' : '48px'} 1fr ${chatWidth}px`}}>
+          <main style={{...styles.main, gridTemplateColumns: `${sidebarExpanded ? sidebarWidth : 64}px 1fr ${chatWidth}px`}}>
+            {/* Left Sidebar */}
             <aside style={{
               ...styles.sidebar,
-              width: sidebarExpanded ? '240px' : '48px',
-              transition: 'width 0.2s ease'
+              width: sidebarExpanded ? sidebarWidth : 64,
+              transition: sidebarExpanded ? 'none' : 'width 0.2s ease',
+              position: 'relative'
             }}>
-              {!sidebarExpanded ? (
-                <div style={styles.collapsedSidebar}>
-                  <button 
-                    style={styles.expandButton}
-                    onClick={() => setSidebarExpanded(true)}
-                    title="Expand sidebar"
+              {/* Resize handle when expanded */}
+              {sidebarExpanded && (
+                <div 
+                  style={styles.sidebarResizeHandle}
+                  onMouseDown={handleSidebarMouseDown}
+                  title="Drag to resize"
+                />
+              )}
+              
+              <div style={styles.sidebarNav}>
+                {[
+                  { id: 'events', icon: '📅', label: 'Events' },
+                  { id: 'journal', icon: '📝', label: 'Journal' },
+                  { id: 'lifeareas', icon: '🌱', label: 'Life Areas' }
+                ].map(item => (
+                  <button
+                    key={item.id}
+                    style={{
+                      ...styles.sidebarNavItem,
+                      ...(activeTab === item.id && sidebarExpanded && styles.sidebarNavItemActive),
+                      backgroundColor: activeTab === item.id && sidebarExpanded ? 'var(--bg-elevated)' : 'transparent'
+                    }}
+                    onClick={() => {
+                      if (activeTab === item.id && sidebarExpanded) {
+                        setSidebarExpanded(false);
+                      } else {
+                        setActiveTab(item.id);
+                        setSidebarExpanded(true);
+                      }
+                    }}
+                    title={item.label}
                   >
-                    ☰
+                    <span style={styles.sidebarNavIcon}>{item.icon}</span>
+                    <span style={{
+                      ...styles.sidebarNavLabel,
+                      opacity: sidebarExpanded ? 1 : 0,
+                      width: sidebarExpanded ? 'auto' : 0
+                    }}>{item.label}</span>
                   </button>
-                  <div style={styles.collapsedIcons}>
-                    <button 
-                      style={{...styles.collapsedIcon, ...(activeTab === 'events' && styles.collapsedIconActive)}}
-                      onClick={() => { setActiveTab('events'); setSidebarExpanded(true); }}
-                      title="Events"
-                    >📅</button>
-                    <button 
-                      style={{...styles.collapsedIcon, ...(activeTab === 'journal' && styles.collapsedIconActive)}}
-                      onClick={() => { setActiveTab('journal'); setSidebarExpanded(true); }}
-                      title="Journal"
-                    >📝</button>
-                    <button 
-                      style={{...styles.collapsedIcon, ...(activeTab === 'lifeareas' && styles.collapsedIconActive)}}
-                      onClick={() => { setActiveTab('lifeareas'); setSidebarExpanded(true); }}
-                      title="Life Areas"
-                    >🌱</button>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <div style={styles.sidebarHeader}>
-                    <div style={styles.tabs}>
-                      {[
-                        { id: 'events', label: 'Events' },
-                        { id: 'journal', label: 'Journal' },
-                        { id: 'lifeareas', label: 'Life Areas' }
-                      ].map(tab => (
-                        <button
-                          key={tab.id}
-                          style={{...styles.tab, ...(activeTab === tab.id && styles.tabActive)}}
-                          onClick={() => setActiveTab(tab.id)}
-                        >
-                          {tab.label}
-                        </button>
-                      ))}
-                    </div>
-                    <button 
-                      style={styles.collapseButton}
-                      onClick={() => setSidebarExpanded(false)}
-                      title="Collapse sidebar"
-                    >
-                      ◀
-                    </button>
-                  </div>
+                ))}
+              </div>
 
-                  <div style={styles.tabContent}>
-                    {activeTab === 'events' && (
-                      <EventsTab
-                        events={events}
-                        expandedEvent={expandedEvent}
-                        setExpandedEvent={setExpandedEvent}
-                        onUpdateDetails={handleUpdateEventDetails}
-                        onDelete={(id) => setEvents(events.filter(e => e.id !== id))}
-                        onAdd={() => setShowEventModal(true)}
-                        revealed={revealed}
-                      />
-                    )}
-                    {activeTab === 'journal' && (
-                      <NotesTab notes={notes} setNotes={setNotes} revealed={revealed} />
-                    )}
-                    {activeTab === 'lifeareas' && (
-                      <LifeAreasTab 
-                        vlqScores={vlqScores}
-                        goals={goals}
-                        setGoals={setGoals}
-                        onReassess={() => { setVlqStep(-1); setVlqCompleted(false); }}
-                        onAddGoal={() => setShowGoalModal(true)}
-                        revealed={revealed}
-                      />
-                    )}
-                  </div>
-                </>
+              {/* Tab content when expanded */}
+              {sidebarExpanded && (
+                <div style={styles.tabContent}>
+                  {activeTab === 'events' && (
+                    <EventsTab
+                      events={events}
+                      expandedEvent={expandedEvent}
+                      setExpandedEvent={setExpandedEvent}
+                      onUpdateDetails={handleUpdateEventDetails}
+                      onDelete={(id) => setEvents(events.filter(e => e.id !== id))}
+                      onAdd={() => setShowEventModal(true)}
+                      revealed={revealed}
+                    />
+                  )}
+                  {activeTab === 'journal' && (
+                    <NotesTab notes={notes} setNotes={setNotes} revealed={revealed} />
+                  )}
+                  {activeTab === 'lifeareas' && (
+                    <LifeAreasTab 
+                      vlqScores={vlqScores}
+                      goals={goals}
+                      setGoals={setGoals}
+                      onReassess={() => { setVlqStep(-1); setVlqCompleted(false); }}
+                      onAddGoal={() => setShowGoalModal(true)}
+                      revealed={revealed}
+                    />
+                  )}
+                </div>
               )}
             </aside>
 
@@ -2618,16 +2668,15 @@ I'm here to help with any planning.`
       tagline: { fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic', flex: 1 },
       settingsButton: { background: 'none', border: 'none', fontSize: '1.25rem', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.25rem', opacity: 0.7, transition: 'opacity 0.2s' },
 
-      main: { display: 'grid', gridTemplateColumns: '48px 1fr 320px', flex: 1, height: 'calc(100vh - 56px)', overflow: 'hidden' },
+      main: { display: 'grid', gridTemplateColumns: '64px 1fr 320px', flex: 1, height: 'calc(100vh - 56px)', overflow: 'hidden' },
 
       sidebar: { backgroundColor: 'var(--bg-card)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', height: '100%', overflow: 'hidden' },
-      collapsedSidebar: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '0.5rem 0', gap: '0.5rem' },
-      expandButton: { background: 'none', border: 'none', fontSize: '1.1rem', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.5rem', borderRadius: '8px' },
-      collapsedIcons: { display: 'flex', flexDirection: 'column', gap: '0.25rem' },
-      collapsedIcon: { background: 'none', border: 'none', fontSize: '1rem', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.625rem', borderRadius: '8px' },
-      collapsedIconActive: { backgroundColor: 'var(--bg-elevated)', color: 'var(--accent)' },
-      sidebarHeader: { display: 'flex', alignItems: 'center', borderBottom: '1px solid var(--border)' },
-      collapseButton: { background: 'none', border: 'none', fontSize: '0.75rem', color: 'var(--text-muted)', cursor: 'pointer', padding: '0.75rem 0.5rem' },
+      sidebarResizeHandle: { position: 'absolute', right: 0, top: 0, bottom: 0, width: '4px', cursor: 'ew-resize', backgroundColor: 'transparent', zIndex: 10, transition: 'background-color 0.2s' },
+      sidebarNav: { display: 'flex', flexDirection: 'column', padding: '0.75rem 0.5rem', gap: '0.25rem', borderBottom: '1px solid var(--border)' },
+      sidebarNavItem: { display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.75rem', border: 'none', borderRadius: '10px', cursor: 'pointer', transition: 'background-color 0.2s', textAlign: 'left', width: '100%' },
+      sidebarNavItemActive: { backgroundColor: 'var(--bg-elevated)' },
+      sidebarNavIcon: { fontSize: '1.25rem', flexShrink: 0 },
+      sidebarNavLabel: { fontSize: '0.85rem', color: 'var(--text)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', transition: 'opacity 0.2s, width 0.2s' },
       tabs: { display: 'flex', flex: 1 },
       tab: { flex: 1, padding: '0.875rem 0.375rem', backgroundColor: 'transparent', border: 'none', borderBottom: '2px solid transparent', color: 'var(--text-muted)', fontSize: '0.7rem', fontWeight: 500, cursor: 'pointer', whiteSpace: 'nowrap' },
       tabActive: { color: 'var(--text)', borderBottomColor: 'var(--accent)' },
