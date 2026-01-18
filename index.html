@@ -10,6 +10,25 @@
   <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
   <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script>
+    // Initialize Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyBh7pjHsvlk_c3Ya22U-fWCkSoL89lvnKE",
+      authDomain: "tend-17.firebaseapp.com",
+      projectId: "tend-17",
+      storageBucket: "tend-17.firebasestorage.app",
+      messagingSenderId: "795612428176",
+      appId: "1:795612428176:web:bff64a86add4ed2aee2515",
+      measurementId: "G-2XFLRSET2Y"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -63,7 +82,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
+    const { useState, useEffect, useRef, useCallback } = React;
 
     // ============ CONSTANTS ============
     const VLQ_DOMAINS = {
@@ -620,7 +639,179 @@
       return null;
     }
 
+    // ============ AUTH MODAL ============
+    function AuthModal({ onSuccess }) {
+      const [isLogin, setIsLogin] = useState(true);
+      const [email, setEmail] = useState('');
+      const [password, setPassword] = useState('');
+      const [error, setError] = useState('');
+      const [loading, setLoading] = useState(false);
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setLoading(true);
+
+        try {
+          if (isLogin) {
+            await auth.signInWithEmailAndPassword(email, password);
+          } else {
+            await auth.createUserWithEmailAndPassword(email, password);
+          }
+          onSuccess();
+        } catch (err) {
+          console.error('Auth error:', err);
+          if (err.code === 'auth/email-already-in-use') {
+            setError('This email is already registered. Try logging in.');
+          } else if (err.code === 'auth/invalid-email') {
+            setError('Please enter a valid email address.');
+          } else if (err.code === 'auth/weak-password') {
+            setError('Password should be at least 6 characters.');
+          } else if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+            setError('Invalid email or password.');
+          } else {
+            setError(err.message);
+          }
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const authStyles = {
+        container: {
+          minHeight: '100vh',
+          backgroundColor: 'var(--bg-main)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '2rem',
+          fontFamily: "'DM Sans', sans-serif",
+        },
+        card: {
+          backgroundColor: 'var(--bg-card)',
+          borderRadius: '24px',
+          padding: '3rem',
+          maxWidth: '400px',
+          width: '100%',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.06)',
+          border: '1px solid var(--border)',
+          textAlign: 'center',
+        },
+        title: {
+          fontSize: '1.75rem',
+          fontFamily: "'Fraunces', serif",
+          color: 'var(--text)',
+          marginBottom: '0.5rem',
+        },
+        subtitle: {
+          fontSize: '0.9rem',
+          color: 'var(--text-muted)',
+          marginBottom: '2rem',
+        },
+        form: {
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '1rem',
+        },
+        input: {
+          padding: '0.875rem 1rem',
+          border: '1px solid var(--border)',
+          borderRadius: '10px',
+          fontSize: '0.95rem',
+          fontFamily: "'DM Sans', sans-serif",
+          backgroundColor: 'var(--bg-elevated)',
+          color: 'var(--text)',
+          outline: 'none',
+        },
+        button: {
+          padding: '1rem',
+          backgroundColor: 'var(--accent)',
+          border: 'none',
+          borderRadius: '12px',
+          color: 'white',
+          fontSize: '1rem',
+          fontWeight: 500,
+          cursor: 'pointer',
+          fontFamily: "'DM Sans', sans-serif",
+          marginTop: '0.5rem',
+        },
+        toggle: {
+          marginTop: '1.5rem',
+          fontSize: '0.85rem',
+          color: 'var(--text-muted)',
+        },
+        toggleLink: {
+          color: 'var(--accent)',
+          cursor: 'pointer',
+          fontWeight: 500,
+        },
+        error: {
+          color: '#d32f2f',
+          fontSize: '0.85rem',
+          marginTop: '0.5rem',
+          padding: '0.5rem',
+          backgroundColor: '#ffebee',
+          borderRadius: '8px',
+        },
+      };
+
+      return (
+        <div style={authStyles.container}>
+          <div style={authStyles.card}>
+            <svg width="60" height="60" viewBox="0 0 80 80" fill="none" style={{marginBottom: '1rem', opacity: 0.8}}>
+              <path d="M40 70 L40 45" stroke="var(--accent)" strokeWidth="1.5" strokeLinecap="round"/>
+              <path d="M40 55 Q30 50 25 40 Q35 45 40 55" stroke="var(--accent)" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+              <path d="M40 45 Q50 38 55 28 Q45 35 40 45" stroke="var(--accent)" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+              <path d="M40 35 Q32 28 30 18 Q38 25 40 35" stroke="var(--accent)" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+              <path d="M40 28 Q48 22 52 12 Q44 20 40 28" stroke="var(--accent)" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+              <circle cx="40" cy="70" r="3" fill="none" stroke="var(--accent)" strokeWidth="1.5"/>
+            </svg>
+            <h1 style={authStyles.title}>{isLogin ? 'Welcome back' : 'Create account'}</h1>
+            <p style={authStyles.subtitle}>
+              {isLogin ? 'Sign in to continue your journey' : 'Start designing your intentional life'}
+            </p>
+
+            <form style={authStyles.form} onSubmit={handleSubmit}>
+              <input
+                type="email"
+                placeholder="Email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                style={authStyles.input}
+                required
+              />
+              <input
+                type="password"
+                placeholder="Password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                style={authStyles.input}
+                required
+              />
+              {error && <div style={authStyles.error}>{error}</div>}
+              <button type="submit" style={authStyles.button} disabled={loading}>
+                {loading ? 'Please wait...' : (isLogin ? 'Sign In' : 'Create Account')}
+              </button>
+            </form>
+
+            <p style={authStyles.toggle}>
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
+              <span style={authStyles.toggleLink} onClick={() => { setIsLogin(!isLogin); setError(''); }}>
+                {isLogin ? 'Sign up' : 'Sign in'}
+              </span>
+            </p>
+          </div>
+        </div>
+      );
+    }
+
     function TendApp() {
+      // Auth state
+      const [user, setUser] = useState(null);
+      const [authLoading, setAuthLoading] = useState(true);
+      const [dataLoaded, setDataLoaded] = useState(false);
+
       const [phase, setPhase] = useState(PHASES.EXPLORE);
       const [vlqScores, setVlqScores] = useState({
         family: { importance: null, consistency: null },
@@ -689,6 +880,146 @@
       const [chatWidth, setChatWidth] = useState(320);
       const [isResizing, setIsResizing] = useState(false);
       const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
+
+      // Auth state listener
+      useEffect(() => {
+        const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+          setUser(firebaseUser);
+          setAuthLoading(false);
+          if (firebaseUser) {
+            // Load user data from Firestore
+            loadUserData(firebaseUser.uid);
+          }
+        });
+        return () => unsubscribe();
+      }, []);
+
+      // Load user data from Firestore
+      const loadUserData = async (userId) => {
+        try {
+          const doc = await db.collection('users').doc(userId).get();
+          if (doc.exists) {
+            const data = doc.data();
+            if (data.vlqScores) setVlqScores(data.vlqScores);
+            if (data.vlqCompleted) setVlqCompleted(data.vlqCompleted);
+            if (data.yearTheme) setYearTheme(data.yearTheme);
+            if (data.events) setEvents(data.events);
+            if (data.goals) setGoals(data.goals);
+            if (data.notes) setNotes(data.notes);
+            if (data.seasonIntentions) setSeasonIntentions(data.seasonIntentions);
+            if (data.weeklyHabits) setWeeklyHabits(data.weeklyHabits);
+            if (data.dailyHabits) setDailyHabits(data.dailyHabits);
+            if (data.revealed) setRevealed(data.revealed);
+            if (data.phase) setPhase(data.phase);
+            // If VLQ was completed, skip to step 2 (after summary)
+            if (data.vlqCompleted) setVlqStep(2);
+          }
+          setDataLoaded(true);
+        } catch (error) {
+          console.error('Error loading user data:', error);
+          setDataLoaded(true);
+        }
+      };
+
+      // Save user data to Firestore (debounced)
+      const saveTimeoutRef = useRef(null);
+      const saveUserData = useCallback(() => {
+        if (!user) return;
+        
+        // Clear existing timeout
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+        
+        // Debounce: save after 1 second of no changes
+        saveTimeoutRef.current = setTimeout(async () => {
+          try {
+            await db.collection('users').doc(user.uid).set({
+              vlqScores,
+              vlqCompleted,
+              yearTheme,
+              events,
+              goals,
+              notes,
+              seasonIntentions,
+              weeklyHabits,
+              dailyHabits,
+              revealed,
+              phase,
+              updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
+            console.log('Data saved');
+          } catch (error) {
+            console.error('Error saving user data:', error);
+          }
+        }, 1000);
+      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, seasonIntentions, weeklyHabits, dailyHabits, revealed, phase]);
+
+      // Auto-save when data changes
+      useEffect(() => {
+        if (user && dataLoaded) {
+          saveUserData();
+        }
+      }, [vlqScores, vlqCompleted, yearTheme, events, goals, notes, seasonIntentions, weeklyHabits, dailyHabits, revealed, phase, user, dataLoaded]);
+
+      // Logout function
+      const handleLogout = async () => {
+        try {
+          await auth.signOut();
+          // Reset all state
+          setVlqScores({
+            family: { importance: null, consistency: null },
+            partner: { importance: null, consistency: null },
+            friendships: { importance: null, consistency: null },
+            career: { importance: null, consistency: null },
+            education: { importance: null, consistency: null },
+            recreation: { importance: null, consistency: null },
+            spirituality: { importance: null, consistency: null },
+            community: { importance: null, consistency: null },
+            health: { importance: null, consistency: null },
+            mentalHealth: { importance: null, consistency: null },
+          });
+          setVlqCompleted(false);
+          setVlqStep(-1);
+          setYearTheme('');
+          setEvents([]);
+          setGoals([]);
+          setNotes('');
+          setSeasonIntentions({ winter: '', spring: '', summer: '', fall: '' });
+          setWeeklyHabits([]);
+          setDailyHabits([]);
+          setRevealed(false);
+          setPhase(PHASES.EXPLORE);
+          setMessages([]);
+          setDataLoaded(false);
+        } catch (error) {
+          console.error('Error signing out:', error);
+        }
+      };
+
+      // Show loading while checking auth
+      if (authLoading) {
+        return (
+          <div style={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: 'var(--bg-main)',
+            fontFamily: "'DM Sans', sans-serif",
+          }}>
+            <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
+              <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🌱</div>
+              <div>Loading...</div>
+            </div>
+          </div>
+        );
+      }
+
+      // Show auth screen if not logged in
+      if (!user) {
+        return <AuthModal onSuccess={() => {}} />;
+      }
 
       useEffect(() => {
         // Only set initial message after VLQ is complete
@@ -1864,7 +2195,9 @@ I'm here to help with any planning.`
                 setApiKey(key);
                 localStorage.setItem('tend_api_key', key);
               }} 
-              onClose={() => setShowSettingsModal(false)} 
+              onClose={() => setShowSettingsModal(false)}
+              user={user}
+              onLogout={handleLogout}
             />
           )}
         </div>
@@ -2638,7 +2971,7 @@ I'm here to help with any planning.`
       );
     }
 
-    function SettingsModal({ apiKey, setApiKey, onClose }) {
+    function SettingsModal({ apiKey, setApiKey, onClose, user, onLogout }) {
       const [key, setKey] = useState(apiKey);
       
       const handleSave = () => {
@@ -2654,6 +2987,29 @@ I'm here to help with any planning.`
               <button style={styles.modalClose} onClick={onClose}>×</button>
             </div>
             <div style={styles.modalForm}>
+              {/* Account Section */}
+              <div style={{...styles.formField, marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)'}}>
+                <label style={styles.formLabel}>Account</label>
+                <p style={{fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.75rem'}}>
+                  {user?.email}
+                </p>
+                <button 
+                  onClick={() => { onLogout(); onClose(); }} 
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: 'transparent',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  Sign Out
+                </button>
+              </div>
+
+              {/* API Key Section */}
               <div style={styles.formField}>
                 <label style={styles.formLabel}>Anthropic API Key</label>
                 <input 
