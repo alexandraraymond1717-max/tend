@@ -693,24 +693,24 @@
       useEffect(() => {
         // Only set initial message after VLQ is complete
         if (vlqCompleted && messages.length === 0) {
-          // Find top growth areas
+          // Find top growth areas - include all needed fields
           const gaps = VLQ_ORDER.map(key => ({
-            name: VLQ_DOMAINS[key].name,
-            gap: (vlqScores[key]?.importance || 0) - (vlqScores[key]?.consistency || 0)
-          })).filter(g => g.gap >= 3).sort((a, b) => b.gap - a.gap);
-          
-          // Find the biggest growth area to explore
-          const biggestGap = gaps[0];
-          const topStrength = VLQ_ORDER.map(key => ({
             key,
             name: VLQ_DOMAINS[key].name,
             importance: vlqScores[key]?.importance || 5,
-            consistency: vlqScores[key]?.consistency || 5
-          })).filter(a => a.importance >= 7 && a.consistency >= 6).sort((a, b) => b.importance - a.importance)[0];
+            consistency: vlqScores[key]?.consistency || 5,
+            gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)
+          })).sort((a, b) => b.gap - a.gap);
+          
+          // Find the biggest growth area (gap >= 2) to explore
+          const biggestGap = gaps.find(g => g.gap >= 2);
+          
+          // Find a strength (high importance AND high consistency)
+          const topStrength = gaps.find(a => a.importance >= 7 && a.consistency >= 6);
 
           let openingMessage = `Thank you for sharing what matters to you.`;
           
-          if (biggestGap && biggestGap.gap >= 3) {
+          if (biggestGap && biggestGap.gap >= 2) {
             openingMessage += `
 
 I noticed <em>${biggestGap.name}</em> really matters to you (${biggestGap.importance}/10), but you rated your consistency there as ${biggestGap.consistency}/10. That gap tells me something important.
