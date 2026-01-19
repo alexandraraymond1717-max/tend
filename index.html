@@ -371,10 +371,10 @@
             difficulty,
             duration: template.duration,
             points: difficulty, // 1, 2, or 3 points
-            gardenElement: GARDEN_ELEMENTS[domain],
-            color: VLQ_DOMAINS[domain].color,
-            domainName: VLQ_DOMAINS[domain].name,
-            domainIcon: VLQ_DOMAINS[domain].icon,
+            gardenElement: GARDEN_ELEMENTS[todaysDomain],
+            color: VLQ_DOMAINS[todaysDomain].color,
+            domainName: VLQ_DOMAINS[todaysDomain].name,
+            domainIcon: VLQ_DOMAINS[todaysDomain].icon,
             date: today,
             completed: false,
             selected: false,
@@ -3670,9 +3670,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 <div style={tendyStyles.stat}>
                   <span>🌱</span> {tendyPoints} pts
                 </div>
-                <div style={tendyStyles.stat}>
-                  <span>🔥</span> {tendyStreak} day{tendyStreak !== 1 ? 's' : ''}
-                </div>
               </div>
             </div>
             <div style={tendyStyles.content}>
@@ -3717,9 +3714,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               <div style={tendyStyles.stats}>
                 <div style={tendyStyles.stat}>
                   <span>🌱</span> {tendyPoints} pts
-                </div>
-                <div style={tendyStyles.stat}>
-                  <span>🔥</span> {tendyStreak} day{tendyStreak !== 1 ? 's' : ''}
                 </div>
               </div>
             </div>
@@ -3872,9 +3866,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             <div style={tendyStyles.stats}>
               <div style={tendyStyles.stat}>
                 <span>🌱</span> {tendyPoints} pts
-              </div>
-              <div style={tendyStyles.stat}>
-                <span>🔥</span> {tendyStreak} day{tendyStreak !== 1 ? 's' : ''}
               </div>
             </div>
           </div>
