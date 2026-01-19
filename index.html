@@ -1033,24 +1033,30 @@
           // Find a strength (high importance AND high consistency)
           const topStrength = gaps.find(a => a.importance >= 7 && a.consistency >= 6);
 
-          let openingMessage = `Thank you for sharing what matters to you.`;
+          let openingMessage = `Thank you for sharing what matters to you.
+
+My goal is to help you design a year that actually aligns with your values — not just a list of goals, but a life that feels intentional and true to who you are.
+
+To do that, we'll start by finding a <em>theme word</em> for your year — one guiding word you can return to when making decisions, setting priorities, or just checking in with yourself.
+
+But first, I'd love to understand your values a bit more deeply.`;
           
           if (biggestGap && biggestGap.gap >= 2) {
             openingMessage += `
 
-I noticed <em>${biggestGap.name}</em> really matters to you (${biggestGap.importance}/10), but you rated your consistency there as ${biggestGap.consistency}/10. That gap tells me something important.
+I noticed <em>${biggestGap.name}</em> really matters to you (${biggestGap.importance}/10), but you rated how you've been living it as ${biggestGap.consistency}/10. That gap is meaningful.
 
-What's been getting in the way? Or what would it look like if that area was thriving?`;
+What's been getting in the way there?`;
           } else if (topStrength) {
             openingMessage += `
 
-I see <em>${topStrength.name}</em> is both important to you and something you're living well. That's a real strength.
+I see <em>${topStrength.name}</em> is both important to you and something you're living well — that's a real strength.
 
-What helps you stay consistent there? And are there other areas you'd like to bring that same energy to?`;
+What's helped you stay consistent there? And are there other areas you'd like to bring that same energy to?`;
           } else {
             openingMessage += `
 
-Looking at your values, I'm curious — what's been on your mind lately? What do you wish had more space in your life this year?`;
+Looking at your values, what's been on your mind lately? What do you wish had more space in your life this year?`;
           }
 
           setMessages([{
