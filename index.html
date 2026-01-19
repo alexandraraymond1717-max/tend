@@ -1984,8 +1984,18 @@ I'm here to help with any planning.`
             marginBottom: '0.5rem',
             fontWeight: 400,
           }}>
-            Welcome back{yearTheme ? ` to ${yearTheme}` : ''}
+            {yearTheme ? `Welcome back` : 'Welcome'}
           </h2>
+          {yearTheme && (
+            <p style={{
+              color: 'var(--accent)',
+              fontSize: '0.9rem',
+              fontStyle: 'italic',
+              marginBottom: '0.25rem',
+            }}>
+              Your word: {yearTheme}
+            </p>
+          )}
           <p style={{
             color: 'var(--text-muted)',
             fontSize: '0.95rem',
@@ -2074,15 +2084,9 @@ I'm here to help with any planning.`
         );
       }
 
-      // Show mode selection only for returning users who have a theme word
-      // (New users who just completed VLQ should go straight to planning/chat)
-      if (appMode === null && yearTheme) {
+      // Show mode selection for all returning users who have completed VLQ
+      if (appMode === null) {
         return modeSelectionScreen;
-      }
-
-      // If no mode selected and no theme (new user after VLQ), go to plan mode
-      if (appMode === null && !yearTheme) {
-        setAppMode('plan');
       }
 
       // Journal mode
