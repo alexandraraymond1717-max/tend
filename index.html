@@ -2086,7 +2086,9 @@ I'm here to help with any planning.`
       }
 
       // Show mode selection for all returning users who have completed VLQ
+      console.log('Render check - appMode:', appMode, 'vlqCompleted:', vlqCompleted, 'dataLoaded:', dataLoaded);
       if (appMode === null) {
+        console.log('Should show mode selection screen');
         return modeSelectionScreen;
       }
 
