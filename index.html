@@ -1062,6 +1062,7 @@
       const [tendyHistory, setTendyHistory] = useState([]); // Completed tendies
       const [tendyPoints, setTendyPoints] = useState(0);
       const [tendyStreak, setTendyStreak] = useState(0);
+      const [weeklyCustomTendy, setWeeklyCustomTendy] = useState(null); // { text, status: 'pending'|'approved'|'rejected', weekOf, submittedAt }
       
       const [messages, setMessages] = useState([]);
       const [inputValue, setInputValue] = useState('');
@@ -1125,6 +1126,7 @@
             if (data.tendyHistory) setTendyHistory(data.tendyHistory);
             if (data.tendyPoints) setTendyPoints(data.tendyPoints);
             if (data.tendyStreak) setTendyStreak(data.tendyStreak);
+            if (data.weeklyCustomTendy) setWeeklyCustomTendy(data.weeklyCustomTendy);
             if (data.revealed) setRevealed(data.revealed);
             if (data.phase) setPhase(data.phase);
             // If VLQ was completed, skip to step 2 (after summary)
@@ -1165,6 +1167,7 @@
               tendyHistory,
               tendyPoints,
               tendyStreak,
+              weeklyCustomTendy,
               revealed,
               phase,
               updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1174,14 +1177,14 @@
             console.error('Error saving user data:', error);
           }
         }, 1000);
-      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, revealed, phase]);
+      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, weeklyCustomTendy, revealed, phase]);
 
       // Auto-save when data changes
       useEffect(() => {
         if (user && dataLoaded) {
           saveUserData();
         }
-      }, [vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, revealed, phase, user, dataLoaded]);
+      }, [vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, weeklyCustomTendy, revealed, phase, user, dataLoaded]);
 
       // Logout function
       const handleLogout = async () => {
@@ -2361,6 +2364,9 @@ I'm here to help with any planning.`
             setTendyPoints={setTendyPoints}
             tendyStreak={tendyStreak}
             setTendyStreak={setTendyStreak}
+            weeklyCustomTendy={weeklyCustomTendy}
+            setWeeklyCustomTendy={setWeeklyCustomTendy}
+            apiKey={apiKey}
             onBack={() => setAppMode(null)}
           />
         );
@@ -3194,11 +3200,31 @@ I'm here to help with any planning.`
       setTendyPoints,
       tendyStreak,
       setTendyStreak,
+      weeklyCustomTendy,
+      setWeeklyCustomTendy,
+      apiKey,
       onBack 
     }) {
       const today = new Date().toISOString().split('T')[0];
       const [showCelebration, setShowCelebration] = useState(false);
       const [justCompletedPoints, setJustCompletedPoints] = useState(0);
+      const [showCustomTendyForm, setShowCustomTendyForm] = useState(false);
+      const [customTendyText, setCustomTendyText] = useState('');
+      const [isSubmittingCustom, setIsSubmittingCustom] = useState(false);
+
+      // Get the week identifier (e.g., "2026-W03")
+      const getWeekIdentifier = () => {
+        const date = new Date();
+        const year = date.getFullYear();
+        const oneJan = new Date(year, 0, 1);
+        const dayOfYear = Math.floor((date - oneJan) / 86400000) + 1;
+        const weekNum = Math.ceil((dayOfYear + oneJan.getDay()) / 7);
+        return `${year}-W${weekNum.toString().padStart(2, '0')}`;
+      };
+
+      const currentWeek = getWeekIdentifier();
+      const canCreateCustomThisWeek = !weeklyCustomTendy || weeklyCustomTendy.weekOf !== currentWeek;
+      const hasApprovedCustom = weeklyCustomTendy?.status === 'approved' && weeklyCustomTendy.weekOf === currentWeek;
 
       // Check if we need to generate new tendies for today
       useEffect(() => {
@@ -3217,9 +3243,55 @@ I'm here to help with any planning.`
           ...t,
           selected: t.id === tendyId
         })));
+        // Deselect custom tendy when regular tendy is selected
+        if (weeklyCustomTendy?.selected) {
+          setWeeklyCustomTendy({...weeklyCustomTendy, selected: false});
+        }
       };
 
       const completeTendy = () => {
+        // Check if custom tendy is selected
+        if (weeklyCustomTendy?.selected) {
+          const completedCustom = {
+            ...weeklyCustomTendy,
+            completed: true,
+            completedAt: new Date().toISOString(),
+            id: `custom-${currentWeek}`,
+            date: today,
+            points: 1,
+            difficulty: 'custom',
+            domainName: 'Custom',
+            domainIcon: '✨',
+            gardenElement: { icon: '🌟', element: 'Star', description: 'Personal intention' }
+          };
+
+          // Add to history
+          setTendyHistory([...tendyHistory, completedCustom]);
+
+          // Update points
+          setTendyPoints(tendyPoints + 1);
+
+          // Update streak
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+          const completedYesterday = tendyHistory.some(t => t.date === yesterdayStr && t.completed);
+          
+          if (completedYesterday || tendyStreak === 0) {
+            setTendyStreak(tendyStreak + 1);
+          }
+
+          // Mark as completed in weeklyCustomTendy
+          setWeeklyCustomTendy({...weeklyCustomTendy, completed: true, selected: false});
+
+          // Show celebration
+          setJustCompletedPoints(1);
+          setShowCelebration(true);
+          setTimeout(() => setShowCelebration(false), 2500);
+          return;
+        }
+
+        // Regular tendy completion
         if (!selectedTendy) return;
         
         const completedTendy = {
@@ -3257,6 +3329,74 @@ I'm here to help with any planning.`
         setJustCompletedPoints(selectedTendy.points);
         setShowCelebration(true);
         setTimeout(() => setShowCelebration(false), 2500);
+      };
+
+      const submitCustomTendy = async () => {
+        if (!customTendyText.trim() || !apiKey) return;
+        
+        setIsSubmittingCustom(true);
+        
+        try {
+          // Call Claude API to review the custom tendy
+          const response = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "x-api-key": apiKey,
+              "anthropic-version": "2023-06-01"
+            },
+            body: JSON.stringify({
+              model: "claude-sonnet-4-20250514",
+              max_tokens: 200,
+              messages: [{
+                role: "user",
+                content: `I'm building an intentional living app where users can create one custom "Tendy" per week - a small action aligned with their values. Please review this custom Tendy and respond with ONLY "APPROVED" or "REJECTED" followed by a brief reason.
+
+Approve if it's:
+- A specific, actionable task
+- Reasonable to complete in a day
+- Values-aligned and intentional
+- Not harmful or inappropriate
+
+Reject if it's:
+- Too vague or unmeasurable
+- Impossible to complete
+- Inappropriate or harmful
+- Just a to-do item with no values connection
+
+Custom Tendy: "${customTendyText}"
+
+Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
+              }]
+            })
+          });
+
+          if (!response.ok) {
+            throw new Error('API request failed');
+          }
+
+          const data = await response.json();
+          const aiResponse = data.content[0].text;
+          
+          const isApproved = aiResponse.toUpperCase().startsWith('APPROVED');
+          
+          setWeeklyCustomTendy({
+            text: customTendyText,
+            status: isApproved ? 'approved' : 'rejected',
+            weekOf: currentWeek,
+            submittedAt: new Date().toISOString(),
+            aiResponse: aiResponse
+          });
+
+          setCustomTendyText('');
+          setShowCustomTendyForm(false);
+          
+        } catch (error) {
+          console.error('Error submitting custom tendy:', error);
+          alert('Error submitting custom tendy. Please check your API key in settings.');
+        } finally {
+          setIsSubmittingCustom(false);
+        }
       };
 
       const getDifficultyLabel = (difficulty) => {
@@ -3514,12 +3654,24 @@ I'm here to help with any planning.`
       }
 
       // Already selected - show completion view
-      if (selectedTendy) {
+      if (selectedTendy || weeklyCustomTendy?.selected) {
+        const displayTendy = selectedTendy || (weeklyCustomTendy?.selected ? {
+          text: weeklyCustomTendy.text,
+          domainName: 'Your Custom Tendy',
+          domainIcon: '✨',
+          duration: 'Self-paced',
+          points: 1,
+          difficulty: 'custom',
+          gardenElement: { icon: '🌟', element: 'Star' }
+        } : null);
+
+        if (!displayTendy) return null;
+
         return (
           <div style={tendyStyles.container}>
             {showCelebration && (
               <div style={tendyStyles.celebrationOverlay}>
-                <div style={tendyStyles.celebrationIcon}>{selectedTendy.gardenElement?.icon}</div>
+                <div style={tendyStyles.celebrationIcon}>{displayTendy.gardenElement?.icon}</div>
                 <div style={tendyStyles.celebrationText}>Tendy Complete!</div>
                 <div style={tendyStyles.celebrationPoints}>+{justCompletedPoints} point{justCompletedPoints !== 1 ? 's' : ''}</div>
               </div>
@@ -3540,31 +3692,41 @@ I'm here to help with any planning.`
             <div style={tendyStyles.content}>
               <h1 style={tendyStyles.title}>Today's Tendy</h1>
               <p style={tendyStyles.subtitle}>
-                Complete this small action to tend to your {selectedTendy.domainName.toLowerCase()} values
+                Complete this small action to tend to your {displayTendy.domainName.toLowerCase()} values
               </p>
               
               <div style={tendyStyles.selectedCard}>
                 <div style={tendyStyles.tendyHeader}>
                   <div style={tendyStyles.tendyDomain}>
-                    <span>{selectedTendy.domainIcon}</span>
-                    <span>{selectedTendy.domainName}</span>
+                    <span>{displayTendy.domainIcon}</span>
+                    <span>{displayTendy.domainName}</span>
                   </div>
-                  <span style={{
-                    ...tendyStyles.difficultyBadge,
-                    backgroundColor: getDifficultyLabel(selectedTendy.difficulty).color + '20',
-                    color: getDifficultyLabel(selectedTendy.difficulty).color,
-                  }}>
-                    {getDifficultyLabel(selectedTendy.difficulty).text}
-                  </span>
+                  {displayTendy.difficulty !== 'custom' ? (
+                    <span style={{
+                      ...tendyStyles.difficultyBadge,
+                      backgroundColor: getDifficultyLabel(displayTendy.difficulty).color + '20',
+                      color: getDifficultyLabel(displayTendy.difficulty).color,
+                    }}>
+                      {getDifficultyLabel(displayTendy.difficulty).text}
+                    </span>
+                  ) : (
+                    <span style={{
+                      ...tendyStyles.difficultyBadge,
+                      backgroundColor: '#B8A9C920',
+                      color: '#B8A9C9',
+                    }}>
+                      Personal
+                    </span>
+                  )}
                 </div>
                 <p style={{...tendyStyles.tendyText, fontSize: '1.1rem'}}>
-                  {selectedTendy.text}
+                  {displayTendy.text}
                 </p>
                 <div style={tendyStyles.tendyFooter}>
-                  <span>⏱ {selectedTendy.duration}</span>
+                  <span>⏱ {displayTendy.duration}</span>
                   <div style={tendyStyles.gardenReward}>
-                    <span>{selectedTendy.gardenElement?.icon}</span>
-                    <span>+{selectedTendy.points} pt{selectedTendy.points !== 1 ? 's' : ''}</span>
+                    <span>{displayTendy.gardenElement?.icon}</span>
+                    <span>+{displayTendy.points} pt{displayTendy.points !== 1 ? 's' : ''}</span>
                   </div>
                 </div>
               </div>
@@ -3638,20 +3800,172 @@ I'm here to help with any planning.`
               );
             })}
 
+            {/* Custom Tendy - if approved this week */}
+            {hasApprovedCustom && (
+              <div
+                style={{
+                  ...tendyStyles.tendyCard,
+                  borderColor: weeklyCustomTendy.selected ? 'var(--accent)' : 'var(--border)',
+                  backgroundColor: weeklyCustomTendy.selected ? 'var(--accent-light)' : 'var(--bg-card)',
+                }}
+                onClick={() => {
+                  setWeeklyCustomTendy({...weeklyCustomTendy, selected: true});
+                  // Deselect all regular tendies
+                  setTodaysTendies(todaysTendies.map(t => ({...t, selected: false})));
+                }}
+              >
+                <div style={tendyStyles.tendyHeader}>
+                  <div style={tendyStyles.tendyDomain}>
+                    <span>✨</span>
+                    <span>Your Custom Tendy</span>
+                  </div>
+                  <span style={{
+                    ...tendyStyles.difficultyBadge,
+                    backgroundColor: '#B8A9C920',
+                    color: '#B8A9C9',
+                  }}>
+                    Personal
+                  </span>
+                </div>
+                <p style={tendyStyles.tendyText}>{weeklyCustomTendy.text}</p>
+                <div style={tendyStyles.tendyFooter}>
+                  <span>⏱ Self-paced</span>
+                  <div style={tendyStyles.gardenReward}>
+                    <span>🌟</span>
+                    <span>+1 pt</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Create Custom Tendy Form */}
+            {canCreateCustomThisWeek && !showCustomTendyForm && (
+              <button
+                style={{
+                  ...tendyStyles.tendyCard,
+                  cursor: 'pointer',
+                  borderStyle: 'dashed',
+                  borderColor: 'var(--border-dark)',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: '100px',
+                  color: 'var(--text-muted)',
+                }}
+                onClick={() => setShowCustomTendyForm(true)}
+              >
+                <div style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>+</div>
+                <div style={{fontWeight: 500}}>Create Your Own Weekly Tendy</div>
+                <div style={{fontSize: '0.75rem', marginTop: '0.25rem'}}>Worth 1 point if completed</div>
+              </button>
+            )}
+
+            {/* Custom Tendy Creation Form */}
+            {showCustomTendyForm && (
+              <div style={{
+                ...tendyStyles.tendyCard,
+                borderColor: 'var(--accent)',
+              }}>
+                <div style={{marginBottom: '0.75rem', fontWeight: 500, color: 'var(--text)'}}>
+                  Create Your Weekly Tendy
+                </div>
+                <textarea
+                  value={customTendyText}
+                  onChange={(e) => setCustomTendyText(e.target.value)}
+                  placeholder="Describe a specific action aligned with your values..."
+                  style={{
+                    width: '100%',
+                    minHeight: '80px',
+                    padding: '0.75rem',
+                    backgroundColor: 'var(--bg-elevated)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    fontSize: '0.9rem',
+                    fontFamily: "'DM Sans', sans-serif",
+                    color: 'var(--text)',
+                    marginBottom: '0.75rem',
+                    resize: 'vertical',
+                  }}
+                />
+                <div style={{display: 'flex', gap: '0.5rem'}}>
+                  <button
+                    onClick={submitCustomTendy}
+                    disabled={!customTendyText.trim() || isSubmittingCustom || !apiKey}
+                    style={{
+                      flex: 1,
+                      padding: '0.625rem',
+                      backgroundColor: isSubmittingCustom || !apiKey ? 'var(--border-dark)' : 'var(--accent)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'white',
+                      fontSize: '0.85rem',
+                      fontWeight: 500,
+                      cursor: isSubmittingCustom || !apiKey ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {isSubmittingCustom ? 'Submitting...' : 'Submit for Approval'}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowCustomTendyForm(false);
+                      setCustomTendyText('');
+                    }}
+                    style={{
+                      padding: '0.625rem 1rem',
+                      backgroundColor: 'transparent',
+                      border: '1px solid var(--border)',
+                      borderRadius: '8px',
+                      color: 'var(--text-muted)',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+                {!apiKey && (
+                  <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontStyle: 'italic'}}>
+                    Set your API key in settings to enable custom tendies
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Rejected Custom Tendy Message */}
+            {weeklyCustomTendy?.status === 'rejected' && weeklyCustomTendy.weekOf === currentWeek && (
+              <div style={{
+                padding: '1rem',
+                backgroundColor: '#FFF5F5',
+                border: '1px solid #FED7D7',
+                borderRadius: '12px',
+                fontSize: '0.85rem',
+                color: '#C53030',
+              }}>
+                <div style={{fontWeight: 500, marginBottom: '0.25rem'}}>Custom Tendy Not Approved</div>
+                <div style={{color: '#744210'}}>{weeklyCustomTendy.aiResponse}</div>
+                <div style={{marginTop: '0.5rem', fontSize: '0.75rem', color: '#744210'}}>
+                  You can try again with a different tendy this week.
+                </div>
+              </div>
+            )}
+
             <button
               style={{
                 ...tendyStyles.selectButton,
-                ...(todaysTendies.every(t => !t.selected) ? tendyStyles.selectButtonDisabled : {}),
+                ...((todaysTendies.every(t => !t.selected) && !weeklyCustomTendy?.selected) ? tendyStyles.selectButtonDisabled : {}),
               }}
               onClick={() => {
                 const selected = todaysTendies.find(t => t.selected);
                 if (selected) {
                   // Selection is already tracked, just confirm
                 }
+                // Custom tendy selection is also already tracked
               }}
-              disabled={todaysTendies.every(t => !t.selected)}
+              disabled={todaysTendies.every(t => !t.selected) && !weeklyCustomTendy?.selected}
             >
-              {todaysTendies.some(t => t.selected) ? 'Confirm Selection →' : 'Select a Tendy above'}
+              {(todaysTendies.some(t => t.selected) || weeklyCustomTendy?.selected) ? 'Confirm Selection →' : 'Select a Tendy above'}
             </button>
           </div>
         </div>
