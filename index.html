@@ -160,6 +160,199 @@
       fun: { name: 'Fun & Adventure', icon: '✺', color: '#D66B4B' },
     };
 
+    // ============ TENDY SYSTEM ============
+    // Garden elements mapped to VLQ domains
+    const GARDEN_ELEMENTS = {
+      family: { element: 'Oak Tree', icon: '🌳', description: 'Deep-rooted trees' },
+      partner: { element: 'Rose', icon: '🌹', description: 'Intertwined blooms' },
+      friendships: { element: 'Wildflowers', icon: '🌸', description: 'Clustering flowers' },
+      career: { element: 'Hedge', icon: '🌿', description: 'Structured greens' },
+      education: { element: 'Sapling', icon: '🌱', description: 'Growing trees' },
+      recreation: { element: 'Butterfly', icon: '🦋', description: 'Whimsy elements' },
+      spirituality: { element: 'Stone', icon: '🪨', description: 'Grounding features' },
+      community: { element: 'Bench', icon: '🪑', description: 'Shared spaces' },
+      health: { element: 'Vegetable', icon: '🥬', description: 'Nourishing plants' },
+      mentalHealth: { element: 'Water Lily', icon: '🪷', description: 'Peaceful waters' },
+    };
+
+    // Tendy templates by domain and difficulty (1=easy, 2=medium, 3=hard)
+    const TENDY_TEMPLATES = {
+      family: [
+        { text: 'Send a quick "thinking of you" text to a family member', difficulty: 1, duration: '2 min' },
+        { text: 'Call a family member you haven\'t spoken to recently', difficulty: 2, duration: '15 min' },
+        { text: 'Plan a family activity for the upcoming weekend', difficulty: 3, duration: '30 min' },
+        { text: 'Share a favorite memory with a family member', difficulty: 1, duration: '5 min' },
+        { text: 'Look through old family photos and share one', difficulty: 2, duration: '10 min' },
+      ],
+      partner: [
+        { text: 'Leave a sweet note for your partner', difficulty: 1, duration: '2 min' },
+        { text: 'Plan a surprise for your partner', difficulty: 2, duration: '15 min' },
+        { text: 'Have a device-free conversation about dreams and goals', difficulty: 3, duration: '30 min' },
+        { text: 'Send your partner a message about what you appreciate', difficulty: 1, duration: '3 min' },
+        { text: 'Cook or order your partner\'s favorite meal', difficulty: 2, duration: '20 min' },
+      ],
+      friendships: [
+        { text: 'React to a friend\'s social media post with a genuine comment', difficulty: 1, duration: '2 min' },
+        { text: 'Reach out to a friend you haven\'t talked to in a while', difficulty: 2, duration: '10 min' },
+        { text: 'Plan a get-together with friends', difficulty: 3, duration: '20 min' },
+        { text: 'Send a voice memo to a friend', difficulty: 1, duration: '3 min' },
+        { text: 'Share something that made you think of a specific friend', difficulty: 2, duration: '5 min' },
+      ],
+      career: [
+        { text: 'Organize your workspace for 5 minutes', difficulty: 1, duration: '5 min' },
+        { text: 'Reach out to a colleague to offer help or collaboration', difficulty: 2, duration: '10 min' },
+        { text: 'Work on a skill that would advance your career', difficulty: 3, duration: '30 min' },
+        { text: 'Review and update one section of your resume or portfolio', difficulty: 2, duration: '15 min' },
+        { text: 'Write down 3 wins from your recent work', difficulty: 1, duration: '5 min' },
+      ],
+      education: [
+        { text: 'Read an article about something you want to learn', difficulty: 1, duration: '10 min' },
+        { text: 'Watch an educational video or tutorial', difficulty: 2, duration: '20 min' },
+        { text: 'Start or continue a course or book chapter', difficulty: 3, duration: '45 min' },
+        { text: 'Write down 3 things you learned today', difficulty: 1, duration: '5 min' },
+        { text: 'Teach someone something you know well', difficulty: 2, duration: '15 min' },
+      ],
+      recreation: [
+        { text: 'Do something playful for 5 minutes', difficulty: 1, duration: '5 min' },
+        { text: 'Spend time on a hobby you\'ve been neglecting', difficulty: 2, duration: '20 min' },
+        { text: 'Try something creative or artistic', difficulty: 3, duration: '30 min' },
+        { text: 'Listen to music that brings you joy', difficulty: 1, duration: '10 min' },
+        { text: 'Play a game (video game, card game, puzzle)', difficulty: 2, duration: '20 min' },
+      ],
+      spirituality: [
+        { text: 'Take 5 deep breaths and notice how you feel', difficulty: 1, duration: '2 min' },
+        { text: 'Spend 10 minutes in quiet reflection or meditation', difficulty: 2, duration: '10 min' },
+        { text: 'Journal about what gives your life meaning', difficulty: 3, duration: '20 min' },
+        { text: 'Practice gratitude by naming 3 things you\'re thankful for', difficulty: 1, duration: '3 min' },
+        { text: 'Spend time in nature, noticing the world around you', difficulty: 2, duration: '15 min' },
+      ],
+      community: [
+        { text: 'Do one small act of kindness for a stranger', difficulty: 1, duration: '5 min' },
+        { text: 'Research a local cause or organization to support', difficulty: 2, duration: '15 min' },
+        { text: 'Volunteer your time or skills for a cause you care about', difficulty: 3, duration: '60 min' },
+        { text: 'Share or amplify an important cause on social media', difficulty: 1, duration: '3 min' },
+        { text: 'Donate to or support a local business', difficulty: 2, duration: '10 min' },
+      ],
+      health: [
+        { text: 'Drink a full glass of water right now', difficulty: 1, duration: '1 min' },
+        { text: 'Go for a 15-minute walk', difficulty: 2, duration: '15 min' },
+        { text: 'Do a full workout or fitness class', difficulty: 3, duration: '45 min' },
+        { text: 'Stretch for 5 minutes', difficulty: 1, duration: '5 min' },
+        { text: 'Prepare a healthy meal or snack', difficulty: 2, duration: '20 min' },
+      ],
+      mentalHealth: [
+        { text: 'Step away from screens for 10 minutes', difficulty: 1, duration: '10 min' },
+        { text: 'Journal about how you\'re really feeling', difficulty: 2, duration: '15 min' },
+        { text: 'Do something that\'s purely self-care', difficulty: 3, duration: '30 min' },
+        { text: 'Name your current emotion without judgment', difficulty: 1, duration: '2 min' },
+        { text: 'Set a boundary or say no to something draining', difficulty: 2, duration: '5 min' },
+      ],
+    };
+
+    // Probability calculation for domain selection
+    function calculateDomainProbabilities(vlqScores) {
+      const epsilon = 0.05; // Minimum probability floor
+      const weights = {};
+      let totalWeight = 0;
+
+      VLQ_ORDER.forEach(domain => {
+        const scores = vlqScores[domain];
+        const importance = scores?.importance || 5;
+        const consistency = scores?.consistency || 5;
+        const gap = Math.max(0, importance - consistency);
+        
+        // Formula: importance * (1 + gap_factor) + epsilon
+        // Higher importance AND higher gap = higher weight
+        const gapFactor = gap / 10; // Normalize gap to 0-1 range
+        const weight = importance * (1 + gapFactor * 0.5) + epsilon;
+        
+        weights[domain] = weight;
+        totalWeight += weight;
+      });
+
+      // Normalize to probabilities
+      const probabilities = {};
+      VLQ_ORDER.forEach(domain => {
+        probabilities[domain] = weights[domain] / totalWeight;
+      });
+
+      return probabilities;
+    }
+
+    // Select a domain based on weighted probabilities
+    function selectWeightedDomain(probabilities, exclude = []) {
+      const availableDomains = VLQ_ORDER.filter(d => !exclude.includes(d));
+      if (availableDomains.length === 0) return VLQ_ORDER[Math.floor(Math.random() * VLQ_ORDER.length)];
+
+      // Recalculate probabilities for available domains
+      let totalProb = 0;
+      availableDomains.forEach(d => totalProb += probabilities[d]);
+      
+      const rand = Math.random() * totalProb;
+      let cumulative = 0;
+      
+      for (const domain of availableDomains) {
+        cumulative += probabilities[domain];
+        if (rand <= cumulative) return domain;
+      }
+      
+      return availableDomains[availableDomains.length - 1];
+    }
+
+    // Generate today's tendies (3 options with different difficulties)
+    function generateDailyTendies(vlqScores, tendyHistory = []) {
+      const probabilities = calculateDomainProbabilities(vlqScores);
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get recently used templates to avoid repetition
+      const recentTemplates = tendyHistory
+        .filter(t => {
+          const daysDiff = (new Date(today) - new Date(t.date)) / (1000 * 60 * 60 * 24);
+          return daysDiff < 7; // Last 7 days
+        })
+        .map(t => t.templateText);
+
+      const tendies = [];
+      const usedDomains = [];
+      const difficulties = [1, 2, 3]; // Easy, Medium, Hard
+
+      difficulties.forEach(difficulty => {
+        // Select domain (prefer different domains for each tendy)
+        const domain = selectWeightedDomain(probabilities, usedDomains);
+        usedDomains.push(domain);
+
+        // Get templates for this domain and difficulty
+        const templates = TENDY_TEMPLATES[domain].filter(t => 
+          t.difficulty === difficulty && !recentTemplates.includes(t.text)
+        );
+
+        // Fallback to any template of this difficulty if no unused ones
+        const fallbackTemplates = TENDY_TEMPLATES[domain].filter(t => t.difficulty === difficulty);
+        const availableTemplates = templates.length > 0 ? templates : fallbackTemplates;
+
+        if (availableTemplates.length > 0) {
+          const template = availableTemplates[Math.floor(Math.random() * availableTemplates.length)];
+          tendies.push({
+            id: `${today}-${difficulty}`,
+            domain,
+            text: template.text,
+            difficulty,
+            duration: template.duration,
+            points: difficulty, // 1, 2, or 3 points
+            gardenElement: GARDEN_ELEMENTS[domain],
+            color: VLQ_DOMAINS[domain].color,
+            domainName: VLQ_DOMAINS[domain].name,
+            domainIcon: VLQ_DOMAINS[domain].icon,
+            date: today,
+            completed: false,
+            selected: false,
+          });
+        }
+      });
+
+      return tendies;
+    }
+
     const VALUE_KEYWORDS = {
       'Freedom': ['freedom', 'free', 'autonomy', 'independent', 'flexible'],
       'Connection': ['connection', 'connected', 'together', 'relationship', 'partner', 'love', 'present', 'presence'],
@@ -864,6 +1057,12 @@
       const [weeklyHabits, setWeeklyHabits] = useState([]);
       const [dailyHabits, setDailyHabits] = useState([]);
       
+      // Tendy system state
+      const [todaysTendies, setTodaysTendies] = useState([]);
+      const [tendyHistory, setTendyHistory] = useState([]); // Completed tendies
+      const [tendyPoints, setTendyPoints] = useState(0);
+      const [tendyStreak, setTendyStreak] = useState(0);
+      
       const [messages, setMessages] = useState([]);
       const [inputValue, setInputValue] = useState('');
       const [isTyping, setIsTyping] = useState(false);
@@ -922,6 +1121,10 @@
             if (data.seasonIntentions) setSeasonIntentions(data.seasonIntentions);
             if (data.weeklyHabits) setWeeklyHabits(data.weeklyHabits);
             if (data.dailyHabits) setDailyHabits(data.dailyHabits);
+            if (data.todaysTendies) setTodaysTendies(data.todaysTendies);
+            if (data.tendyHistory) setTendyHistory(data.tendyHistory);
+            if (data.tendyPoints) setTendyPoints(data.tendyPoints);
+            if (data.tendyStreak) setTendyStreak(data.tendyStreak);
             if (data.revealed) setRevealed(data.revealed);
             if (data.phase) setPhase(data.phase);
             // If VLQ was completed, skip to step 2 (after summary)
@@ -958,6 +1161,10 @@
               seasonIntentions,
               weeklyHabits,
               dailyHabits,
+              todaysTendies,
+              tendyHistory,
+              tendyPoints,
+              tendyStreak,
               revealed,
               phase,
               updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -967,14 +1174,14 @@
             console.error('Error saving user data:', error);
           }
         }, 1000);
-      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, revealed, phase]);
+      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, revealed, phase]);
 
       // Auto-save when data changes
       useEffect(() => {
         if (user && dataLoaded) {
           saveUserData();
         }
-      }, [vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, revealed, phase, user, dataLoaded]);
+      }, [vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, revealed, phase, user, dataLoaded]);
 
       // Logout function
       const handleLogout = async () => {
@@ -2015,6 +2222,40 @@ I'm here to help with any planning.`
             width: '100%',
             maxWidth: '320px',
           }}>
+            {/* Tendies - Featured option */}
+            <button
+              onClick={() => setAppMode('tendy')}
+              style={{
+                padding: '1.25rem 1.5rem',
+                backgroundColor: 'var(--accent-light)',
+                border: '2px solid var(--accent)',
+                borderRadius: '16px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.2s',
+              }}
+            >
+              <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                <span style={{fontSize: '1.5rem'}}>🌱</span>
+                <div style={{flex: 1}}>
+                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Today's Tendy</div>
+                  <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>One small action aligned with your values</div>
+                </div>
+                {tendyPoints > 0 && (
+                  <div style={{
+                    backgroundColor: 'var(--accent)',
+                    color: 'white',
+                    fontSize: '0.7rem',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '10px',
+                    fontWeight: 500,
+                  }}>
+                    {tendyPoints} pts
+                  </div>
+                )}
+              </div>
+            </button>
+
             <button
               onClick={() => setAppMode('journal')}
               style={{
@@ -2030,7 +2271,7 @@ I'm here to help with any planning.`
               <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
                 <span style={{fontSize: '1.5rem'}}>📝</span>
                 <div>
-                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Switch to Journal Mode</div>
+                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Journal Mode</div>
                   <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Reflect on your day</div>
                 </div>
               </div>
@@ -2051,7 +2292,7 @@ I'm here to help with any planning.`
               <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
                 <span style={{fontSize: '1.5rem'}}>🗓️</span>
                 <div>
-                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Switch to Plan & Design Mode</div>
+                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Plan & Design Mode</div>
                   <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Shape your year</div>
                 </div>
               </div>
@@ -2102,6 +2343,24 @@ I'm here to help with any planning.`
             journalEntries={journalEntries}
             setJournalEntries={setJournalEntries}
             onSwitchMode={() => setAppMode('plan')}
+            onBack={() => setAppMode(null)}
+          />
+        );
+      }
+
+      // Tendy mode
+      if (appMode === 'tendy') {
+        return (
+          <TendyView
+            vlqScores={vlqScores}
+            todaysTendies={todaysTendies}
+            setTodaysTendies={setTodaysTendies}
+            tendyHistory={tendyHistory}
+            setTendyHistory={setTendyHistory}
+            tendyPoints={tendyPoints}
+            setTendyPoints={setTendyPoints}
+            tendyStreak={tendyStreak}
+            setTendyStreak={setTendyStreak}
             onBack={() => setAppMode(null)}
           />
         );
@@ -2919,6 +3178,481 @@ I'm here to help with any planning.`
               <p style={styles.noEventsText}>No events in {MONTH_FULL[selectedMonth]}</p>
             )}
             {revealed && <button style={{...styles.addEventSmall, borderColor: seasonColor, color: seasonColor}} onClick={onAddEvent}>+ Add Event</button>}
+          </div>
+        </div>
+      );
+    }
+
+    // ============ TENDY VIEW (Daily Values Tasks) ============
+    function TendyView({ 
+      vlqScores, 
+      todaysTendies, 
+      setTodaysTendies, 
+      tendyHistory, 
+      setTendyHistory,
+      tendyPoints,
+      setTendyPoints,
+      tendyStreak,
+      setTendyStreak,
+      onBack 
+    }) {
+      const today = new Date().toISOString().split('T')[0];
+      const [showCelebration, setShowCelebration] = useState(false);
+      const [justCompletedPoints, setJustCompletedPoints] = useState(0);
+
+      // Check if we need to generate new tendies for today
+      useEffect(() => {
+        const tendiesAreFromToday = todaysTendies.length > 0 && todaysTendies[0]?.date === today;
+        if (!tendiesAreFromToday && vlqScores) {
+          const newTendies = generateDailyTendies(vlqScores, tendyHistory);
+          setTodaysTendies(newTendies);
+        }
+      }, [today, vlqScores]);
+
+      const selectedTendy = todaysTendies.find(t => t.selected);
+      const completedToday = todaysTendies.find(t => t.completed);
+
+      const selectTendy = (tendyId) => {
+        setTodaysTendies(todaysTendies.map(t => ({
+          ...t,
+          selected: t.id === tendyId
+        })));
+      };
+
+      const completeTendy = () => {
+        if (!selectedTendy) return;
+        
+        const completedTendy = {
+          ...selectedTendy,
+          completed: true,
+          completedAt: new Date().toISOString()
+        };
+
+        // Update today's tendies
+        setTodaysTendies(todaysTendies.map(t => 
+          t.id === selectedTendy.id ? completedTendy : t
+        ));
+
+        // Add to history
+        setTendyHistory([...tendyHistory, {
+          ...completedTendy,
+          templateText: completedTendy.text
+        }]);
+
+        // Update points
+        const newPoints = tendyPoints + selectedTendy.points;
+        setTendyPoints(newPoints);
+
+        // Update streak (check if completed yesterday)
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const completedYesterday = tendyHistory.some(t => t.date === yesterdayStr && t.completed);
+        
+        if (completedYesterday || tendyStreak === 0) {
+          setTendyStreak(tendyStreak + 1);
+        }
+
+        // Show celebration
+        setJustCompletedPoints(selectedTendy.points);
+        setShowCelebration(true);
+        setTimeout(() => setShowCelebration(false), 2500);
+      };
+
+      const getDifficultyLabel = (difficulty) => {
+        switch(difficulty) {
+          case 1: return { text: 'Quick Win', color: '#8FD4A0' };
+          case 2: return { text: 'Balanced', color: '#F9D07A' };
+          case 3: return { text: 'Deep Work', color: '#E8A090' };
+          default: return { text: 'Task', color: '#7EB3E0' };
+        }
+      };
+
+      const tendyStyles = {
+        container: {
+          minHeight: '100vh',
+          backgroundColor: 'var(--bg-main)',
+          padding: '1.5rem',
+          fontFamily: "'DM Sans', sans-serif",
+        },
+        header: {
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '2rem',
+          maxWidth: '500px',
+          margin: '0 auto 2rem',
+        },
+        backButton: {
+          background: 'none',
+          border: 'none',
+          color: 'var(--text-muted)',
+          fontSize: '0.9rem',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.25rem',
+        },
+        stats: {
+          display: 'flex',
+          gap: '1rem',
+          alignItems: 'center',
+        },
+        stat: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.375rem',
+          fontSize: '0.85rem',
+          color: 'var(--text-light)',
+          backgroundColor: 'var(--bg-card)',
+          padding: '0.5rem 0.75rem',
+          borderRadius: '20px',
+          border: '1px solid var(--border)',
+        },
+        content: {
+          maxWidth: '500px',
+          margin: '0 auto',
+        },
+        title: {
+          fontFamily: "'Fraunces', serif",
+          fontSize: '1.75rem',
+          color: 'var(--text)',
+          marginBottom: '0.5rem',
+          textAlign: 'center',
+        },
+        subtitle: {
+          color: 'var(--text-muted)',
+          fontSize: '0.9rem',
+          textAlign: 'center',
+          marginBottom: '2rem',
+          lineHeight: 1.5,
+        },
+        tendyCard: {
+          backgroundColor: 'var(--bg-card)',
+          borderRadius: '16px',
+          padding: '1.25rem',
+          marginBottom: '1rem',
+          border: '2px solid var(--border)',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+        },
+        tendyCardSelected: {
+          borderColor: 'var(--accent)',
+          backgroundColor: 'var(--accent-light)',
+        },
+        tendyHeader: {
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'flex-start',
+          marginBottom: '0.75rem',
+        },
+        tendyDomain: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          fontSize: '0.8rem',
+          color: 'var(--text-muted)',
+        },
+        difficultyBadge: {
+          fontSize: '0.7rem',
+          padding: '0.25rem 0.625rem',
+          borderRadius: '12px',
+          fontWeight: 500,
+        },
+        tendyText: {
+          fontSize: '1rem',
+          color: 'var(--text)',
+          lineHeight: 1.5,
+          marginBottom: '0.75rem',
+        },
+        tendyFooter: {
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          fontSize: '0.8rem',
+          color: 'var(--text-muted)',
+        },
+        gardenReward: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.375rem',
+        },
+        selectButton: {
+          width: '100%',
+          padding: '1rem',
+          backgroundColor: 'var(--accent)',
+          border: 'none',
+          borderRadius: '12px',
+          color: 'white',
+          fontSize: '1rem',
+          fontWeight: 500,
+          cursor: 'pointer',
+          marginTop: '1rem',
+        },
+        selectButtonDisabled: {
+          backgroundColor: 'var(--border-dark)',
+          cursor: 'not-allowed',
+        },
+        completeSection: {
+          textAlign: 'center',
+          padding: '2rem',
+        },
+        selectedCard: {
+          backgroundColor: 'var(--bg-card)',
+          borderRadius: '20px',
+          padding: '2rem',
+          marginBottom: '1.5rem',
+          border: '1px solid var(--border)',
+          textAlign: 'left',
+        },
+        completeButton: {
+          padding: '1rem 2rem',
+          backgroundColor: 'var(--accent)',
+          border: 'none',
+          borderRadius: '12px',
+          color: 'white',
+          fontSize: '1rem',
+          fontWeight: 500,
+          cursor: 'pointer',
+        },
+        celebrationOverlay: {
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(125, 155, 118, 0.95)',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000,
+          animation: 'fadeIn 0.3s ease-out',
+        },
+        celebrationIcon: {
+          fontSize: '4rem',
+          marginBottom: '1rem',
+        },
+        celebrationText: {
+          color: 'white',
+          fontSize: '1.5rem',
+          fontFamily: "'Fraunces', serif",
+          marginBottom: '0.5rem',
+        },
+        celebrationPoints: {
+          color: 'rgba(255,255,255,0.9)',
+          fontSize: '1.1rem',
+        },
+        completedState: {
+          textAlign: 'center',
+          padding: '3rem 2rem',
+        },
+        completedIcon: {
+          fontSize: '3rem',
+          marginBottom: '1rem',
+        },
+        completedTitle: {
+          fontFamily: "'Fraunces', serif",
+          fontSize: '1.5rem',
+          color: 'var(--text)',
+          marginBottom: '0.5rem',
+        },
+        completedSubtitle: {
+          color: 'var(--text-muted)',
+          fontSize: '0.95rem',
+          marginBottom: '2rem',
+        },
+        gardenPreview: {
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '0.5rem',
+          padding: '1rem',
+          backgroundColor: 'var(--bg-elevated)',
+          borderRadius: '12px',
+          marginBottom: '1rem',
+        },
+      };
+
+      // Already completed today
+      if (completedToday) {
+        return (
+          <div style={tendyStyles.container}>
+            <div style={tendyStyles.header}>
+              <button style={tendyStyles.backButton} onClick={onBack}>
+                ← Back
+              </button>
+              <div style={tendyStyles.stats}>
+                <div style={tendyStyles.stat}>
+                  <span>🌱</span> {tendyPoints} pts
+                </div>
+                <div style={tendyStyles.stat}>
+                  <span>🔥</span> {tendyStreak} day{tendyStreak !== 1 ? 's' : ''}
+                </div>
+              </div>
+            </div>
+            <div style={tendyStyles.content}>
+              <div style={tendyStyles.completedState}>
+                <div style={tendyStyles.completedIcon}>✨</div>
+                <h2 style={tendyStyles.completedTitle}>Today's Tendy Complete!</h2>
+                <p style={tendyStyles.completedSubtitle}>
+                  You earned {completedToday.points} point{completedToday.points !== 1 ? 's' : ''} for your garden
+                </p>
+                <div style={tendyStyles.gardenPreview}>
+                  <span style={{fontSize: '1.5rem'}}>{completedToday.gardenElement?.icon}</span>
+                  <span style={{color: 'var(--text-light)'}}>
+                    +1 {completedToday.gardenElement?.element} growing in your garden
+                  </span>
+                </div>
+                <p style={{color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic'}}>
+                  Come back tomorrow for your next Tendy
+                </p>
+              </div>
+            </div>
+          </div>
+        );
+      }
+
+      // Already selected - show completion view
+      if (selectedTendy) {
+        return (
+          <div style={tendyStyles.container}>
+            {showCelebration && (
+              <div style={tendyStyles.celebrationOverlay}>
+                <div style={tendyStyles.celebrationIcon}>{selectedTendy.gardenElement?.icon}</div>
+                <div style={tendyStyles.celebrationText}>Tendy Complete!</div>
+                <div style={tendyStyles.celebrationPoints}>+{justCompletedPoints} point{justCompletedPoints !== 1 ? 's' : ''}</div>
+              </div>
+            )}
+            <div style={tendyStyles.header}>
+              <button style={tendyStyles.backButton} onClick={onBack}>
+                ← Back
+              </button>
+              <div style={tendyStyles.stats}>
+                <div style={tendyStyles.stat}>
+                  <span>🌱</span> {tendyPoints} pts
+                </div>
+                <div style={tendyStyles.stat}>
+                  <span>🔥</span> {tendyStreak} day{tendyStreak !== 1 ? 's' : ''}
+                </div>
+              </div>
+            </div>
+            <div style={tendyStyles.content}>
+              <h1 style={tendyStyles.title}>Today's Tendy</h1>
+              <p style={tendyStyles.subtitle}>
+                Complete this small action to tend to your {selectedTendy.domainName.toLowerCase()} values
+              </p>
+              
+              <div style={tendyStyles.selectedCard}>
+                <div style={tendyStyles.tendyHeader}>
+                  <div style={tendyStyles.tendyDomain}>
+                    <span>{selectedTendy.domainIcon}</span>
+                    <span>{selectedTendy.domainName}</span>
+                  </div>
+                  <span style={{
+                    ...tendyStyles.difficultyBadge,
+                    backgroundColor: getDifficultyLabel(selectedTendy.difficulty).color + '20',
+                    color: getDifficultyLabel(selectedTendy.difficulty).color,
+                  }}>
+                    {getDifficultyLabel(selectedTendy.difficulty).text}
+                  </span>
+                </div>
+                <p style={{...tendyStyles.tendyText, fontSize: '1.1rem'}}>
+                  {selectedTendy.text}
+                </p>
+                <div style={tendyStyles.tendyFooter}>
+                  <span>⏱ {selectedTendy.duration}</span>
+                  <div style={tendyStyles.gardenReward}>
+                    <span>{selectedTendy.gardenElement?.icon}</span>
+                    <span>+{selectedTendy.points} pt{selectedTendy.points !== 1 ? 's' : ''}</span>
+                  </div>
+                </div>
+              </div>
+
+              <button style={tendyStyles.completeButton} onClick={completeTendy}>
+                ✓ Mark Complete
+              </button>
+            </div>
+          </div>
+        );
+      }
+
+      // Selection view - show all 3 tendies
+      return (
+        <div style={tendyStyles.container}>
+          <div style={tendyStyles.header}>
+            <button style={tendyStyles.backButton} onClick={onBack}>
+              ← Back
+            </button>
+            <div style={tendyStyles.stats}>
+              <div style={tendyStyles.stat}>
+                <span>🌱</span> {tendyPoints} pts
+              </div>
+              <div style={tendyStyles.stat}>
+                <span>🔥</span> {tendyStreak} day{tendyStreak !== 1 ? 's' : ''}
+              </div>
+            </div>
+          </div>
+          
+          <div style={tendyStyles.content}>
+            <h1 style={tendyStyles.title}>Choose Your Tendy</h1>
+            <p style={tendyStyles.subtitle}>
+              Pick one small action to tend to your values today.<br/>
+              Each grows a different part of your garden.
+            </p>
+
+            {todaysTendies.map(tendy => {
+              const diffLabel = getDifficultyLabel(tendy.difficulty);
+              return (
+                <div
+                  key={tendy.id}
+                  style={{
+                    ...tendyStyles.tendyCard,
+                    borderColor: tendy.selected ? 'var(--accent)' : 'var(--border)',
+                    backgroundColor: tendy.selected ? 'var(--accent-light)' : 'var(--bg-card)',
+                  }}
+                  onClick={() => selectTendy(tendy.id)}
+                >
+                  <div style={tendyStyles.tendyHeader}>
+                    <div style={tendyStyles.tendyDomain}>
+                      <span>{tendy.domainIcon}</span>
+                      <span>{tendy.domainName}</span>
+                    </div>
+                    <span style={{
+                      ...tendyStyles.difficultyBadge,
+                      backgroundColor: diffLabel.color + '20',
+                      color: diffLabel.color,
+                    }}>
+                      {diffLabel.text}
+                    </span>
+                  </div>
+                  <p style={tendyStyles.tendyText}>{tendy.text}</p>
+                  <div style={tendyStyles.tendyFooter}>
+                    <span>⏱ {tendy.duration}</span>
+                    <div style={tendyStyles.gardenReward}>
+                      <span>{tendy.gardenElement?.icon}</span>
+                      <span>+{tendy.points} pt{tendy.points !== 1 ? 's' : ''}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <button
+              style={{
+                ...tendyStyles.selectButton,
+                ...(todaysTendies.every(t => !t.selected) ? tendyStyles.selectButtonDisabled : {}),
+              }}
+              onClick={() => {
+                const selected = todaysTendies.find(t => t.selected);
+                if (selected) {
+                  // Selection is already tracked, just confirm
+                }
+              }}
+              disabled={todaysTendies.every(t => !t.selected)}
+            >
+              {todaysTendies.some(t => t.selected) ? 'Confirm Selection →' : 'Select a Tendy above'}
+            </button>
           </div>
         </div>
       );
