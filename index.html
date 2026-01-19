@@ -3224,7 +3224,15 @@ I'm here to help with any planning.`
 
       const currentWeek = getWeekIdentifier();
       const canCreateCustomThisWeek = !weeklyCustomTendy || weeklyCustomTendy.weekOf !== currentWeek;
-      const hasApprovedCustom = weeklyCustomTendy?.status === 'approved' && weeklyCustomTendy.weekOf === currentWeek;
+      
+      // Check completions this week (stored as array of completion dates)
+      const completionsThisWeek = weeklyCustomTendy?.completions?.filter(c => 
+        c.startsWith(currentWeek)
+      ) || [];
+      const customCompletionsRemaining = 2 - completionsThisWeek.length;
+      const hasApprovedCustom = weeklyCustomTendy?.status === 'approved' && 
+                                weeklyCustomTendy.weekOf === currentWeek &&
+                                customCompletionsRemaining > 0;
 
       // Check if we need to generate new tendies for today
       useEffect(() => {
@@ -3243,25 +3251,23 @@ I'm here to help with any planning.`
           ...t,
           selected: t.id === tendyId
         })));
-        // Deselect custom tendy when regular tendy is selected
-        if (weeklyCustomTendy?.selected) {
-          setWeeklyCustomTendy({...weeklyCustomTendy, selected: false});
-        }
+        // Allow both daily and custom tendy to be selected
       };
 
       const completeTendy = () => {
         // Check if custom tendy is selected
         if (weeklyCustomTendy?.selected) {
+          const completionTimestamp = new Date().toISOString();
           const completedCustom = {
-            ...weeklyCustomTendy,
-            completed: true,
-            completedAt: new Date().toISOString(),
-            id: `custom-${currentWeek}`,
+            id: `custom-${currentWeek}-${completionsThisWeek.length + 1}`,
             date: today,
+            text: weeklyCustomTendy.text,
             points: 1,
             difficulty: 'custom',
             domainName: 'Custom',
             domainIcon: '✨',
+            completed: true,
+            completedAt: completionTimestamp,
             gardenElement: { icon: '🌟', element: 'Star', description: 'Personal intention' }
           };
 
@@ -3281,8 +3287,13 @@ I'm here to help with any planning.`
             setTendyStreak(tendyStreak + 1);
           }
 
-          // Mark as completed in weeklyCustomTendy
-          setWeeklyCustomTendy({...weeklyCustomTendy, completed: true, selected: false});
+          // Add completion to weeklyCustomTendy (track all completions this week)
+          const existingCompletions = weeklyCustomTendy.completions || [];
+          setWeeklyCustomTendy({
+            ...weeklyCustomTendy, 
+            completions: [...existingCompletions, completionTimestamp],
+            selected: false
+          });
 
           // Show celebration
           setJustCompletedPoints(1);
@@ -3655,23 +3666,13 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
 
       // Already selected - show completion view
       if (selectedTendy || weeklyCustomTendy?.selected) {
-        const displayTendy = selectedTendy || (weeklyCustomTendy?.selected ? {
-          text: weeklyCustomTendy.text,
-          domainName: 'Your Custom Tendy',
-          domainIcon: '✨',
-          duration: 'Self-paced',
-          points: 1,
-          difficulty: 'custom',
-          gardenElement: { icon: '🌟', element: 'Star' }
-        } : null);
-
-        if (!displayTendy) return null;
-
+        const hasBothSelected = selectedTendy && weeklyCustomTendy?.selected;
+        
         return (
           <div style={tendyStyles.container}>
             {showCelebration && (
               <div style={tendyStyles.celebrationOverlay}>
-                <div style={tendyStyles.celebrationIcon}>{displayTendy.gardenElement?.icon}</div>
+                <div style={tendyStyles.celebrationIcon}>✨</div>
                 <div style={tendyStyles.celebrationText}>Tendy Complete!</div>
                 <div style={tendyStyles.celebrationPoints}>+{justCompletedPoints} point{justCompletedPoints !== 1 ? 's' : ''}</div>
               </div>
@@ -3690,49 +3691,139 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               </div>
             </div>
             <div style={tendyStyles.content}>
-              <h1 style={tendyStyles.title}>Today's Tendy</h1>
+              <h1 style={tendyStyles.title}>{hasBothSelected ? 'Today\'s Tendies' : 'Today\'s Tendy'}</h1>
               <p style={tendyStyles.subtitle}>
-                Complete this small action to tend to your {displayTendy.domainName.toLowerCase()} values
+                {hasBothSelected 
+                  ? 'Complete these actions to tend to your values'
+                  : 'Complete this small action to tend to your values'
+                }
               </p>
               
-              <div style={tendyStyles.selectedCard}>
-                <div style={tendyStyles.tendyHeader}>
-                  <div style={tendyStyles.tendyDomain}>
-                    <span>{displayTendy.domainIcon}</span>
-                    <span>{displayTendy.domainName}</span>
+              {/* Show regular tendy if selected */}
+              {selectedTendy && (
+                <div style={{marginBottom: hasBothSelected ? '1.5rem' : '0'}}>
+                  <div style={tendyStyles.selectedCard}>
+                    <div style={tendyStyles.tendyHeader}>
+                      <div style={tendyStyles.tendyDomain}>
+                        <span>{selectedTendy.domainIcon}</span>
+                        <span>{selectedTendy.domainName}</span>
+                      </div>
+                      <span style={{
+                        ...tendyStyles.difficultyBadge,
+                        backgroundColor: getDifficultyLabel(selectedTendy.difficulty).color + '20',
+                        color: getDifficultyLabel(selectedTendy.difficulty).color,
+                      }}>
+                        {getDifficultyLabel(selectedTendy.difficulty).text}
+                      </span>
+                    </div>
+                    <p style={{...tendyStyles.tendyText, fontSize: '1.1rem'}}>
+                      {selectedTendy.text}
+                    </p>
+                    <div style={tendyStyles.tendyFooter}>
+                      <span>⏱ {selectedTendy.duration}</span>
+                      <div style={tendyStyles.gardenReward}>
+                        <span>{selectedTendy.gardenElement?.icon}</span>
+                        <span>+{selectedTendy.points} pt{selectedTendy.points !== 1 ? 's' : ''}</span>
+                      </div>
+                    </div>
                   </div>
-                  {displayTendy.difficulty !== 'custom' ? (
-                    <span style={{
-                      ...tendyStyles.difficultyBadge,
-                      backgroundColor: getDifficultyLabel(displayTendy.difficulty).color + '20',
-                      color: getDifficultyLabel(displayTendy.difficulty).color,
-                    }}>
-                      {getDifficultyLabel(displayTendy.difficulty).text}
-                    </span>
-                  ) : (
-                    <span style={{
-                      ...tendyStyles.difficultyBadge,
-                      backgroundColor: '#B8A9C920',
-                      color: '#B8A9C9',
-                    }}>
-                      Personal
-                    </span>
-                  )}
+                  <button style={tendyStyles.completeButton} onClick={() => {
+                    // Complete regular tendy
+                    const completedTendy = {
+                      ...selectedTendy,
+                      completed: true,
+                      completedAt: new Date().toISOString()
+                    };
+                    setTodaysTendies(todaysTendies.map(t => 
+                      t.id === selectedTendy.id ? completedTendy : t
+                    ));
+                    setTendyHistory([...tendyHistory, {
+                      ...completedTendy,
+                      templateText: completedTendy.text
+                    }]);
+                    setTendyPoints(tendyPoints + selectedTendy.points);
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yesterdayStr = yesterday.toISOString().split('T')[0];
+                    const completedYesterday = tendyHistory.some(t => t.date === yesterdayStr && t.completed);
+                    if (completedYesterday || tendyStreak === 0) {
+                      setTendyStreak(tendyStreak + 1);
+                    }
+                    setJustCompletedPoints(selectedTendy.points);
+                    setShowCelebration(true);
+                    setTimeout(() => setShowCelebration(false), 2500);
+                  }}>
+                    ✓ Mark Complete
+                  </button>
                 </div>
-                <p style={{...tendyStyles.tendyText, fontSize: '1.1rem'}}>
-                  {displayTendy.text}
-                </p>
-                <div style={tendyStyles.tendyFooter}>
-                  <span>⏱ {displayTendy.duration}</span>
-                  <div style={tendyStyles.gardenReward}>
-                    <span>{displayTendy.gardenElement?.icon}</span>
-                    <span>+{displayTendy.points} pt{displayTendy.points !== 1 ? 's' : ''}</span>
-                  </div>
-                </div>
-              </div>
+              )}
 
-              <button style={tendyStyles.completeButton} onClick={completeTendy}>
-                ✓ Mark Complete
+              {/* Show custom tendy if selected */}
+              {weeklyCustomTendy?.selected && (
+                <div>
+                  <div style={tendyStyles.selectedCard}>
+                    <div style={tendyStyles.tendyHeader}>
+                      <div style={tendyStyles.tendyDomain}>
+                        <span>✨</span>
+                        <span>Your Custom Tendy</span>
+                      </div>
+                      <span style={{
+                        ...tendyStyles.difficultyBadge,
+                        backgroundColor: '#B8A9C920',
+                        color: '#B8A9C9',
+                      }}>
+                        Personal
+                      </span>
+                    </div>
+                    <p style={{...tendyStyles.tendyText, fontSize: '1.1rem'}}>
+                      {weeklyCustomTendy.text}
+                    </p>
+                    <div style={tendyStyles.tendyFooter}>
+                      <span>⏱ Self-paced</span>
+                      <div style={tendyStyles.gardenReward}>
+                        <span>🌟</span>
+                        <span>+1 pt • {customCompletionsRemaining}/2 left</span>
+                      </div>
+                    </div>
+                  </div>
+                  <button style={tendyStyles.completeButton} onClick={() => {
+                    // Complete custom tendy
+                    const completionTimestamp = new Date().toISOString();
+                    const completedCustom = {
+                      id: `custom-${currentWeek}-${completionsThisWeek.length + 1}`,
+                      date: today,
+                      text: weeklyCustomTendy.text,
+                      points: 1,
+                      difficulty: 'custom',
+                      domainName: 'Custom',
+                      domainIcon: '✨',
+                      completed: true,
+                      completedAt: completionTimestamp,
+                      gardenElement: { icon: '🌟', element: 'Star', description: 'Personal intention' }
+                    };
+                    setTendyHistory([...tendyHistory, completedCustom]);
+                    setTendyPoints(tendyPoints + 1);
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    const yesterdayStr = yesterday.toISOString().split('T')[0];
+                    const completedYesterday = tendyHistory.some(t => t.date === yesterdayStr && t.completed);
+                    if (completedYesterday || tendyStreak === 0) {
+                      setTendyStreak(tendyStreak + 1);
+                    }
+                    const existingCompletions = weeklyCustomTendy.completions || [];
+                    setWeeklyCustomTendy({
+                      ...weeklyCustomTendy, 
+                      completions: [...existingCompletions, completionTimestamp],
+                      selected: false
+                    });
+                    setJustCompletedPoints(1);
+                    setShowCelebration(true);
+                    setTimeout(() => setShowCelebration(false), 2500);
+                  }}>
+                    ✓ Mark Complete
+                  </button>
+                </div>
+              )}
               </button>
             </div>
           </div>
@@ -3809,9 +3900,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   backgroundColor: weeklyCustomTendy.selected ? 'var(--accent-light)' : 'var(--bg-card)',
                 }}
                 onClick={() => {
-                  setWeeklyCustomTendy({...weeklyCustomTendy, selected: true});
-                  // Deselect all regular tendies
-                  setTodaysTendies(todaysTendies.map(t => ({...t, selected: false})));
+                  setWeeklyCustomTendy({...weeklyCustomTendy, selected: !weeklyCustomTendy.selected});
+                  // Allow both daily and custom to be selected
                 }}
               >
                 <div style={tendyStyles.tendyHeader}>
@@ -3832,7 +3922,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   <span>⏱ Self-paced</span>
                   <div style={tendyStyles.gardenReward}>
                     <span>🌟</span>
-                    <span>+1 pt</span>
+                    <span>+1 pt • {customCompletionsRemaining}/2 left</span>
                   </div>
                 </div>
               </div>
