@@ -287,7 +287,7 @@
       // Apply soft recency penalties to probabilities
       const adjustedProbs = {};
       availableDomains.forEach(d => {
-        const penalty = penaltyWeights[d] || 1.0; // Default: no penalty
+        const penalty = penaltyWeights[d] || 1.0;
         adjustedProbs[d] = probabilities[d] * penalty;
       });
 
@@ -326,7 +326,7 @@
       tendyHistory
         .filter(t => {
           const daysDiff = (new Date(today) - new Date(t.date)) / (1000 * 60 * 60 * 24);
-          return daysDiff > 0 && daysDiff <= 7; // Last 7 days, excluding today
+          return daysDiff > 0 && daysDiff <= 7;
         })
         .forEach(t => {
           if (t.domain) recentDomainCounts[t.domain]++;
@@ -335,14 +335,14 @@
       // Apply soft penalty: reduce probability by 20% per recent appearance
       const penaltyWeights = {};
       VLQ_ORDER.forEach(d => {
-        penaltyWeights[d] = Math.pow(0.8, recentDomainCounts[d]); // 0.8^count
+        penaltyWeights[d] = Math.pow(0.8, recentDomainCounts[d]);
       });
       
-      // GUARDRAIL 3: Template cooldown (30 days)
+      // GUARDRAIL 3: Template cooldown (30 days instead of 7)
       const recentTemplates = tendyHistory
         .filter(t => {
           const daysDiff = (new Date(today) - new Date(t.date)) / (1000 * 60 * 60 * 24);
-          return daysDiff < 30; // Last 30 days
+          return daysDiff < 30;
         })
         .map(t => t.templateText || t.text);
 
@@ -3226,251 +3226,6 @@ I'm here to help with any planning.`
     }
 
     // ============ TENDY VIEW (Daily Values Tasks) ============
-    // ============ TENDY HISTORY COMPONENT ============
-    function TendyHistory({ tendyHistory, todaysTendies, onClose }) {
-      // Group tendies by date, including today's options
-      const today = new Date().toISOString().split('T')[0];
-      
-      // Get all dates with tendies
-      const allDates = [...new Set([
-        today,
-        ...tendyHistory.map(t => t.date)
-      ])].sort((a, b) => new Date(b) - new Date(a)); // Most recent first
-      
-      const historyByDate = {};
-      allDates.forEach(date => {
-        const completed = tendyHistory.filter(t => t.date === date && t.completed);
-        const offered = date === today 
-          ? todaysTendies 
-          : tendyHistory.filter(t => t.date === date && !t.completed);
-        
-        historyByDate[date] = {
-          completed,
-          notCompleted: offered.filter(t => !completed.some(c => c.id === t.id))
-        };
-      });
-
-      const formatDate = (dateStr) => {
-        const date = new Date(dateStr);
-        const now = new Date();
-        const yesterday = new Date(now);
-        yesterday.setDate(yesterday.getDate() - 1);
-        
-        if (dateStr === now.toISOString().split('T')[0]) return 'Today';
-        if (dateStr === yesterday.toISOString().split('T')[0]) return 'Yesterday';
-        
-        const options = { weekday: 'short', month: 'short', day: 'numeric' };
-        return date.toLocaleDateString('en-US', options);
-      };
-
-      const getDifficultyLabel = (difficulty) => {
-        switch(difficulty) {
-          case 1: return { text: 'Easy', color: '#8FD4A0' };
-          case 2: return { text: 'Medium', color: '#F9D07A' };
-          case 3: return { text: 'Hard', color: '#E8A090' };
-          case 'custom': return { text: 'Custom', color: '#B8A9C9' };
-          default: return { text: 'Task', color: '#7EB3E0' };
-        }
-      };
-
-      const historyStyles = {
-        overlay: {
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1000,
-        },
-        modal: {
-          backgroundColor: 'var(--bg)',
-          borderRadius: '16px',
-          width: '90%',
-          maxWidth: '600px',
-          maxHeight: '80vh',
-          overflow: 'hidden',
-          display: 'flex',
-          flexDirection: 'column',
-        },
-        header: {
-          padding: '1.5rem',
-          borderBottom: '1px solid var(--border)',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        },
-        title: {
-          fontFamily: "'Fraunces', serif",
-          fontSize: '1.5rem',
-          color: 'var(--text)',
-        },
-        closeButton: {
-          width: '32px',
-          height: '32px',
-          borderRadius: '50%',
-          backgroundColor: 'var(--bg-elevated)',
-          border: 'none',
-          color: 'var(--text-muted)',
-          fontSize: '1.25rem',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-        },
-        content: {
-          padding: '1.5rem',
-          overflowY: 'auto',
-        },
-        dateSection: {
-          marginBottom: '2rem',
-        },
-        dateHeader: {
-          fontSize: '0.9rem',
-          fontWeight: 600,
-          color: 'var(--text)',
-          marginBottom: '0.75rem',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-        },
-        tendyItem: {
-          padding: '0.875rem',
-          backgroundColor: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: '10px',
-          marginBottom: '0.5rem',
-        },
-        tendyItemCompleted: {
-          borderColor: 'var(--accent)',
-          backgroundColor: 'var(--accent-light)',
-        },
-        tendyItemNotCompleted: {
-          opacity: 0.7,
-        },
-        tendyHeader: {
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: '0.5rem',
-        },
-        domainInfo: {
-          display: 'flex',
-          alignItems: 'center',
-          gap: '0.5rem',
-          fontSize: '0.8rem',
-          color: 'var(--text-muted)',
-        },
-        statusBadge: {
-          fontSize: '0.75rem',
-          padding: '0.25rem 0.5rem',
-          borderRadius: '6px',
-          fontWeight: 500,
-        },
-        tendyText: {
-          fontSize: '0.85rem',
-          color: 'var(--text)',
-          lineHeight: 1.4,
-        },
-        emptyState: {
-          textAlign: 'center',
-          padding: '3rem 1rem',
-          color: 'var(--text-muted)',
-        },
-      };
-
-      return (
-        <div style={historyStyles.overlay} onClick={onClose}>
-          <div style={historyStyles.modal} onClick={(e) => e.stopPropagation()}>
-            <div style={historyStyles.header}>
-              <h2 style={historyStyles.title}>Tendy History</h2>
-              <button style={historyStyles.closeButton} onClick={onClose}>×</button>
-            </div>
-            <div style={historyStyles.content}>
-              {allDates.length === 0 ? (
-                <div style={historyStyles.emptyState}>
-                  <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>📊</div>
-                  <div>No tendy history yet. Complete your first tendy to get started!</div>
-                </div>
-              ) : (
-                allDates.slice(0, 30).map(date => { // Show last 30 days
-                  const { completed, notCompleted } = historyByDate[date];
-                  if (completed.length === 0 && notCompleted.length === 0) return null;
-                  
-                  return (
-                    <div key={date} style={historyStyles.dateSection}>
-                      <div style={historyStyles.dateHeader}>{formatDate(date)}</div>
-                      
-                      {/* Completed Tendies */}
-                      {completed.map(tendy => {
-                        const diffLabel = getDifficultyLabel(tendy.difficulty);
-                        return (
-                          <div 
-                            key={tendy.id} 
-                            style={{
-                              ...historyStyles.tendyItem,
-                              ...historyStyles.tendyItemCompleted
-                            }}
-                          >
-                            <div style={historyStyles.tendyHeader}>
-                              <div style={historyStyles.domainInfo}>
-                                <span>{tendy.domainIcon || '✨'}</span>
-                                <span>{tendy.domainName || 'Custom'}</span>
-                              </div>
-                              <span style={{
-                                ...historyStyles.statusBadge,
-                                backgroundColor: '#D4EDDA',
-                                color: '#155724',
-                              }}>
-                                ✓ Completed (+{tendy.points} pt)
-                              </span>
-                            </div>
-                            <div style={historyStyles.tendyText}>{tendy.text}</div>
-                          </div>
-                        );
-                      })}
-                      
-                      {/* Not Completed Tendies */}
-                      {notCompleted.map(tendy => {
-                        const diffLabel = getDifficultyLabel(tendy.difficulty);
-                        return (
-                          <div 
-                            key={tendy.id} 
-                            style={{
-                              ...historyStyles.tendyItem,
-                              ...historyStyles.tendyItemNotCompleted
-                            }}
-                          >
-                            <div style={historyStyles.tendyHeader}>
-                              <div style={historyStyles.domainInfo}>
-                                <span>{tendy.domainIcon || '✨'}</span>
-                                <span>{tendy.domainName || 'Custom'}</span>
-                              </div>
-                              <span style={{
-                                ...historyStyles.statusBadge,
-                                backgroundColor: 'var(--bg-elevated)',
-                                color: 'var(--text-muted)',
-                              }}>
-                                {date === today ? 'Available' : 'Not completed'}
-                              </span>
-                            </div>
-                            <div style={historyStyles.tendyText}>{tendy.text}</div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        </div>
-      );
-    }
-
-    // ============ TENDY VIEW ============
     function TendyView({ 
       vlqScores, 
       todaysTendies, 
@@ -3492,7 +3247,6 @@ I'm here to help with any planning.`
       const [showCustomTendyForm, setShowCustomTendyForm] = useState(false);
       const [customTendyText, setCustomTendyText] = useState('');
       const [isSubmittingCustom, setIsSubmittingCustom] = useState(false);
-      const [showHistory, setShowHistory] = useState(false);
 
       // Get the week identifier (e.g., "2026-W03")
       const getWeekIdentifier = () => {
@@ -3523,7 +3277,7 @@ I'm here to help with any planning.`
           const newTendies = generateDailyTendies(vlqScores, tendyHistory);
           setTodaysTendies(newTendies);
         }
-      }, [today, vlqScores, tendyHistory]);
+      }, [today, vlqScores]);
 
       const selectedTendy = todaysTendies.find(t => t.selected);
       const completedToday = todaysTendies.find(t => t.completed);
@@ -4019,10 +3773,9 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     setTodaysTendies(todaysTendies.map(t => 
                       t.id === selectedTendy.id ? completedTendy : t
                     ));
-                    // Add to history
                     setTendyHistory([...tendyHistory, {
                       ...completedTendy,
-                      templateText: completedTendy.text || completedTendy.templateText
+                      templateText: completedTendy.text
                     }]);
                     setTendyPoints(tendyPoints + selectedTendy.points);
                     const yesterday = new Date();
@@ -4116,32 +3869,11 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       // Selection view - show all 3 tendies
       return (
         <div style={tendyStyles.container}>
-          {showHistory && (
-            <TendyHistory
-              tendyHistory={tendyHistory}
-              todaysTendies={todaysTendies}
-              onClose={() => setShowHistory(false)}
-            />
-          )}
-          
           <div style={tendyStyles.header}>
             <button style={tendyStyles.backButton} onClick={onBack}>
               ← Back
             </button>
             <div style={tendyStyles.stats}>
-              <button 
-                onClick={() => setShowHistory(true)}
-                style={{
-                  ...tendyStyles.stat,
-                  cursor: 'pointer',
-                  border: 'none',
-                  backgroundColor: 'transparent',
-                  fontFamily: "'DM Sans', sans-serif",
-                }}
-                title="View History"
-              >
-                📊 History
-              </button>
               <div style={tendyStyles.stat}>
                 <span>🌱</span> {tendyPoints} pts
               </div>
