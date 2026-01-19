@@ -997,7 +997,7 @@
         }
       };
 
-      // Show loading while checking auth
+      // Loading screen - just the icon
       const loadingScreen = (
         <div style={{
           minHeight: '100vh',
@@ -1005,19 +1005,22 @@
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: 'var(--bg-main)',
-          fontFamily: "'DM Sans', sans-serif",
         }}>
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🌱</div>
-            <div>Loading...</div>
-          </div>
+          <svg width="48" height="48" viewBox="0 0 80 80" fill="none" style={{opacity: 0.6}}>
+            <path d="M40 70 L40 45" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round"/>
+            <path d="M40 55 Q30 50 25 40 Q35 45 40 55" stroke="var(--accent)" strokeWidth="2" fill="none" strokeLinecap="round"/>
+            <path d="M40 45 Q50 38 55 28 Q45 35 40 45" stroke="var(--accent)" strokeWidth="2" fill="none" strokeLinecap="round"/>
+            <path d="M40 35 Q32 28 30 18 Q38 25 40 35" stroke="var(--accent)" strokeWidth="2" fill="none" strokeLinecap="round"/>
+            <path d="M40 28 Q48 22 52 12 Q44 20 40 28" stroke="var(--accent)" strokeWidth="2" fill="none" strokeLinecap="round"/>
+            <circle cx="40" cy="70" r="4" fill="none" stroke="var(--accent)" strokeWidth="2"/>
+          </svg>
         </div>
       );
 
       // Initial chat message after VLQ
       useEffect(() => {
-        // Only set initial message after VLQ is complete
-        if (vlqCompleted && messages.length === 0) {
+        // Only set initial message after VLQ is complete and data is loaded
+        if (vlqCompleted && messages.length === 0 && dataLoaded) {
           // Find top growth areas - include all needed fields
           const gaps = VLQ_ORDER.map(key => ({
             key,
@@ -1033,7 +1036,24 @@
           // Find a strength (high importance AND high consistency)
           const topStrength = gaps.find(a => a.importance >= 7 && a.consistency >= 6);
 
-          let openingMessage = `Thank you for sharing what matters to you.
+          let openingMessage = '';
+
+          // If they already have a theme word, welcome them back with next steps
+          if (yearTheme) {
+            openingMessage = `Welcome back! Your word for the year is <em>${yearTheme}</em>.
+
+Now that you have your compass, there are a few paths we could explore together:
+
+<strong>🌸 Seasons</strong> — What do you want each season to feel like? Winter might be for rest, spring for new beginnings...
+
+<strong>📅 Events</strong> — Are there trips, milestones, or commitments to map out? Let's make sure your calendar reflects your values.
+
+<strong>🔁 Rhythms</strong> — What weekly or daily habits would help you live into <em>${yearTheme}</em>?
+
+What feels most alive for you right now?`;
+          } else {
+            // New user - introduce the process
+            openingMessage = `Thank you for sharing what matters to you.
 
 My goal is to help you design a year that actually aligns with your values — not just a list of goals, but a life that feels intentional and true to who you are.
 
@@ -1041,22 +1061,23 @@ To do that, we'll start by finding a <em>theme word</em> for your year — one g
 
 But first, I'd love to understand your values a bit more deeply.`;
           
-          if (biggestGap && biggestGap.gap >= 2) {
-            openingMessage += `
+            if (biggestGap && biggestGap.gap >= 2) {
+              openingMessage += `
 
 I noticed <em>${biggestGap.name}</em> really matters to you (${biggestGap.importance}/10), but you rated how you've been living it as ${biggestGap.consistency}/10. That gap is meaningful.
 
 What's been getting in the way there?`;
-          } else if (topStrength) {
-            openingMessage += `
+            } else if (topStrength) {
+              openingMessage += `
 
 I see <em>${topStrength.name}</em> is both important to you and something you're living well — that's a real strength.
 
 What's helped you stay consistent there? And are there other areas you'd like to bring that same energy to?`;
-          } else {
-            openingMessage += `
+            } else {
+              openingMessage += `
 
 Looking at your values, what's been on your mind lately? What do you wish had more space in your life this year?`;
+            }
           }
 
           setMessages([{
@@ -1064,7 +1085,7 @@ Looking at your values, what's been on your mind lately? What do you wish had mo
             content: openingMessage
           }]);
         }
-      }, [vlqCompleted]);
+      }, [vlqCompleted, dataLoaded, yearTheme]);
 
       // Track view/tab for system prompt context (no auto-messages)
 
@@ -1686,11 +1707,16 @@ IMPORTANT - Theme Word Discovery Process (in EXPLORE phase):
    - Then suggest: "Based on what you've shared about [summarize key themes], I think your word might be *[word]*. It captures [specific reason tied to what they said]."
    - Ask: "Does that resonate? Feel free to try it on, adjust it, or suggest something else."
 4. Let them accept, modify, or suggest alternatives
-5. Once they have a word they like, celebrate it briefly and let them know they can explore the other tabs (Seasons, Monthly, Weekly, Daily) to plan in more detail
+5. Once they accept a word, celebrate briefly then offer three paths forward:
+   - "Now that you have your compass, here are some ways we could go deeper:"
+   - **Seasons** — "We could think about what you want each season to feel like"
+   - **Events** — "We could map out trips, milestones, or commitments for the year"  
+   - **Rhythms** — "We could establish weekly or daily habits that support your theme"
+   - Ask: "What feels most alive for you right now?"
 
 CURRENT VIEW: ${centerView.toUpperCase()}
 ${centerView === 'year' ? `
-You're on the YEAR view. ${yearTheme ? `Their theme word is "${yearTheme}". Help them see how their year could unfold around this theme. If they want to change it, that's fine.` : `Focus on discovering their theme word through conversation. Don't ask directly - explore their VLQ results and what they want from the year, then suggest a word.`}
+You're on the YEAR view. ${yearTheme ? `Their theme word is "${yearTheme}". If this is a returning user, offer the three paths (Seasons, Events, Rhythms) and ask what they want to explore. Help them see how their year could unfold around this theme.` : `Focus on discovering their theme word through conversation. Don't ask directly - explore their VLQ results and what they want from the year, then suggest a word.`}
 ` : ''}${centerView === 'seasons' ? `
 You're on the SEASONS view. Help them think about what each season could feel like and hold for them. Ask about:
 - What's already planned for each season?
@@ -1928,6 +1954,11 @@ I'm here to help with any planning.`
       // Show auth screen if not logged in
       if (!user) {
         return <AuthModal onSuccess={() => {}} />;
+      }
+
+      // Wait for user data to load from Firebase before deciding what to show
+      if (!dataLoaded) {
+        return loadingScreen;
       }
 
       // Show VLQ assessment first
