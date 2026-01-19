@@ -3522,11 +3522,8 @@ I'm here to help with any planning.`
         if (!tendiesAreFromToday && vlqScores) {
           const newTendies = generateDailyTendies(vlqScores, tendyHistory);
           setTodaysTendies(newTendies);
-          
-          // Add offered tendies to history (not yet completed)
-          setTendyHistory([...tendyHistory, ...newTendies]);
         }
-      }, [today, vlqScores]);
+      }, [today, vlqScores, tendyHistory]);
 
       const selectedTendy = todaysTendies.find(t => t.selected);
       const completedToday = todaysTendies.find(t => t.completed);
@@ -4022,10 +4019,11 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     setTodaysTendies(todaysTendies.map(t => 
                       t.id === selectedTendy.id ? completedTendy : t
                     ));
-                    // Update the tendy in history to mark as completed
-                    setTendyHistory(tendyHistory.map(t =>
-                      t.id === selectedTendy.id ? {...completedTendy, templateText: completedTendy.text} : t
-                    ));
+                    // Add to history
+                    setTendyHistory([...tendyHistory, {
+                      ...completedTendy,
+                      templateText: completedTendy.text || completedTendy.templateText
+                    }]);
                     setTendyPoints(tendyPoints + selectedTendy.points);
                     const yesterday = new Date();
                     yesterday.setDate(yesterday.getDate() - 1);
