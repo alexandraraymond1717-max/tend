@@ -3270,7 +3270,13 @@ I'm here to help with any planning.`
       // Check if we need to generate new tendies for today
       useEffect(() => {
         const tendiesAreFromToday = todaysTendies.length > 0 && todaysTendies[0]?.date === today;
-        if (!tendiesAreFromToday && vlqScores) {
+        
+        // Check if all tendies are from the same domain (v2 requirement)
+        const allSameDomain = todaysTendies.length > 0 && 
+          todaysTendies.every(t => t.domain === todaysTendies[0]?.domain);
+        
+        // Regenerate if: not from today, OR from today but have different domains (old version)
+        if (vlqScores && (!tendiesAreFromToday || (tendiesAreFromToday && !allSameDomain))) {
           const newTendies = generateDailyTendies(vlqScores, tendyHistory);
           setTodaysTendies(newTendies);
         }
