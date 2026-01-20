@@ -1247,7 +1247,17 @@
             if (data.habitCompletions && !data.weeklyHabits?.some((h, i, arr) => arr.findIndex(x => x.id === h.id) !== i) && !data.dailyHabits?.some((h, i, arr) => arr.findIndex(x => x.id === h.id) !== i)) {
               setHabitCompletions(data.habitCompletions);
             }
-            if (data.todaysTendies) setTodaysTendies(data.todaysTendies);
+            // Check if todaysTendies are actually from today
+            const today = new Date().toISOString().split('T')[0];
+            if (data.todaysTendies && data.todaysTendies.length > 0 && data.todaysTendies[0]?.date === today) {
+              // Tendies are from today, use them
+              setTodaysTendies(data.todaysTendies);
+            } else if (data.vlqScores && Object.keys(data.vlqScores).length > 0) {
+              // Tendies are old or missing, generate new ones
+              console.log('Generating fresh daily tendies for', today);
+              const newTendies = generateDailyTendies(data.vlqScores, data.tendyHistory || []);
+              setTodaysTendies(newTendies);
+            }
             if (data.tendyHistory) setTendyHistory(data.tendyHistory);
             if (data.tendyPoints) setTendyPoints(data.tendyPoints);
             if (data.tendyStreak) setTendyStreak(data.tendyStreak);
