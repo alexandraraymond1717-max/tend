@@ -2622,16 +2622,19 @@ Keep responses focused and conversational. You're not a productivity app — you
           // Check for explicit user statements like "my word is X"
           if (!yearTheme) {
             const explicitPatterns = [
-              /(?:my word|the word|my theme|the theme)(?:\s+for\s+(?:the\s+year|\d{4}))?\s+is\s+([a-z]+)/i,
-              /(?:i choose|i'll go with|let's go with|i'll choose|i want)\s+([a-z]+)/i,
+              /(?:my word|the word|my theme|the theme)(?:\s+for\s+(?:the\s+year|\d{4}))?\s+is\s+([a-z]{4,15})/i,
+              /(?:i choose|i'll go with|let's go with|i'll choose|i want)\s+([a-z]{4,15})(?:\s|$|[.,!?])/i,
             ];
+            
+            // Common words to filter out (including articles and short words)
+            const commonWords = ['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something', 'okay', 'sure', 'yes', 'great', 'good', 'nice', 'have', 'been', 'from', 'they', 'what', 'when', 'where', 'which', 'there', 'their', 'about', 'will', 'make', 'just', 'know', 'take', 'come', 'into', 'over', 'such', 'some', 'than', 'then', 'these', 'only'];
             
             for (const pattern of explicitPatterns) {
               const match = userMessage.match(pattern);
               if (match && match[1]) {
                 const word = match[1].toLowerCase();
-                // Filter out common words
-                if (!['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something', 'okay', 'sure', 'yes', 'great', 'good', 'nice'].includes(word)) {
+                // Filter out common words and ensure minimum length
+                if (word.length >= 4 && !commonWords.includes(word)) {
                   setYearTheme(word);
                   console.log('Year theme set from explicit statement:', word);
                   break;
@@ -2654,10 +2657,11 @@ Keep responses focused and conversational. You're not a productivity app — you
           
           // Fallback: check for theme word in early exchanges (original logic)
           if (!yearTheme && phase === PHASES.EXPLORE && exchangeCount < 3) {
-            const words = userMessage.split(/\s+/).filter(w => w.length > 2 && w.length < 15);
+            const words = userMessage.split(/\s+/).filter(w => w.length >= 4 && w.length < 15);
+            const commonWords = ['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something', 'have', 'been', 'from', 'they', 'what', 'when', 'where', 'which', 'there', 'their', 'about', 'will', 'make', 'just', 'know', 'take', 'come', 'into', 'over', 'such', 'some', 'than', 'then', 'these', 'only'];
             const potentialTheme = words.find(w => 
               /^[a-zA-Z]+$/.test(w) && 
-              !['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something'].includes(w.toLowerCase())
+              !commonWords.includes(w.toLowerCase())
             );
             if (potentialTheme && words.length <= 5) {
               setYearTheme(potentialTheme.toLowerCase());
