@@ -1114,7 +1114,7 @@
       const [tendyHistory, setTendyHistory] = useState([]); // Completed tendies
       const [tendyPoints, setTendyPoints] = useState(0);
       const [tendyStreak, setTendyStreak] = useState(0);
-      const [flexPoints, setFlexPoints] = useState(3); // For rerolling tendies
+      const [flexPoints, setFlexPoints] = useState(3); // For rerolling daily tends
       const [flexPointsTracking, setFlexPointsTracking] = useState({
         lastJournalDate: null,
         lastWeeklyIntentionWeek: null,
@@ -1284,7 +1284,7 @@
           newTracking.lastWeeklyIntentionWeek = currentWeek;
         }
         
-        // 4. Custom tendy submitted (0.5 points per week)
+        // 4. Custom daily tend submitted (0.5 points per week)
         if (weeklyCustomTendy && weeklyCustomTendy.weekOf === currentWeek && 
             newTracking.lastCustomTendyWeek !== currentWeek) {
           pointsToAward += 0.5;
@@ -2365,7 +2365,7 @@ I'm here to help with any planning.`
             width: '100%',
             maxWidth: '320px',
           }}>
-            {/* Tendies - Featured option */}
+            {/* Daily Tends - Featured option */}
             <button
               onClick={() => setAppMode('tendy')}
               style={{
@@ -2381,7 +2381,7 @@ I'm here to help with any planning.`
               <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
                 <span style={{fontSize: '1.5rem'}}>🌱</span>
                 <div style={{flex: 1}}>
-                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Today's Tendy</div>
+                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Today's Daily Tend</div>
                   <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>One small action aligned with your values</div>
                 </div>
                 {tendyPoints > 0 && (
@@ -3085,10 +3085,10 @@ I'm here to help with any planning.`
         <div>
           <div style={tabStyles.date}>{dateString}</div>
 
-          {/* Tendy Reflection */}
+          {/* Daily Tend Reflection */}
           {selectedTendy && (
             <div style={tabStyles.section}>
-              <h3 style={tabStyles.sectionTitle}>Today's Tendy Reflection</h3>
+              <h3 style={tabStyles.sectionTitle}>Today's Daily Tend Reflection</h3>
               <div style={tabStyles.tendyCard}>
                 <div style={{fontSize: '0.9rem', marginBottom: '0.75rem', color: 'var(--text)'}}>
                   {selectedTendy.text}
@@ -3829,7 +3829,7 @@ I'm here to help with any planning.`
           ...t,
           selected: t.id === tendyId
         })));
-        // Allow both daily and custom tendy to be selected
+        // Allow both daily and custom daily tend to be selected
       };
 
       const rerollTendy = () => {
@@ -3846,7 +3846,7 @@ I'm here to help with any planning.`
       };
 
       const completeTendy = () => {
-        // Check if custom tendy is selected
+        // Check if custom daily tend is selected
         if (weeklyCustomTendy?.selected) {
           const completionTimestamp = new Date().toISOString();
           const completedCustom = {
@@ -3939,7 +3939,7 @@ I'm here to help with any planning.`
         setIsSubmittingCustom(true);
         
         try {
-          // Call Claude API to review the custom tendy
+          // Call Claude API to review the custom daily tend
           const response = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST",
             headers: {
@@ -3952,7 +3952,7 @@ I'm here to help with any planning.`
               max_tokens: 200,
               messages: [{
                 role: "user",
-                content: `I'm building an intentional living app where users can create one custom "Tendy" per week - a small action aligned with their values. Please review this custom Tendy and respond with ONLY "APPROVED" or "REJECTED" followed by a brief reason.
+                content: `I'm building an intentional living app where users can create one custom "Daily Tend" per week - a small action aligned with their values. Please review this custom daily tend and respond with ONLY "APPROVED" or "REJECTED" followed by a brief reason.
 
 Approve if it's:
 - A specific, actionable task
@@ -3966,7 +3966,7 @@ Reject if it's:
 - Inappropriate or harmful
 - Just a to-do item with no values connection
 
-Custom Tendy: "${customTendyText}"
+Custom Daily Tend: "${customTendyText}"
 
 Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               }]
@@ -3994,8 +3994,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           setShowCustomTendyForm(false);
           
         } catch (error) {
-          console.error('Error submitting custom tendy:', error);
-          alert('Error submitting custom tendy. Please check your API key in settings.');
+          console.error('Error submitting custom daily tend:', error);
+          alert('Error submitting custom daily tend. Please check your API key in settings.');
         } finally {
           setIsSubmittingCustom(false);
         }
@@ -4233,7 +4233,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             <div style={tendyStyles.content}>
               <div style={tendyStyles.completedState}>
                 <div style={tendyStyles.completedIcon}>✨</div>
-                <h2 style={tendyStyles.completedTitle}>Today's Tendy Complete!</h2>
+                <h2 style={tendyStyles.completedTitle}>Today's Daily Tend Complete!</h2>
                 <p style={tendyStyles.completedSubtitle}>
                   You earned {completedToday.points} point{completedToday.points !== 1 ? 's' : ''} for your garden
                 </p>
@@ -4261,7 +4261,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             {showCelebration && (
               <div style={tendyStyles.celebrationOverlay}>
                 <div style={tendyStyles.celebrationIcon}>✨</div>
-                <div style={tendyStyles.celebrationText}>Tendy Complete!</div>
+                <div style={tendyStyles.celebrationText}>Daily Tend Complete!</div>
                 <div style={tendyStyles.celebrationPoints}>+{justCompletedPoints} point{justCompletedPoints !== 1 ? 's' : ''}</div>
               </div>
             )}
@@ -4279,7 +4279,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               </div>
             </div>
             <div style={tendyStyles.content}>
-              <h1 style={tendyStyles.title}>{hasBothSelected ? 'Today\'s Tendies' : 'Today\'s Tendy'}</h1>
+              <h1 style={tendyStyles.title}>{hasBothSelected ? 'Today\'s Daily Tends' : 'Today\'s Daily Tend'}</h1>
               <p style={tendyStyles.subtitle}>
                 {hasBothSelected 
                   ? 'Complete these actions to tend to your values'
@@ -4342,7 +4342,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   )}
                   
                   <button style={tendyStyles.completeButton} onClick={() => {
-                    // Complete regular tendy
+                    // Complete regular daily tend
                     const completedTendy = {
                       ...selectedTendy,
                       completed: true,
@@ -4372,14 +4372,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 </div>
               )}
 
-              {/* Show custom tendy if selected */}
+              {/* Show custom daily tend if selected */}
               {weeklyCustomTendy?.selected && (
                 <div>
                   <div style={tendyStyles.selectedCard}>
                     <div style={tendyStyles.tendyHeader}>
                       <div style={tendyStyles.tendyDomain}>
                         <span>✨</span>
-                        <span>Your Custom Tendy</span>
+                        <span>Your Custom Daily Tend</span>
                       </div>
                       <span style={{
                         ...tendyStyles.difficultyBadge,
@@ -4401,7 +4401,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     </div>
                   </div>
                   <button style={tendyStyles.completeButton} onClick={() => {
-                    // Complete custom tendy
+                    // Complete custom daily tend
                     const completionTimestamp = new Date().toISOString();
                     const completedCustom = {
                       id: `custom-${currentWeek}-${completionsThisWeek.length + 1}`,
@@ -4458,7 +4458,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           </div>
           
           <div style={tendyStyles.content}>
-            <h1 style={tendyStyles.title}>Choose Your Tendy</h1>
+            <h1 style={tendyStyles.title}>Choose Your Daily Tend</h1>
             <p style={tendyStyles.subtitle}>
               Pick a difficulty level to reveal your task for today.
             </p>
@@ -4514,7 +4514,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     fontSize: '0.85rem',
                   }}>
                     <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>?</div>
-                    <div>Select to reveal your tendy</div>
+                    <div>Select to reveal your daily tend</div>
                   </div>
                   <div style={tendyStyles.tendyFooter}>
                     <span style={{opacity: 0}}>placeholder</span>
@@ -4527,7 +4527,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               );
             })}
 
-            {/* Custom Tendy - if approved this week */}
+            {/* Custom Daily Tend - if approved this week */}
             {hasApprovedCustom && (
               <div
                 style={{
@@ -4543,7 +4543,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 <div style={tendyStyles.tendyHeader}>
                   <div style={tendyStyles.tendyDomain}>
                     <span>✨</span>
-                    <span>Your Custom Tendy</span>
+                    <span>Your Custom Daily Tend</span>
                   </div>
                   <span style={{
                     ...tendyStyles.difficultyBadge,
@@ -4564,7 +4564,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               </div>
             )}
 
-            {/* Create Custom Tendy Form */}
+            {/* Create Custom Daily Tend Form */}
             {canCreateCustomThisWeek && !showCustomTendyForm && (
               <button
                 style={{
@@ -4588,7 +4588,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               </button>
             )}
 
-            {/* Custom Tendy Creation Form */}
+            {/* Custom Daily Tend Creation Form */}
             {showCustomTendyForm && (
               <div style={{
                 ...tendyStyles.tendyCard,
@@ -4659,7 +4659,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               </div>
             )}
 
-            {/* Rejected Custom Tendy Message */}
+            {/* Rejected Custom Daily Tend Message */}
             {weeklyCustomTendy?.status === 'rejected' && weeklyCustomTendy.weekOf === currentWeek && (
               <div style={{
                 padding: '1rem',
@@ -4669,7 +4669,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 fontSize: '0.85rem',
                 color: '#C53030',
               }}>
-                <div style={{fontWeight: 500, marginBottom: '0.25rem'}}>Custom Tendy Not Approved</div>
+                <div style={{fontWeight: 500, marginBottom: '0.25rem'}}>Custom Daily Tend Not Approved</div>
                 <div style={{color: '#744210'}}>{weeklyCustomTendy.aiResponse}</div>
                 <div style={{marginTop: '0.5rem', fontSize: '0.75rem', color: '#744210'}}>
                   You can try again with a different tendy this week.
@@ -4692,7 +4692,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 const customSelected = weeklyCustomTendy?.selected;
                 if (dailySelected && customSelected) return 'Confirm Both Selections →';
                 if (dailySelected || customSelected) return 'Confirm Selection →';
-                return 'Select a Tendy above';
+                return 'Select a Daily Tend above';
               })()}
             </button>
           </div>
