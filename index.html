@@ -2818,12 +2818,22 @@ I'm here to help with any planning.`
       };
 
       const handleAddEvent = (eventData) => {
-        // OPTION B: Add relationship mapping fields
         setEvents(prev => [...prev, { 
           ...eventData, 
-          id: Date.now(),
+          id: generateId(),
+          type: eventData.type || 'personal',
+          location: '',
+          startDate: '',
+          endDate: '',
+          budget: { estimated: 0, spent: 0 },
+          sections: {
+            logistics: { tasks: [], notes: '', chatHistory: [] },
+            activities: { tasks: [], notes: '', chatHistory: [] },
+            preparation: { tasks: [], notes: '', chatHistory: [] },
+            budget: { tasks: [], notes: '', chatHistory: [] }
+          },
           details: { flights: '', stays: '', activities: '', notes: '' },
-          relatedGoals: [], // Track which goals this event supports
+          relatedGoals: [],
           createdAt: new Date().toISOString()
         }]);
         setShowEventModal(false);
@@ -3283,12 +3293,14 @@ I'm here to help with any planning.`
                   {activeTab === 'events' && (
                     <EventsTab
                       events={events}
+                      setEvents={setEvents}
                       expandedEvent={expandedEvent}
                       setExpandedEvent={setExpandedEvent}
                       onUpdateDetails={handleUpdateEventDetails}
                       onDelete={(id) => setEvents(events.filter(e => e.id !== id))}
                       onAdd={() => setShowEventModal(true)}
                       revealed={revealed}
+                      apiKey={apiKey}
                     />
                   )}
                   {activeTab === 'notes' && (
@@ -6018,55 +6030,763 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
     }
 
     // ============ EVENTS TAB ============
-    function EventsTab({ events, expandedEvent, setExpandedEvent, onUpdateDetails, onDelete, onAdd, revealed }) {
+    function EventsTab({ events, setEvents, expandedEvent, setExpandedEvent, onUpdateDetails, onDelete, onAdd, revealed, apiKey }) {
+      const [planningEvent, setPlanningEvent] = useState(null);
+      const [activeSection, setActiveSection] = useState('overview');
+      const [sectionChat, setSectionChat] = useState('');
+      const [isAiThinking, setIsAiThinking] = useState(false);
+      const [generatingSuggestions, setGeneratingSuggestions] = useState(false);
+      
       if (!revealed) {
         return <div style={styles.tabPlaceholder}><p style={styles.placeholderText}>Your events will appear here.</p></div>;
       }
-
-      return (
-        <div style={styles.eventsTab}>
-          <button style={styles.addItemButton} onClick={onAdd}>+ Add Event</button>
+      
+      const EVENT_TYPES = {
+        trip: { label: 'Trip', icon: '✈️', color: '#7EB3E0' },
+        celebration: { label: 'Celebration', icon: '🎉', color: '#F9D07A' },
+        project: { label: 'Project', icon: '📋', color: '#8FD4A0' },
+        personal: { label: 'Personal', icon: '⭐', color: '#E8A090' }
+      };
+      
+      const SECTIONS = {
+        overview: { label: 'Overview', icon: '📍' },
+        logistics: { label: 'Logistics', icon: '🚀' },
+        activities: { label: 'Activities', icon: '✨' },
+        preparation: { label: 'Preparation', icon: '📝' },
+        budget: { label: 'Budget', icon: '💰' }
+      };
+      
+      // Initialize event sections if they don't exist
+      const ensureEventSections = (event) => {
+        if (!event.sections) {
+          return {
+            ...event,
+            type: event.type || 'personal',
+            location: event.location || '',
+            startDate: event.startDate || '',
+            endDate: event.endDate || '',
+            budget: event.budget || { estimated: 0, spent: 0 },
+            sections: {
+              logistics: { tasks: [], notes: '', chatHistory: [] },
+              activities: { tasks: [], notes: '', chatHistory: [] },
+              preparation: { tasks: [], notes: '', chatHistory: [] },
+              budget: { tasks: [], notes: '', chatHistory: [] }
+            }
+          };
+        }
+        return event;
+      };
+      
+      // Calculate progress
+      const getProgress = (event) => {
+        const e = ensureEventSections(event);
+        let total = 0;
+        let completed = 0;
+        Object.values(e.sections || {}).forEach(section => {
+          section.tasks?.forEach(task => {
+            total++;
+            if (task.completed) completed++;
+          });
+        });
+        return total === 0 ? 0 : Math.round((completed / total) * 100);
+      };
+      
+      // Generate AI suggestions for a section
+      const generateSuggestions = async (event, sectionKey) => {
+        if (!apiKey) return;
+        setGeneratingSuggestions(true);
+        
+        const sectionPrompts = {
+          logistics: `For a ${event.type || 'trip'} called "${event.title}"${event.location ? ` to ${event.location}` : ''}, suggest 4-6 specific logistics tasks to complete. Format each as a short actionable item.`,
+          activities: `For a ${event.type || 'trip'} called "${event.title}"${event.location ? ` in ${event.location}` : ''}, suggest 4-6 specific activities or things to do. Be specific and interesting.`,
+          preparation: `For a ${event.type || 'trip'} called "${event.title}", suggest 4-6 preparation tasks to do before the event. Include things to research, book, or organize.`,
+          budget: `For a ${event.type || 'trip'} called "${event.title}"${event.location ? ` to ${event.location}` : ''}, suggest 4-6 budget categories or expenses to track.`
+        };
+        
+        try {
+          const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 500,
+              messages: [{
+                role: 'user',
+                content: `${sectionPrompts[sectionKey]}\n\nRespond with ONLY a JSON array of strings, no explanation. Example: ["Task 1", "Task 2", "Task 3"]`
+              }]
+            })
+          });
           
-          {events.length === 0 ? (
-            <p style={styles.emptyText}>No events yet.</p>
-          ) : (
-            <div style={styles.eventsList}>
-              {events.map(event => (
-                <div key={event.id} style={styles.eventCard}>
-                  <div style={styles.eventHeader} onClick={() => setExpandedEvent(expandedEvent === event.id ? null : event.id)}>
-                    <div style={styles.eventHeaderLeft}>
-                      <span style={{...styles.eventDot, backgroundColor: LIFE_AREAS[event.lifeArea]?.color}}></span>
-                      <span style={styles.eventMonth}>{MONTHS[event.month]}</span>
-                      <span style={styles.eventTitle}>{event.title}</span>
-                    </div>
-                    <span style={styles.expandIcon}>{expandedEvent === event.id ? '−' : '+'}</span>
-                  </div>
+          const data = await response.json();
+          const text = data.content[0].text;
+          
+          // Parse JSON array from response
+          const match = text.match(/\[[\s\S]*\]/);
+          if (match) {
+            const suggestions = JSON.parse(match[0]);
+            const newTasks = suggestions.map(text => ({
+              id: generateId(),
+              text: text,
+              completed: false,
+              aiGenerated: true
+            }));
+            
+            // Update event with new tasks
+            setEvents(prev => prev.map(e => {
+              if (e.id !== event.id) return e;
+              const updated = ensureEventSections(e);
+              return {
+                ...updated,
+                sections: {
+                  ...updated.sections,
+                  [sectionKey]: {
+                    ...updated.sections[sectionKey],
+                    tasks: [...(updated.sections[sectionKey]?.tasks || []), ...newTasks]
+                  }
+                }
+              };
+            }));
+          }
+        } catch (error) {
+          console.error('Error generating suggestions:', error);
+        }
+        setGeneratingSuggestions(false);
+      };
+      
+      // Chat with AI about a section
+      const chatWithAI = async (event, sectionKey, message) => {
+        if (!apiKey || !message.trim()) return;
+        setIsAiThinking(true);
+        
+        const e = ensureEventSections(event);
+        const section = e.sections[sectionKey];
+        const existingTasks = section?.tasks?.map(t => t.text).join(', ') || 'none yet';
+        
+        try {
+          const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 600,
+              system: `You're helping plan a ${event.type || 'event'} called "${event.title}"${event.location ? ` in/at ${event.location}` : ''}. Current ${sectionKey} tasks: ${existingTasks}. Be helpful, specific, and concise. If suggesting new items, mention them clearly so the user can add them.`,
+              messages: [
+                ...(section?.chatHistory || []).slice(-6),
+                { role: 'user', content: message }
+              ]
+            })
+          });
+          
+          const data = await response.json();
+          const aiResponse = data.content[0].text;
+          
+          // Update chat history
+          setEvents(prev => prev.map(ev => {
+            if (ev.id !== event.id) return ev;
+            const updated = ensureEventSections(ev);
+            return {
+              ...updated,
+              sections: {
+                ...updated.sections,
+                [sectionKey]: {
+                  ...updated.sections[sectionKey],
+                  chatHistory: [
+                    ...(updated.sections[sectionKey]?.chatHistory || []).slice(-8),
+                    { role: 'user', content: message },
+                    { role: 'assistant', content: aiResponse }
+                  ]
+                }
+              }
+            };
+          }));
+        } catch (error) {
+          console.error('Error chatting with AI:', error);
+        }
+        setIsAiThinking(false);
+        setSectionChat('');
+      };
+      
+      // Toggle task completion
+      const toggleTask = (eventId, sectionKey, taskId) => {
+        setEvents(prev => prev.map(e => {
+          if (e.id !== eventId) return e;
+          const updated = ensureEventSections(e);
+          return {
+            ...updated,
+            sections: {
+              ...updated.sections,
+              [sectionKey]: {
+                ...updated.sections[sectionKey],
+                tasks: updated.sections[sectionKey].tasks.map(t =>
+                  t.id === taskId ? { ...t, completed: !t.completed } : t
+                )
+              }
+            }
+          };
+        }));
+      };
+      
+      // Delete task
+      const deleteTask = (eventId, sectionKey, taskId) => {
+        setEvents(prev => prev.map(e => {
+          if (e.id !== eventId) return e;
+          const updated = ensureEventSections(e);
+          return {
+            ...updated,
+            sections: {
+              ...updated.sections,
+              [sectionKey]: {
+                ...updated.sections[sectionKey],
+                tasks: updated.sections[sectionKey].tasks.filter(t => t.id !== taskId)
+              }
+            }
+          };
+        }));
+      };
+      
+      // Add custom task
+      const [newTaskText, setNewTaskText] = useState('');
+      const addTask = (eventId, sectionKey) => {
+        if (!newTaskText.trim()) return;
+        setEvents(prev => prev.map(e => {
+          if (e.id !== eventId) return e;
+          const updated = ensureEventSections(e);
+          return {
+            ...updated,
+            sections: {
+              ...updated.sections,
+              [sectionKey]: {
+                ...updated.sections[sectionKey],
+                tasks: [...(updated.sections[sectionKey]?.tasks || []), {
+                  id: generateId(),
+                  text: newTaskText,
+                  completed: false,
+                  aiGenerated: false
+                }]
+              }
+            }
+          };
+        }));
+        setNewTaskText('');
+      };
+      
+      // Update event field
+      const updateEventField = (eventId, field, value) => {
+        setEvents(prev => prev.map(e => 
+          e.id === eventId ? { ...e, [field]: value } : e
+        ));
+      };
+      
+      // Event List View
+      if (!planningEvent) {
+        return (
+          <div style={styles.eventsTab}>
+            <button style={styles.addItemButton} onClick={onAdd}>+ Add Event</button>
+            
+            {events.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                <p style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🗓️</p>
+                <p style={styles.emptyText}>No events planned yet.</p>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Add trips, celebrations, or projects to start planning!</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {events.map(event => {
+                  const e = ensureEventSections(event);
+                  const progress = getProgress(e);
+                  const typeInfo = EVENT_TYPES[e.type] || EVENT_TYPES.personal;
                   
-                  {expandedEvent === event.id && (
-                    <div style={styles.eventDetails} className="slide-in">
-                      {['flights', 'stays', 'activities', 'notes'].map(field => (
-                        <div key={field} style={styles.detailField}>
-                          <label style={styles.detailLabel}>
-                            {field === 'flights' ? '✈' : field === 'stays' ? '🏠' : field === 'activities' ? '⭐' : '📝'} {field.charAt(0).toUpperCase() + field.slice(1)}
-                          </label>
-                          <textarea
-                            style={styles.detailInput}
-                            value={event.details?.[field] || ''}
-                            onChange={(e) => onUpdateDetails(event.id, field, e.target.value)}
-                            placeholder={`Add ${field}...`}
-                            rows={2}
-                          />
+                  return (
+                    <div 
+                      key={event.id} 
+                      style={{
+                        backgroundColor: 'var(--bg-card)',
+                        borderRadius: '12px',
+                        border: '1px solid var(--border)',
+                        overflow: 'hidden',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease'
+                      }}
+                      onClick={() => setPlanningEvent(event.id)}
+                    >
+                      <div style={{ padding: '1rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span style={{ fontSize: '1.25rem' }}>{typeInfo.icon}</span>
+                            <div>
+                              <h3 style={{ 
+                                fontFamily: "'Fraunces', serif",
+                                fontSize: '1rem',
+                                fontWeight: 600,
+                                color: 'var(--text)',
+                                margin: 0
+                              }}>{event.title}</h3>
+                              <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.15rem 0 0' }}>
+                                {MONTHS[event.month]} {e.location && `• ${e.location}`}
+                              </p>
+                            </div>
+                          </div>
+                          <span style={{
+                            fontSize: '0.7rem',
+                            padding: '0.2rem 0.5rem',
+                            borderRadius: '8px',
+                            backgroundColor: `${typeInfo.color}20`,
+                            color: typeInfo.color
+                          }}>{typeInfo.label}</span>
                         </div>
-                      ))}
-                      <button style={styles.deleteEventButton} onClick={() => onDelete(event.id)}>Delete</button>
+                        
+                        {/* Progress bar */}
+                        <div style={{ 
+                          height: '4px', 
+                          backgroundColor: 'var(--border)', 
+                          borderRadius: '2px',
+                          overflow: 'hidden',
+                          marginTop: '0.75rem'
+                        }}>
+                          <div style={{
+                            height: '100%',
+                            width: `${progress}%`,
+                            backgroundColor: typeInfo.color,
+                            borderRadius: '2px',
+                            transition: 'width 0.3s ease'
+                          }}></div>
+                        </div>
+                        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                          {progress}% planned
+                        </p>
+                      </div>
                     </div>
-                  )}
-                </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        );
+      }
+      
+      // Event Planning View
+      const event = events.find(e => e.id === planningEvent);
+      if (!event) {
+        setPlanningEvent(null);
+        return null;
+      }
+      
+      const e = ensureEventSections(event);
+      const typeInfo = EVENT_TYPES[e.type] || EVENT_TYPES.personal;
+      const currentSection = e.sections?.[activeSection] || { tasks: [], notes: '', chatHistory: [] };
+      
+      return (
+        <div style={{ 
+          display: 'flex', 
+          flexDirection: 'column', 
+          height: '100%',
+          backgroundColor: 'var(--bg)'
+        }}>
+          {/* Header */}
+          <div style={{
+            padding: '1rem',
+            borderBottom: '1px solid var(--border)',
+            backgroundColor: 'var(--bg-card)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+              <button 
+                onClick={() => setPlanningEvent(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  padding: '0.25rem'
+                }}
+              >←</button>
+              <span style={{ fontSize: '1.5rem' }}>{typeInfo.icon}</span>
+              <div style={{ flex: 1 }}>
+                <h2 style={{
+                  fontFamily: "'Fraunces', serif",
+                  fontSize: '1.1rem',
+                  fontWeight: 600,
+                  margin: 0,
+                  color: 'var(--text)'
+                }}>{event.title}</h2>
+                <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.1rem 0 0' }}>
+                  {MONTHS[event.month]} {e.location && `• ${e.location}`}
+                </p>
+              </div>
+              <button
+                onClick={() => {
+                  onDelete(event.id);
+                  setPlanningEvent(null);
+                }}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#E88B9C',
+                  fontSize: '0.75rem',
+                  cursor: 'pointer'
+                }}
+              >Delete</button>
+            </div>
+            
+            {/* Section tabs */}
+            <div style={{ 
+              display: 'flex', 
+              gap: '0.25rem',
+              overflowX: 'auto',
+              paddingBottom: '0.25rem'
+            }}>
+              {Object.entries(SECTIONS).map(([key, section]) => (
+                <button
+                  key={key}
+                  onClick={() => setActiveSection(key)}
+                  style={{
+                    padding: '0.4rem 0.75rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    backgroundColor: activeSection === key ? typeInfo.color : 'transparent',
+                    color: activeSection === key ? 'white' : 'var(--text-muted)',
+                    fontSize: '0.75rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {section.icon} {section.label}
+                </button>
               ))}
             </div>
-          )}
+          </div>
           
-          <p style={styles.tipText}>💡 Ask AI to suggest activities</p>
+          {/* Section Content */}
+          <div style={{ flex: 1, overflow: 'auto', padding: '1rem' }}>
+            {activeSection === 'overview' ? (
+              /* Overview Section */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Event Type</label>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                    {Object.entries(EVENT_TYPES).map(([key, type]) => (
+                      <button
+                        key={key}
+                        onClick={() => updateEventField(event.id, 'type', key)}
+                        style={{
+                          padding: '0.4rem 0.75rem',
+                          borderRadius: '8px',
+                          border: e.type === key ? 'none' : '1px solid var(--border)',
+                          backgroundColor: e.type === key ? type.color : 'var(--bg-elevated)',
+                          color: e.type === key ? 'white' : 'var(--text)',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {type.icon} {type.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                
+                <div>
+                  <label style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Location</label>
+                  <input
+                    type="text"
+                    value={e.location || ''}
+                    onChange={(ev) => updateEventField(event.id, 'location', ev.target.value)}
+                    placeholder="Where is this happening?"
+                    style={{
+                      width: '100%',
+                      padding: '0.6rem',
+                      marginTop: '0.4rem',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border)',
+                      backgroundColor: 'var(--bg-elevated)',
+                      fontSize: '0.85rem',
+                      color: 'var(--text)'
+                    }}
+                  />
+                </div>
+                
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Start Date</label>
+                    <input
+                      type="date"
+                      value={e.startDate || ''}
+                      onChange={(ev) => updateEventField(event.id, 'startDate', ev.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.6rem',
+                        marginTop: '0.4rem',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border)',
+                        backgroundColor: 'var(--bg-elevated)',
+                        fontSize: '0.85rem',
+                        color: 'var(--text)'
+                      }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>End Date</label>
+                    <input
+                      type="date"
+                      value={e.endDate || ''}
+                      onChange={(ev) => updateEventField(event.id, 'endDate', ev.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.6rem',
+                        marginTop: '0.4rem',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border)',
+                        backgroundColor: 'var(--bg-elevated)',
+                        fontSize: '0.85rem',
+                        color: 'var(--text)'
+                      }}
+                    />
+                  </div>
+                </div>
+                
+                <div>
+                  <label style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Life Area</label>
+                  <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', flexWrap: 'wrap' }}>
+                    {Object.entries(LIFE_AREAS).map(([key, area]) => (
+                      <button
+                        key={key}
+                        onClick={() => updateEventField(event.id, 'lifeArea', key)}
+                        style={{
+                          padding: '0.35rem 0.6rem',
+                          borderRadius: '6px',
+                          border: event.lifeArea === key ? 'none' : '1px solid var(--border)',
+                          backgroundColor: event.lifeArea === key ? area.color : 'var(--bg-elevated)',
+                          color: event.lifeArea === key ? 'white' : 'var(--text)',
+                          fontSize: '0.75rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {area.icon} {area.name.split(' ')[0]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* Task Sections (logistics, activities, preparation, budget) */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {/* AI Generate Button */}
+                <button
+                  onClick={() => generateSuggestions(e, activeSection)}
+                  disabled={generatingSuggestions || !apiKey}
+                  style={{
+                    padding: '0.6rem 1rem',
+                    borderRadius: '8px',
+                    border: '1px dashed var(--border)',
+                    backgroundColor: 'transparent',
+                    color: generatingSuggestions ? 'var(--text-muted)' : typeInfo.color,
+                    fontSize: '0.8rem',
+                    cursor: generatingSuggestions ? 'default' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '0.5rem'
+                  }}
+                >
+                  {generatingSuggestions ? '✨ Generating...' : '✨ Get AI Suggestions'}
+                </button>
+                
+                {/* Task List */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                  {(currentSection.tasks || []).map(task => (
+                    <div 
+                      key={task.id}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.75rem',
+                        padding: '0.75rem',
+                        backgroundColor: 'var(--bg-card)',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border)'
+                      }}
+                    >
+                      <button
+                        onClick={() => toggleTask(event.id, activeSection, task.id)}
+                        style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '4px',
+                          border: task.completed ? 'none' : '2px solid var(--border)',
+                          backgroundColor: task.completed ? typeInfo.color : 'transparent',
+                          color: 'white',
+                          fontSize: '0.7rem',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}
+                      >
+                        {task.completed && '✓'}
+                      </button>
+                      <span style={{
+                        flex: 1,
+                        fontSize: '0.85rem',
+                        color: task.completed ? 'var(--text-muted)' : 'var(--text)',
+                        textDecoration: task.completed ? 'line-through' : 'none'
+                      }}>
+                        {task.text}
+                        {task.aiGenerated && <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', marginLeft: '0.5rem' }}>✨</span>}
+                      </span>
+                      <button
+                        onClick={() => deleteTask(event.id, activeSection, task.id)}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--text-muted)',
+                          fontSize: '1rem',
+                          cursor: 'pointer',
+                          padding: '0.25rem'
+                        }}
+                      >×</button>
+                    </div>
+                  ))}
+                  
+                  {currentSection.tasks?.length === 0 && (
+                    <p style={{ 
+                      fontSize: '0.85rem', 
+                      color: 'var(--text-muted)', 
+                      textAlign: 'center',
+                      padding: '1rem',
+                      fontStyle: 'italic'
+                    }}>No tasks yet. Add your own or get AI suggestions!</p>
+                  )}
+                </div>
+                
+                {/* Add Task Input */}
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <input
+                    type="text"
+                    value={newTaskText}
+                    onChange={(ev) => setNewTaskText(ev.target.value)}
+                    onKeyDown={(ev) => ev.key === 'Enter' && addTask(event.id, activeSection)}
+                    placeholder="Add a task..."
+                    style={{
+                      flex: 1,
+                      padding: '0.6rem',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border)',
+                      backgroundColor: 'var(--bg-elevated)',
+                      fontSize: '0.85rem',
+                      color: 'var(--text)'
+                    }}
+                  />
+                  <button
+                    onClick={() => addTask(event.id, activeSection)}
+                    style={{
+                      padding: '0.6rem 1rem',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: typeInfo.color,
+                      color: 'white',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer'
+                    }}
+                  >Add</button>
+                </div>
+                
+                {/* AI Chat Section */}
+                <div style={{
+                  marginTop: '1rem',
+                  padding: '1rem',
+                  backgroundColor: 'var(--bg-card)',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border)'
+                }}>
+                  <h4 style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: 'var(--text-muted)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    marginBottom: '0.75rem'
+                  }}>💬 Ask AI for Ideas</h4>
+                  
+                  {/* Chat History */}
+                  {currentSection.chatHistory?.length > 0 && (
+                    <div style={{
+                      maxHeight: '200px',
+                      overflowY: 'auto',
+                      marginBottom: '0.75rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.5rem'
+                    }}>
+                      {currentSection.chatHistory.map((msg, i) => (
+                        <div 
+                          key={i}
+                          style={{
+                            padding: '0.5rem 0.75rem',
+                            borderRadius: '8px',
+                            backgroundColor: msg.role === 'user' ? `${typeInfo.color}20` : 'var(--bg-elevated)',
+                            fontSize: '0.8rem',
+                            color: 'var(--text)',
+                            alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                            maxWidth: '85%'
+                          }}
+                        >
+                          {msg.content}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  
+                  {/* Chat Input */}
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <input
+                      type="text"
+                      value={sectionChat}
+                      onChange={(ev) => setSectionChat(ev.target.value)}
+                      onKeyDown={(ev) => ev.key === 'Enter' && chatWithAI(e, activeSection, sectionChat)}
+                      placeholder={`Ask about ${SECTIONS[activeSection]?.label.toLowerCase()}...`}
+                      disabled={isAiThinking}
+                      style={{
+                        flex: 1,
+                        padding: '0.6rem',
+                        borderRadius: '8px',
+                        border: '1px solid var(--border)',
+                        backgroundColor: 'var(--bg-elevated)',
+                        fontSize: '0.8rem',
+                        color: 'var(--text)'
+                      }}
+                    />
+                    <button
+                      onClick={() => chatWithAI(e, activeSection, sectionChat)}
+                      disabled={isAiThinking || !sectionChat.trim()}
+                      style={{
+                        padding: '0.6rem 1rem',
+                        borderRadius: '8px',
+                        border: 'none',
+                        backgroundColor: isAiThinking ? 'var(--border)' : typeInfo.color,
+                        color: 'white',
+                        fontSize: '0.8rem',
+                        cursor: isAiThinking ? 'default' : 'pointer'
+                      }}
+                    >
+                      {isAiThinking ? '...' : '→'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       );
     }
@@ -6335,6 +7055,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       const [title, setTitle] = useState('');
       const [month, setMonth] = useState(new Date().getMonth());
       const [lifeArea, setLifeArea] = useState('fun');
+      const [eventType, setEventType] = useState('personal');
+      
+      const EVENT_TYPES = {
+        trip: { label: 'Trip', icon: '✈️' },
+        celebration: { label: 'Celebration', icon: '🎉' },
+        project: { label: 'Project', icon: '📋' },
+        personal: { label: 'Personal', icon: '⭐' }
+      };
 
       return (
         <div style={styles.modalOverlay} onClick={onClose}>
@@ -6343,10 +7071,33 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               <h3 style={styles.modalTitle}>Add an event</h3>
               <button style={styles.modalClose} onClick={onClose}>×</button>
             </div>
-            <form onSubmit={(e) => { e.preventDefault(); if (title) onAdd({ title, month, lifeArea }); }} style={styles.modalForm}>
+            <form onSubmit={(e) => { e.preventDefault(); if (title) onAdd({ title, month, lifeArea, type: eventType }); }} style={styles.modalForm}>
               <div style={styles.formField}>
                 <label style={styles.formLabel}>What is it?</label>
                 <input type="text" style={styles.textInput} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Trip, birthday, deadline..." autoFocus />
+              </div>
+              <div style={styles.formField}>
+                <label style={styles.formLabel}>Type</label>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  {Object.entries(EVENT_TYPES).map(([key, type]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setEventType(key)}
+                      style={{
+                        padding: '0.4rem 0.75rem',
+                        borderRadius: '8px',
+                        border: eventType === key ? 'none' : '1px solid var(--border)',
+                        backgroundColor: eventType === key ? 'var(--accent)' : 'var(--bg-elevated)',
+                        color: eventType === key ? 'white' : 'var(--text)',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      {type.icon} {type.label}
+                    </button>
+                  ))}
+                </div>
               </div>
               <div style={styles.formField}>
                 <label style={styles.formLabel}>When?</label>
