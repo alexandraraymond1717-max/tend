@@ -2431,6 +2431,24 @@ IMPORTANT - Theme Word Discovery Process (in EXPLORE phase):
    - **Rhythms** — "We could establish weekly or daily habits that support your theme"
    - Ask: "What feels most alive for you right now?"
 
+CRITICAL - SETTING THE YEAR THEME:
+When the user definitively chooses or accepts a theme word (through agreement, explicit statement, or any clear indication), you MUST include this exact marker at the END of your response:
+[YEAR_THEME: word]
+
+Examples of when to include the marker:
+- User says "yes, I love that word" after you suggest "foundation" → end with [YEAR_THEME: foundation]
+- User says "my word is growth" → end with [YEAR_THEME: growth]
+- User says "let's go with balance" → end with [YEAR_THEME: balance]
+- User says "I want to change my theme to clarity" → end with [YEAR_THEME: clarity]
+- User says "actually, presence feels better" → end with [YEAR_THEME: presence]
+
+Do NOT include the marker if:
+- You're just suggesting a word and waiting for their response
+- The user is still exploring or undecided
+- The user is asking questions about themes
+
+The word must be a single word, 4-15 characters, no spaces. This marker will be hidden from the user - it's just for the system to update their theme.
+
 CURRENT VIEW: ${centerView.toUpperCase()}
 ${centerView === 'year' ? `
 You're on the YEAR view. ${yearTheme ? `Their theme word is "${yearTheme}". If this is a returning user, offer the three paths (Seasons, Events, Rhythms) and ask what they want to explore. Help them see how their year could unfold around this theme.` : `Focus on discovering their theme word through conversation. Don't ask directly - explore their VLQ results and what they want from the year, then suggest a word.`}
@@ -2580,119 +2598,16 @@ Keep responses focused and conversational. You're not a productivity app — you
           setEvents(prev => [...prev, ...newEvents]);
         }
 
-        // Check for theme word throughout conversation (not just early exchanges)
-        // Also allow REDEFINING theme if user explicitly wants to change it
-        
-        const lowerMessage = userMessage.toLowerCase();
-        const commonWords = ['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something', 'okay', 'sure', 'yes', 'great', 'good', 'nice', 'have', 'been', 'from', 'they', 'what', 'when', 'where', 'which', 'there', 'their', 'about', 'will', 'make', 'just', 'know', 'take', 'come', 'into', 'over', 'such', 'some', 'than', 'then', 'these', 'only', 'change', 'update', 'redefine', 'switch'];
-        
-        // Check if user wants to REDEFINE their theme (works even if theme already exists)
-        const wantsToRedefine = /(change|redefine|update|switch|redo|reset)\s+(my\s+)?(word|theme)/i.test(lowerMessage) ||
-                               /new\s+(word|theme)\s+(is|should be|will be|to)/i.test(lowerMessage) ||
-                               /actually[,]?\s+(my\s+)?(word|theme)/i.test(lowerMessage);
-        
-        // Patterns for extracting the new theme word when redefining
-        if (wantsToRedefine) {
-          const redefinePatterns = [
-            /(?:change|redefine|update|switch|redo|reset)\s+(?:my\s+)?(?:word|theme)\s+to\s+([a-z]{4,15})/i,
-            /(?:new|actual)\s+(?:word|theme)\s+(?:is|should be|will be)\s+([a-z]{4,15})/i,
-            /(?:my\s+)?(?:word|theme)\s+(?:should|will|to)\s+(?:be\s+)?([a-z]{4,15})/i,
-            /(?:i want|i'd like|let's)\s+(?:my\s+)?(?:word|theme)\s+to\s+be\s+([a-z]{4,15})/i,
-          ];
-          
-          for (const pattern of redefinePatterns) {
-            const match = userMessage.match(pattern);
-            if (match && match[1]) {
-              const word = match[1].toLowerCase();
-              if (word.length >= 4 && !commonWords.includes(word)) {
-                setYearTheme(word);
-                console.log('Year theme REDEFINED to:', word);
-                break;
-              }
-            }
-          }
-        }
-        
-        // Only try to set a NEW theme if one doesn't exist yet
+        // Note: Year theme is now primarily set by Claude using [YEAR_THEME: word] marker
+        // This is a minimal fallback for very explicit user statements
         if (!yearTheme) {
-          // Get AI's last message to check if it suggested a word
-          const lastAIMessage = messages.length >= 2 ? messages[messages.length - 2]?.content : '';
-          
-          // Check if user is agreeing to AI's suggestion
-          const isAgreement = /^(yes|yeah|yep|yup|sure|absolutely|definitely|love it|like it|i like it|i love it|that's perfect|perfect|sounds good|that works|that's good|agreed|great|sounds great|i agree|let's do it|let's go with that)$/i.test(userMessage.trim()) ||
-                            /^(yes|yeah|yep|sure|love it|like it|perfect|great|sounds good)[,!.\s]*$/i.test(userMessage.trim());
-          
-          if (isAgreement && lastAIMessage) {
-            // Extract word from AI's message - look for quoted words or words in context
-            const suggestionPatterns = [
-              /"([a-z]+)"/i,  // Quoted words
-              /how about "([a-z]+)"/i,
-              /what about "([a-z]+)"/i,
-              /suggest(?:ing)? "([a-z]+)"/i,
-              /word.*"([a-z]+)"/i,
-              /theme.*"([a-z]+)"/i,
-              /how about ([a-z]+)[?.!\s]/i,
-              /what about ([a-z]+)[?.!\s]/i,
-              /maybe ([a-z]+)[?.!\s]/i,
-              /perhaps ([a-z]+)[?.!\s]/i,
-            ];
-            
-            for (const pattern of suggestionPatterns) {
-              const match = lastAIMessage.match(pattern);
-              if (match && match[1]) {
-                const word = match[1].toLowerCase();
-                if (word.length >= 4 && word.length <= 15 && !['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could'].includes(word)) {
-                  setYearTheme(word);
-                  console.log('Year theme set from AI suggestion:', word);
-                  break;
-                }
-              }
-            }
-          }
-          
-          // Check for explicit user statements like "my word is X"
-          if (!yearTheme) {
-            const explicitPatterns = [
-              /(?:my word|the word|my theme|the theme)(?:\s+for\s+(?:the\s+year|\d{4}))?\s+is\s+([a-z]{4,15})/i,
-              /(?:i choose|i'll go with|let's go with|i'll choose|i want)\s+([a-z]{4,15})(?:\s|$|[.,!?])/i,
-            ];
-            
-            for (const pattern of explicitPatterns) {
-              const match = userMessage.match(pattern);
-              if (match && match[1]) {
-                const word = match[1].toLowerCase();
-                // Filter out common words and ensure minimum length
-                if (word.length >= 4 && !commonWords.includes(word)) {
-                  setYearTheme(word);
-                  console.log('Year theme set from explicit statement:', word);
-                  break;
-                }
-              }
-            }
-          }
-          
-          // Check for single-word responses (but only if it seems intentional)
-          if (!yearTheme && /^[a-z]{4,15}$/i.test(userMessage.trim())) {
-            const word = userMessage.trim().toLowerCase();
-            if (!['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something', 'okay', 'sure', 'yes', 'great', 'good', 'nice', 'yeah', 'yep', 'nope'].includes(word)) {
-              // Check if AI's last message was asking about themes/words
-              if (lastAIMessage && /(word|theme|intention|focus)/i.test(lastAIMessage)) {
-                setYearTheme(word);
-                console.log('Year theme set from single-word response:', word);
-              }
-            }
-          }
-          
-          // Fallback: check for theme word in early exchanges (original logic)
-          if (!yearTheme && phase === PHASES.EXPLORE && exchangeCount < 3) {
-            const words = userMessage.split(/\s+/).filter(w => w.length >= 4 && w.length < 15);
-            const potentialTheme = words.find(w => 
-              /^[a-zA-Z]+$/.test(w) && 
-              !commonWords.includes(w.toLowerCase())
-            );
-            if (potentialTheme && words.length <= 5) {
-              setYearTheme(potentialTheme.toLowerCase());
-              console.log('Year theme set from early exchange:', potentialTheme.toLowerCase());
+          const explicitThemeMatch = userMessage.match(/(?:my word|my theme)(?:\s+for\s+(?:the\s+year|\d{4}))?\s+is\s+([a-z]{4,15})(?:\s|$|[.,!?])/i);
+          if (explicitThemeMatch && explicitThemeMatch[1]) {
+            const word = explicitThemeMatch[1].toLowerCase();
+            const commonWords = ['that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something'];
+            if (!commonWords.includes(word)) {
+              setYearTheme(word);
+              console.log('Year theme set from explicit statement (fallback):', word);
             }
           }
         }
@@ -2711,12 +2626,23 @@ Keep responses focused and conversational. You're not a productivity app — you
         }
 
         // Get response from Claude API
-        const response = await callClaudeAPI(userMessage, {
+        let response = await callClaudeAPI(userMessage, {
           pendingLifeAreaUpdate,
           pendingNextAreaIndex,
           pendingWaitingForSatisfaction,
           pendingIsLastResponse
         });
+        
+        // Parse for year theme marker from Claude's response
+        const themeMatch = response.match(/\[YEAR_THEME:\s*([a-zA-Z]{4,15})\]/);
+        if (themeMatch && themeMatch[1]) {
+          const newTheme = themeMatch[1].toLowerCase();
+          setYearTheme(newTheme);
+          console.log('Year theme set by Claude:', newTheme);
+          // Remove the marker from displayed response
+          response = response.replace(/\[YEAR_THEME:\s*[a-zA-Z]{4,15}\]/, '').trim();
+        }
+        
         setMessages(prev => [...prev, { 
           role: 'assistant', 
           content: response,
