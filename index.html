@@ -2230,22 +2230,70 @@ Keep responses focused and conversational. You're not a productivity app — you
         if (!yearTheme) {
           const lowerMessage = userMessage.toLowerCase();
           
-          // Check for explicit patterns like "my word is X", "I choose X", etc.
-          const explicitPatterns = [
-            /(?:my word|the word|my theme|the theme)(?:\s+for\s+(?:the\s+year|\d{4}))?\s+is\s+([a-z]+)/i,
-            /(?:i choose|i'll go with|let's go with|how about)\s+([a-z]+)/i,
-            /^([a-z]{4,15})$/i  // Single word responses (4-15 chars)
-          ];
+          // Get AI's last message to check if it suggested a word
+          const lastAIMessage = messages.length >= 2 ? messages[messages.length - 2]?.content : '';
           
-          for (const pattern of explicitPatterns) {
-            const match = userMessage.match(pattern);
-            if (match && match[1]) {
-              const word = match[1].toLowerCase();
-              // Filter out common words
-              if (!['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something', 'okay', 'sure', 'yes', 'great', 'good', 'nice'].includes(word)) {
+          // Check if user is agreeing to AI's suggestion
+          const isAgreement = /^(yes|yeah|yep|yup|sure|absolutely|definitely|love it|like it|i like it|i love it|that's perfect|perfect|sounds good|that works|that's good|agreed|great|sounds great|i agree|let's do it|let's go with that)$/i.test(userMessage.trim()) ||
+                            /^(yes|yeah|yep|sure|love it|like it|perfect|great|sounds good)[,!.\s]*$/i.test(userMessage.trim());
+          
+          if (isAgreement && lastAIMessage) {
+            // Extract word from AI's message - look for quoted words or words in context
+            const suggestionPatterns = [
+              /"([a-z]+)"/i,  // Quoted words
+              /how about "([a-z]+)"/i,
+              /what about "([a-z]+)"/i,
+              /suggest(?:ing)? "([a-z]+)"/i,
+              /word.*"([a-z]+)"/i,
+              /theme.*"([a-z]+)"/i,
+              /how about ([a-z]+)[?.!\s]/i,
+              /what about ([a-z]+)[?.!\s]/i,
+              /maybe ([a-z]+)[?.!\s]/i,
+              /perhaps ([a-z]+)[?.!\s]/i,
+            ];
+            
+            for (const pattern of suggestionPatterns) {
+              const match = lastAIMessage.match(pattern);
+              if (match && match[1]) {
+                const word = match[1].toLowerCase();
+                if (word.length >= 4 && word.length <= 15 && !['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could'].includes(word)) {
+                  setYearTheme(word);
+                  console.log('Year theme set from AI suggestion:', word);
+                  break;
+                }
+              }
+            }
+          }
+          
+          // Check for explicit user statements like "my word is X"
+          if (!yearTheme) {
+            const explicitPatterns = [
+              /(?:my word|the word|my theme|the theme)(?:\s+for\s+(?:the\s+year|\d{4}))?\s+is\s+([a-z]+)/i,
+              /(?:i choose|i'll go with|let's go with|i'll choose|i want)\s+([a-z]+)/i,
+            ];
+            
+            for (const pattern of explicitPatterns) {
+              const match = userMessage.match(pattern);
+              if (match && match[1]) {
+                const word = match[1].toLowerCase();
+                // Filter out common words
+                if (!['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something', 'okay', 'sure', 'yes', 'great', 'good', 'nice'].includes(word)) {
+                  setYearTheme(word);
+                  console.log('Year theme set from explicit statement:', word);
+                  break;
+                }
+              }
+            }
+          }
+          
+          // Check for single-word responses (but only if it seems intentional)
+          if (!yearTheme && /^[a-z]{4,15}$/i.test(userMessage.trim())) {
+            const word = userMessage.trim().toLowerCase();
+            if (!['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something', 'okay', 'sure', 'yes', 'great', 'good', 'nice', 'yeah', 'yep', 'nope'].includes(word)) {
+              // Check if AI's last message was asking about themes/words
+              if (lastAIMessage && /(word|theme|intention|focus)/i.test(lastAIMessage)) {
                 setYearTheme(word);
-                console.log('Year theme set to:', word);
-                break;
+                console.log('Year theme set from single-word response:', word);
               }
             }
           }
@@ -2259,7 +2307,7 @@ Keep responses focused and conversational. You're not a productivity app — you
             );
             if (potentialTheme && words.length <= 5) {
               setYearTheme(potentialTheme.toLowerCase());
-              console.log('Year theme set to:', potentialTheme.toLowerCase());
+              console.log('Year theme set from early exchange:', potentialTheme.toLowerCase());
             }
           }
         }
