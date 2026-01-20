@@ -2424,12 +2424,11 @@ IMPORTANT - Theme Word Discovery Process (in EXPLORE phase):
    - Then suggest: "Based on what you've shared about [summarize key themes], I think your word might be *[word]*. It captures [specific reason tied to what they said]."
    - Ask: "Does that resonate? Feel free to try it on, adjust it, or suggest something else."
 4. Let them accept, modify, or suggest alternatives
-5. Once they accept a word, celebrate briefly then offer three paths forward:
-   - "Now that you have your compass, here are some ways we could go deeper:"
-   - **Seasons** — "We could think about what you want each season to feel like"
-   - **Events** — "We could map out trips, milestones, or commitments for the year"  
-   - **Rhythms** — "We could establish weekly or daily habits that support your theme"
-   - Ask: "What feels most alive for you right now?"
+5. Once they accept a word, celebrate briefly then explain the two ways to continue:
+   - "Now that you have your compass, there are a couple ways we can go deeper:"
+   - **Chat with me** — "We can keep chatting right here about seasons, events, rhythms, or anything else — I'll automatically add things to your plan as we talk"
+   - **Use the tabs** — "Or you can click into the sidebar tabs (Seasons, Events, Weekly, Daily) to input things directly"
+   - Ask: "What's on your mind? We can explore seasons, plan events, or set up habits — whatever feels right."
 
 CRITICAL - SETTING THE YEAR THEME:
 When the user definitively chooses or accepts a theme word (through agreement, explicit statement, or any clear indication), you MUST include this exact marker at the END of your response:
@@ -2448,6 +2447,30 @@ Do NOT include the marker if:
 - The user is asking questions about themes
 
 The word must be a single word, 4-15 characters, no spaces. This marker will be hidden from the user - it's just for the system to update their theme.
+
+CRITICAL - EXTRACTING HABITS, EVENTS, AND INTENTIONS:
+When the user commits to a specific habit, event, or intention, include the appropriate marker at the END of your response (these are hidden from the user):
+
+For WEEKLY habits (e.g., "I want to exercise 3 times a week"):
+[WEEKLY_HABIT: habit text | frequency]
+Example: [WEEKLY_HABIT: exercise | 3]
+
+For DAILY habits (e.g., "I want to meditate every morning"):
+[DAILY_HABIT: habit text]
+Example: [DAILY_HABIT: morning meditation]
+
+For EVENTS (e.g., "I'm planning a trip to Japan in April"):
+[EVENT: title | month | life_area]
+Month should be 0-11 (0=January, 11=December). Life area should be one of: family, partner, friendships, career, education, recreation, spirituality, community, health, finances, growth, fun
+Example: [EVENT: Japan trip | 3 | fun]
+
+For SEASON INTENTIONS (e.g., "I want winter to feel restful"):
+[SEASON: season | intention]
+Season should be: winter, spring, summer, or fall
+Example: [SEASON: winter | rest and reflection]
+
+Only include these markers when the user has clearly committed to something specific. Don't add markers for vague ideas or things they're still considering.
+Multiple markers can be included in one response if user mentions multiple items.
 
 CURRENT VIEW: ${centerView.toUpperCase()}
 ${centerView === 'year' ? `
@@ -2473,9 +2496,11 @@ You're on the DAILY view. Help them identify small daily habits that compound ov
 - What do they want their mornings or evenings to look like?
 - What daily practice would support their theme word?
 ` : ''}
-If they mention specific events, habits, or plans, acknowledge those and help them think through the details.
+If they mention specific events, habits, or plans, acknowledge those and help them think through the details. When they COMMIT to something specific (not just considering it), use the appropriate marker to add it to their plan automatically.
 If they seem stuck, offer a gentle prompt or example.
 If you notice a misalignment between their VLQ values (high importance areas) and their actual plans, gently bring it up.
+
+Remember: You can add things to their plan automatically using markers. When they say "I want to exercise 3 times a week", add [WEEKLY_HABIT: exercise | 3]. When they commit to "a trip to Hawaii in June", add [EVENT: Hawaii trip | 5 | fun]. This makes the conversation feel magical — they talk, and things appear in their plan.
 
 Keep responses focused and conversational. You're not a productivity app — you're helping them live with more intention.`;
       };
@@ -2639,9 +2664,82 @@ Keep responses focused and conversational. You're not a productivity app — you
           const newTheme = themeMatch[1].toLowerCase();
           setYearTheme(newTheme);
           console.log('Year theme set by Claude:', newTheme);
-          // Remove the marker from displayed response
-          response = response.replace(/\[YEAR_THEME:\s*[a-zA-Z]{4,15}\]/, '').trim();
         }
+        
+        // Parse for weekly habits: [WEEKLY_HABIT: habit text | frequency]
+        const weeklyHabitMatches = response.matchAll(/\[WEEKLY_HABIT:\s*([^|]+)\s*\|\s*(\d+)\]/g);
+        for (const match of weeklyHabitMatches) {
+          const habitText = match[1].trim();
+          const frequency = parseInt(match[2]);
+          if (habitText && frequency >= 1 && frequency <= 7) {
+            setWeeklyHabits(prev => {
+              // Don't add duplicates
+              if (prev.some(h => h.text.toLowerCase() === habitText.toLowerCase())) return prev;
+              console.log('Weekly habit added by Claude:', habitText, frequency + 'x/week');
+              return [...prev, { id: Date.now(), text: habitText, frequency }];
+            });
+          }
+        }
+        
+        // Parse for daily habits: [DAILY_HABIT: habit text]
+        const dailyHabitMatches = response.matchAll(/\[DAILY_HABIT:\s*([^\]]+)\]/g);
+        for (const match of dailyHabitMatches) {
+          const habitText = match[1].trim();
+          if (habitText) {
+            setDailyHabits(prev => {
+              // Don't add duplicates
+              if (prev.some(h => h.text.toLowerCase() === habitText.toLowerCase())) return prev;
+              console.log('Daily habit added by Claude:', habitText);
+              return [...prev, { id: Date.now(), text: habitText }];
+            });
+          }
+        }
+        
+        // Parse for events: [EVENT: title | month | life_area]
+        const eventMatches = response.matchAll(/\[EVENT:\s*([^|]+)\s*\|\s*(\d+)\s*\|\s*([a-z]+)\]/g);
+        for (const match of eventMatches) {
+          const title = match[1].trim();
+          const month = parseInt(match[2]);
+          const lifeArea = match[3].trim();
+          if (title && month >= 0 && month <= 11) {
+            setEvents(prev => {
+              // Don't add duplicates (by title)
+              if (prev.some(e => e.title.toLowerCase() === title.toLowerCase())) return prev;
+              console.log('Event added by Claude:', title, 'in month', month);
+              return [...prev, { 
+                id: Date.now(), 
+                title, 
+                month, 
+                lifeArea: VLQ_ORDER.includes(lifeArea) ? lifeArea : 'fun',
+                details: { flights: '', stays: '', activities: '', notes: '' },
+                relatedGoals: [],
+                createdAt: new Date().toISOString()
+              }];
+            });
+          }
+        }
+        
+        // Parse for season intentions: [SEASON: season | intention]
+        const seasonMatches = response.matchAll(/\[SEASON:\s*(winter|spring|summer|fall)\s*\|\s*([^\]]+)\]/g);
+        for (const match of seasonMatches) {
+          const season = match[1].toLowerCase();
+          const intention = match[2].trim();
+          if (season && intention) {
+            setSeasonIntentions(prev => {
+              console.log('Season intention set by Claude:', season, '-', intention);
+              return { ...prev, [season]: intention };
+            });
+          }
+        }
+        
+        // Remove all markers from displayed response
+        response = response
+          .replace(/\[YEAR_THEME:\s*[a-zA-Z]{4,15}\]/g, '')
+          .replace(/\[WEEKLY_HABIT:\s*[^\]]+\]/g, '')
+          .replace(/\[DAILY_HABIT:\s*[^\]]+\]/g, '')
+          .replace(/\[EVENT:\s*[^\]]+\]/g, '')
+          .replace(/\[SEASON:\s*[^\]]+\]/g, '')
+          .trim();
         
         setMessages(prev => [...prev, { 
           role: 'assistant', 
