@@ -151,6 +151,10 @@
 
     const VLQ_ORDER = ['family', 'partner', 'friendships', 'career', 'education', 'recreation', 'spirituality', 'community', 'health', 'mentalHealth'];
 
+    // Unique ID generator
+    let idCounter = 0;
+    const generateId = () => `${Date.now()}-${++idCounter}-${Math.random().toString(36).substr(2, 9)}`;
+
     const LIFE_AREAS = {
       health: { name: 'Health & Wellness', icon: '◐', color: '#6BBF59' },
       relationships: { name: 'Relationships', icon: '♡', color: '#E88B9C' },
@@ -1199,9 +1203,50 @@
             if (data.monthlyReviews) setMonthlyReviews(data.monthlyReviews);
             if (data.yearlyReflections) setYearlyReflections(data.yearlyReflections);
             if (data.seasonIntentions) setSeasonIntentions(data.seasonIntentions);
-            if (data.weeklyHabits) setWeeklyHabits(data.weeklyHabits);
-            if (data.dailyHabits) setDailyHabits(data.dailyHabits);
-            if (data.habitCompletions) setHabitCompletions(data.habitCompletions);
+            // Fix duplicate IDs in habits (migration for existing data)
+            if (data.weeklyHabits) {
+              const seen = new Set();
+              const hasDuplicates = data.weeklyHabits.some(h => {
+                if (seen.has(h.id)) return true;
+                seen.add(h.id);
+                return false;
+              });
+              if (hasDuplicates) {
+                // Regenerate all IDs if duplicates found
+                const fixed = data.weeklyHabits.map((h, i) => ({
+                  ...h,
+                  id: `${Date.now()}-weekly-${i}-${Math.random().toString(36).substr(2, 9)}`
+                }));
+                setWeeklyHabits(fixed);
+                setHabitCompletions({}); // Clear completions since IDs changed
+                console.log('Fixed duplicate weekly habit IDs');
+              } else {
+                setWeeklyHabits(data.weeklyHabits);
+              }
+            }
+            if (data.dailyHabits) {
+              const seen = new Set();
+              const hasDuplicates = data.dailyHabits.some(h => {
+                if (seen.has(h.id)) return true;
+                seen.add(h.id);
+                return false;
+              });
+              if (hasDuplicates) {
+                // Regenerate all IDs if duplicates found
+                const fixed = data.dailyHabits.map((h, i) => ({
+                  ...h,
+                  id: `${Date.now()}-daily-${i}-${Math.random().toString(36).substr(2, 9)}`
+                }));
+                setDailyHabits(fixed);
+                setHabitCompletions({}); // Clear completions since IDs changed
+                console.log('Fixed duplicate daily habit IDs');
+              } else {
+                setDailyHabits(data.dailyHabits);
+              }
+            }
+            if (data.habitCompletions && !data.weeklyHabits?.some((h, i, arr) => arr.findIndex(x => x.id === h.id) !== i) && !data.dailyHabits?.some((h, i, arr) => arr.findIndex(x => x.id === h.id) !== i)) {
+              setHabitCompletions(data.habitCompletions);
+            }
             if (data.todaysTendies) setTodaysTendies(data.todaysTendies);
             if (data.tendyHistory) setTendyHistory(data.tendyHistory);
             if (data.tendyPoints) setTendyPoints(data.tendyPoints);
@@ -2679,7 +2724,7 @@ Keep responses focused and conversational. You're not a productivity app — you
               // Don't add duplicates
               if (prev.some(h => h.text.toLowerCase() === habitText.toLowerCase())) return prev;
               console.log('Weekly habit added by Claude:', habitText, frequency + 'x/week');
-              return [...prev, { id: Date.now(), text: habitText, frequency }];
+              return [...prev, { id: generateId(), text: habitText, frequency }];
             });
           }
         }
@@ -2693,7 +2738,7 @@ Keep responses focused and conversational. You're not a productivity app — you
               // Don't add duplicates
               if (prev.some(h => h.text.toLowerCase() === habitText.toLowerCase())) return prev;
               console.log('Daily habit added by Claude:', habitText);
-              return [...prev, { id: Date.now(), text: habitText }];
+              return [...prev, { id: generateId(), text: habitText }];
             });
           }
         }
@@ -5821,7 +5866,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       const addHabit = () => {
         if (!newHabit.trim()) return;
         setWeeklyHabits([...weeklyHabits, {
-          id: Date.now(),
+          id: generateId(),
           text: newHabit,
           frequency: newFrequency,
           color: ['#7EB3E0', '#8FD4A0', '#F9D07A', '#E8A090', '#B8A9C9'][weeklyHabits.length % 5]
@@ -5909,7 +5954,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       const addHabit = () => {
         if (!newHabit.trim()) return;
         setDailyHabits([...dailyHabits, {
-          id: Date.now(),
+          id: generateId(),
           text: newHabit,
           color: ['#7EB3E0', '#8FD4A0', '#F9D07A', '#E8A090', '#B8A9C9'][dailyHabits.length % 5]
         }]);
