@@ -251,13 +251,21 @@
 
     // Probability calculation for domain selection
     function calculateDomainProbabilities(vlqScores) {
-      const epsilon = 0.05; // Minimum probability floor
+      const epsilon = 0.01; // Reduced from 0.05 - minimum probability floor
+      const minImportance = 3; // Never select domains below this importance
       const weights = {};
       let totalWeight = 0;
 
       VLQ_ORDER.forEach(domain => {
         const scores = vlqScores[domain];
         const importance = scores?.importance || 5;
+        
+        // Skip domains below minimum importance threshold
+        if (importance < minImportance) {
+          weights[domain] = 0;
+          return;
+        }
+        
         const consistency = scores?.consistency || 5;
         const gap = Math.max(0, importance - consistency);
         
@@ -273,7 +281,7 @@
       // Normalize to probabilities
       const probabilities = {};
       VLQ_ORDER.forEach(domain => {
-        probabilities[domain] = weights[domain] / totalWeight;
+        probabilities[domain] = totalWeight > 0 ? weights[domain] / totalWeight : 0;
       });
 
       return probabilities;
@@ -281,8 +289,17 @@
 
     // Select a domain based on weighted probabilities
     function selectWeightedDomain(probabilities, exclude = [], penaltyWeights = {}) {
-      const availableDomains = VLQ_ORDER.filter(d => !exclude.includes(d));
-      if (availableDomains.length === 0) return VLQ_ORDER[Math.floor(Math.random() * VLQ_ORDER.length)];
+      // Filter out excluded domains AND domains below importance threshold (probability = 0)
+      const availableDomains = VLQ_ORDER.filter(d => 
+        !exclude.includes(d) && probabilities[d] > 0
+      );
+      
+      if (availableDomains.length === 0) {
+        // Fallback: pick any domain with non-zero probability
+        const nonZeroDomains = VLQ_ORDER.filter(d => probabilities[d] > 0);
+        if (nonZeroDomains.length === 0) return VLQ_ORDER[0]; // Ultimate fallback
+        return nonZeroDomains[Math.floor(Math.random() * nonZeroDomains.length)];
+      }
 
       // Apply soft recency penalties to probabilities
       const adjustedProbs = {};
