@@ -2477,11 +2477,21 @@ I'm here to help with any planning.`
       // Journal mode
       if (appMode === 'journal') {
         return (
-          <DailyJournalView 
+          <JournalView 
             yearTheme={yearTheme}
             vlqScores={vlqScores}
             journalEntries={journalEntries}
             setJournalEntries={setJournalEntries}
+            monthlyReviews={monthlyReviews}
+            setMonthlyReviews={setMonthlyReviews}
+            yearlyReflections={yearlyReflections}
+            setYearlyReflections={setYearlyReflections}
+            todaysTendies={todaysTendies}
+            tendyHistory={tendyHistory}
+            flexPoints={flexPoints}
+            setFlexPoints={setFlexPoints}
+            flexPointsTracking={flexPointsTracking}
+            setFlexPointsTracking={setFlexPointsTracking}
             onSwitchMode={() => setAppMode('plan')}
             onBack={() => setAppMode(null)}
           />
@@ -2801,39 +2811,27 @@ I'm here to help with any planning.`
       );
     }
 
-    // ============ DAILY JOURNAL VIEW ============
-    function DailyJournalView({ yearTheme, vlqScores, journalEntries, setJournalEntries, onSwitchMode, onBack }) {
-      const today = new Date();
-      const dateKey = today.toISOString().split('T')[0]; // e.g., "2026-01-19"
-      const dateString = today.toLocaleDateString('en-US', { 
-        weekday: 'long', 
-        month: 'long', 
-        day: 'numeric' 
-      });
-
-      // Load today's entry or create empty
-      const todayEntry = journalEntries[dateKey] || { rating: null, gratitude: '', reflection: '' };
-
-      // Update today's entry
-      const updateEntry = (field, value) => {
-        setJournalEntries(prev => ({
-          ...prev,
-          [dateKey]: {
-            ...prev[dateKey],
-            [field]: value
-          }
-        }));
-      };
-
-      // Get top growth area for prompt
-      const topGrowthArea = VLQ_ORDER
-        .map(key => ({
-          key,
-          name: VLQ_DOMAINS[key].name,
-          gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)
-        }))
-        .sort((a, b) => b.gap - a.gap)[0];
-
+    // ============ JOURNAL VIEW (TABBED) ============
+    function JournalView({ 
+      yearTheme, 
+      vlqScores, 
+      journalEntries, 
+      setJournalEntries,
+      monthlyReviews,
+      setMonthlyReviews,
+      yearlyReflections,
+      setYearlyReflections,
+      todaysTendies,
+      tendyHistory,
+      flexPoints,
+      setFlexPoints,
+      flexPointsTracking,
+      setFlexPointsTracking,
+      onSwitchMode, 
+      onBack 
+    }) {
+      const [activeTab, setActiveTab] = useState('daily'); // 'daily', 'monthly', 'yearly'
+      
       const journalStyles = {
         container: {
           minHeight: '100vh',
@@ -2867,6 +2865,17 @@ I'm here to help with any planning.`
           fontSize: '1.25rem',
           color: 'var(--text)',
         },
+        flexPointsBadge: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.375rem',
+          padding: '0.375rem 0.75rem',
+          backgroundColor: 'var(--accent-light)',
+          border: '1px solid var(--accent)',
+          borderRadius: '8px',
+          fontSize: '0.8rem',
+          color: 'var(--text)',
+        },
         switchButton: {
           padding: '0.5rem 1rem',
           backgroundColor: 'var(--bg-elevated)',
@@ -2879,6 +2888,28 @@ I'm here to help with any planning.`
           alignItems: 'center',
           gap: '0.5rem',
         },
+        tabs: {
+          display: 'flex',
+          gap: '0.5rem',
+          padding: '1rem 2rem',
+          backgroundColor: 'var(--bg-card)',
+          borderBottom: '1px solid var(--border)',
+        },
+        tab: {
+          padding: '0.5rem 1rem',
+          backgroundColor: 'transparent',
+          border: 'none',
+          borderBottom: '2px solid transparent',
+          color: 'var(--text-muted)',
+          fontSize: '0.9rem',
+          cursor: 'pointer',
+          transition: 'all 0.2s',
+        },
+        tabActive: {
+          borderBottomColor: 'var(--accent)',
+          color: 'var(--text)',
+          fontWeight: 500,
+        },
         content: {
           flex: 1,
           padding: '2rem',
@@ -2886,14 +2917,335 @@ I'm here to help with any planning.`
           margin: '0 auto',
           width: '100%',
         },
+      };
+
+      return (
+        <div style={journalStyles.container}>
+          <div style={journalStyles.header}>
+            <div style={journalStyles.headerLeft}>
+              <button style={journalStyles.backButton} onClick={onBack} title="Back">
+                ←
+              </button>
+              <h2 style={journalStyles.title}>Journal</h2>
+            </div>
+            <div style={{display: 'flex', gap: '0.75rem', alignItems: 'center'}}>
+              <div style={journalStyles.flexPointsBadge}>
+                <span>💎</span>
+                <span>{flexPoints} flex</span>
+              </div>
+              <button style={journalStyles.switchButton} onClick={onSwitchMode}>
+                📐 Switch to Plan
+              </button>
+            </div>
+          </div>
+
+          <div style={journalStyles.tabs}>
+            <button 
+              style={{...journalStyles.tab, ...(activeTab === 'daily' ? journalStyles.tabActive : {})}}
+              onClick={() => setActiveTab('daily')}
+            >
+              Daily
+            </button>
+            <button 
+              style={{...journalStyles.tab, ...(activeTab === 'monthly' ? journalStyles.tabActive : {})}}
+              onClick={() => setActiveTab('monthly')}
+            >
+              Monthly
+            </button>
+            <button 
+              style={{...journalStyles.tab, ...(activeTab === 'yearly' ? journalStyles.tabActive : {})}}
+              onClick={() => setActiveTab('yearly')}
+            >
+              Yearly
+            </button>
+          </div>
+
+          {activeTab === 'daily' && (
+            <DailyJournalTab 
+              yearTheme={yearTheme}
+              vlqScores={vlqScores}
+              journalEntries={journalEntries}
+              setJournalEntries={setJournalEntries}
+              todaysTendies={todaysTendies}
+              tendyHistory={tendyHistory}
+            />
+          )}
+
+          {activeTab === 'monthly' && (
+            <MonthlyReviewTab 
+              monthlyReviews={monthlyReviews}
+              setMonthlyReviews={setMonthlyReviews}
+              flexPoints={flexPoints}
+              setFlexPoints={setFlexPoints}
+              flexPointsTracking={flexPointsTracking}
+              setFlexPointsTracking={setFlexPointsTracking}
+            />
+          )}
+
+          {activeTab === 'yearly' && (
+            <YearlyReflectionTab 
+              yearlyReflections={yearlyReflections}
+              setYearlyReflections={setYearlyReflections}
+            />
+          )}
+        </div>
+      );
+    }
+    // ============ DAILY JOURNAL TAB ============
+    function DailyJournalTab({ yearTheme, vlqScores, journalEntries, setJournalEntries, todaysTendies, tendyHistory }) {
+      const today = new Date();
+      const dateKey = today.toISOString().split('T')[0];
+      const dateString = today.toLocaleDateString('en-US', { 
+        weekday: 'long', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+
+      // Load today's entry or create empty
+      const todayEntry = journalEntries[dateKey] || { 
+        gratitude: '', 
+        reflection: '',
+        tendyCompleted: null,
+        tendyFeeling: '',
+        tendyObstacle: ''
+      };
+
+      // Update today's entry
+      const updateEntry = (field, value) => {
+        setJournalEntries(prev => ({
+          ...prev,
+          [dateKey]: {
+            ...prev[dateKey],
+            [field]: value
+          }
+        }));
+      };
+
+      // Get today's selected or completed tendy
+      const selectedTendy = todaysTendies.find(t => t.selected || t.completed);
+      const tendyCompleted = tendyHistory.find(t => t.date === dateKey && t.completed);
+
+      const tabStyles = {
         date: {
           color: 'var(--text-muted)',
-          fontSize: '0.9rem',
-          marginBottom: '0.5rem',
+          fontSize: '0.875rem',
+          marginBottom: '2rem',
         },
-        greeting: {
+        section: {
+          marginBottom: '2rem',
+        },
+        sectionTitle: {
+          fontFamily: "'Fraunces', serif",
+          fontSize: '1.1rem',
+          color: 'var(--text)',
+          marginBottom: '0.75rem',
+        },
+        prompt: {
+          fontSize: '0.875rem',
+          color: 'var(--text-muted)',
+          marginBottom: '0.75rem',
+          fontStyle: 'italic',
+        },
+        textarea: {
+          width: '100%',
+          padding: '0.75rem',
+          fontSize: '0.9rem',
+          borderRadius: '8px',
+          border: '1px solid var(--border)',
+          backgroundColor: 'var(--bg-card)',
+          color: 'var(--text)',
+          fontFamily: 'inherit',
+          resize: 'vertical',
+          minHeight: '100px',
+        },
+        radioGroup: {
+          display: 'flex',
+          gap: '1rem',
+          marginBottom: '1rem',
+        },
+        radioOption: {
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          cursor: 'pointer',
+        },
+        tendyCard: {
+          padding: '1rem',
+          backgroundColor: 'var(--bg-card)',
+          border: '1px solid var(--border)',
+          borderRadius: '10px',
+          marginBottom: '1rem',
+        },
+      };
+
+      return (
+        <div>
+          <div style={tabStyles.date}>{dateString}</div>
+
+          {/* Tendy Reflection */}
+          {selectedTendy && (
+            <div style={tabStyles.section}>
+              <h3 style={tabStyles.sectionTitle}>Today's Tendy Reflection</h3>
+              <div style={tabStyles.tendyCard}>
+                <div style={{fontSize: '0.9rem', marginBottom: '0.75rem', color: 'var(--text)'}}>
+                  {selectedTendy.text}
+                </div>
+                <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>
+                  {selectedTendy.domainIcon} {selectedTendy.domainName}
+                </div>
+              </div>
+
+              <div style={{marginBottom: '1rem'}}>
+                <div style={{...tabStyles.prompt, fontStyle: 'normal', marginBottom: '0.5rem'}}>
+                  Did you complete it?
+                </div>
+                <div style={tabStyles.radioGroup}>
+                  <label style={tabStyles.radioOption}>
+                    <input 
+                      type="radio" 
+                      name="tendyCompleted"
+                      checked={todayEntry.tendyCompleted === true}
+                      onChange={() => updateEntry('tendyCompleted', true)}
+                    />
+                    <span>Yes</span>
+                  </label>
+                  <label style={tabStyles.radioOption}>
+                    <input 
+                      type="radio" 
+                      name="tendyCompleted"
+                      checked={todayEntry.tendyCompleted === false}
+                      onChange={() => updateEntry('tendyCompleted', false)}
+                    />
+                    <span>No</span>
+                  </label>
+                </div>
+              </div>
+
+              {todayEntry.tendyCompleted === true && (
+                <div>
+                  <div style={tabStyles.prompt}>How did you feel afterwards?</div>
+                  <textarea
+                    style={tabStyles.textarea}
+                    value={todayEntry.tendyFeeling || ''}
+                    onChange={(e) => updateEntry('tendyFeeling', e.target.value)}
+                    placeholder="What did you notice? How did it impact your day?"
+                    rows={3}
+                  />
+                </div>
+              )}
+
+              {todayEntry.tendyCompleted === false && (
+                <div>
+                  <div style={tabStyles.prompt}>What was the limiting belief or obstacle stopping you?</div>
+                  <textarea
+                    style={tabStyles.textarea}
+                    value={todayEntry.tendyObstacle || ''}
+                    onChange={(e) => updateEntry('tendyObstacle', e.target.value)}
+                    placeholder="What got in the way? What belief or barrier prevented you from completing it?"
+                    rows={3}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Gratitude */}
+          <div style={tabStyles.section}>
+            <h3 style={tabStyles.sectionTitle}>Gratitude</h3>
+            <div style={tabStyles.prompt}>What are you grateful for today?</div>
+            <textarea
+              style={tabStyles.textarea}
+              value={todayEntry.gratitude || ''}
+              onChange={(e) => updateEntry('gratitude', e.target.value)}
+              placeholder="List three things you're grateful for..."
+              rows={4}
+            />
+          </div>
+
+          {/* Free Reflection */}
+          <div style={tabStyles.section}>
+            <h3 style={tabStyles.sectionTitle}>Reflection</h3>
+            <div style={tabStyles.prompt}>What's on your mind?</div>
+            <textarea
+              style={tabStyles.textarea}
+              value={todayEntry.reflection || ''}
+              onChange={(e) => updateEntry('reflection', e.target.value)}
+              placeholder="What happened today? What do you want to remember?"
+              rows={8}
+            />
+          </div>
+        </div>
+      );
+    }
+    // ============ MONTHLY REVIEW TAB ============
+    function MonthlyReviewTab({ monthlyReviews, setMonthlyReviews, flexPoints, setFlexPoints, flexPointsTracking, setFlexPointsTracking }) {
+      const today = new Date();
+      const currentMonth = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}`;
+      const monthName = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+      // Load this month's review or create empty
+      const thisMonthReview = monthlyReviews[currentMonth] || {
+        wins: '',
+        challenges: '',
+        lessons: '',
+        nextMonth: ''
+      };
+
+      // Update this month's review
+      const updateReview = (field, value) => {
+        const wasComplete = isReviewComplete(thisMonthReview);
+        
+        const updatedReview = {
+          ...thisMonthReview,
+          [field]: value
+        };
+        
+        setMonthlyReviews(prev => ({
+          ...prev,
+          [currentMonth]: updatedReview
+        }));
+
+        // Award flex points if review just became complete
+        const isNowComplete = isReviewComplete(updatedReview);
+        if (!wasComplete && isNowComplete && flexPointsTracking.lastMonthlyReviewMonth !== currentMonth) {
+          setFlexPoints(flexPoints + 1.5);
+          setFlexPointsTracking(prev => ({
+            ...prev,
+            lastMonthlyReviewMonth: currentMonth
+          }));
+        }
+      };
+
+      // Check if review is complete (all fields filled)
+      const isReviewComplete = (review) => {
+        return review.wins?.trim() && review.challenges?.trim() && 
+               review.lessons?.trim() && review.nextMonth?.trim();
+      };
+
+      const completed = isReviewComplete(thisMonthReview);
+      const alreadyAwarded = flexPointsTracking.lastMonthlyReviewMonth === currentMonth;
+
+      const tabStyles = {
+        monthName: {
           fontFamily: "'Fraunces', serif",
           fontSize: '1.5rem',
+          color: 'var(--text)',
+          marginBottom: '0.5rem',
+        },
+        subtitle: {
+          color: 'var(--text-muted)',
+          fontSize: '0.875rem',
+          marginBottom: '2rem',
+        },
+        completionBadge: {
+          display: 'inline-flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.5rem 1rem',
+          backgroundColor: 'var(--accent-light)',
+          border: '1px solid var(--accent)',
+          borderRadius: '8px',
+          fontSize: '0.85rem',
           color: 'var(--text)',
           marginBottom: '2rem',
         },
@@ -2901,140 +3253,218 @@ I'm here to help with any planning.`
           marginBottom: '2rem',
         },
         sectionTitle: {
-          fontSize: '0.75rem',
-          fontWeight: 600,
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
+          fontFamily: "'Fraunces', serif",
+          fontSize: '1.1rem',
+          color: 'var(--text)',
+          marginBottom: '0.5rem',
+        },
+        prompt: {
+          fontSize: '0.875rem',
           color: 'var(--text-muted)',
           marginBottom: '0.75rem',
+          fontStyle: 'italic',
         },
         textarea: {
           width: '100%',
-          padding: '1rem',
-          backgroundColor: 'var(--bg-card)',
+          padding: '0.75rem',
+          fontSize: '0.9rem',
+          borderRadius: '8px',
           border: '1px solid var(--border)',
-          borderRadius: '12px',
-          fontSize: '0.95rem',
-          color: 'var(--text)',
-          fontFamily: "'DM Sans', sans-serif",
-          resize: 'none',
-          lineHeight: 1.6,
-          outline: 'none',
-        },
-        gratitudeInput: {
-          width: '100%',
-          padding: '0.75rem 1rem',
           backgroundColor: 'var(--bg-card)',
-          border: '1px solid var(--border)',
-          borderRadius: '10px',
-          fontSize: '0.9rem',
           color: 'var(--text)',
-          fontFamily: "'DM Sans', sans-serif",
-          outline: 'none',
-        },
-        ratingContainer: {
-          display: 'flex',
-          gap: '0.5rem',
-          justifyContent: 'center',
-        },
-        ratingButton: {
-          width: '44px',
-          height: '44px',
-          borderRadius: '50%',
-          border: '2px solid var(--border)',
-          backgroundColor: 'var(--bg-card)',
-          cursor: 'pointer',
-          fontSize: '0.9rem',
-          fontWeight: 500,
-          color: 'var(--text-muted)',
-          transition: 'all 0.2s',
-        },
-        ratingButtonActive: {
-          borderColor: 'var(--accent)',
-          backgroundColor: 'var(--accent)',
-          color: 'white',
-        },
-        prompt: {
-          padding: '1rem',
-          backgroundColor: 'var(--accent-light)',
-          borderRadius: '12px',
-          fontSize: '0.9rem',
-          color: 'var(--text)',
-          fontStyle: 'italic',
-          marginBottom: '0.75rem',
+          fontFamily: 'inherit',
+          resize: 'vertical',
+          minHeight: '100px',
         },
       };
 
       return (
-        <div style={journalStyles.container}>
-          <header style={journalStyles.header}>
-            <div style={journalStyles.headerLeft}>
-              <button style={journalStyles.backButton} onClick={onBack} title="Back">
-                ←
-              </button>
-              <h1 style={journalStyles.title}>Daily Journal</h1>
-            </div>
-            <button style={journalStyles.switchButton} onClick={onSwitchMode}>
-              🗓️ Switch to Plan & Design
-            </button>
-          </header>
+        <div>
+          <h2 style={tabStyles.monthName}>{monthName} Review</h2>
+          <div style={tabStyles.subtitle}>
+            Reflect on this month and earn 1.5 flex points for completing your review
+          </div>
 
-          <div style={journalStyles.content}>
-            <p style={journalStyles.date}>{dateString}</p>
-            <h2 style={journalStyles.greeting}>
-              {yearTheme ? `How are you living into "${yearTheme}" today?` : 'How was your day?'}
-            </h2>
-
-            {/* Today's Rating */}
-            <div style={journalStyles.section}>
-              <h3 style={journalStyles.sectionTitle}>How do you feel about today?</h3>
-              <div style={journalStyles.ratingContainer}>
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                  <button
-                    key={num}
-                    style={{
-                      ...journalStyles.ratingButton,
-                      ...(todayEntry.rating === num && journalStyles.ratingButtonActive)
-                    }}
-                    onClick={() => updateEntry('rating', num)}
-                  >
-                    {num}
-                  </button>
-                ))}
-              </div>
+          {completed && alreadyAwarded && (
+            <div style={tabStyles.completionBadge}>
+              <span>✨</span>
+              <span>Review complete! +1.5 flex points earned</span>
             </div>
+          )}
 
-            {/* Gratitude */}
-            <div style={journalStyles.section}>
-              <h3 style={journalStyles.sectionTitle}>One thing you're grateful for</h3>
-              <input
-                type="text"
-                style={journalStyles.gratitudeInput}
-                value={todayEntry.gratitude || ''}
-                onChange={(e) => updateEntry('gratitude', e.target.value)}
-                placeholder="What made today a little brighter?"
-              />
-            </div>
+          <div style={tabStyles.section}>
+            <h3 style={tabStyles.sectionTitle}>Wins & Highlights</h3>
+            <div style={tabStyles.prompt}>What were your biggest wins this month?</div>
+            <textarea
+              style={tabStyles.textarea}
+              value={thisMonthReview.wins || ''}
+              onChange={(e) => updateReview('wins', e.target.value)}
+              placeholder="What went well? What are you proud of?"
+              rows={5}
+            />
+          </div>
 
-            {/* Free Write */}
-            <div style={journalStyles.section}>
-              <h3 style={journalStyles.sectionTitle}>Reflect</h3>
-              {topGrowthArea && topGrowthArea.gap >= 2 && (
-                <div style={journalStyles.prompt}>
-                  💭 How did you show up for <strong>{topGrowthArea.name}</strong> today?
-                </div>
-              )}
-              <textarea
-                style={journalStyles.textarea}
-                value={todayEntry.reflection || ''}
-                onChange={(e) => updateEntry('reflection', e.target.value)}
-                placeholder="What's on your mind? What happened today? What do you want to remember?"
-                rows={8}
-              />
-            </div>
+          <div style={tabStyles.section}>
+            <h3 style={tabStyles.sectionTitle}>Challenges</h3>
+            <div style={tabStyles.prompt}>What challenges did you face?</div>
+            <textarea
+              style={tabStyles.textarea}
+              value={thisMonthReview.challenges || ''}
+              onChange={(e) => updateReview('challenges', e.target.value)}
+              placeholder="What was difficult? What obstacles came up?"
+              rows={5}
+            />
+          </div>
+
+          <div style={tabStyles.section}>
+            <h3 style={tabStyles.sectionTitle}>Lessons Learned</h3>
+            <div style={tabStyles.prompt}>What did you learn about yourself this month?</div>
+            <textarea
+              style={tabStyles.textarea}
+              value={thisMonthReview.lessons || ''}
+              onChange={(e) => updateReview('lessons', e.target.value)}
+              placeholder="What insights or realizations did you have?"
+              rows={5}
+            />
+          </div>
+
+          <div style={tabStyles.section}>
+            <h3 style={tabStyles.sectionTitle}>Looking Ahead</h3>
+            <div style={tabStyles.prompt}>What do you want to focus on next month?</div>
+            <textarea
+              style={tabStyles.textarea}
+              value={thisMonthReview.nextMonth || ''}
+              onChange={(e) => updateReview('nextMonth', e.target.value)}
+              placeholder="What intentions or goals do you have for next month?"
+              rows={5}
+            />
           </div>
         </div>
       );
+    }
+    // ============ YEARLY REFLECTION TAB ============
+    function YearlyReflectionTab({ yearlyReflections, setYearlyReflections }) {
+      const today = new Date();
+      const currentYear = today.getFullYear().toString();
+
+      // Load this year's reflection or create empty
+      const thisYearReflection = yearlyReflections[currentYear] || {
+        definingMoments: '',
+        growth: '',
+        gratitude: '',
+        intentions: ''
+      };
+
+      // Update this year's reflection
+      const updateReflection = (field, value) => {
+        setYearlyReflections(prev => ({
+          ...prev,
+          [currentYear]: {
+            ...prev[currentYear],
+            [field]: value
+          }
+        }));
+      };
+
+      const tabStyles = {
+        yearName: {
+          fontFamily: "'Fraunces', serif",
+          fontSize: '1.5rem',
+          color: 'var(--text)',
+          marginBottom: '0.5rem',
+        },
+        subtitle: {
+          color: 'var(--text-muted)',
+          fontSize: '0.875rem',
+          marginBottom: '2rem',
+        },
+        section: {
+          marginBottom: '2rem',
+        },
+        sectionTitle: {
+          fontFamily: "'Fraunces', serif",
+          fontSize: '1.1rem',
+          color: 'var(--text)',
+          marginBottom: '0.5rem',
+        },
+        prompt: {
+          fontSize: '0.875rem',
+          color: 'var(--text-muted)',
+          marginBottom: '0.75rem',
+          fontStyle: 'italic',
+        },
+        textarea: {
+          width: '100%',
+          padding: '0.75rem',
+          fontSize: '0.9rem',
+          borderRadius: '8px',
+          border: '1px solid var(--border)',
+          backgroundColor: 'var(--bg-card)',
+          color: 'var(--text)',
+          fontFamily: 'inherit',
+          resize: 'vertical',
+          minHeight: '120px',
+        },
+      };
+
+      return (
+        <div>
+          <h2 style={tabStyles.yearName}>{currentYear} Reflection</h2>
+          <div style={tabStyles.subtitle}>
+            Take time to reflect on the year that was and set intentions for the year ahead
+          </div>
+
+          <div style={tabStyles.section}>
+            <h3 style={tabStyles.sectionTitle}>Defining Moments</h3>
+            <div style={tabStyles.prompt}>What were the defining moments of this year?</div>
+            <textarea
+              style={tabStyles.textarea}
+              value={thisYearReflection.definingMoments || ''}
+              onChange={(e) => updateReflection('definingMoments', e.target.value)}
+              placeholder="What experiences, decisions, or events shaped your year?"
+              rows={6}
+            />
+          </div>
+
+          <div style={tabStyles.section}>
+            <h3 style={tabStyles.sectionTitle}>Growth & Change</h3>
+            <div style={tabStyles.prompt}>How have you grown this year?</div>
+            <textarea
+              style={tabStyles.textarea}
+              value={thisYearReflection.growth || ''}
+              onChange={(e) => updateReflection('growth', e.target.value)}
+              placeholder="What have you learned? How have you changed?"
+              rows={6}
+            />
+          </div>
+
+          <div style={tabStyles.section}>
+            <h3 style={tabStyles.sectionTitle}>Gratitude</h3>
+            <div style={tabStyles.prompt}>What are you grateful for from this year?</div>
+            <textarea
+              style={tabStyles.textarea}
+              value={thisYearReflection.gratitude || ''}
+              onChange={(e) => updateReflection('gratitude', e.target.value)}
+              placeholder="Who and what are you thankful for?"
+              rows={6}
+            />
+          </div>
+
+          <div style={tabStyles.section}>
+            <h3 style={tabStyles.sectionTitle}>Intentions for Next Year</h3>
+            <div style={tabStyles.prompt}>What intentions do you have for the year ahead?</div>
+            <textarea
+              style={tabStyles.textarea}
+              value={thisYearReflection.intentions || ''}
+              onChange={(e) => updateReflection('intentions', e.target.value)}
+              placeholder="What do you want to focus on? What kind of year do you want to create?"
+              rows={6}
+            />
+          </div>
+        </div>
+      );
+    }
+
     }
 
     // ============ YEAR CIRCLE VIEW ============
