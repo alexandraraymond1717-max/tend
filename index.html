@@ -2910,6 +2910,76 @@ Let's reflect on your month together. What stood out to you most? What are you p
         setAppMode(null);
       };
 
+      // Check if it's time for yearly review (last 7 days of December)
+      const currentYear = today.getFullYear().toString();
+      const isDecember = today.getMonth() === 11;
+      const daysUntilEndOfYear = 31 - today.getDate();
+      const isYearlyReviewTime = isDecember && daysUntilEndOfYear <= 6;
+      const yearlyReviewCompleted = yearlyReflections[currentYear]?.completed;
+
+      // Generate yearly summary
+      const generateYearlySummary = () => {
+        const firstDayOfYear = new Date(today.getFullYear(), 0, 1);
+        const yearEntries = Object.entries(journalEntries).filter(([date]) => {
+          const entryDate = new Date(date);
+          return entryDate >= firstDayOfYear && entryDate <= today;
+        });
+        
+        const journalDays = yearEntries.length;
+        const completedTends = tendyHistory.filter(t => {
+          const tendDate = new Date(t.date);
+          return tendDate >= firstDayOfYear && tendDate <= today && t.completed;
+        }).length;
+        
+        const completedGoals = goals.filter(g => g.completed).length;
+
+        // Count completed monthly reviews
+        const monthsReviewed = Object.keys(monthlyReviews).filter(m => 
+          m.startsWith(currentYear) && monthlyReviews[m]?.completed
+        ).length;
+
+        return `Hi! As we approach the end of ${currentYear}, I've prepared a reflection on your year:
+
+🎊 **Your Year in Numbers:**
+- You journaled ${journalDays} days this year
+- You completed ${completedTends} daily tends
+- You achieved ${completedGoals} goals
+- You completed ${monthsReviewed} monthly reflections
+
+🌱 **Your Growth Areas This Year:**
+${VLQ_ORDER.filter(key => {
+  const importance = vlqScores[key]?.importance || 5;
+  const gap = importance - (vlqScores[key]?.consistency || 5);
+  return gap >= 2;
+}).map(key => `- ${VLQ_DOMAINS[key].icon} ${VLQ_DOMAINS[key].name}`).join('\n') || 'No specific focus areas'}
+
+💪 **Your Strengths:**
+${VLQ_ORDER.filter(key => {
+  const importance = vlqScores[key]?.importance || 5;
+  const consistency = vlqScores[key]?.consistency || 5;
+  const gap = importance - consistency;
+  return importance >= 5 && gap < 3;
+}).map(key => `- ${VLQ_DOMAINS[key].icon} ${VLQ_DOMAINS[key].name}`).join('\n') || 'No identified strengths'}
+
+This has been your year of growth and intention. What are you most proud of? What did you learn about yourself? As we move into ${parseInt(currentYear) + 1}, what do you want to carry forward, and what do you want to leave behind?`;
+      };
+
+      const startYearlyReview = () => {
+        const summary = generateYearlySummary();
+        setMessages([{
+          role: 'assistant',
+          content: summary
+        }]);
+        setYearlyReflections(prev => ({
+          ...prev,
+          [currentYear]: { completed: true, completedAt: new Date().toISOString() }
+        }));
+        // Award flex points (2 for yearly)
+        setFlexPoints(flexPoints + 2);
+        // Switch to main view (which shows chat)
+        setAppMode(null);
+      };
+
       const journalStyles = {
         container: {
           minHeight: '100vh',
@@ -3046,6 +3116,26 @@ Let's reflect on your month together. What stood out to you most? What are you p
                 <button style={journalStyles.reviewButton} onClick={startMonthlyReview}>
                   <span>✨</span>
                   <span>Start Monthly Reflection</span>
+                </button>
+              </div>
+            )}
+
+            {/* Yearly Review Prompt */}
+            {isYearlyReviewTime && !yearlyReviewCompleted && (
+              <div style={journalStyles.reviewPrompt}>
+                <h3 style={journalStyles.reviewPromptTitle}>
+                  <span>🎊</span>
+                  <span>Year in Review Available</span>
+                </h3>
+                <p style={journalStyles.reviewPromptText}>
+                  As {currentYear} comes to a close, let's reflect on your entire year together. I've prepared a comprehensive summary of your growth, achievements, and journey. This is a special moment to honor how far you've come.
+                </p>
+                <p style={{...journalStyles.reviewPromptText, fontSize: '0.75rem', fontStyle: 'italic'}}>
+                  Earn +2 flex points for completing your yearly reflection
+                </p>
+                <button style={journalStyles.reviewButton} onClick={startYearlyReview}>
+                  <span>🌟</span>
+                  <span>Start Year in Review</span>
                 </button>
               </div>
             )}
