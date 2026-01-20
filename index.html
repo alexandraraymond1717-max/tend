@@ -4954,144 +4954,126 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
     }
 
     function LifeAreasTab({ vlqScores, setVlqScores, goals, setGoals, onReassess, onAddGoal, revealed }) {
-      // Organize life areas by category
-      const categories = {
-        relationships: {
-          name: 'Relationships',
-          icon: '💕',
-          areas: ['family', 'partner', 'friendships']
-        },
-        wellbeing: {
-          name: 'Wellbeing',
-          icon: '🌿',
-          areas: ['health', 'mentalHealth']
-        },
-        purpose: {
-          name: 'Purpose & Growth',
-          icon: '✨',
-          areas: ['career', 'education', 'spirituality']
-        },
-        fulfillment: {
-          name: 'Fulfillment',
-          icon: '🎨',
-          areas: ['recreation', 'community']
-        }
-      };
-
-      const updateScore = (areaKey, field, value) => {
-        setVlqScores(prev => ({
-          ...prev,
-          [areaKey]: {
-            ...prev[areaKey],
-            [field]: parseInt(value)
-          }
-        }));
-      };
-
       if (!revealed) {
         return <div style={{padding: '1rem'}}><p style={{fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic'}}>Complete the assessment to see your life areas.</p></div>;
       }
 
+      // Categorize life areas
+      const focusAreas = []; // gap >= 2
+      const strengths = []; // importance >= 5, gap < 3
+      const lowImportance = []; // importance < 5, gap < 3
+
+      VLQ_ORDER.forEach(areaKey => {
+        const area = VLQ_DOMAINS[areaKey];
+        const importance = vlqScores[areaKey]?.importance || 5;
+        const consistency = vlqScores[areaKey]?.consistency || 5;
+        const gap = importance - consistency;
+
+        const areaData = {
+          key: areaKey,
+          ...area,
+          importance,
+          consistency,
+          gap
+        };
+
+        if (gap >= 2) {
+          focusAreas.push(areaData);
+        } else if (importance >= 5 && gap < 3) {
+          strengths.push(areaData);
+        } else if (importance < 5 && gap < 3) {
+          lowImportance.push(areaData);
+        }
+      });
+
+      const renderAreaCard = (area) => (
+        <div key={area.key} style={{
+          padding: '0.5rem',
+          backgroundColor: 'var(--bg-elevated)',
+          borderRadius: '8px',
+          borderLeft: `3px solid ${area.color}`,
+          fontSize: '0.75rem'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.375rem',
+            marginBottom: '0.25rem'
+          }}>
+            <span style={{fontSize: '0.9rem'}}>{area.icon}</span>
+            <span style={{fontWeight: 500, color: 'var(--text)'}}>{area.name}</span>
+          </div>
+          <div style={{
+            display: 'flex',
+            gap: '0.75rem',
+            fontSize: '0.7rem',
+            color: 'var(--text-muted)'
+          }}>
+            <span>Importance: {area.importance}</span>
+            <span>Consistency: {area.consistency}</span>
+          </div>
+        </div>
+      );
+
       return (
         <div style={{padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '1rem', height: '100%', overflowY: 'auto'}}>
-          {Object.entries(categories).map(([catKey, category]) => (
-            <div key={catKey}>
+          
+          {/* Focus Areas */}
+          {focusAreas.length > 0 && (
+            <div>
               <h3 style={{
                 fontSize: '0.7rem', 
                 fontWeight: 600, 
                 textTransform: 'uppercase', 
                 letterSpacing: '0.05em', 
                 color: 'var(--text-muted)', 
-                marginBottom: '0.5rem',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.375rem'
+                marginBottom: '0.5rem'
               }}>
-                <span>{category.icon}</span> {category.name}
+                🌱 Focus On
               </h3>
               <div style={{display: 'flex', flexDirection: 'column', gap: '0.375rem'}}>
-                {category.areas.map(areaKey => {
-                  const area = VLQ_DOMAINS[areaKey];
-                  const importance = vlqScores[areaKey]?.importance || 5;
-                  const consistency = vlqScores[areaKey]?.consistency || 5;
-                  const gap = importance - consistency;
-                  const isGrowthArea = gap >= 2;
-                  const isStrength = importance >= 7 && consistency >= 6 && gap < 2;
-                  
-                  return (
-                    <div key={areaKey} style={{
-                      padding: '0.5rem 0.625rem',
-                      backgroundColor: 'var(--bg-elevated)',
-                      borderRadius: '8px',
-                      borderLeft: `3px solid ${area.color}`,
-                    }}>
-                      <div style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.5rem',
-                        marginBottom: '0.375rem'
-                      }}>
-                        <span style={{fontSize: '0.85rem'}}>{area.icon}</span>
-                        <span style={{flex: 1, fontSize: '0.8rem', fontWeight: 500, color: 'var(--text)'}}>
-                          {area.name}
-                        </span>
-                        {isGrowthArea && <span style={{fontSize: '0.65rem', color: 'var(--accent)'}}>🌱</span>}
-                        {isStrength && <span style={{fontSize: '0.65rem', color: area.color}}>💪</span>}
-                      </div>
-                      <div style={{
-                        display: 'flex',
-                        gap: '0.75rem',
-                        alignItems: 'center',
-                        fontSize: '0.7rem',
-                        color: 'var(--text-muted)'
-                      }}>
-                        <div style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}>
-                          <span style={{minWidth: '65px'}}>Importance:</span>
-                          <select
-                            value={importance}
-                            onChange={(e) => updateScore(areaKey, 'importance', e.target.value)}
-                            style={{
-                              padding: '0.125rem 0.25rem',
-                              backgroundColor: 'var(--bg-card)',
-                              border: '1px solid var(--border)',
-                              borderRadius: '4px',
-                              fontSize: '0.7rem',
-                              color: 'var(--text)',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                              <option key={n} value={n}>{n}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div style={{display: 'flex', alignItems: 'center', gap: '0.25rem'}}>
-                          <span style={{minWidth: '70px'}}>Consistency:</span>
-                          <select
-                            value={consistency}
-                            onChange={(e) => updateScore(areaKey, 'consistency', e.target.value)}
-                            style={{
-                              padding: '0.125rem 0.25rem',
-                              backgroundColor: 'var(--bg-card)',
-                              border: '1px solid var(--border)',
-                              borderRadius: '4px',
-                              fontSize: '0.7rem',
-                              color: 'var(--text)',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            {[1,2,3,4,5,6,7,8,9,10].map(n => (
-                              <option key={n} value={n}>{n}</option>
-                            ))}
-                          </select>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
+                {focusAreas.map(renderAreaCard)}
               </div>
             </div>
-          ))}
+          )}
+
+          {/* Strengths */}
+          {strengths.length > 0 && (
+            <div>
+              <h3 style={{
+                fontSize: '0.7rem', 
+                fontWeight: 600, 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.05em', 
+                color: 'var(--text-muted)', 
+                marginBottom: '0.5rem'
+              }}>
+                💪 Strengths
+              </h3>
+              <div style={{display: 'flex', flexDirection: 'column', gap: '0.375rem'}}>
+                {strengths.map(renderAreaCard)}
+              </div>
+            </div>
+          )}
+
+          {/* Low Importance */}
+          {lowImportance.length > 0 && (
+            <div>
+              <h3 style={{
+                fontSize: '0.7rem', 
+                fontWeight: 600, 
+                textTransform: 'uppercase', 
+                letterSpacing: '0.05em', 
+                color: 'var(--text-muted)', 
+                marginBottom: '0.5rem'
+              }}>
+                📊 Low Importance
+              </h3>
+              <div style={{display: 'flex', flexDirection: 'column', gap: '0.375rem'}}>
+                {lowImportance.map(renderAreaCard)}
+              </div>
+            </div>
+          )}
 
           {/* Goals Section */}
           <div style={{marginTop: '0.5rem'}}>
