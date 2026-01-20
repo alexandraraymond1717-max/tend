@@ -3323,45 +3323,11 @@ I'm here to help with any planning.`
         // Deduct flex point
         setFlexPoints(flexPoints - 1);
         
-        // Get recently used templates to avoid repetition
-        const recentTemplates = tendyHistory
-          .filter(t => {
-            const daysDiff = (new Date(today) - new Date(t.date)) / (1000 * 60 * 60 * 24);
-            return daysDiff < 30;
-          })
-          .map(t => t.templateText || t.text);
-        
-        // Add currently selected template to avoid rerolling to the same one
-        recentTemplates.push(selectedTendy.text);
-        
-        // Find new template for same domain and difficulty
-        const domain = selectedTendy.domain;
-        const difficulty = selectedTendy.difficulty;
-        
-        const templates = TENDY_TEMPLATES[domain].filter(t => 
-          t.difficulty === difficulty && !recentTemplates.includes(t.text)
-        );
-        
-        // Fallback to any template if no unused ones
-        const fallbackTemplates = TENDY_TEMPLATES[domain].filter(t => 
-          t.difficulty === difficulty && t.text !== selectedTendy.text
-        );
-        const availableTemplates = templates.length > 0 ? templates : fallbackTemplates;
-        
-        if (availableTemplates.length > 0) {
-          const newTemplate = availableTemplates[Math.floor(Math.random() * availableTemplates.length)];
-          const newTendy = {
-            ...selectedTendy,
-            text: newTemplate.text,
-            duration: newTemplate.duration,
-            templateText: newTemplate.text,
-          };
-          
-          // Replace the selected tendy
-          setTodaysTendies(todaysTendies.map(t => 
-            t.id === selectedTendy.id ? newTendy : t
-          ));
-        }
+        // Deselect current tendy so they can pick a different difficulty
+        setTodaysTendies(todaysTendies.map(t => ({
+          ...t,
+          selected: false
+        })));
       };
 
       const completeTendy = () => {
@@ -3856,7 +3822,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       }}
                     >
                       <span>💎</span>
-                      <span>Don't like this? Spend 1 flex point to try a different task</span>
+                      <span>Don't like this? Spend 1 flex point to try a different difficulty</span>
                     </button>
                   )}
                   
