@@ -1209,6 +1209,12 @@
             if (data.weeklyCustomTendy) setWeeklyCustomTendy(data.weeklyCustomTendy);
             if (data.savedConversations) setSavedConversations(data.savedConversations);
             if (data.userProfile) setUserProfile(data.userProfile);
+            // Load current chat session (persists across refresh)
+            if (data.currentChat) {
+              if (data.currentChat.messages) setMessages(data.currentChat.messages);
+              if (data.currentChat.exchangeCount) setExchangeCount(data.currentChat.exchangeCount);
+              if (data.currentChat.conversationType) setCurrentConversationType(data.currentChat.conversationType);
+            }
             // Trends are calculated, not loaded
             if (data.revealed) setRevealed(data.revealed);
             if (data.phase) setPhase(data.phase);
@@ -1568,14 +1574,20 @@
               savedConversations,
               userProfile,
               trends,
+              // NEW: Current chat session (persists across refresh)
+              currentChat: {
+                messages,
+                exchangeCount,
+                conversationType: currentConversationType
+              },
               updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
             }, { merge: true });
-            console.log('Data saved (including trends & conversations)');
+            console.log('Data saved (including current chat)');
           } catch (error) {
             console.error('Error saving user data:', error);
           }
         }, 1000);
-      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, savedConversations, userProfile]);
+      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, savedConversations, userProfile, messages, exchangeCount, currentConversationType]);
 
       // Flex Points Awarding System
       useEffect(() => {
@@ -1652,7 +1664,7 @@
         if (user && dataLoaded) {
           saveUserData();
         }
-      }, [vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, user, dataLoaded]);
+      }, [vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, user, dataLoaded, messages, exchangeCount, currentConversationType]);
 
       // Logout function
       const handleLogout = async () => {
