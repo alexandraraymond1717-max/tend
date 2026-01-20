@@ -5548,16 +5548,10 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     </div>
                   </div>
                   
-                  {/* Reroll button */}
-                  {!selectedTendy.completed && (
+                  {/* Reroll button - costs 1 flex point */}
+                  {flexPoints >= 1 && !selectedTendy.completed && (
                     <button 
-                      onClick={() => {
-                        // Free difficulty change - just deselect
-                        setTodaysTendies(todaysTendies.map(t => ({
-                          ...t,
-                          selected: false
-                        })));
-                      }}
+                      onClick={rerollTendy}
                       style={{
                         width: '100%',
                         padding: '0.75rem',
@@ -5574,8 +5568,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                         gap: '0.5rem',
                       }}
                     >
-                      <span>↩</span>
-                      <span>Pick a different difficulty</span>
+                      <span>🪴</span>
+                      <span>Spend 1 flex point to pick a different difficulty</span>
                     </button>
                   )}
                   
@@ -5764,35 +5758,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 </div>
               );
             })}
-
-            {/* Re-roll to new focus area */}
-            {flexPoints >= 1 && (
-              <button
-                onClick={() => {
-                  setFlexPoints(flexPoints - 1);
-                  const newTendies = generateDailyTendies(vlqScores, tendyHistory);
-                  setTodaysTendies(newTendies);
-                }}
-                style={{
-                  width: '100%',
-                  padding: '0.75rem',
-                  backgroundColor: 'transparent',
-                  border: '1px dashed var(--border)',
-                  borderRadius: '10px',
-                  color: 'var(--text-muted)',
-                  fontSize: '0.85rem',
-                  cursor: 'pointer',
-                  marginTop: '0.5rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.5rem',
-                }}
-              >
-                <span>🪴</span>
-                <span>Spend 1 flex point for a different focus area</span>
-              </button>
-            )}
 
             {/* Custom Tendy - if approved this week */}
             {hasApprovedCustom && (
