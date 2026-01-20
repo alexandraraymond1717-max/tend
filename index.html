@@ -2498,6 +2498,9 @@ I'm here to help with any planning.`
             setFlexPoints={setFlexPoints}
             flexPointsTracking={flexPointsTracking}
             setFlexPointsTracking={setFlexPointsTracking}
+            goals={goals}
+            setAppMode={setAppMode}
+            setMessages={setMessages}
             onSwitchMode={() => setAppMode('plan')}
             onBack={() => setAppMode(null)}
           />
@@ -2835,8 +2838,78 @@ I'm here to help with any planning.`
       flexPointsTracking,
       setFlexPointsTracking,
       onSwitchMode, 
-      onBack 
+      onBack,
+      setAppMode,
+      setMessages,
+      goals
     }) {
+      const today = new Date();
+      const currentMonth = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}`;
+      
+      // Check if it's time for monthly review (last 3 days of month)
+      const lastDayOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate();
+      const daysUntilEndOfMonth = lastDayOfMonth - today.getDate();
+      const isMonthlyReviewTime = daysUntilEndOfMonth <= 2;
+      const monthlyReviewCompleted = monthlyReviews[currentMonth]?.completed;
+
+      // Generate monthly summary
+      const generateMonthlySummary = () => {
+        const monthName = today.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+        const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const monthEntries = Object.entries(journalEntries).filter(([date]) => {
+          const entryDate = new Date(date);
+          return entryDate >= firstDayOfMonth && entryDate <= today;
+        });
+        
+        const journalDays = monthEntries.length;
+        const completedTends = tendyHistory.filter(t => {
+          const tendDate = new Date(t.date);
+          return tendDate >= firstDayOfMonth && tendDate <= today && t.completed;
+        }).length;
+        
+        const completedGoals = goals.filter(g => {
+          if (!g.completed) return false;
+          // Assume completed this month if marked complete (we don't track completion date yet)
+          return true;
+        }).length;
+
+        return `Hi! It's the end of ${monthName}, and I've prepared a summary of your month:
+
+📊 **Your Month in Numbers:**
+- You journaled ${journalDays} days this month
+- You completed ${completedTends} daily tends
+- You achieved ${completedGoals} goals
+
+🌱 **Areas You Focused On:**
+${VLQ_ORDER.filter(key => {
+  const importance = vlqScores[key]?.importance || 5;
+  const gap = importance - (vlqScores[key]?.consistency || 5);
+  return gap >= 2;
+}).map(key => `- ${VLQ_DOMAINS[key].icon} ${VLQ_DOMAINS[key].name}`).join('\n') || 'No specific focus areas'}
+
+Let's reflect on your month together. What stood out to you most? What are you proud of? What would you like to carry forward into next month?`;
+      };
+
+      const startMonthlyReview = () => {
+        const summary = generateMonthlySummary();
+        setMessages([{
+          role: 'assistant',
+          content: summary
+        }]);
+        setMonthlyReviews(prev => ({
+          ...prev,
+          [currentMonth]: { completed: true, completedAt: new Date().toISOString() }
+        }));
+        // Award flex points
+        setFlexPoints(flexPoints + 1.5);
+        setFlexPointsTracking(prev => ({
+          ...prev,
+          lastMonthlyReviewMonth: currentMonth
+        }));
+        // Switch to main view (which shows chat)
+        setAppMode(null);
+      };
+
       const journalStyles = {
         container: {
           minHeight: '100vh',
@@ -2900,6 +2973,40 @@ I'm here to help with any planning.`
           margin: '0 auto',
           width: '100%',
         },
+        reviewPrompt: {
+          padding: '1.5rem',
+          backgroundColor: 'var(--accent-light)',
+          border: '2px solid var(--accent)',
+          borderRadius: '12px',
+          marginBottom: '2rem',
+        },
+        reviewPromptTitle: {
+          fontFamily: "'Fraunces', serif",
+          fontSize: '1.1rem',
+          color: 'var(--text)',
+          marginBottom: '0.5rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+        },
+        reviewPromptText: {
+          fontSize: '0.85rem',
+          color: 'var(--text-muted)',
+          marginBottom: '1rem',
+        },
+        reviewButton: {
+          padding: '0.75rem 1.25rem',
+          backgroundColor: 'var(--accent)',
+          color: 'white',
+          border: 'none',
+          borderRadius: '8px',
+          fontSize: '0.9rem',
+          fontWeight: 500,
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+        },
       };
 
       return (
@@ -2923,6 +3030,26 @@ I'm here to help with any planning.`
           </div>
 
           <div style={journalStyles.content}>
+            {/* Monthly Review Prompt */}
+            {isMonthlyReviewTime && !monthlyReviewCompleted && (
+              <div style={journalStyles.reviewPrompt}>
+                <h3 style={journalStyles.reviewPromptTitle}>
+                  <span>🌙</span>
+                  <span>Monthly Reflection Available</span>
+                </h3>
+                <p style={journalStyles.reviewPromptText}>
+                  It's the end of the month! Let's reflect on your journey together. I've prepared a summary of your month and we can chat about what you learned, what you're proud of, and what you want to focus on next month.
+                </p>
+                <p style={{...journalStyles.reviewPromptText, fontSize: '0.75rem', fontStyle: 'italic'}}>
+                  Earn +1.5 flex points for completing your monthly reflection
+                </p>
+                <button style={journalStyles.reviewButton} onClick={startMonthlyReview}>
+                  <span>✨</span>
+                  <span>Start Monthly Reflection</span>
+                </button>
+              </div>
+            )}
+
             <DailyJournalTab 
               yearTheme={yearTheme}
               vlqScores={vlqScores}
