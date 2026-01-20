@@ -2334,6 +2334,37 @@ I'm here to help with any planning.`
             <circle cx="40" cy="70" r="4" fill="none" stroke="var(--accent)" strokeWidth="2"/>
           </svg>
           
+          {yearTheme && (
+            <div style={{
+              padding: '1rem 1.5rem',
+              backgroundColor: 'var(--accent-light)',
+              border: '2px solid var(--accent)',
+              borderRadius: '12px',
+              marginBottom: '1.5rem',
+              textAlign: 'center',
+              maxWidth: '320px',
+              width: '100%',
+            }}>
+              <div style={{
+                fontSize: '0.7rem',
+                textTransform: 'uppercase',
+                letterSpacing: '0.1em',
+                color: 'var(--text-muted)',
+                marginBottom: '0.25rem',
+              }}>
+                Your Word for {new Date().getFullYear()}
+              </div>
+              <div style={{
+                fontFamily: "'Fraunces', serif",
+                fontSize: '1.75rem',
+                color: 'var(--accent)',
+                fontWeight: 500,
+              }}>
+                {yearTheme}
+              </div>
+            </div>
+          )}
+          
           <h2 style={{
             fontFamily: "'Fraunces', serif",
             fontSize: '1.5rem',
@@ -2343,16 +2374,6 @@ I'm here to help with any planning.`
           }}>
             {yearTheme ? `Welcome back` : 'Welcome'}
           </h2>
-          {yearTheme && (
-            <p style={{
-              color: 'var(--accent)',
-              fontSize: '0.9rem',
-              fontStyle: 'italic',
-              marginBottom: '0.25rem',
-            }}>
-              Your word: {yearTheme}
-            </p>
-          )}
           <p style={{
             color: 'var(--text-muted)',
             fontSize: '0.95rem',
@@ -2542,7 +2563,29 @@ I'm here to help with any planning.`
               </svg>
               <h1 style={styles.logoText}>tend</h1>
             </div>
-            <p style={styles.tagline}>a space for designing your life with intention</p>
+            {yearTheme ? (
+              <p style={{
+                ...styles.tagline,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}>
+                <span style={{opacity: 0.7}}>a space for designing your life with intention</span>
+                <span style={{
+                  padding: '0.25rem 0.75rem',
+                  backgroundColor: 'var(--accent-light)',
+                  border: '1px solid var(--accent)',
+                  borderRadius: '6px',
+                  color: 'var(--accent)',
+                  fontSize: '0.8rem',
+                  fontWeight: 500,
+                }}>
+                  {new Date().getFullYear()}: {yearTheme}
+                </span>
+              </p>
+            ) : (
+              <p style={styles.tagline}>a space for designing your life with intention</p>
+            )}
             <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
               <button 
                 style={{
