@@ -2507,10 +2507,17 @@ For DAILY habits (e.g., "I want to meditate every morning"):
 [DAILY_HABIT: habit text]
 Example: [DAILY_HABIT: morning meditation]
 
-For EVENTS (e.g., "I'm planning a trip to Japan in April"):
-[EVENT: title | month | life_area]
-Month should be 0-11 (0=January, 11=December). Life area should be one of: family, partner, friendships, career, education, recreation, spirituality, community, health, finances, growth, fun
-Example: [EVENT: Japan trip | 3 | fun]
+For EVENTS (e.g., "I'm planning a trip to Japan in April", "We're moving to Colorado in June"):
+[EVENT: descriptive title | month | life_area | event_type]
+- Title should be SPECIFIC and DESCRIPTIVE (e.g., "Move to Colorado", "Japan trip", "Mom's birthday party", "Sarah's wedding") - NEVER use generic titles like "event" or "thing"
+- Month should be 0-11 (0=January, 11=December)
+- Life area should be one of: family, partner, friendships, career, education, recreation, spirituality, community, health, finances, growth, fun
+- Event type should be one of: trip, celebration, project, personal
+Examples:
+[EVENT: Move to Colorado | 5 | personal | project]
+[EVENT: Japan trip | 3 | fun | trip]
+[EVENT: Mom's 60th birthday | 7 | family | celebration]
+[EVENT: Half marathon | 9 | health | personal]
 
 For SEASON INTENTIONS (e.g., "I want winter to feel restful"):
 [SEASON: season | intention]
@@ -2548,7 +2555,7 @@ If they mention specific events, habits, or plans, acknowledge those and help th
 If they seem stuck, offer a gentle prompt or example.
 If you notice a misalignment between their VLQ values (high importance areas) and their actual plans, gently bring it up.
 
-Remember: You can add things to their plan automatically using markers. When they say "I want to exercise 3 times a week", add [WEEKLY_HABIT: exercise | 3]. When they commit to "a trip to Hawaii in June", add [EVENT: Hawaii trip | 5 | fun]. This makes the conversation feel magical — they talk, and things appear in their plan.
+Remember: You can add things to their plan automatically using markers. When they say "I want to exercise 3 times a week", add [WEEKLY_HABIT: exercise | 3]. When they commit to "a trip to Hawaii in June", add [EVENT: Hawaii trip | 5 | fun | trip]. When they mention "we're moving to Colorado in June", add [EVENT: Move to Colorado | 5 | personal | project]. Always use SPECIFIC, DESCRIPTIVE titles - never generic names like "event" or "thing". This makes the conversation feel magical — they talk, and things appear in their plan.
 
 Keep responses focused and conversational. You're not a productivity app — you're helping them live with more intention.`;
       };
@@ -2743,21 +2750,25 @@ Keep responses focused and conversational. You're not a productivity app — you
           }
         }
         
-        // Parse for events: [EVENT: title | month | life_area]
-        const eventMatches = response.matchAll(/\[EVENT:\s*([^|]+)\s*\|\s*(\d+)\s*\|\s*([a-z]+)\]/g);
+        // Parse for events: [EVENT: title | month | life_area | event_type]
+        // event_type is optional for backward compatibility
+        const eventMatches = response.matchAll(/\[EVENT:\s*([^|]+)\s*\|\s*(\d+)\s*\|\s*([a-z]+)(?:\s*\|\s*([a-z]+))?\]/g);
         for (const match of eventMatches) {
           const title = match[1].trim();
           const month = parseInt(match[2]);
           const lifeArea = match[3].trim();
+          const eventType = match[4]?.trim() || 'personal';
+          const validTypes = ['trip', 'celebration', 'project', 'personal'];
           if (title && month >= 0 && month <= 11) {
             setEvents(prev => {
               // Don't add duplicates (by title)
               if (prev.some(e => e.title.toLowerCase() === title.toLowerCase())) return prev;
-              console.log('Event added by Claude:', title, 'in month', month);
+              console.log('Event added by Claude:', title, 'in month', month, 'type:', eventType);
               return [...prev, { 
-                id: Date.now(), 
+                id: generateId(), 
                 title, 
                 month, 
+                type: validTypes.includes(eventType) ? eventType : 'personal',
                 lifeArea: VLQ_ORDER.includes(lifeArea) ? lifeArea : 'fun',
                 details: { flights: '', stays: '', activities: '', notes: '' },
                 relatedGoals: [],
