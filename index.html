@@ -1113,6 +1113,15 @@
       const [tendyPoints, setTendyPoints] = useState(0);
       const [tendyStreak, setTendyStreak] = useState(0);
       const [flexPoints, setFlexPoints] = useState(3); // For rerolling tendies
+      const [flexPointsTracking, setFlexPointsTracking] = useState({
+        lastJournalDate: null,
+        lastWeeklyIntentionWeek: null,
+        lastCustomTendyWeek: null,
+        lastMondayBonusWeek: null,
+        last7DayStreakDate: null,
+        lastMonthlyReviewMonth: null,
+        completedGoalIds: []
+      });
       const [weeklyCustomTendy, setWeeklyCustomTendy] = useState(null); // { text, status: 'pending'|'approved'|'rejected', weekOf, submittedAt }
       
       const [messages, setMessages] = useState([]);
@@ -1178,6 +1187,7 @@
             if (data.tendyPoints) setTendyPoints(data.tendyPoints);
             if (data.tendyStreak) setTendyStreak(data.tendyStreak);
             if (data.flexPoints !== undefined) setFlexPoints(data.flexPoints);
+            if (data.flexPointsTracking) setFlexPointsTracking(data.flexPointsTracking);
             if (data.weeklyCustomTendy) setWeeklyCustomTendy(data.weeklyCustomTendy);
             if (data.revealed) setRevealed(data.revealed);
             if (data.phase) setPhase(data.phase);
@@ -1220,6 +1230,7 @@
               tendyPoints,
               tendyStreak,
               flexPoints,
+              flexPointsTracking,
               weeklyCustomTendy,
               revealed,
               phase,
@@ -1230,14 +1241,81 @@
             console.error('Error saving user data:', error);
           }
         }, 1000);
-      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, weeklyCustomTendy, revealed, phase]);
+      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase]);
+
+      // Flex Points Awarding System
+      useEffect(() => {
+        if (!user || !dataLoaded) return;
+        
+        const today = new Date().toISOString().split('T')[0];
+        const now = new Date();
+        const currentWeek = `${now.getFullYear()}-W${Math.ceil(((now - new Date(now.getFullYear(), 0, 1)) / 86400000 + new Date(now.getFullYear(), 0, 1).getDay() + 1) / 7)}`;
+        const currentMonth = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}`;
+        
+        let pointsToAward = 0;
+        let newTracking = {...flexPointsTracking};
+        
+        // 1. Monday bonus (1 point per week)
+        const isMonday = now.getDay() === 1;
+        if (isMonday && newTracking.lastMondayBonusWeek !== currentWeek) {
+          pointsToAward += 1;
+          newTracking.lastMondayBonusWeek = currentWeek;
+        }
+        
+        // 2. Journal entry (0.5 points per day)
+        if (journalEntries[today] && newTracking.lastJournalDate !== today) {
+          pointsToAward += 0.5;
+          newTracking.lastJournalDate = today;
+        }
+        
+        // 3. Weekly intention set (0.5 points per week)
+        const hasWeeklyIntention = weeklyHabits && weeklyHabits.length > 0;
+        if (hasWeeklyIntention && newTracking.lastWeeklyIntentionWeek !== currentWeek) {
+          pointsToAward += 0.5;
+          newTracking.lastWeeklyIntentionWeek = currentWeek;
+        }
+        
+        // 4. Custom tendy submitted (0.5 points per week)
+        if (weeklyCustomTendy && weeklyCustomTendy.weekOf === currentWeek && 
+            newTracking.lastCustomTendyWeek !== currentWeek) {
+          pointsToAward += 0.5;
+          newTracking.lastCustomTendyWeek = currentWeek;
+        }
+        
+        // 5. 7-day check-in streak (1 point)
+        const last7Days = Array.from({length: 7}, (_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() - i);
+          return d.toISOString().split('T')[0];
+        });
+        const has7DayStreak = last7Days.every(date => journalEntries[date]);
+        if (has7DayStreak && newTracking.last7DayStreakDate !== today) {
+          pointsToAward += 1;
+          newTracking.last7DayStreakDate = today;
+        }
+        
+        // 6. Goal completion (0.5 points per goal)
+        const completedGoals = goals.filter(g => g.completed);
+        completedGoals.forEach(goal => {
+          if (!newTracking.completedGoalIds.includes(goal.id)) {
+            pointsToAward += 0.5;
+            newTracking.completedGoalIds.push(goal.id);
+          }
+        });
+        
+        // Award points if any were earned
+        if (pointsToAward > 0) {
+          setFlexPoints(flexPoints + pointsToAward);
+          setFlexPointsTracking(newTracking);
+        }
+      }, [user, dataLoaded, journalEntries, weeklyHabits, weeklyCustomTendy, goals, flexPoints, flexPointsTracking]);
 
       // Auto-save when data changes
       useEffect(() => {
         if (user && dataLoaded) {
           saveUserData();
         }
-      }, [vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, weeklyCustomTendy, revealed, phase, user, dataLoaded]);
+      }, [vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, user, dataLoaded]);
 
       // Logout function
       const handleLogout = async () => {
