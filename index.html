@@ -2837,8 +2837,6 @@ I'm here to help with any planning.`
       onSwitchMode, 
       onBack 
     }) {
-      const [activeTab, setActiveTab] = useState('daily'); // 'daily', 'monthly', 'yearly'
-      
       const journalStyles = {
         container: {
           minHeight: '100vh',
@@ -2895,28 +2893,6 @@ I'm here to help with any planning.`
           alignItems: 'center',
           gap: '0.5rem',
         },
-        tabs: {
-          display: 'flex',
-          gap: '0.5rem',
-          padding: '1rem 2rem',
-          backgroundColor: 'var(--bg-card)',
-          borderBottom: '1px solid var(--border)',
-        },
-        tab: {
-          padding: '0.5rem 1rem',
-          backgroundColor: 'transparent',
-          border: 'none',
-          borderBottom: '2px solid transparent',
-          color: 'var(--text-muted)',
-          fontSize: '0.9rem',
-          cursor: 'pointer',
-          transition: 'all 0.2s',
-        },
-        tabActive: {
-          borderBottomColor: 'var(--accent)',
-          color: 'var(--text)',
-          fontWeight: 500,
-        },
         content: {
           flex: 1,
           padding: '2rem',
@@ -2933,7 +2909,7 @@ I'm here to help with any planning.`
               <button style={journalStyles.backButton} onClick={onBack} title="Back">
                 ←
               </button>
-              <h2 style={journalStyles.title}>Journal</h2>
+              <h2 style={journalStyles.title}>Daily Journal</h2>
             </div>
             <div style={{display: 'flex', gap: '0.75rem', alignItems: 'center'}}>
               <div style={journalStyles.flexPointsBadge}>
@@ -2946,28 +2922,7 @@ I'm here to help with any planning.`
             </div>
           </div>
 
-          <div style={journalStyles.tabs}>
-            <button 
-              style={{...journalStyles.tab, ...(activeTab === 'daily' ? journalStyles.tabActive : {})}}
-              onClick={() => setActiveTab('daily')}
-            >
-              Daily
-            </button>
-            <button 
-              style={{...journalStyles.tab, ...(activeTab === 'monthly' ? journalStyles.tabActive : {})}}
-              onClick={() => setActiveTab('monthly')}
-            >
-              Monthly
-            </button>
-            <button 
-              style={{...journalStyles.tab, ...(activeTab === 'yearly' ? journalStyles.tabActive : {})}}
-              onClick={() => setActiveTab('yearly')}
-            >
-              Yearly
-            </button>
-          </div>
-
-          {activeTab === 'daily' && (
+          <div style={journalStyles.content}>
             <DailyJournalTab 
               yearTheme={yearTheme}
               vlqScores={vlqScores}
@@ -2976,25 +2931,7 @@ I'm here to help with any planning.`
               todaysTendies={todaysTendies}
               tendyHistory={tendyHistory}
             />
-          )}
-
-          {activeTab === 'monthly' && (
-            <MonthlyReviewTab 
-              monthlyReviews={monthlyReviews}
-              setMonthlyReviews={setMonthlyReviews}
-              flexPoints={flexPoints}
-              setFlexPoints={setFlexPoints}
-              flexPointsTracking={flexPointsTracking}
-              setFlexPointsTracking={setFlexPointsTracking}
-            />
-          )}
-
-          {activeTab === 'yearly' && (
-            <YearlyReflectionTab 
-              yearlyReflections={yearlyReflections}
-              setYearlyReflections={setYearlyReflections}
-            />
-          )}
+          </div>
         </div>
       );
     }
