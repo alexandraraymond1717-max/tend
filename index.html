@@ -3879,8 +3879,27 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           <div style={tendyStyles.content}>
             <h1 style={tendyStyles.title}>Choose Your Tendy</h1>
             <p style={tendyStyles.subtitle}>
-              Pick a difficulty level to reveal your task for today.{todaysTendies.length > 0 && ` All three focus on ${todaysTendies[0]?.domainName.toLowerCase()}.`}
+              Pick a difficulty level to reveal your task for today.
             </p>
+
+            {/* Today's Life Area */}
+            {todaysTendies.length > 0 && (
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.5rem',
+                padding: '1rem',
+                backgroundColor: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: '12px',
+                marginBottom: '1.5rem',
+                fontSize: '1rem',
+              }}>
+                <span style={{fontSize: '1.5rem'}}>{todaysTendies[0].domainIcon}</span>
+                <span style={{fontWeight: 500, color: 'var(--text)'}}>Today's Focus: {todaysTendies[0].domainName}</span>
+              </div>
+            )}
 
             {todaysTendies.map(tendy => {
               const diffLabel = getDifficultyLabel(tendy.difficulty);
@@ -3894,11 +3913,10 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   }}
                   onClick={() => selectTendy(tendy.id)}
                 >
-                  <div style={tendyStyles.tendyHeader}>
-                    <div style={tendyStyles.tendyDomain}>
-                      <span>{tendy.domainIcon}</span>
-                      <span>{tendy.domainName}</span>
-                    </div>
+                  <div style={{
+                    ...tendyStyles.tendyHeader,
+                    justifyContent: 'center',
+                  }}>
                     <span style={{
                       ...tendyStyles.difficultyBadge,
                       backgroundColor: diffLabel.color + '20',
