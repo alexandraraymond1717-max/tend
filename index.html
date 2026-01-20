@@ -1126,6 +1126,16 @@
       });
       const [weeklyCustomTendy, setWeeklyCustomTendy] = useState(null); // { text, status: 'pending'|'approved'|'rejected', weekOf, submittedAt }
       
+      // Knowledge & Intelligence Layer
+      const [savedConversations, setSavedConversations] = useState({}); // Archive of important conversations
+      const [currentConversationType, setCurrentConversationType] = useState('general'); // 'general' | 'monthly_review' | 'yearly_review' | 'onboarding'
+      const [userProfile, setUserProfile] = useState({
+        name: '',
+        occupation: '',
+        location: '',
+        lifeStage: ''
+      });
+      
       const [messages, setMessages] = useState([]);
       const [inputValue, setInputValue] = useState('');
       const [isTyping, setIsTyping] = useState(false);
@@ -1193,6 +1203,9 @@
             if (data.flexPoints !== undefined) setFlexPoints(data.flexPoints);
             if (data.flexPointsTracking) setFlexPointsTracking(data.flexPointsTracking);
             if (data.weeklyCustomTendy) setWeeklyCustomTendy(data.weeklyCustomTendy);
+            if (data.savedConversations) setSavedConversations(data.savedConversations);
+            if (data.userProfile) setUserProfile(data.userProfile);
+            // Trends are calculated, not loaded
             if (data.revealed) setRevealed(data.revealed);
             if (data.phase) setPhase(data.phase);
             // If VLQ was completed, skip to step 2 (after summary) and reveal content
@@ -1208,6 +1221,153 @@
         }
       };
 
+      // Extract insights from a conversation
+      const extractInsights = (messages) => {
+        const allText = messages.map(m => m.content).join(' ').toLowerCase();
+        
+        // Extract themes (simple keyword matching for now)
+        const themeKeywords = {
+          'work-life balance': /work.{0,20}life|balance|burnout|overwhelm/,
+          'career': /career|job|work|profession|promotion/,
+          'health': /health|fitness|exercise|wellness|sleep/,
+          'relationships': /relationship|family|friend|partner|social/,
+          'finances': /money|financial|budget|savings|income/,
+          'personal growth': /learn|growth|development|skill|course/,
+        };
+        
+        const themes = [];
+        Object.entries(themeKeywords).forEach(([theme, regex]) => {
+          if (regex.test(allText)) themes.push(theme);
+        });
+        
+        // Simple mood detection
+        const posit iveWords = /great|good|happy|excited|wonderful|amazing|love|proud/;
+        const challengeWords = /difficult|hard|struggle|stress|worry|anxious|overwhelm/;
+        const positiveCount = (allText.match(positiveWords) || []).length;
+        const challengeCount = (allText.match(challengeWords) || []).length;
+        
+        let mood = 'neutral';
+        if (positiveCount > challengeCount + 2) mood = 'positive';
+        else if (challengeCount > positiveCount + 2) mood = 'challenging';
+        
+        return {
+          themes,
+          mood,
+          extractedAt: new Date().toISOString()
+        };
+      };
+
+      // Save current conversation if it's important
+      const saveCurrentConversation = () => {
+        if (messages.length === 0) return;
+        
+        // Only save certain types of conversations
+        const typesToSave = ['monthly_review', 'yearly_review', 'onboarding'];
+        if (!typesToSave.includes(currentConversationType)) {
+          // For general conversations, just extract insights but don't save full conversation
+          const insights = extractInsights(messages);
+          console.log('Extracted insights from general conversation:', insights);
+          return;
+        }
+        
+        const conversationId = `${currentConversationType}_${Date.now()}`;
+        const insights = extractInsights(messages);
+        
+        setSavedConversations(prev => ({
+          ...prev,
+          [conversationId]: {
+            type: currentConversationType,
+            messages: [...messages],
+            startedAt: messages[0]?.timestamp || new Date().toISOString(),
+            lastMessageAt: new Date().toISOString(),
+            insights
+          }
+        }));
+        
+        console.log(`Saved ${currentConversationType} conversation:`, conversationId);
+      };
+
+      // Calculate user trends from existing data
+      const calculateTrends = () => {
+        const now = new Date();
+        const today = now.toISOString().split('T')[0];
+        
+        // Daily Tends Analysis
+        const dailyTendsStats = {};
+        VLQ_ORDER.forEach(area => {
+          const areaHistory = tendyHistory.filter(t => t.lifeArea === area);
+          const completed = areaHistory.filter(t => t.completed).length;
+          const total = areaHistory.length;
+          dailyTendsStats[area] = {
+            completed,
+            skipped: total - completed,
+            completionRate: total > 0 ? Math.round((completed / total) * 100) : 0
+          };
+        });
+        
+        // Calculate current streak
+        let currentStreak = 0;
+        const sortedHistory = [...tendyHistory].sort((a, b) => new Date(b.date) - new Date(a.date));
+        for (let i = 0; i < sortedHistory.length; i++) {
+          if (sortedHistory[i].completed) {
+            currentStreak++;
+          } else {
+            break;
+          }
+        }
+        
+        // Journaling stats
+        const journalEntryDates = Object.keys(journalEntries);
+        const thisMonthEntries = journalEntryDates.filter(date => date.startsWith(today.substring(0, 7))).length;
+        const thisYearEntries = journalEntryDates.filter(date => date.startsWith(today.substring(0, 4))).length;
+        
+        // Calculate journal streak
+        let journalStreak = 0;
+        let checkDate = new Date(today);
+        while (journalEntries[checkDate.toISOString().split('T')[0]]) {
+          journalStreak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        }
+        
+        // Goals stats
+        const completedGoals = goals.filter(g => g.completed).length;
+        const totalGoals = goals.length;
+        
+        // Goals by life area
+        const goalsByArea = {};
+        VLQ_ORDER.forEach(area => {
+          const areaGoals = goals.filter(g => g.lifeArea === area);
+          if (areaGoals.length > 0) {
+            goalsByArea[area] = {
+              created: areaGoals.length,
+              completed: areaGoals.filter(g => g.completed).length
+            };
+          }
+        });
+        
+        return {
+          dailyTends: {
+            byLifeArea: dailyTendsStats,
+            currentStreak,
+            totalCompleted: tendyHistory.filter(t => t.completed).length
+          },
+          journaling: {
+            entriesThisMonth: thisMonthEntries,
+            entriesThisYear: thisYearEntries,
+            currentStreak: journalStreak,
+            totalEntries: journalEntryDates.length
+          },
+          goals: {
+            totalCreated: totalGoals,
+            completed: completedGoals,
+            inProgress: totalGoals - completedGoals,
+            completionRate: totalGoals > 0 ? Math.round((completedGoals / totalGoals) * 100) : 0,
+            byLifeArea: goalsByArea
+          },
+          calculatedAt: now.toISOString()
+        };
+      };
+
       // Save user data to Firestore (debounced)
       const saveTimeoutRef = useRef(null);
       const saveUserData = useCallback(() => {
@@ -1221,6 +1381,9 @@
         // Debounce: save after 1 second of no changes
         saveTimeoutRef.current = setTimeout(async () => {
           try {
+            // Calculate trends before saving
+            const trends = calculateTrends();
+            
             await db.collection('users').doc(user.uid).set({
               vlqScores,
               vlqCompleted,
@@ -1243,14 +1406,18 @@
               weeklyCustomTendy,
               revealed,
               phase,
+              // NEW: Knowledge & Intelligence
+              savedConversations,
+              userProfile,
+              trends,
               updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
             }, { merge: true });
-            console.log('Data saved');
+            console.log('Data saved (including trends & conversations)');
           } catch (error) {
             console.error('Error saving user data:', error);
           }
         }, 1000);
-      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase]);
+      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, savedConversations, userProfile]);
 
       // Flex Points Awarding System
       useEffect(() => {
@@ -1363,6 +1530,19 @@
           console.error('Error signing out:', error);
         }
       };
+
+      // Set conversation type based on phase
+      useEffect(() => {
+        if (phase === PHASES.EXPLORE || phase === PHASES.GROUND) {
+          setCurrentConversationType('onboarding');
+        } else if (phase === PHASES.REVEAL && !vlqCompleted) {
+          setCurrentConversationType('onboarding');
+        } else if (currentConversationType === 'onboarding' && vlqCompleted) {
+          // Save onboarding conversation once VLQ is complete
+          saveCurrentConversation();
+          setCurrentConversationType('general');
+        }
+      }, [phase, vlqCompleted]);
 
       // Loading screen - just the icon
       const loadingScreen = (
@@ -2162,7 +2342,11 @@ Keep responses focused and conversational. You're not a productivity app — you
         if (!inputValue.trim()) return;
         
         const userMessage = inputValue.trim();
-        setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+        setMessages(prev => [...prev, { 
+          role: 'user', 
+          content: userMessage,
+          timestamp: new Date().toISOString()
+        }]);
         setInputValue('');
         setIsTyping(true);
         setExchangeCount(prev => prev + 1);
@@ -2332,7 +2516,11 @@ Keep responses focused and conversational. You're not a productivity app — you
           pendingWaitingForSatisfaction,
           pendingIsLastResponse
         });
-        setMessages(prev => [...prev, { role: 'assistant', content: response }]);
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: response,
+          timestamp: new Date().toISOString()
+        }]);
         setIsTyping(false);
         
         // Complete life areas after the summary response
@@ -3025,14 +3213,22 @@ Let's reflect on your month together. What stood out to you most? What are you p
       };
 
       const startMonthlyReview = () => {
+        // Save any previous conversation before starting new one
+        saveCurrentConversation();
+        
         const summary = generateMonthlySummary();
         setMessages([{
           role: 'assistant',
           content: summary
         }]);
+        setCurrentConversationType('monthly_review');
         setMonthlyReviews(prev => ({
           ...prev,
-          [currentMonth]: { completed: true, completedAt: new Date().toISOString() }
+          [currentMonth]: { 
+            completed: true, 
+            completedAt: new Date().toISOString(),
+            conversationId: `monthly_${currentMonth}_${Date.now()}`
+          }
         }));
         // Award flex points
         setFlexPoints(flexPoints + 1.5);
@@ -3099,14 +3295,22 @@ This has been your year of growth and intention. What are you most proud of? Wha
       };
 
       const startYearlyReview = () => {
+        // Save any previous conversation before starting new one
+        saveCurrentConversation();
+        
         const summary = generateYearlySummary();
         setMessages([{
           role: 'assistant',
           content: summary
         }]);
+        setCurrentConversationType('yearly_review');
         setYearlyReflections(prev => ({
           ...prev,
-          [currentYear]: { completed: true, completedAt: new Date().toISOString() }
+          [currentYear]: { 
+            completed: true, 
+            completedAt: new Date().toISOString(),
+            conversationId: `yearly_${currentYear}_${Date.now()}`
+          }
         }));
         // Award flex points (2 for yearly)
         setFlexPoints(flexPoints + 2);
