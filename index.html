@@ -1112,6 +1112,7 @@
       const [tendyHistory, setTendyHistory] = useState([]); // Completed tendies
       const [tendyPoints, setTendyPoints] = useState(0);
       const [tendyStreak, setTendyStreak] = useState(0);
+      const [flexPoints, setFlexPoints] = useState(3); // For rerolling tendies
       const [weeklyCustomTendy, setWeeklyCustomTendy] = useState(null); // { text, status: 'pending'|'approved'|'rejected', weekOf, submittedAt }
       
       const [messages, setMessages] = useState([]);
@@ -1176,6 +1177,7 @@
             if (data.tendyHistory) setTendyHistory(data.tendyHistory);
             if (data.tendyPoints) setTendyPoints(data.tendyPoints);
             if (data.tendyStreak) setTendyStreak(data.tendyStreak);
+            if (data.flexPoints !== undefined) setFlexPoints(data.flexPoints);
             if (data.weeklyCustomTendy) setWeeklyCustomTendy(data.weeklyCustomTendy);
             if (data.revealed) setRevealed(data.revealed);
             if (data.phase) setPhase(data.phase);
@@ -1217,6 +1219,7 @@
               tendyHistory,
               tendyPoints,
               tendyStreak,
+              flexPoints,
               weeklyCustomTendy,
               revealed,
               phase,
@@ -1227,7 +1230,7 @@
             console.error('Error saving user data:', error);
           }
         }, 1000);
-      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, weeklyCustomTendy, revealed, phase]);
+      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, weeklyCustomTendy, revealed, phase]);
 
       // Auto-save when data changes
       useEffect(() => {
@@ -2414,6 +2417,8 @@ I'm here to help with any planning.`
             setTendyPoints={setTendyPoints}
             tendyStreak={tendyStreak}
             setTendyStreak={setTendyStreak}
+            flexPoints={flexPoints}
+            setFlexPoints={setFlexPoints}
             weeklyCustomTendy={weeklyCustomTendy}
             setWeeklyCustomTendy={setWeeklyCustomTendy}
             apiKey={apiKey}
@@ -3250,6 +3255,8 @@ I'm here to help with any planning.`
       setTendyPoints,
       tendyStreak,
       setTendyStreak,
+      flexPoints,
+      setFlexPoints,
       weeklyCustomTendy,
       setWeeklyCustomTendy,
       apiKey,
@@ -3308,6 +3315,53 @@ I'm here to help with any planning.`
           selected: t.id === tendyId
         })));
         // Allow both daily and custom tendy to be selected
+      };
+
+      const rerollTendy = () => {
+        if (flexPoints < 1 || !selectedTendy) return;
+        
+        // Deduct flex point
+        setFlexPoints(flexPoints - 1);
+        
+        // Get recently used templates to avoid repetition
+        const recentTemplates = tendyHistory
+          .filter(t => {
+            const daysDiff = (new Date(today) - new Date(t.date)) / (1000 * 60 * 60 * 24);
+            return daysDiff < 30;
+          })
+          .map(t => t.templateText || t.text);
+        
+        // Add currently selected template to avoid rerolling to the same one
+        recentTemplates.push(selectedTendy.text);
+        
+        // Find new template for same domain and difficulty
+        const domain = selectedTendy.domain;
+        const difficulty = selectedTendy.difficulty;
+        
+        const templates = TENDY_TEMPLATES[domain].filter(t => 
+          t.difficulty === difficulty && !recentTemplates.includes(t.text)
+        );
+        
+        // Fallback to any template if no unused ones
+        const fallbackTemplates = TENDY_TEMPLATES[domain].filter(t => 
+          t.difficulty === difficulty && t.text !== selectedTendy.text
+        );
+        const availableTemplates = templates.length > 0 ? templates : fallbackTemplates;
+        
+        if (availableTemplates.length > 0) {
+          const newTemplate = availableTemplates[Math.floor(Math.random() * availableTemplates.length)];
+          const newTendy = {
+            ...selectedTendy,
+            text: newTemplate.text,
+            duration: newTemplate.duration,
+            templateText: newTemplate.text,
+          };
+          
+          // Replace the selected tendy
+          setTodaysTendies(todaysTendies.map(t => 
+            t.id === selectedTendy.id ? newTendy : t
+          ));
+        }
       };
 
       const completeTendy = () => {
@@ -3736,6 +3790,9 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               </button>
               <div style={tendyStyles.stats}>
                 <div style={tendyStyles.stat}>
+                  <span>💎</span> {flexPoints} flex
+                </div>
+                <div style={tendyStyles.stat}>
                   <span>🌱</span> {tendyPoints} pts
                 </div>
               </div>
@@ -3777,6 +3834,32 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Reroll button */}
+                  {flexPoints > 0 && !selectedTendy.completed && (
+                    <button 
+                      onClick={rerollTendy}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        backgroundColor: 'transparent',
+                        border: '1px solid var(--border-dark)',
+                        borderRadius: '10px',
+                        color: 'var(--text-muted)',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        marginBottom: '0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      <span>💎</span>
+                      <span>Don't like this? Spend 1 flex point to try a different task</span>
+                    </button>
+                  )}
+                  
                   <button style={tendyStyles.completeButton} onClick={() => {
                     // Complete regular tendy
                     const completedTendy = {
