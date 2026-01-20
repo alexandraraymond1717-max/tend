@@ -2232,8 +2232,9 @@ Keep responses focused and conversational. You're not a productivity app — you
           
           // Check for explicit patterns like "my word is X", "I choose X", etc.
           const explicitPatterns = [
-            /(?:my word is|i choose|i'll go with|let's go with|how about)\s+([a-z]+)/i,
-            /^([a-z]{4,12})$/i  // Single word responses
+            /(?:my word|the word|my theme|the theme)(?:\s+for\s+(?:the\s+year|\d{4}))?\s+is\s+([a-z]+)/i,
+            /(?:i choose|i'll go with|let's go with|how about)\s+([a-z]+)/i,
+            /^([a-z]{4,15})$/i  // Single word responses (4-15 chars)
           ];
           
           for (const pattern of explicitPatterns) {
@@ -2241,8 +2242,9 @@ Keep responses focused and conversational. You're not a productivity app — you
             if (match && match[1]) {
               const word = match[1].toLowerCase();
               // Filter out common words
-              if (!['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something', 'okay', 'sure', 'yes', 'great'].includes(word)) {
+              if (!['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something', 'okay', 'sure', 'yes', 'great', 'good', 'nice'].includes(word)) {
                 setYearTheme(word);
+                console.log('Year theme set to:', word);
                 break;
               }
             }
@@ -2257,6 +2259,7 @@ Keep responses focused and conversational. You're not a productivity app — you
             );
             if (potentialTheme && words.length <= 5) {
               setYearTheme(potentialTheme.toLowerCase());
+              console.log('Year theme set to:', potentialTheme.toLowerCase());
             }
           }
         }
