@@ -1195,8 +1195,11 @@
             if (data.weeklyCustomTendy) setWeeklyCustomTendy(data.weeklyCustomTendy);
             if (data.revealed) setRevealed(data.revealed);
             if (data.phase) setPhase(data.phase);
-            // If VLQ was completed, skip to step 2 (after summary)
-            if (data.vlqCompleted) setVlqStep(2);
+            // If VLQ was completed, skip to step 2 (after summary) and reveal content
+            if (data.vlqCompleted) {
+              setVlqStep(2);
+              setRevealed(true);
+            }
           }
           setDataLoaded(true);
         } catch (error) {
