@@ -1108,6 +1108,7 @@
       const [yearTheme, setYearTheme] = useState('');
       const [weeklyHabits, setWeeklyHabits] = useState([]);
       const [dailyHabits, setDailyHabits] = useState([]);
+      const [habitCompletions, setHabitCompletions] = useState({}); // { '2026-01-20': { daily: [id1, id2], weekly: [id3] } }
       
       // Tendy system state
       const [todaysTendies, setTodaysTendies] = useState([]);
@@ -1200,6 +1201,7 @@
             if (data.seasonIntentions) setSeasonIntentions(data.seasonIntentions);
             if (data.weeklyHabits) setWeeklyHabits(data.weeklyHabits);
             if (data.dailyHabits) setDailyHabits(data.dailyHabits);
+            if (data.habitCompletions) setHabitCompletions(data.habitCompletions);
             if (data.todaysTendies) setTodaysTendies(data.todaysTendies);
             if (data.tendyHistory) setTendyHistory(data.tendyHistory);
             if (data.tendyPoints) setTendyPoints(data.tendyPoints);
@@ -1561,6 +1563,7 @@
               seasonIntentions,
               weeklyHabits,
               dailyHabits,
+              habitCompletions,
               todaysTendies,
               tendyHistory,
               tendyPoints,
@@ -1587,7 +1590,7 @@
             console.error('Error saving user data:', error);
           }
         }, 1000);
-      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, savedConversations, userProfile, messages, exchangeCount, currentConversationType]);
+      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, savedConversations, userProfile, messages, exchangeCount, currentConversationType]);
 
       // Flex Points Awarding System
       useEffect(() => {
@@ -1664,7 +1667,7 @@
         if (user && dataLoaded) {
           saveUserData();
         }
-      }, [vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, user, dataLoaded, messages, exchangeCount, currentConversationType]);
+      }, [vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, user, dataLoaded, messages, exchangeCount, currentConversationType]);
 
       // Logout function
       const handleLogout = async () => {
@@ -3305,6 +3308,8 @@ I'm here to help with any planning.`
                   onAddEvent={() => setShowEventModal(true)}
                   weeklyHabits={weeklyHabits}
                   dailyHabits={dailyHabits}
+                  habitCompletions={habitCompletions}
+                  setHabitCompletions={setHabitCompletions}
                 />
               )}
               {centerView === CENTER_VIEWS.WEEKLY && (
@@ -4472,7 +4477,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
     }
 
     // ============ MONTHLY VIEW ============
-    function MonthlyView({ events, selectedMonth, setSelectedMonth, revealed, onAddEvent, weeklyHabits, dailyHabits }) {
+    function MonthlyView({ events, selectedMonth, setSelectedMonth, revealed, onAddEvent, weeklyHabits, dailyHabits, habitCompletions, setHabitCompletions }) {
       const year = 2026;
       const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
       const firstDayOfMonth = new Date(year, selectedMonth, 1).getDay();
@@ -4492,11 +4497,65 @@ This has been your year of growth and intention. What are you most proud of? Wha
       
       // Count total habits for display
       const totalHabits = (weeklyHabits?.length || 0) + (dailyHabits?.length || 0);
+      
+      // Get date string for a given day
+      const getDateKey = (day) => {
+        const month = (selectedMonth + 1).toString().padStart(2, '0');
+        const dayStr = day.toString().padStart(2, '0');
+        return `${year}-${month}-${dayStr}`;
+      };
+      
+      // Check if a habit is completed for a given date
+      const isHabitCompleted = (dateKey, habitId, type) => {
+        const dayData = habitCompletions?.[dateKey];
+        if (!dayData) return false;
+        return type === 'daily' 
+          ? dayData.daily?.includes(habitId)
+          : dayData.weekly?.includes(habitId);
+      };
+      
+      // Toggle habit completion
+      const toggleHabit = (dateKey, habitId, type) => {
+        setHabitCompletions(prev => {
+          const dayData = prev[dateKey] || { daily: [], weekly: [] };
+          const list = type === 'daily' ? [...(dayData.daily || [])] : [...(dayData.weekly || [])];
+          
+          if (list.includes(habitId)) {
+            // Remove it
+            const newList = list.filter(id => id !== habitId);
+            return {
+              ...prev,
+              [dateKey]: {
+                ...dayData,
+                [type]: newList
+              }
+            };
+          } else {
+            // Add it
+            return {
+              ...prev,
+              [dateKey]: {
+                ...dayData,
+                [type]: [...list, habitId]
+              }
+            };
+          }
+        });
+      };
+      
+      // Count completions for a day
+      const getCompletionCount = (day) => {
+        const dateKey = getDateKey(day);
+        const dayData = habitCompletions?.[dateKey];
+        if (!dayData) return 0;
+        return (dayData.daily?.length || 0) + (dayData.weekly?.length || 0);
+      };
 
       // Day Detail Modal
       const DayDetail = ({ day, onClose }) => {
         const dayName = new Date(year, selectedMonth, day).toLocaleDateString('en-US', { weekday: 'long' });
         const fullDate = new Date(year, selectedMonth, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        const dateKey = getDateKey(day);
         
         return (
           <div style={{
@@ -4564,24 +4623,44 @@ This has been your year of growth and intention. What are you most proud of? Wha
                     letterSpacing: '0.05em',
                     marginBottom: '0.75rem'
                   }}>Daily</h4>
-                  {dailyHabits.map(habit => (
-                    <div key={habit.id} style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.75rem',
-                      padding: '0.6rem 0',
-                      borderBottom: '1px solid var(--border)'
-                    }}>
-                      <div style={{
-                        width: '18px',
-                        height: '18px',
-                        borderRadius: '4px',
-                        border: '2px solid var(--border)',
-                        flexShrink: 0
-                      }}></div>
-                      <span style={{ fontSize: '0.9rem', color: 'var(--text)' }}>{habit.text}</span>
-                    </div>
-                  ))}
+                  {dailyHabits.map(habit => {
+                    const completed = isHabitCompleted(dateKey, habit.id, 'daily');
+                    return (
+                      <div 
+                        key={habit.id} 
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.75rem',
+                          padding: '0.6rem 0',
+                          borderBottom: '1px solid var(--border)',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => toggleHabit(dateKey, habit.id, 'daily')}
+                      >
+                        <div style={{
+                          width: '20px',
+                          height: '20px',
+                          borderRadius: '4px',
+                          border: completed ? 'none' : '2px solid var(--border)',
+                          backgroundColor: completed ? (habit.color || '#8FD4A0') : 'transparent',
+                          flexShrink: 0,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          transition: 'all 0.2s ease'
+                        }}>
+                          {completed && <span style={{ color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}>✓</span>}
+                        </div>
+                        <span style={{ 
+                          fontSize: '0.9rem', 
+                          color: completed ? 'var(--text-muted)' : 'var(--text)',
+                          textDecoration: completed ? 'line-through' : 'none',
+                          transition: 'all 0.2s ease'
+                        }}>{habit.text}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
               
@@ -4596,33 +4675,53 @@ This has been your year of growth and intention. What are you most proud of? Wha
                     letterSpacing: '0.05em',
                     marginBottom: '0.75rem'
                   }}>Weekly</h4>
-                  {weeklyHabits.map(habit => (
-                    <div key={habit.id} style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      padding: '0.6rem 0',
-                      borderBottom: '1px solid var(--border)'
-                    }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                        <div style={{
-                          width: '18px',
-                          height: '18px',
-                          borderRadius: '4px',
-                          border: '2px solid var(--border)',
-                          flexShrink: 0
-                        }}></div>
-                        <span style={{ fontSize: '0.9rem', color: 'var(--text)' }}>{habit.text}</span>
+                  {weeklyHabits.map(habit => {
+                    const completed = isHabitCompleted(dateKey, habit.id, 'weekly');
+                    return (
+                      <div 
+                        key={habit.id} 
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          padding: '0.6rem 0',
+                          borderBottom: '1px solid var(--border)',
+                          cursor: 'pointer'
+                        }}
+                        onClick={() => toggleHabit(dateKey, habit.id, 'weekly')}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <div style={{
+                            width: '20px',
+                            height: '20px',
+                            borderRadius: '4px',
+                            border: completed ? 'none' : '2px solid var(--border)',
+                            backgroundColor: completed ? (habit.color || '#7EB3E0') : 'transparent',
+                            flexShrink: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            transition: 'all 0.2s ease'
+                          }}>
+                            {completed && <span style={{ color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}>✓</span>}
+                          </div>
+                          <span style={{ 
+                            fontSize: '0.9rem', 
+                            color: completed ? 'var(--text-muted)' : 'var(--text)',
+                            textDecoration: completed ? 'line-through' : 'none',
+                            transition: 'all 0.2s ease'
+                          }}>{habit.text}</span>
+                        </div>
+                        <span style={{
+                          fontSize: '0.75rem',
+                          color: 'var(--text-muted)',
+                          backgroundColor: 'var(--bg-elevated)',
+                          padding: '0.2rem 0.5rem',
+                          borderRadius: '8px'
+                        }}>{habit.frequency}x/wk</span>
                       </div>
-                      <span style={{
-                        fontSize: '0.75rem',
-                        color: 'var(--text-muted)',
-                        backgroundColor: 'var(--bg-elevated)',
-                        padding: '0.2rem 0.5rem',
-                        borderRadius: '8px'
-                      }}>{habit.frequency}x/wk</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
               
@@ -4679,6 +4778,8 @@ This has been your year of growth and intention. What are you most proud of? Wha
                 {Array.from({ length: daysInMonth }, (_, i) => {
                   const day = i + 1;
                   const isToday = selectedMonth === currentMonth && day === today;
+                  const completionCount = getCompletionCount(day);
+                  const hasCompletions = completionCount > 0;
                   return (
                     <div 
                       key={day} 
@@ -4686,12 +4787,13 @@ This has been your year of growth and intention. What are you most proud of? Wha
                         ...styles.calendarDay, 
                         ...(isToday && {...styles.calendarDayToday, backgroundColor: `${seasonColor}70`}),
                         cursor: 'pointer',
-                        position: 'relative'
+                        position: 'relative',
+                        ...(hasCompletions && { backgroundColor: `${seasonColor}20` })
                       }}
                       onClick={() => setSelectedDay(day)}
                     >
                       <span>{day}</span>
-                      {/* Small habit indicator dots */}
+                      {/* Show completion indicator or habit dots */}
                       {totalHabits > 0 && (
                         <div style={{
                           position: 'absolute',
@@ -4699,24 +4801,37 @@ This has been your year of growth and intention. What are you most proud of? Wha
                           left: '50%',
                           transform: 'translateX(-50%)',
                           display: 'flex',
-                          gap: '2px'
+                          gap: '2px',
+                          alignItems: 'center'
                         }}>
-                          {dailyHabits && dailyHabits.slice(0, 2).map((h, idx) => (
-                            <div key={idx} style={{
-                              width: '4px',
-                              height: '4px',
-                              borderRadius: '50%',
-                              backgroundColor: h.color || '#8FD4A0'
-                            }}></div>
-                          ))}
-                          {weeklyHabits && weeklyHabits.slice(0, 2).map((h, idx) => (
-                            <div key={idx} style={{
-                              width: '4px',
-                              height: '4px',
-                              borderRadius: '50%',
-                              backgroundColor: h.color || '#7EB3E0'
-                            }}></div>
-                          ))}
+                          {hasCompletions ? (
+                            <div style={{
+                              fontSize: '0.6rem',
+                              color: seasonColor,
+                              fontWeight: 600
+                            }}>{completionCount}/{totalHabits}</div>
+                          ) : (
+                            <>
+                              {dailyHabits && dailyHabits.slice(0, 2).map((h, idx) => (
+                                <div key={idx} style={{
+                                  width: '4px',
+                                  height: '4px',
+                                  borderRadius: '50%',
+                                  backgroundColor: h.color || '#8FD4A0',
+                                  opacity: 0.4
+                                }}></div>
+                              ))}
+                              {weeklyHabits && weeklyHabits.slice(0, 2).map((h, idx) => (
+                                <div key={idx} style={{
+                                  width: '4px',
+                                  height: '4px',
+                                  borderRadius: '50%',
+                                  backgroundColor: h.color || '#7EB3E0',
+                                  opacity: 0.4
+                                }}></div>
+                              ))}
+                            </>
+                          )}
                         </div>
                       )}
                     </div>
