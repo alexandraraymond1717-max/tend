@@ -1100,6 +1100,8 @@
       const [goals, setGoals] = useState([]);
       const [notes, setNotes] = useState(''); // Planning notes in sidebar
       const [journalEntries, setJournalEntries] = useState({}); // Daily journal entries by date
+      const [monthlyReviews, setMonthlyReviews] = useState({}); // Monthly reviews by month (YYYY-MM)
+      const [yearlyReflections, setYearlyReflections] = useState({}); // Yearly reflections by year
       const [seasonIntentions, setSeasonIntentions] = useState({
         winter: '', spring: '', summer: '', fall: ''
       });
@@ -1179,6 +1181,8 @@
             if (data.goals) setGoals(data.goals);
             if (data.notes) setNotes(data.notes);
             if (data.journalEntries) setJournalEntries(data.journalEntries);
+            if (data.monthlyReviews) setMonthlyReviews(data.monthlyReviews);
+            if (data.yearlyReflections) setYearlyReflections(data.yearlyReflections);
             if (data.seasonIntentions) setSeasonIntentions(data.seasonIntentions);
             if (data.weeklyHabits) setWeeklyHabits(data.weeklyHabits);
             if (data.dailyHabits) setDailyHabits(data.dailyHabits);
@@ -1222,6 +1226,8 @@
               goals,
               notes,
               journalEntries,
+              monthlyReviews,
+              yearlyReflections,
               seasonIntentions,
               weeklyHabits,
               dailyHabits,
@@ -1241,7 +1247,7 @@
             console.error('Error saving user data:', error);
           }
         }, 1000);
-      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase]);
+      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase]);
 
       // Flex Points Awarding System
       useEffect(() => {
@@ -1308,14 +1314,14 @@
           setFlexPoints(flexPoints + pointsToAward);
           setFlexPointsTracking(newTracking);
         }
-      }, [user, dataLoaded, journalEntries, weeklyHabits, weeklyCustomTendy, goals, flexPoints, flexPointsTracking]);
+      }, [user, dataLoaded, journalEntries, monthlyReviews, weeklyHabits, weeklyCustomTendy, goals, flexPoints, flexPointsTracking]);
 
       // Auto-save when data changes
       useEffect(() => {
         if (user && dataLoaded) {
           saveUserData();
         }
-      }, [vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, user, dataLoaded]);
+      }, [vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, user, dataLoaded]);
 
       // Logout function
       const handleLogout = async () => {
