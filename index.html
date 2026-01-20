@@ -3303,6 +3303,8 @@ I'm here to help with any planning.`
                   setSelectedMonth={setSelectedMonth}
                   revealed={revealed}
                   onAddEvent={() => setShowEventModal(true)}
+                  weeklyHabits={weeklyHabits}
+                  dailyHabits={dailyHabits}
                 />
               )}
               {centerView === CENTER_VIEWS.WEEKLY && (
@@ -4470,13 +4472,14 @@ This has been your year of growth and intention. What are you most proud of? Wha
     }
 
     // ============ MONTHLY VIEW ============
-    function MonthlyView({ events, selectedMonth, setSelectedMonth, revealed, onAddEvent }) {
+    function MonthlyView({ events, selectedMonth, setSelectedMonth, revealed, onAddEvent, weeklyHabits, dailyHabits }) {
       const year = 2026;
       const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
       const firstDayOfMonth = new Date(year, selectedMonth, 1).getDay();
       const monthEvents = events.filter(e => e.month === selectedMonth);
       const currentMonth = new Date().getMonth();
       const today = new Date().getDate();
+      const [selectedDay, setSelectedDay] = useState(null);
 
       const getSeasonColor = (monthIdx) => {
         if ([11, 0, 1].includes(monthIdx)) return '#7EB3E0';
@@ -4486,6 +4489,156 @@ This has been your year of growth and intention. What are you most proud of? Wha
       };
 
       const seasonColor = getSeasonColor(selectedMonth);
+      
+      // Count total habits for display
+      const totalHabits = (weeklyHabits?.length || 0) + (dailyHabits?.length || 0);
+
+      // Day Detail Modal
+      const DayDetail = ({ day, onClose }) => {
+        const dayName = new Date(year, selectedMonth, day).toLocaleDateString('en-US', { weekday: 'long' });
+        const fullDate = new Date(year, selectedMonth, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+        
+        return (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '1rem'
+          }} onClick={onClose}>
+            <div style={{
+              backgroundColor: 'var(--bg-card)',
+              borderRadius: '16px',
+              padding: '1.5rem',
+              maxWidth: '400px',
+              width: '100%',
+              maxHeight: '80vh',
+              overflow: 'auto',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.15)'
+            }} onClick={e => e.stopPropagation()}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'flex-start',
+                marginBottom: '1.5rem'
+              }}>
+                <div>
+                  <h3 style={{
+                    fontFamily: "'Fraunces', serif",
+                    fontSize: '1.25rem',
+                    color: 'var(--text)',
+                    marginBottom: '0.25rem'
+                  }}>{dayName}</h3>
+                  <p style={{
+                    fontSize: '0.85rem',
+                    color: 'var(--text-muted)'
+                  }}>{fullDate}</p>
+                </div>
+                <button 
+                  onClick={onClose}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    fontSize: '1.5rem',
+                    color: 'var(--text-muted)',
+                    cursor: 'pointer',
+                    padding: '0.25rem'
+                  }}
+                >×</button>
+              </div>
+              
+              {/* Daily Habits */}
+              {dailyHabits && dailyHabits.length > 0 && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h4 style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: 'var(--text-muted)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    marginBottom: '0.75rem'
+                  }}>Daily</h4>
+                  {dailyHabits.map(habit => (
+                    <div key={habit.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.75rem',
+                      padding: '0.6rem 0',
+                      borderBottom: '1px solid var(--border)'
+                    }}>
+                      <div style={{
+                        width: '18px',
+                        height: '18px',
+                        borderRadius: '4px',
+                        border: '2px solid var(--border)',
+                        flexShrink: 0
+                      }}></div>
+                      <span style={{ fontSize: '0.9rem', color: 'var(--text)' }}>{habit.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Weekly Habits */}
+              {weeklyHabits && weeklyHabits.length > 0 && (
+                <div style={{ marginBottom: '1.25rem' }}>
+                  <h4 style={{
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    color: 'var(--text-muted)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    marginBottom: '0.75rem'
+                  }}>Weekly</h4>
+                  {weeklyHabits.map(habit => (
+                    <div key={habit.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.6rem 0',
+                      borderBottom: '1px solid var(--border)'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                        <div style={{
+                          width: '18px',
+                          height: '18px',
+                          borderRadius: '4px',
+                          border: '2px solid var(--border)',
+                          flexShrink: 0
+                        }}></div>
+                        <span style={{ fontSize: '0.9rem', color: 'var(--text)' }}>{habit.text}</span>
+                      </div>
+                      <span style={{
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        backgroundColor: 'var(--bg-elevated)',
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '8px'
+                      }}>{habit.frequency}x/wk</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              {/* Events for this specific day - placeholder */}
+              {totalHabits === 0 && (
+                <p style={{
+                  fontSize: '0.9rem',
+                  color: 'var(--text-muted)',
+                  textAlign: 'center',
+                  padding: '2rem 0'
+                }}>No habits set yet. Add some in the Weekly or Daily tabs!</p>
+              )}
+            </div>
+          </div>
+        );
+      };
 
       return (
         <div style={styles.monthlyContainer}>
@@ -4527,11 +4680,45 @@ This has been your year of growth and intention. What are you most proud of? Wha
                   const day = i + 1;
                   const isToday = selectedMonth === currentMonth && day === today;
                   return (
-                    <div key={day} style={{
-                      ...styles.calendarDay, 
-                      ...(isToday && {...styles.calendarDayToday, backgroundColor: `${seasonColor}70`})
-                    }}>
-                      {day}
+                    <div 
+                      key={day} 
+                      style={{
+                        ...styles.calendarDay, 
+                        ...(isToday && {...styles.calendarDayToday, backgroundColor: `${seasonColor}70`}),
+                        cursor: 'pointer',
+                        position: 'relative'
+                      }}
+                      onClick={() => setSelectedDay(day)}
+                    >
+                      <span>{day}</span>
+                      {/* Small habit indicator dots */}
+                      {totalHabits > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          bottom: '4px',
+                          left: '50%',
+                          transform: 'translateX(-50%)',
+                          display: 'flex',
+                          gap: '2px'
+                        }}>
+                          {dailyHabits && dailyHabits.slice(0, 2).map((h, idx) => (
+                            <div key={idx} style={{
+                              width: '4px',
+                              height: '4px',
+                              borderRadius: '50%',
+                              backgroundColor: h.color || '#8FD4A0'
+                            }}></div>
+                          ))}
+                          {weeklyHabits && weeklyHabits.slice(0, 2).map((h, idx) => (
+                            <div key={idx} style={{
+                              width: '4px',
+                              height: '4px',
+                              borderRadius: '50%',
+                              backgroundColor: h.color || '#7EB3E0'
+                            }}></div>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -4555,6 +4742,11 @@ This has been your year of growth and intention. What are you most proud of? Wha
             )}
             {revealed && <button style={{...styles.addEventSmall, borderColor: seasonColor, color: seasonColor}} onClick={onAddEvent}>+ Add Event</button>}
           </div>
+          
+          {/* Day Detail Modal */}
+          {selectedDay && (
+            <DayDetail day={selectedDay} onClose={() => setSelectedDay(null)} />
+          )}
         </div>
       );
     }
@@ -5615,11 +5807,16 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           {dailyHabits.length > 0 ? (
             <div style={styles.dailyList}>
               {dailyHabits.map(habit => (
-                <div key={habit.id} style={styles.dailyHabitCard}>
-                  <div style={{...styles.dailyHabitAccent, backgroundColor: habit.color}}></div>
-                  <div style={styles.dailyHabitContent}>
+                <div key={habit.id} style={{
+                  ...styles.dailyHabitCard,
+                  padding: '1rem 1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                    <div style={{...styles.dailyHabitAccent, backgroundColor: habit.color, position: 'static', width: '4px', height: '24px', borderRadius: '2px'}}></div>
                     <span style={styles.dailyHabitText}>{habit.text}</span>
-                    <span style={styles.dailyHabitLabel}>every day</span>
                   </div>
                   <button 
                     style={styles.dailyHabitDelete}
