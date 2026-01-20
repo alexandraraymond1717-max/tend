@@ -4636,7 +4636,10 @@ This has been your year of growth and intention. What are you most proud of? Wha
                           borderBottom: '1px solid var(--border)',
                           cursor: 'pointer'
                         }}
-                        onClick={() => toggleHabit(dateKey, habit.id, 'daily')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleHabit(dateKey, habit.id, 'daily');
+                        }}
                       >
                         <div style={{
                           width: '20px',
@@ -4688,7 +4691,10 @@ This has been your year of growth and intention. What are you most proud of? Wha
                           borderBottom: '1px solid var(--border)',
                           cursor: 'pointer'
                         }}
-                        onClick={() => toggleHabit(dateKey, habit.id, 'weekly')}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleHabit(dateKey, habit.id, 'weekly');
+                        }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                           <div style={{
@@ -5824,8 +5830,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
         setNewFrequency(3);
       };
 
-      const daysOfWeek = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
       return (
         <div style={styles.weeklyContainer}>
           <div style={styles.weeklyHeader}>
@@ -5836,29 +5840,29 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           {weeklyHabits.length > 0 ? (
             <div style={styles.weeklyHabitsList}>
               {weeklyHabits.map(habit => (
-                <div key={habit.id} style={styles.weeklyHabitRow}>
-                  <div style={styles.weeklyHabitInfo}>
+                <div key={habit.id} style={{
+                  ...styles.weeklyHabitRow,
+                  padding: '1rem 1.25rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
                     <span style={{...styles.weeklyHabitDot, backgroundColor: habit.color}}></span>
                     <span style={styles.weeklyHabitText}>{habit.text}</span>
-                    <span style={styles.weeklyHabitFreq}>{habit.frequency}x/week</span>
+                  </div>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                    <span style={{
+                      fontSize: '0.8rem',
+                      color: 'var(--text-muted)',
+                      backgroundColor: 'var(--bg-elevated)',
+                      padding: '0.25rem 0.75rem',
+                      borderRadius: '12px'
+                    }}>{habit.frequency}x/week</span>
                     <button 
                       style={styles.weeklyHabitDelete}
                       onClick={() => setWeeklyHabits(weeklyHabits.filter(h => h.id !== habit.id))}
                     >×</button>
-                  </div>
-                  <div style={styles.weeklyHabitDays}>
-                    {daysOfWeek.map((day, i) => (
-                      <div 
-                        key={i} 
-                        style={{
-                          ...styles.weeklyDayCircle,
-                          backgroundColor: i < habit.frequency ? `${habit.color}30` : 'transparent',
-                          borderColor: i < habit.frequency ? habit.color : 'var(--border)',
-                        }}
-                      >
-                        <span style={{ fontSize: '0.65rem', color: i < habit.frequency ? habit.color : 'var(--text-muted)' }}>{day}</span>
-                      </div>
-                    ))}
                   </div>
                 </div>
               ))}
