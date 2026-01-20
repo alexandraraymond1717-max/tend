@@ -2381,7 +2381,7 @@ I'm here to help with any planning.`
               <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
                 <span style={{fontSize: '1.5rem'}}>🌱</span>
                 <div style={{flex: 1}}>
-                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Today's Daily Tend</div>
+                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Daily Tend</div>
                   <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>One small action aligned with your values</div>
                 </div>
                 {tendyPoints > 0 && (
@@ -3089,7 +3089,7 @@ I'm here to help with any planning.`
           {/* Tendy Reflection */}
           {selectedTendy && (
             <div style={tabStyles.section}>
-              <h3 style={tabStyles.sectionTitle}>Today's Daily Tend Reflection</h3>
+              <h3 style={tabStyles.sectionTitle}>Daily Tend Reflection</h3>
               <div style={tabStyles.tendyCard}>
                 <div style={{fontSize: '0.9rem', marginBottom: '0.75rem', color: 'var(--text)'}}>
                   {selectedTendy.text}
@@ -4234,7 +4234,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             <div style={tendyStyles.content}>
               <div style={tendyStyles.completedState}>
                 <div style={tendyStyles.completedIcon}>✨</div>
-                <h2 style={tendyStyles.completedTitle}>Today's Daily Tend Complete!</h2>
+                <h2 style={tendyStyles.completedTitle}>Daily Tend Complete!</h2>
                 <p style={tendyStyles.completedSubtitle}>
                   You earned {completedToday.points} point{completedToday.points !== 1 ? 's' : ''} for your garden
                 </p>
