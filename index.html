@@ -328,14 +328,19 @@
     }
 
     // Generate today's tendies (3 options with different difficulties)
+    // Helper function to get local date string (YYYY-MM-DD)
+    function getLocalDateString(date = new Date()) {
+      return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    }
+
     function generateDailyTendies(vlqScores, tendyHistory = []) {
       const probabilities = calculateDomainProbabilities(vlqScores);
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       
       // GUARDRAIL 1: No same domain two days in a row
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
-      const yesterdayStr = yesterday.toISOString().split('T')[0];
+      const yesterdayStr = getLocalDateString(yesterday);
       const yesterdayDomains = tendyHistory
         .filter(t => t.date === yesterdayStr)
         .map(t => t.domain);
@@ -1247,18 +1252,33 @@
             if (data.habitCompletions && !data.weeklyHabits?.some((h, i, arr) => arr.findIndex(x => x.id === h.id) !== i) && !data.dailyHabits?.some((h, i, arr) => arr.findIndex(x => x.id === h.id) !== i)) {
               setHabitCompletions(data.habitCompletions);
             }
-            // Check if todaysTendies are actually from today
-            const today = new Date().toISOString().split('T')[0];
+            // Check if todaysTendies are actually from today (using LOCAL date, not UTC)
+            const today = getLocalDateString();
             const storedTendiesDate = data.todaysTendies?.[0]?.date;
-            console.log('Firebase load - Tendies check:', { today, storedTendiesDate, hasVlqScores: !!data.vlqScores });
+            const storedTendyId = data.todaysTendies?.[0]?.id;
+            const isSelectedButNotCompleted = data.todaysTendies?.some(t => t.selected) && !data.todaysTendies?.some(t => t.completed);
             
-            if (data.todaysTendies && data.todaysTendies.length > 0 && storedTendiesDate === today) {
+            console.log('Firebase load - Tendies check:', { 
+              today, 
+              storedTendiesDate, 
+              storedTendyId,
+              isSelectedButNotCompleted,
+              hasVlqScores: !!data.vlqScores 
+            });
+            
+            // Check if tendies are from today by BOTH date field AND id prefix
+            const tendiesAreFromToday = data.todaysTendies && 
+              data.todaysTendies.length > 0 && 
+              storedTendiesDate === today &&
+              storedTendyId?.startsWith(today);
+            
+            if (tendiesAreFromToday) {
               // Tendies are from today, use them
               console.log('Using stored tendies from today');
               setTodaysTendies(data.todaysTendies);
             } else if (data.vlqScores && Object.keys(data.vlqScores).length > 0) {
               // Tendies are old or missing, generate new ones
-              console.log('Generating fresh daily tendies for', today, '- stored date was', storedTendiesDate);
+              console.log('Generating fresh daily tendies for', today, '- stored date was', storedTendiesDate, 'stored id was', storedTendyId);
               const newTendies = generateDailyTendies(data.vlqScores, data.tendyHistory || []);
               setTodaysTendies(newTendies);
             } else {
@@ -4974,7 +4994,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
       apiKey,
       onBack 
     }) {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateString();
       const [showCelebration, setShowCelebration] = useState(false);
       const [justCompletedPoints, setJustCompletedPoints] = useState(0);
       const [showCustomTendyForm, setShowCustomTendyForm] = useState(false);
