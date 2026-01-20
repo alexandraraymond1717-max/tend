@@ -1262,8 +1262,11 @@
         let newTracking = {...flexPointsTracking};
         
         // 1. Monday bonus (1 point per week)
+        // Only award if user has tracking history (not first-ever load)
         const isMonday = now.getDay() === 1;
-        if (isMonday && newTracking.lastMondayBonusWeek !== currentWeek) {
+        const hasTrackingHistory = newTracking.lastMondayBonusWeek !== null || 
+                                   newTracking.lastJournalDate !== null;
+        if (isMonday && hasTrackingHistory && newTracking.lastMondayBonusWeek !== currentWeek) {
           pointsToAward += 1;
           newTracking.lastMondayBonusWeek = currentWeek;
         }
