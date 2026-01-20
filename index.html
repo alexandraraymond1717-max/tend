@@ -2581,9 +2581,40 @@ Keep responses focused and conversational. You're not a productivity app — you
         }
 
         // Check for theme word throughout conversation (not just early exchanges)
-        if (!yearTheme) {
-          const lowerMessage = userMessage.toLowerCase();
+        // Also allow REDEFINING theme if user explicitly wants to change it
+        
+        const lowerMessage = userMessage.toLowerCase();
+        const commonWords = ['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something', 'okay', 'sure', 'yes', 'great', 'good', 'nice', 'have', 'been', 'from', 'they', 'what', 'when', 'where', 'which', 'there', 'their', 'about', 'will', 'make', 'just', 'know', 'take', 'come', 'into', 'over', 'such', 'some', 'than', 'then', 'these', 'only', 'change', 'update', 'redefine', 'switch'];
+        
+        // Check if user wants to REDEFINE their theme (works even if theme already exists)
+        const wantsToRedefine = /(change|redefine|update|switch|redo|reset)\s+(my\s+)?(word|theme)/i.test(lowerMessage) ||
+                               /new\s+(word|theme)\s+(is|should be|will be|to)/i.test(lowerMessage) ||
+                               /actually[,]?\s+(my\s+)?(word|theme)/i.test(lowerMessage);
+        
+        // Patterns for extracting the new theme word when redefining
+        if (wantsToRedefine) {
+          const redefinePatterns = [
+            /(?:change|redefine|update|switch|redo|reset)\s+(?:my\s+)?(?:word|theme)\s+to\s+([a-z]{4,15})/i,
+            /(?:new|actual)\s+(?:word|theme)\s+(?:is|should be|will be)\s+([a-z]{4,15})/i,
+            /(?:my\s+)?(?:word|theme)\s+(?:should|will|to)\s+(?:be\s+)?([a-z]{4,15})/i,
+            /(?:i want|i'd like|let's)\s+(?:my\s+)?(?:word|theme)\s+to\s+be\s+([a-z]{4,15})/i,
+          ];
           
+          for (const pattern of redefinePatterns) {
+            const match = userMessage.match(pattern);
+            if (match && match[1]) {
+              const word = match[1].toLowerCase();
+              if (word.length >= 4 && !commonWords.includes(word)) {
+                setYearTheme(word);
+                console.log('Year theme REDEFINED to:', word);
+                break;
+              }
+            }
+          }
+        }
+        
+        // Only try to set a NEW theme if one doesn't exist yet
+        if (!yearTheme) {
           // Get AI's last message to check if it suggested a word
           const lastAIMessage = messages.length >= 2 ? messages[messages.length - 2]?.content : '';
           
@@ -2626,9 +2657,6 @@ Keep responses focused and conversational. You're not a productivity app — you
               /(?:i choose|i'll go with|let's go with|i'll choose|i want)\s+([a-z]{4,15})(?:\s|$|[.,!?])/i,
             ];
             
-            // Common words to filter out (including articles and short words)
-            const commonWords = ['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something', 'okay', 'sure', 'yes', 'great', 'good', 'nice', 'have', 'been', 'from', 'they', 'what', 'when', 'where', 'which', 'there', 'their', 'about', 'will', 'make', 'just', 'know', 'take', 'come', 'into', 'over', 'such', 'some', 'than', 'then', 'these', 'only'];
-            
             for (const pattern of explicitPatterns) {
               const match = userMessage.match(pattern);
               if (match && match[1]) {
@@ -2658,7 +2686,6 @@ Keep responses focused and conversational. You're not a productivity app — you
           // Fallback: check for theme word in early exchanges (original logic)
           if (!yearTheme && phase === PHASES.EXPLORE && exchangeCount < 3) {
             const words = userMessage.split(/\s+/).filter(w => w.length >= 4 && w.length < 15);
-            const commonWords = ['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something', 'have', 'been', 'from', 'they', 'what', 'when', 'where', 'which', 'there', 'their', 'about', 'will', 'make', 'just', 'know', 'take', 'come', 'into', 'over', 'such', 'some', 'than', 'then', 'these', 'only'];
             const potentialTheme = words.find(w => 
               /^[a-zA-Z]+$/.test(w) && 
               !commonWords.includes(w.toLowerCase())
