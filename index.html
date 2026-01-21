@@ -255,7 +255,7 @@
 
     // Probability calculation for domain selection
     function calculateDomainProbabilities(vlqScores) {
-      const epsilon = 0.01; // Reduced from 0.05 - minimum probability floor
+      const epsilon = 0.01; // Minimum probability floor
       const minImportance = 3; // Never select domains below this importance
       const weights = {};
       let totalWeight = 0;
@@ -273,10 +273,10 @@
         const consistency = scores?.consistency || 5;
         const gap = Math.max(0, importance - consistency);
         
-        // Formula: importance * (1 + gap_factor) + epsilon
-        // Higher importance AND higher gap = higher weight
-        const gapFactor = gap / 10; // Normalize gap to 0-1 range
-        const weight = importance * (1 + gapFactor * 0.5) + epsilon;
+        // Formula: base weight from importance, STRONGLY boosted by gap
+        // Gap of 0 = 1x multiplier, Gap of 5 = 2x, Gap of 10 = 3x
+        const gapMultiplier = 1 + (gap / 5);
+        const weight = importance * gapMultiplier + epsilon;
         
         weights[domain] = weight;
         totalWeight += weight;
@@ -287,6 +287,14 @@
       VLQ_ORDER.forEach(domain => {
         probabilities[domain] = totalWeight > 0 ? weights[domain] / totalWeight : 0;
       });
+      
+      // Log probabilities for debugging
+      console.log('Domain probabilities:', Object.entries(probabilities)
+        .filter(([_, p]) => p > 0)
+        .sort((a, b) => b[1] - a[1])
+        .map(([d, p]) => `${d}: ${(p * 100).toFixed(1)}%`)
+        .join(', ')
+      );
 
       return probabilities;
     }
