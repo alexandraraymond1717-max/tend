@@ -5275,9 +5275,9 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
 
       const getDifficultyLabel = (difficulty) => {
         switch(difficulty) {
-          case 1: return { text: 'Quick Win', color: '#8FD4A0' };
-          case 2: return { text: 'Balanced', color: '#F9D07A' };
-          case 3: return { text: 'Deep Work', color: '#E8A090' };
+          case 1: return { text: '5 min', color: '#8FD4A0' };
+          case 2: return { text: '15 min', color: '#F9D07A' };
+          case 3: return { text: '30 min', color: '#E8A090' };
           default: return { text: 'Task', color: '#7EB3E0' };
         }
       };
@@ -5580,7 +5580,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       {selectedTendy.text}
                     </p>
                     <div style={tendyStyles.tendyFooter}>
-                      <span>⏱ {selectedTendy.duration}</span>
                       <div style={tendyStyles.gardenReward}>
                         <span>{selectedTendy.gardenElement?.icon}</span>
                         <span>+{selectedTendy.points} pt{selectedTendy.points !== 1 ? 's' : ''}</span>
