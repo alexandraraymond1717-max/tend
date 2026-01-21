@@ -333,17 +333,26 @@
       return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     }
 
-    function generateDailyTendies(vlqScores, tendyHistory = []) {
+    function generateDailyTendies(vlqScores, tendyHistory = [], previousShownDomain = null) {
       const probabilities = calculateDomainProbabilities(vlqScores);
       const today = getLocalDateString();
       
       // GUARDRAIL 1: No same domain two days in a row
+      // Check both completed tendies from yesterday AND the previously shown domain
       const yesterday = new Date();
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = getLocalDateString(yesterday);
-      const yesterdayDomains = tendyHistory
+      const yesterdayCompletedDomains = tendyHistory
         .filter(t => t.date === yesterdayStr)
         .map(t => t.domain);
+      
+      // Combine completed domains with the previously shown domain (if provided)
+      const domainsToAvoid = [...yesterdayCompletedDomains];
+      if (previousShownDomain && !domainsToAvoid.includes(previousShownDomain)) {
+        domainsToAvoid.push(previousShownDomain);
+      }
+      
+      console.log('Domain guardrail - avoiding:', domainsToAvoid);
       
       // GUARDRAIL 2: Soft recency penalty for recently-selected domains (last 7 days)
       const recentDomainCounts = {};
@@ -357,6 +366,11 @@
         .forEach(t => {
           if (t.domain) recentDomainCounts[t.domain]++;
         });
+      
+      // Also penalize the previously shown domain even if not completed
+      if (previousShownDomain) {
+        recentDomainCounts[previousShownDomain] = (recentDomainCounts[previousShownDomain] || 0) + 1;
+      }
       
       // Apply soft penalty: reduce probability by 20% per recent appearance
       const penaltyWeights = {};
@@ -372,8 +386,10 @@
         })
         .map(t => t.templateText || t.text);
 
-      // NEW: Select ONE domain for the entire day (all 3 difficulties)
-      const todaysDomain = selectWeightedDomain(probabilities, yesterdayDomains, penaltyWeights);
+      // Select ONE domain for the entire day (all 3 difficulties)
+      const todaysDomain = selectWeightedDomain(probabilities, domainsToAvoid, penaltyWeights);
+      
+      console.log('Selected domain for today:', todaysDomain);
 
       const tendies = [];
       const difficulties = [1, 2, 3]; // Easy, Medium, Hard
@@ -1286,8 +1302,10 @@
               setTodaysTendies(data.todaysTendies);
             } else if (data.vlqScores && Object.keys(data.vlqScores).length > 0) {
               // Tendies are old, stale, or missing - generate new ones
-              console.log('Generating fresh daily tendies for', today, '- stored date was', storedTendiesDate, 'isStale:', isStale);
-              const newTendies = generateDailyTendies(data.vlqScores, data.tendyHistory || []);
+              // Pass the previous domain so we don't repeat it
+              const previousDomain = data.todaysTendies?.[0]?.domain || null;
+              console.log('Generating fresh daily tendies for', today, '- stored date was', storedTendiesDate, 'isStale:', isStale, 'previousDomain:', previousDomain);
+              const newTendies = generateDailyTendies(data.vlqScores, data.tendyHistory || [], previousDomain);
               setTodaysTendies(newTendies);
             } else {
               console.log('No VLQ scores available, cannot generate tendies');
@@ -5059,8 +5077,10 @@ This has been your year of growth and intention. What are you most proud of? Wha
         
         // Regenerate if: not from today, stale, OR have different domains (old version)
         if (!tendiesAreFromToday || (tendiesAreFromToday && !allSameDomain)) {
-          console.log('Generating new tendies - date mismatch, stale, or domain issue');
-          const newTendies = generateDailyTendies(vlqScores, tendyHistory);
+          // Pass the previous domain so we don't repeat it
+          const previousDomain = todaysTendies[0]?.domain || null;
+          console.log('Generating new tendies - date mismatch, stale, or domain issue. Previous domain:', previousDomain);
+          const newTendies = generateDailyTendies(vlqScores, tendyHistory, previousDomain);
           setTodaysTendies(newTendies);
         }
       }, [today, vlqScores, todaysTendies.length, todaysTendies[0]?.date, todaysTendies[0]?.generatedAt]);
