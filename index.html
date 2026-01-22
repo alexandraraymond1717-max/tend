@@ -3942,6 +3942,7 @@ I'm here to help with any planning.`
               onClose={() => setShowSettingsModal(false)}
               user={user}
               onLogout={handleLogout}
+              onOpenAdmin={() => setShowAdminDashboard(true)}
             />
           )}
           {showAdminDashboard && (
@@ -7951,7 +7952,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       );
     }
 
-    function SettingsModal({ apiKey, setApiKey, onClose, user, onLogout }) {
+    function SettingsModal({ apiKey, setApiKey, onClose, user, onLogout, onOpenAdmin }) {
       const [key, setKey] = useState(apiKey);
       
       const handleSave = () => {
@@ -7990,7 +7991,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               </div>
 
               {/* API Key Section */}
-              <div style={styles.formField}>
+              <div style={{...styles.formField, marginBottom: '1.5rem', paddingBottom: '1.5rem', borderBottom: '1px solid var(--border)'}}>
                 <label style={styles.formLabel}>Anthropic API Key</label>
                 <input 
                   type="password" 
@@ -8007,7 +8008,33 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   </a>
                 </p>
               </div>
-              <button onClick={handleSave} style={styles.submitButton}>Save</button>
+              
+              {/* Beta Tools Section */}
+              <div style={styles.formField}>
+                <label style={styles.formLabel}>Beta Tools</label>
+                <button 
+                  onClick={() => { onOpenAdmin(); onClose(); }} 
+                  style={{
+                    padding: '0.5rem 1rem',
+                    backgroundColor: 'var(--bg-elevated)',
+                    border: '1px solid var(--border)',
+                    borderRadius: '8px',
+                    color: 'var(--text)',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                  }}
+                >
+                  <span>🛠️</span> Admin Dashboard
+                </button>
+                <p style={{...styles.settingsHint, marginTop: '0.5rem'}}>
+                  View your data, tend system info, and debug tools
+                </p>
+              </div>
+              
+              <button onClick={handleSave} style={{...styles.submitButton, marginTop: '1.5rem'}}>Save</button>
               {apiKey && (
                 <p style={styles.settingsStatus}>✓ API key is set</p>
               )}
@@ -8135,23 +8162,27 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             
             {/* Storage Overview */}
             <div style={dashStyles.section}>
-              <h3 style={dashStyles.sectionTitle}>📊 Storage Overview</h3>
+              <h3 style={dashStyles.sectionTitle}>📊 Data Overview</h3>
               <div style={dashStyles.grid}>
                 <div style={dashStyles.stat}>
-                  <div style={dashStyles.statLabel}>Saved Conversations</div>
+                  <div style={dashStyles.statLabel}>Exploration Chats</div>
                   <div style={dashStyles.statValue}>{conversationCount}</div>
+                  <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem'}}>Archived conversations from life design chat</div>
                 </div>
                 <div style={dashStyles.stat}>
                   <div style={dashStyles.statLabel}>Journal Entries</div>
                   <div style={dashStyles.statValue}>{journalCount}</div>
+                  <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem'}}>Daily reflections written</div>
                 </div>
                 <div style={dashStyles.stat}>
                   <div style={dashStyles.statLabel}>Goals</div>
                   <div style={dashStyles.statValue}>{goalsCount}</div>
+                  <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem'}}>Yearly goals set</div>
                 </div>
                 <div style={dashStyles.stat}>
                   <div style={dashStyles.statLabel}>Events</div>
                   <div style={dashStyles.statValue}>{eventsCount}</div>
+                  <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem'}}>Calendar events planned</div>
                 </div>
               </div>
             </div>
@@ -8172,48 +8203,144 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             
             {/* Tend System */}
             <div style={dashStyles.section}>
-              <h3 style={dashStyles.sectionTitle}>🌱 Tend System</h3>
+              <h3 style={dashStyles.sectionTitle}>🌱 Tend Personalization System</h3>
+              
+              {/* How It Works Explanation */}
+              <div style={{
+                padding: '0.75rem',
+                backgroundColor: 'var(--bg-card)',
+                borderRadius: '8px',
+                marginBottom: '1rem',
+                fontSize: '0.8rem',
+                color: 'var(--text-muted)',
+                lineHeight: 1.5
+              }}>
+                <strong style={{color: 'var(--text)'}}>How it works:</strong> The more you share with Tend (via the "Chat about this tend" button), the more personalized your daily tends become. Your <strong>Info Score</strong> determines how often AI generates completely custom tends vs. selecting from the template pool.
+              </div>
               
               {/* Info Score Card */}
               {(() => {
                 const infoScore = calculateInfoScore(userProfile);
                 const infoLevel = getInfoLevel(infoScore);
                 const aiRatio = getAIRatio(infoScore);
+                
+                // Thresholds for progress bar
+                const thresholds = [
+                  { min: 0, max: 3, label: 'Low', color: '#E8A090', aiPercent: 10 },
+                  { min: 4, max: 7, label: 'Some', color: '#F9D07A', aiPercent: 30 },
+                  { min: 8, max: 12, label: 'Good', color: '#7EB3E0', aiPercent: 50 },
+                  { min: 13, max: 20, label: 'Rich', color: '#8FD4A0', aiPercent: 70 },
+                ];
+                const currentThreshold = thresholds.find(t => infoScore >= t.min && infoScore <= t.max) || thresholds[3];
+                const nextThreshold = thresholds.find(t => t.min > infoScore);
+                
                 return (
                   <div style={{
-                    padding: '1rem',
+                    padding: '1.25rem',
                     backgroundColor: 'var(--bg-elevated)',
                     borderRadius: '12px',
                     marginBottom: '1rem',
                     border: `2px solid ${infoLevel.color}40`
                   }}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem'}}>
+                    {/* Score Header */}
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem'}}>
                       <div>
-                        <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px'}}>Info Score</div>
-                        <div style={{fontSize: '2.5rem', fontWeight: 700, color: infoLevel.color}}>{infoScore}</div>
+                        <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem'}}>Your Info Score</div>
+                        <div style={{display: 'flex', alignItems: 'baseline', gap: '0.5rem'}}>
+                          <span style={{fontSize: '3rem', fontWeight: 700, color: infoLevel.color, lineHeight: 1}}>{infoScore}</span>
+                          <span style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>/ 20+</span>
+                        </div>
                       </div>
                       <div style={{textAlign: 'right'}}>
                         <div style={{
-                          padding: '0.25rem 0.75rem',
+                          padding: '0.35rem 0.85rem',
                           backgroundColor: `${infoLevel.color}20`,
                           color: infoLevel.color,
                           borderRadius: '20px',
-                          fontSize: '0.85rem',
-                          fontWeight: 600
+                          fontSize: '0.8rem',
+                          fontWeight: 600,
+                          marginBottom: '0.35rem'
                         }}>{infoLevel.level} Info</div>
-                        <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem'}}>
-                          {(aiRatio * 100).toFixed(0)}% AI-generated
+                        <div style={{fontSize: '0.85rem', color: 'var(--text)'}}>
+                          <strong>{(aiRatio * 100).toFixed(0)}%</strong> AI-generated tends
                         </div>
                       </div>
                     </div>
                     
+                    {/* Progress Bar */}
+                    <div style={{marginBottom: '1rem'}}>
+                      <div style={{display: 'flex', gap: '2px', height: '8px', borderRadius: '4px', overflow: 'hidden'}}>
+                        {thresholds.map((t, i) => (
+                          <div key={i} style={{
+                            flex: t.max - t.min + 1,
+                            backgroundColor: infoScore >= t.min ? t.color : 'var(--border)',
+                            opacity: infoScore >= t.min ? 1 : 0.3,
+                          }} />
+                        ))}
+                      </div>
+                      <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.25rem'}}>
+                        <span>0</span>
+                        <span>4</span>
+                        <span>8</span>
+                        <span>13</span>
+                        <span>20+</span>
+                      </div>
+                    </div>
+                    
+                    {/* Next Level Hint */}
+                    {nextThreshold && (
+                      <div style={{
+                        padding: '0.5rem 0.75rem',
+                        backgroundColor: 'var(--bg-card)',
+                        borderRadius: '6px',
+                        fontSize: '0.75rem',
+                        color: 'var(--text-muted)',
+                        marginBottom: '1rem'
+                      }}>
+                        📈 <strong>{nextThreshold.min - infoScore} more</strong> to reach <strong style={{color: nextThreshold.color}}>{nextThreshold.label}</strong> level ({nextThreshold.aiPercent}% AI-generated)
+                      </div>
+                    )}
+                    
                     {/* Score Breakdown */}
-                    <div style={{fontSize: '0.8rem', color: 'var(--text-muted)', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.25rem'}}>
-                      <div>Resources: {(userProfile?.tendPreferences?.resources || []).length}</div>
-                      <div>Context: {Object.keys(userProfile?.tendPreferences?.context || {}).length}</div>
-                      <div>Preferences: {(userProfile?.tendPreferences?.preferences || []).length}</div>
-                      <div>Life Notes: {Object.keys(userProfile?.tendPreferences?.lifeAreaNotes || {}).length}</div>
-                      <div>Personal Templates: {(userProfile?.tendPreferences?.personalTemplates || []).length}</div>
+                    <div style={{fontSize: '0.8rem'}}>
+                      <div style={{fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem'}}>Score Breakdown</div>
+                      <div style={{display: 'grid', gap: '0.5rem'}}>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid var(--border)'}}>
+                          <div>
+                            <div style={{color: 'var(--text)'}}>🎒 Resources</div>
+                            <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>Things you have (gym, guitar, etc.)</div>
+                          </div>
+                          <div style={{fontWeight: 600, color: 'var(--accent)'}}>{(userProfile?.tendPreferences?.resources || []).length}</div>
+                        </div>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid var(--border)'}}>
+                          <div>
+                            <div style={{color: 'var(--text)'}}>🏠 Context</div>
+                            <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>Life situation (work from home, has kids, etc.)</div>
+                          </div>
+                          <div style={{fontWeight: 600, color: 'var(--accent)'}}>{Object.keys(userProfile?.tendPreferences?.context || {}).length}</div>
+                        </div>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid var(--border)'}}>
+                          <div>
+                            <div style={{color: 'var(--text)'}}>💜 Preferences</div>
+                            <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>What you like (outdoor activities, mornings, etc.)</div>
+                          </div>
+                          <div style={{fontWeight: 600, color: 'var(--accent)'}}>{(userProfile?.tendPreferences?.preferences || []).length}</div>
+                        </div>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid var(--border)'}}>
+                          <div>
+                            <div style={{color: 'var(--text)'}}>📝 Life Area Notes</div>
+                            <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>Specific details (sister's name, work project, etc.)</div>
+                          </div>
+                          <div style={{fontWeight: 600, color: 'var(--accent)'}}>{Object.keys(userProfile?.tendPreferences?.lifeAreaNotes || {}).length}</div>
+                        </div>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0'}}>
+                          <div>
+                            <div style={{color: 'var(--text)'}}>✨ Personal Templates</div>
+                            <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>Custom tends created from your info</div>
+                          </div>
+                          <div style={{fontWeight: 600, color: 'var(--accent)'}}>{(userProfile?.tendPreferences?.personalTemplates || []).length}</div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 );
