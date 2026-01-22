@@ -3953,6 +3953,7 @@ I'm here to help with any planning.`
               journalEntries={journalEntries}
               goals={goals}
               events={events}
+              todaysTendies={todaysTendies}
               onClose={() => setShowAdminDashboard(false)}
             />
           )}
@@ -8025,6 +8026,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       journalEntries,
       goals,
       events,
+      todaysTendies,
       onClose 
     }) {
       const conversationCount = Object.keys(savedConversations).length;
@@ -8295,9 +8297,9 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               {/* Today's Tendies */}
               <div>
                 <div style={{fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text)', fontSize: '0.9rem'}}>🌿 Today's Generated Tendies</div>
-                {todaysTendies.length > 0 ? (
+                {(todaysTendies || []).length > 0 ? (
                   <div>
-                    {todaysTendies.map((tendy, i) => (
+                    {(todaysTendies || []).map((tendy, i) => (
                       <div key={i} style={{
                         padding: '0.75rem',
                         backgroundColor: 'var(--bg-card)',
