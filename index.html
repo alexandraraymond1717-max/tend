@@ -394,6 +394,18 @@
         });
       }
       
+      // Check 1b: Structured profile info (2 points if has any filled fields)
+      const structuredInfo = prefs.structuredInfo?.[domain] || {};
+      const filledStructured = Object.entries(structuredInfo).filter(([_, v]) => v);
+      if (filledStructured.length > 0) {
+        capabilities.push({
+          type: 'structured',
+          label: 'Profile details',
+          detail: filledStructured.map(([k, v]) => v).slice(0, 2).join(', ').substring(0, 60),
+          points: Math.min(filledStructured.length, 2)
+        });
+      }
+      
       // Check 2: Relevant context items (1 point each, max 2)
       const relevantContext = Object.entries(prefs.context || {})
         .filter(([key, value]) => value && keywords.some(kw => key.toLowerCase().includes(kw)))
@@ -434,21 +446,21 @@
         });
       }
       
-      // Calculate total score (max 7 points per domain)
+      // Calculate total score (max 9 points per domain)
       const score = capabilities.reduce((sum, c) => sum + c.points, 0);
-      const maxScore = 7;
+      const maxScore = 9;
       
       // Determine readiness level
       let level, color, aiRatio;
-      if (score >= 5) {
+      if (score >= 6) {
         level = 'Rich';
         color = '#8FD4A0';
         aiRatio = 0.7; // 70% AI generation
-      } else if (score >= 3) {
+      } else if (score >= 4) {
         level = 'Good';
         color = '#7EB3E0';
         aiRatio = 0.5; // 50% AI generation
-      } else if (score >= 1) {
+      } else if (score >= 2) {
         level = 'Some';
         color = '#F9D07A';
         aiRatio = 0.2; // 20% AI generation
@@ -526,6 +538,12 @@
       }
       if (prefs.lifeAreaNotes?.[domain]) contextParts.push(`${domain} notes: ${prefs.lifeAreaNotes[domain]}`);
       
+      // Add structured profile info for this domain
+      const structuredInfo = prefs.structuredInfo?.[domain] || {};
+      Object.entries(structuredInfo).forEach(([key, value]) => {
+        if (value) contextParts.push(`${key}: ${value}`);
+      });
+      
       if (contextParts.length === 0) return templateText;
       
       try {
@@ -577,6 +595,12 @@ User context: ${contextParts.join('. ')}`,
       }
       if (prefs.preferences?.length) contextParts.push(`Prefers: ${prefs.preferences.join(', ')}`);
       if (prefs.lifeAreaNotes?.[domain]) contextParts.push(`Notes about ${domainInfo.name}: ${prefs.lifeAreaNotes[domain]}`);
+      
+      // Add structured profile info for this domain
+      const structuredInfo = prefs.structuredInfo?.[domain] || {};
+      Object.entries(structuredInfo).forEach(([key, value]) => {
+        if (value) contextParts.push(`${key}: ${value}`);
+      });
       
       try {
         const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -3718,6 +3742,8 @@ I'm here to help with any planning.`
             vlqScores={vlqScores}
             yearTheme={yearTheme}
             flexPoints={flexPoints}
+            userProfile={userProfile}
+            setUserProfile={setUserProfile}
             onBack={() => setAppMode(null)}
           />
         );
@@ -8626,7 +8652,106 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
     }
 
     // ============ INSIGHTS VIEW (USER-FACING TRENDS) ============
-    function InsightsView({ trends, vlqScores, yearTheme, flexPoints, onBack }) {
+    // Structured prompts for each life area - used in profile section
+    const LIFE_AREA_PROMPTS = {
+      family: {
+        title: 'Family',
+        why: 'Help me personalize family-related tends',
+        example: '"Call your mom Sarah" instead of "Call a family member"',
+        prompts: [
+          { key: 'members', label: 'Family members you connect with', placeholder: 'e.g., Mom (Sarah), Sister (Amy), Dad' },
+          { key: 'frequency', label: 'How often do you typically connect?', placeholder: 'e.g., Call mom weekly, text sister daily' },
+        ]
+      },
+      partner: {
+        title: 'Partner/Relationship',
+        why: 'Help me suggest meaningful connection activities',
+        example: '"Plan a date with Sarah" instead of "Spend quality time"',
+        prompts: [
+          { key: 'name', label: "Partner's name", placeholder: 'e.g., Sarah' },
+          { key: 'activities', label: 'Things you enjoy doing together', placeholder: 'e.g., cooking, hiking, movie nights' },
+        ]
+      },
+      friendships: {
+        title: 'Friendships',
+        why: 'Help me remind you to nurture friendships',
+        example: '"Text your friend Mike" instead of "Reach out to a friend"',
+        prompts: [
+          { key: 'closeFriends', label: 'Close friends you want to stay connected with', placeholder: 'e.g., Mike, Jessica, the book club group' },
+          { key: 'socialPrefs', label: 'How you prefer to connect', placeholder: 'e.g., prefer calls over texts, love group dinners' },
+        ]
+      },
+      career: {
+        title: 'Career & Work',
+        why: 'Help me understand your work context',
+        example: '"Work on Tend for 30 min" instead of "Work on a project"',
+        prompts: [
+          { key: 'situation', label: 'Your work situation', placeholder: 'e.g., Software engineer, work from home' },
+          { key: 'projects', label: 'Current projects or focus areas', placeholder: 'e.g., Building Tend app, Q1 planning' },
+        ]
+      },
+      education: {
+        title: 'Learning & Growth',
+        why: 'Help me suggest relevant learning activities',
+        example: '"Practice guitar for 10 min" instead of "Learn something new"',
+        prompts: [
+          { key: 'learning', label: 'What are you currently learning?', placeholder: 'e.g., Guitar, Spanish, cooking' },
+          { key: 'resources', label: 'Resources you use', placeholder: 'e.g., Duolingo, YouTube tutorials, local class' },
+        ]
+      },
+      recreation: {
+        title: 'Recreation & Fun',
+        why: 'Help me suggest activities you actually enjoy',
+        example: '"Play a round of chess" instead of "Do something fun"',
+        prompts: [
+          { key: 'hobbies', label: 'Hobbies and interests', placeholder: 'e.g., Chess, reading, gardening, video games' },
+          { key: 'resources', label: 'Things you have access to', placeholder: 'e.g., Chess.com account, Kindle, garden' },
+        ]
+      },
+      spirituality: {
+        title: 'Spirituality & Meaning',
+        why: 'Help me respect your spiritual practice',
+        example: '"10 min meditation with Headspace" instead of "Practice mindfulness"',
+        prompts: [
+          { key: 'practices', label: 'Spiritual or mindfulness practices', placeholder: 'e.g., Meditation, prayer, journaling, yoga' },
+          { key: 'resources', label: 'Apps or resources you use', placeholder: 'e.g., Headspace, local temple, meditation group' },
+        ]
+      },
+      community: {
+        title: 'Community & Contribution',
+        why: 'Help me suggest ways to contribute',
+        example: '"Volunteer at the food bank" instead of "Help your community"',
+        prompts: [
+          { key: 'involvement', label: 'How are you involved in your community?', placeholder: 'e.g., Food bank volunteer, neighborhood association' },
+          { key: 'causes', label: 'Causes you care about', placeholder: 'e.g., Environment, education, homelessness' },
+        ]
+      },
+      health: {
+        title: 'Physical Health',
+        why: 'Help me suggest realistic health activities',
+        example: '"Go to your yoga class" instead of "Exercise"',
+        prompts: [
+          { key: 'activities', label: 'Exercise or health activities you do', placeholder: 'e.g., Yoga, running, gym workouts' },
+          { key: 'resources', label: 'Resources you have', placeholder: 'e.g., Gym membership, Peloton, running shoes' },
+        ]
+      },
+      mentalHealth: {
+        title: 'Mental & Emotional Health',
+        why: 'Help me support your wellbeing',
+        example: '"Journal about your day" instead of "Practice self-care"',
+        prompts: [
+          { key: 'practices', label: 'Self-care practices that help you', placeholder: 'e.g., Journaling, therapy, baths, walks' },
+          { key: 'boundaries', label: 'Boundaries or needs', placeholder: 'e.g., Need alone time, avoid work after 7pm' },
+        ]
+      },
+    };
+
+    function InsightsView({ trends, vlqScores, yearTheme, flexPoints, userProfile, setUserProfile, onBack }) {
+      const [expandedArea, setExpandedArea] = useState(null);
+      const [editingArea, setEditingArea] = useState(null);
+      const [tempFormData, setTempFormData] = useState({});
+      const [tempNotes, setTempNotes] = useState('');
+      
       if (!trends) return null;
       
       const insightsStyles = {
@@ -8949,6 +9074,335 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   <div style={insightsStyles.statValue}>{trends.journaling.currentStreak}</div>
                   <div style={insightsStyles.statLabel}>Current Streak</div>
                 </div>
+              </div>
+            </div>
+            
+            {/* Help Tend Know You - Profile Section */}
+            <div style={insightsStyles.section}>
+              <h3 style={insightsStyles.sectionTitle}>
+                <span>🌱</span>
+                <span>Help Tend Know You</span>
+              </h3>
+              
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'var(--accent-light)',
+                borderRadius: '12px',
+                marginBottom: '1.5rem',
+                fontSize: '0.85rem',
+                color: 'var(--text)',
+                lineHeight: 1.5
+              }}>
+                The more I know about you, the more personal your daily tends become. Share what feels comfortable — everything here helps me give you better suggestions.
+              </div>
+              
+              {/* Progress indicator */}
+              {(() => {
+                const prefs = userProfile?.tendPreferences || {};
+                const filledAreas = VLQ_ORDER.filter(domain => {
+                  const notes = prefs.lifeAreaNotes?.[domain];
+                  const structured = prefs.structuredInfo?.[domain];
+                  return notes || (structured && Object.values(structured).some(v => v));
+                }).length;
+                
+                return (
+                  <div style={{marginBottom: '1.5rem'}}>
+                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem'}}>
+                      <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Profile completeness</span>
+                      <span style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent)'}}>{filledAreas} of {VLQ_ORDER.length} areas</span>
+                    </div>
+                    <div style={{height: '8px', backgroundColor: 'var(--bg-elevated)', borderRadius: '4px', overflow: 'hidden'}}>
+                      <div style={{
+                        height: '100%',
+                        width: `${(filledAreas / VLQ_ORDER.length) * 100}%`,
+                        backgroundColor: 'var(--accent)',
+                        borderRadius: '4px',
+                        transition: 'width 0.3s'
+                      }} />
+                    </div>
+                  </div>
+                );
+              })()}
+              
+              {/* Life Area Cards */}
+              <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
+                {VLQ_ORDER.map(domain => {
+                  const areaConfig = LIFE_AREA_PROMPTS[domain];
+                  const prefs = userProfile?.tendPreferences || {};
+                  const notes = prefs.lifeAreaNotes?.[domain] || '';
+                  const structured = prefs.structuredInfo?.[domain] || {};
+                  const hasInfo = notes || Object.values(structured).some(v => v);
+                  const isExpanded = expandedArea === domain;
+                  const isEditing = editingArea === domain;
+                  const readiness = calculateDomainReadiness(domain, userProfile);
+                  
+                  return (
+                    <div key={domain} style={{
+                      backgroundColor: 'var(--bg-elevated)',
+                      borderRadius: '12px',
+                      border: `1px solid ${hasInfo ? readiness.color + '40' : 'var(--border)'}`,
+                      overflow: 'hidden',
+                      transition: 'border-color 0.2s'
+                    }}>
+                      {/* Header - always visible */}
+                      <div 
+                        style={{
+                          padding: '1rem',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center',
+                          cursor: 'pointer',
+                        }}
+                        onClick={() => {
+                          if (isEditing) return;
+                          setExpandedArea(isExpanded ? null : domain);
+                        }}
+                      >
+                        <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                          <span style={{fontSize: '1.25rem'}}>{VLQ_DOMAINS[domain]?.icon}</span>
+                          <div>
+                            <div style={{fontWeight: 500, color: 'var(--text)', fontSize: '0.95rem'}}>
+                              {areaConfig?.title || VLQ_DOMAINS[domain]?.name}
+                            </div>
+                            {!isExpanded && hasInfo && (
+                              <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem'}}>
+                                {Object.values(structured).filter(v => v).length > 0 && 
+                                  `${Object.values(structured).filter(v => v).length} details`}
+                                {Object.values(structured).filter(v => v).length > 0 && notes && ' • '}
+                                {notes && 'Has notes'}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                          {hasInfo ? (
+                            <span style={{
+                              padding: '0.25rem 0.5rem',
+                              backgroundColor: `${readiness.color}20`,
+                              color: readiness.color,
+                              borderRadius: '4px',
+                              fontSize: '0.7rem',
+                              fontWeight: 600
+                            }}>{readiness.level}</span>
+                          ) : (
+                            <span style={{
+                              padding: '0.25rem 0.5rem',
+                              backgroundColor: 'var(--bg-card)',
+                              color: 'var(--text-muted)',
+                              borderRadius: '4px',
+                              fontSize: '0.7rem'
+                            }}>Empty</span>
+                          )}
+                          <span style={{color: 'var(--text-muted)', fontSize: '0.75rem'}}>
+                            {isExpanded ? '▼' : '▶'}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Expanded content */}
+                      {isExpanded && (
+                        <div style={{padding: '0 1rem 1rem 1rem', borderTop: '1px solid var(--border)'}}>
+                          {/* Why this helps */}
+                          <div style={{
+                            padding: '0.75rem 0',
+                            fontSize: '0.8rem',
+                            color: 'var(--text-muted)',
+                            lineHeight: 1.5
+                          }}>
+                            {areaConfig?.why}
+                            <div style={{marginTop: '0.25rem', fontStyle: 'italic', color: 'var(--accent)'}}>
+                              Example: {areaConfig?.example}
+                            </div>
+                          </div>
+                          
+                          {isEditing ? (
+                            /* Edit Mode */
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
+                              {/* Structured prompts */}
+                              {areaConfig?.prompts.map(prompt => (
+                                <div key={prompt.key}>
+                                  <label style={{display: 'block', fontSize: '0.8rem', color: 'var(--text)', marginBottom: '0.35rem', fontWeight: 500}}>
+                                    {prompt.label}
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={tempFormData[prompt.key] || ''}
+                                    onChange={(e) => setTempFormData(prev => ({...prev, [prompt.key]: e.target.value}))}
+                                    placeholder={prompt.placeholder}
+                                    style={{
+                                      width: '100%',
+                                      padding: '0.65rem 0.75rem',
+                                      border: '1px solid var(--border)',
+                                      borderRadius: '8px',
+                                      backgroundColor: 'var(--bg-card)',
+                                      color: 'var(--text)',
+                                      fontSize: '0.85rem',
+                                      boxSizing: 'border-box',
+                                    }}
+                                  />
+                                </div>
+                              ))}
+                              
+                              {/* Free-form notes */}
+                              <div>
+                                <label style={{display: 'block', fontSize: '0.8rem', color: 'var(--text)', marginBottom: '0.35rem', fontWeight: 500}}>
+                                  Anything else? (free-form)
+                                </label>
+                                <textarea
+                                  value={tempNotes}
+                                  onChange={(e) => setTempNotes(e.target.value)}
+                                  placeholder="Add any other details that might help personalize your tends..."
+                                  rows={3}
+                                  style={{
+                                    width: '100%',
+                                    padding: '0.65rem 0.75rem',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: '8px',
+                                    backgroundColor: 'var(--bg-card)',
+                                    color: 'var(--text)',
+                                    fontSize: '0.85rem',
+                                    resize: 'vertical',
+                                    boxSizing: 'border-box',
+                                  }}
+                                />
+                              </div>
+                              
+                              {/* Save/Cancel buttons */}
+                              <div style={{display: 'flex', gap: '0.5rem', justifyContent: 'flex-end'}}>
+                                <button
+                                  onClick={() => {
+                                    setEditingArea(null);
+                                    setTempFormData({});
+                                    setTempNotes('');
+                                  }}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    border: '1px solid var(--border)',
+                                    borderRadius: '8px',
+                                    backgroundColor: 'transparent',
+                                    color: 'var(--text-muted)',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                  }}
+                                >
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    // Save to userProfile
+                                    setUserProfile(prev => ({
+                                      ...prev,
+                                      tendPreferences: {
+                                        ...prev?.tendPreferences,
+                                        structuredInfo: {
+                                          ...prev?.tendPreferences?.structuredInfo,
+                                          [domain]: tempFormData
+                                        },
+                                        lifeAreaNotes: {
+                                          ...prev?.tendPreferences?.lifeAreaNotes,
+                                          [domain]: tempNotes || undefined
+                                        }
+                                      }
+                                    }));
+                                    setEditingArea(null);
+                                    setTempFormData({});
+                                    setTempNotes('');
+                                  }}
+                                  style={{
+                                    padding: '0.5rem 1rem',
+                                    border: 'none',
+                                    borderRadius: '8px',
+                                    backgroundColor: 'var(--accent)',
+                                    color: 'white',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    fontWeight: 500,
+                                  }}
+                                >
+                                  Save
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            /* View Mode */
+                            <div>
+                              {hasInfo ? (
+                                <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem'}}>
+                                  {/* Show structured info */}
+                                  {areaConfig?.prompts.map(prompt => {
+                                    const value = structured[prompt.key];
+                                    if (!value) return null;
+                                    return (
+                                      <div key={prompt.key} style={{
+                                        padding: '0.5rem 0.75rem',
+                                        backgroundColor: 'var(--bg-card)',
+                                        borderRadius: '6px',
+                                        fontSize: '0.85rem'
+                                      }}>
+                                        <span style={{color: 'var(--text-muted)'}}>{prompt.label}: </span>
+                                        <span style={{color: 'var(--text)'}}>{value}</span>
+                                      </div>
+                                    );
+                                  })}
+                                  {/* Show notes */}
+                                  {notes && (
+                                    <div style={{
+                                      padding: '0.5rem 0.75rem',
+                                      backgroundColor: 'var(--bg-card)',
+                                      borderRadius: '6px',
+                                      fontSize: '0.85rem'
+                                    }}>
+                                      <span style={{color: 'var(--text-muted)'}}>Notes: </span>
+                                      <span style={{color: 'var(--text)'}}>{notes}</span>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <div style={{
+                                  padding: '1rem',
+                                  backgroundColor: 'var(--bg-card)',
+                                  borderRadius: '8px',
+                                  marginBottom: '1rem',
+                                  textAlign: 'center',
+                                  color: 'var(--text-muted)',
+                                  fontSize: '0.85rem'
+                                }}>
+                                  No information yet — add some to personalize your tends!
+                                </div>
+                              )}
+                              
+                              {/* Edit button */}
+                              <button
+                                onClick={() => {
+                                  setEditingArea(domain);
+                                  setTempFormData(structured);
+                                  setTempNotes(notes);
+                                }}
+                                style={{
+                                  width: '100%',
+                                  padding: '0.65rem',
+                                  border: '1px solid var(--border)',
+                                  borderRadius: '8px',
+                                  backgroundColor: 'var(--bg-card)',
+                                  color: 'var(--text)',
+                                  fontSize: '0.85rem',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  gap: '0.5rem',
+                                }}
+                              >
+                                <span>{hasInfo ? '✏️ Edit' : '➕ Add'}</span>
+                                <span>{hasInfo ? 'Details' : 'Information'}</span>
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             </div>
             
