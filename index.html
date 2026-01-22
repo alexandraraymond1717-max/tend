@@ -180,76 +180,172 @@
     };
 
     // Tendy templates by domain and difficulty (1=easy, 2=medium, 3=hard)
+    // Type weights per life area: { action: weight, reflective: weight }
+    const TYPE_WEIGHTS = {
+      career: { action: 1.0, reflective: 0.0 },
+      health: { action: 1.0, reflective: 0.0 },
+      education: { action: 1.0, reflective: 0.0 },
+      recreation: { action: 1.0, reflective: 0.0 },
+      family: { action: 0.7, reflective: 0.3 },
+      partner: { action: 0.7, reflective: 0.3 },
+      friendships: { action: 0.7, reflective: 0.3 },
+      community: { action: 0.7, reflective: 0.3 },
+      finances: { action: 0.5, reflective: 0.5 },
+      spirituality: { action: 0.3, reflective: 0.7 },
+      mentalHealth: { action: 0.3, reflective: 0.7 },
+    };
+
     const TENDY_TEMPLATES = {
       family: [
-        { text: 'Send a quick "thinking of you" text to a family member', difficulty: 1, duration: '2 min' },
-        { text: 'Call a family member you haven\'t spoken to recently', difficulty: 2, duration: '15 min' },
-        { text: 'Plan a family activity for the upcoming weekend', difficulty: 3, duration: '30 min' },
-        { text: 'Share a favorite memory with a family member', difficulty: 1, duration: '5 min' },
-        { text: 'Look through old family photos and share one', difficulty: 2, duration: '10 min' },
+        // Easy (5 min) - Action
+        { text: 'Send a "thinking of you" text to a family member', type: 'action', difficulty: 1 },
+        { text: 'Share a photo or memory with a family member', type: 'action', difficulty: 1 },
+        { text: 'Send a voice note to a family member', type: 'action', difficulty: 1 },
+        // Easy (5 min) - Reflective
+        { text: 'Write down one thing you appreciate about a family member', type: 'reflective', difficulty: 1 },
+        // Hard (30 min) - Action
+        { text: 'Call a family member for a real conversation', type: 'action', difficulty: 3 },
+        { text: 'Plan a family activity for the upcoming weekend', type: 'action', difficulty: 3 },
+        { text: 'Write a heartfelt letter or long message to a family member', type: 'action', difficulty: 3 },
+        // Hard (30 min) - Reflective
+        { text: 'Journal about your relationship with your family and one way to improve it', type: 'reflective', difficulty: 3 },
       ],
       partner: [
-        { text: 'Leave a sweet note for your partner', difficulty: 1, duration: '2 min' },
-        { text: 'Plan a surprise for your partner', difficulty: 2, duration: '15 min' },
-        { text: 'Have a device-free conversation about dreams and goals', difficulty: 3, duration: '30 min' },
-        { text: 'Send your partner a message about what you appreciate', difficulty: 1, duration: '3 min' },
-        { text: 'Cook or order your partner\'s favorite meal', difficulty: 2, duration: '20 min' },
+        // Easy - Action
+        { text: 'Leave a sweet note for your partner', type: 'action', difficulty: 1 },
+        { text: 'Send your partner a message about what you appreciate about them', type: 'action', difficulty: 1 },
+        { text: 'Give your partner a genuine compliment', type: 'action', difficulty: 1 },
+        // Easy - Reflective
+        { text: 'Write down one thing your partner did recently that you appreciated', type: 'reflective', difficulty: 1 },
+        // Hard - Action
+        { text: 'Have a device-free conversation about dreams and goals', type: 'action', difficulty: 3 },
+        { text: 'Plan a surprise or date for your partner', type: 'action', difficulty: 3 },
+        { text: 'Cook a meal together or for your partner', type: 'action', difficulty: 3 },
+        // Hard - Reflective
+        { text: 'Journal about what makes your relationship strong and one area to grow', type: 'reflective', difficulty: 3 },
       ],
       friendships: [
-        { text: 'React to a friend\'s social media post with a genuine comment', difficulty: 1, duration: '2 min' },
-        { text: 'Reach out to a friend you haven\'t talked to in a while', difficulty: 2, duration: '10 min' },
-        { text: 'Plan a get-together with friends', difficulty: 3, duration: '20 min' },
-        { text: 'Send a voice memo to a friend', difficulty: 1, duration: '3 min' },
-        { text: 'Share something that made you think of a specific friend', difficulty: 2, duration: '5 min' },
+        // Easy - Action
+        { text: 'Send a genuine message to a friend you haven\'t talked to recently', type: 'action', difficulty: 1 },
+        { text: 'React to a friend\'s post with a thoughtful comment', type: 'action', difficulty: 1 },
+        { text: 'Send a voice memo to a friend', type: 'action', difficulty: 1 },
+        // Easy - Reflective
+        { text: 'Write down one friend you want to reconnect with and why', type: 'reflective', difficulty: 1 },
+        // Hard - Action
+        { text: 'Call a friend for a real catch-up conversation', type: 'action', difficulty: 3 },
+        { text: 'Plan a get-together with friends', type: 'action', difficulty: 3 },
+        { text: 'Reach out to an old friend you\'ve lost touch with', type: 'action', difficulty: 3 },
+        // Hard - Reflective
+        { text: 'Journal about the friendships that matter most and how to nurture them', type: 'reflective', difficulty: 3 },
       ],
       career: [
-        { text: 'Organize your workspace for 5 minutes', difficulty: 1, duration: '5 min' },
-        { text: 'Reach out to a colleague to offer help or collaboration', difficulty: 2, duration: '10 min' },
-        { text: 'Work on a skill that would advance your career', difficulty: 3, duration: '30 min' },
-        { text: 'Review and update one section of your resume or portfolio', difficulty: 2, duration: '15 min' },
-        { text: 'Write down 3 wins from your recent work', difficulty: 1, duration: '5 min' },
+        // Easy - Action (100% action for career)
+        { text: 'Organize your workspace for 5 minutes', type: 'action', difficulty: 1 },
+        { text: 'Identify your top priority for today and write it down', type: 'action', difficulty: 1 },
+        { text: 'Send one networking message or email', type: 'action', difficulty: 1 },
+        { text: 'Clear out your inbox or task list for 5 minutes', type: 'action', difficulty: 1 },
+        // Hard - Action
+        { text: 'Work on a skill that would advance your career', type: 'action', difficulty: 3 },
+        { text: 'Update a section of your resume or portfolio', type: 'action', difficulty: 3 },
+        { text: 'Reach out to someone for career advice or mentorship', type: 'action', difficulty: 3 },
+        { text: 'Complete a challenging work task you\'ve been avoiding', type: 'action', difficulty: 3 },
       ],
       education: [
-        { text: 'Read an article about something you want to learn', difficulty: 1, duration: '10 min' },
-        { text: 'Watch an educational video or tutorial', difficulty: 2, duration: '20 min' },
-        { text: 'Start or continue a course or book chapter', difficulty: 3, duration: '45 min' },
-        { text: 'Write down 3 things you learned today', difficulty: 1, duration: '5 min' },
-        { text: 'Teach someone something you know well', difficulty: 2, duration: '15 min' },
+        // Easy - Action (100% action)
+        { text: 'Read one article about something you want to learn', type: 'action', difficulty: 1 },
+        { text: 'Watch a 5-minute educational video', type: 'action', difficulty: 1 },
+        { text: 'Learn one new word, concept, or fact', type: 'action', difficulty: 1 },
+        { text: 'Add one item to your learning list or reading list', type: 'action', difficulty: 1 },
+        // Hard - Action
+        { text: 'Spend 30 minutes on a course, tutorial, or book', type: 'action', difficulty: 3 },
+        { text: 'Practice a skill you\'re trying to develop', type: 'action', difficulty: 3 },
+        { text: 'Teach someone something you know', type: 'action', difficulty: 3 },
+        { text: 'Work on a personal learning project', type: 'action', difficulty: 3 },
       ],
       recreation: [
-        { text: 'Do something playful for 5 minutes', difficulty: 1, duration: '5 min' },
-        { text: 'Spend time on a hobby you\'ve been neglecting', difficulty: 2, duration: '20 min' },
-        { text: 'Try something creative or artistic', difficulty: 3, duration: '30 min' },
-        { text: 'Listen to music that brings you joy', difficulty: 1, duration: '10 min' },
-        { text: 'Play a game (video game, card game, puzzle)', difficulty: 2, duration: '20 min' },
+        // Easy - Action (100% action)
+        { text: 'Do something playful for 5 minutes', type: 'action', difficulty: 1 },
+        { text: 'Listen to music that brings you joy', type: 'action', difficulty: 1 },
+        { text: 'Watch a funny video or read something entertaining', type: 'action', difficulty: 1 },
+        { text: 'Step outside and enjoy the weather for 5 minutes', type: 'action', difficulty: 1 },
+        // Hard - Action
+        { text: 'Spend time on a hobby you\'ve been neglecting', type: 'action', difficulty: 3 },
+        { text: 'Try something creative or artistic', type: 'action', difficulty: 3 },
+        { text: 'Play a game you enjoy', type: 'action', difficulty: 3 },
+        { text: 'Do an activity purely for fun with no productive goal', type: 'action', difficulty: 3 },
       ],
       spirituality: [
-        { text: 'Take 5 deep breaths and notice how you feel', difficulty: 1, duration: '2 min' },
-        { text: 'Spend 10 minutes in quiet reflection or meditation', difficulty: 2, duration: '10 min' },
-        { text: 'Journal about what gives your life meaning', difficulty: 3, duration: '20 min' },
-        { text: 'Practice gratitude by naming 3 things you\'re thankful for', difficulty: 1, duration: '3 min' },
-        { text: 'Spend time in nature, noticing the world around you', difficulty: 2, duration: '15 min' },
+        // Easy - Action
+        { text: 'Take 5 deep breaths and center yourself', type: 'action', difficulty: 1 },
+        { text: 'Step outside and notice something beautiful', type: 'action', difficulty: 1 },
+        // Easy - Reflective
+        { text: 'Write down 3 things you\'re grateful for', type: 'reflective', difficulty: 1 },
+        { text: 'Name one thing that gives your life meaning today', type: 'reflective', difficulty: 1 },
+        { text: 'Pause and ask yourself: what do I need right now?', type: 'reflective', difficulty: 1 },
+        // Hard - Action
+        { text: 'Meditate or sit in stillness for 20+ minutes', type: 'action', difficulty: 3 },
+        { text: 'Spend 30 minutes in nature without your phone', type: 'action', difficulty: 3 },
+        // Hard - Reflective
+        { text: 'Journal about what gives your life meaning', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on your values and whether you\'re living by them', type: 'reflective', difficulty: 3 },
+        { text: 'Write about a difficult experience and what it taught you', type: 'reflective', difficulty: 3 },
       ],
       community: [
-        { text: 'Do one small act of kindness for a stranger', difficulty: 1, duration: '5 min' },
-        { text: 'Research a local cause or organization to support', difficulty: 2, duration: '15 min' },
-        { text: 'Volunteer your time or skills for a cause you care about', difficulty: 3, duration: '60 min' },
-        { text: 'Share or amplify an important cause on social media', difficulty: 1, duration: '3 min' },
-        { text: 'Donate to or support a local business', difficulty: 2, duration: '10 min' },
+        // Easy - Action
+        { text: 'Do one small act of kindness for a stranger', type: 'action', difficulty: 1 },
+        { text: 'Share or amplify a cause you care about', type: 'action', difficulty: 1 },
+        { text: 'Leave a positive review for a local business', type: 'action', difficulty: 1 },
+        // Easy - Reflective
+        { text: 'Write down one way you could contribute to your community', type: 'reflective', difficulty: 1 },
+        // Hard - Action
+        { text: 'Volunteer your time for a cause you care about', type: 'action', difficulty: 3 },
+        { text: 'Attend a community event or meeting', type: 'action', difficulty: 3 },
+        { text: 'Donate to or support a local organization', type: 'action', difficulty: 3 },
+        // Hard - Reflective
+        { text: 'Research a local cause and write down how you could help', type: 'reflective', difficulty: 3 },
       ],
       health: [
-        { text: 'Drink a full glass of water right now', difficulty: 1, duration: '1 min' },
-        { text: 'Go for a 15-minute walk', difficulty: 2, duration: '15 min' },
-        { text: 'Do a full workout or fitness class', difficulty: 3, duration: '45 min' },
-        { text: 'Stretch for 5 minutes', difficulty: 1, duration: '5 min' },
-        { text: 'Prepare a healthy meal or snack', difficulty: 2, duration: '20 min' },
+        // Easy - Action (100% action)
+        { text: 'Drink a full glass of water', type: 'action', difficulty: 1 },
+        { text: 'Stretch for 5 minutes', type: 'action', difficulty: 1 },
+        { text: 'Do a quick 5-minute movement break', type: 'action', difficulty: 1 },
+        { text: 'Eat a piece of fruit or a healthy snack', type: 'action', difficulty: 1 },
+        // Hard - Action
+        { text: 'Exercise for 30 minutes', type: 'action', difficulty: 3 },
+        { text: 'Prepare a healthy meal from scratch', type: 'action', difficulty: 3 },
+        { text: 'Go for a 30-minute walk or run', type: 'action', difficulty: 3 },
+        { text: 'Do a full stretching or yoga session', type: 'action', difficulty: 3 },
+      ],
+      finances: [
+        // Easy - Action
+        { text: 'Check your bank balance and note any surprises', type: 'action', difficulty: 1 },
+        { text: 'Unsubscribe from one thing you don\'t use', type: 'action', difficulty: 1 },
+        { text: 'Add one expense to a tracker or budget', type: 'action', difficulty: 1 },
+        // Easy - Reflective
+        { text: 'Write down one financial goal for this month', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect on one recent purchase - was it worth it?', type: 'reflective', difficulty: 1 },
+        // Hard - Action
+        { text: 'Review and organize your budget for the month', type: 'action', difficulty: 3 },
+        { text: 'Research one way to save money or grow wealth', type: 'action', difficulty: 3 },
+        { text: 'Set up or review an automatic savings transfer', type: 'action', difficulty: 3 },
+        // Hard - Reflective
+        { text: 'Journal about your relationship with money and one shift you want to make', type: 'reflective', difficulty: 3 },
       ],
       mentalHealth: [
-        { text: 'Step away from screens for 10 minutes', difficulty: 1, duration: '10 min' },
-        { text: 'Journal about how you\'re really feeling', difficulty: 2, duration: '15 min' },
-        { text: 'Do something that\'s purely self-care', difficulty: 3, duration: '30 min' },
-        { text: 'Name your current emotion without judgment', difficulty: 1, duration: '2 min' },
-        { text: 'Set a boundary or say no to something draining', difficulty: 2, duration: '5 min' },
+        // Easy - Action
+        { text: 'Step away from screens for 5 minutes', type: 'action', difficulty: 1 },
+        { text: 'Take 5 slow, deep breaths', type: 'action', difficulty: 1 },
+        // Easy - Reflective
+        { text: 'Name your current emotion without judgment', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing that\'s weighing on you', type: 'reflective', difficulty: 1 },
+        { text: 'Ask yourself: what do I need right now?', type: 'reflective', difficulty: 1 },
+        // Hard - Action
+        { text: 'Do something that\'s purely self-care for 30 minutes', type: 'action', difficulty: 3 },
+        { text: 'Set a boundary or say no to something draining', type: 'action', difficulty: 3 },
+        // Hard - Reflective
+        { text: 'Journal about how you\'re really feeling', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on your stress levels and write down one way to reduce them', type: 'reflective', difficulty: 3 },
+        { text: 'Write a compassionate letter to yourself about something you\'re struggling with', type: 'reflective', difficulty: 3 },
       ],
     };
 
@@ -385,51 +481,86 @@
       VLQ_ORDER.forEach(d => {
         penaltyWeights[d] = Math.pow(0.8, recentDomainCounts[d]);
       });
-      
-      // GUARDRAIL 3: Template cooldown (30 days instead of 7)
-      const recentTemplates = tendyHistory
-        .filter(t => {
-          const daysDiff = (new Date(today) - new Date(t.date)) / (1000 * 60 * 60 * 24);
-          return daysDiff < 30;
-        })
-        .map(t => t.templateText || t.text);
 
-      // Select ONE domain for the entire day (all 3 difficulties)
+      // Select ONE domain for the entire day
       const todaysDomain = selectWeightedDomain(probabilities, domainsToAvoid, penaltyWeights);
       
       console.log('Selected domain for today:', todaysDomain);
 
+      // Get type weights for this domain
+      const typeWeights = TYPE_WEIGHTS[todaysDomain] || { action: 0.5, reflective: 0.5 };
+      
+      // Select type based on weights
+      const selectType = () => {
+        return Math.random() < typeWeights.action ? 'action' : 'reflective';
+      };
+
       const tendies = [];
-      const difficulties = [1, 2, 3]; // Easy, Medium, Hard
+      const difficulties = [1, 3]; // Easy (5 min) and Hard (30 min) only
+
+      // Get recent templates with different cooldowns per difficulty
+      const recentEasyTemplates = tendyHistory
+        .filter(t => {
+          const daysDiff = (new Date(today) - new Date(t.date)) / (1000 * 60 * 60 * 24);
+          return daysDiff < 7 && t.difficulty === 1; // 7-day cooldown for easy
+        })
+        .map(t => t.templateText || t.text);
+      
+      const recentHardTemplates = tendyHistory
+        .filter(t => {
+          const daysDiff = (new Date(today) - new Date(t.date)) / (1000 * 60 * 60 * 24);
+          return daysDiff < 30 && t.difficulty === 3; // 30-day cooldown for hard
+        })
+        .map(t => t.templateText || t.text);
 
       difficulties.forEach(difficulty => {
-        // Get templates for this difficulty (not used in last 30 days)
-        const templates = TENDY_TEMPLATES[todaysDomain].filter(t => 
-          t.difficulty === difficulty && !recentTemplates.includes(t.text)
+        const recentTemplates = difficulty === 1 ? recentEasyTemplates : recentHardTemplates;
+        const selectedType = selectType();
+        
+        // Get templates for this difficulty and type (not recently used)
+        let templates = TENDY_TEMPLATES[todaysDomain].filter(t => 
+          t.difficulty === difficulty && 
+          t.type === selectedType && 
+          !recentTemplates.includes(t.text)
         );
 
-        // Fallback to any template of this difficulty if no unused ones
-        const fallbackTemplates = TENDY_TEMPLATES[todaysDomain].filter(t => t.difficulty === difficulty);
-        const availableTemplates = templates.length > 0 ? templates : fallbackTemplates;
+        // Fallback 1: any template of this difficulty and type (even if recently used)
+        if (templates.length === 0) {
+          templates = TENDY_TEMPLATES[todaysDomain].filter(t => 
+            t.difficulty === difficulty && t.type === selectedType
+          );
+        }
+        
+        // Fallback 2: any template of this difficulty (any type)
+        if (templates.length === 0) {
+          templates = TENDY_TEMPLATES[todaysDomain].filter(t => 
+            t.difficulty === difficulty && !recentTemplates.includes(t.text)
+          );
+        }
+        
+        // Fallback 3: any template of this difficulty
+        if (templates.length === 0) {
+          templates = TENDY_TEMPLATES[todaysDomain].filter(t => t.difficulty === difficulty);
+        }
 
-        if (availableTemplates.length > 0) {
-          const template = availableTemplates[Math.floor(Math.random() * availableTemplates.length)];
+        if (templates.length > 0) {
+          const template = templates[Math.floor(Math.random() * templates.length)];
           tendies.push({
             id: `${today}-${difficulty}`,
             domain: todaysDomain,
             text: template.text,
+            type: template.type,
             difficulty,
-            duration: template.duration,
-            points: difficulty, // 1, 2, or 3 points
+            points: difficulty, // 1 or 3 points
             gardenElement: GARDEN_ELEMENTS[todaysDomain],
             color: VLQ_DOMAINS[todaysDomain].color,
             domainName: VLQ_DOMAINS[todaysDomain].name,
             domainIcon: VLQ_DOMAINS[todaysDomain].icon,
             date: today,
-            generatedAt: new Date().toISOString(), // Timestamp for staleness check
+            generatedAt: new Date().toISOString(),
             completed: false,
             selected: false,
-            templateText: template.text, // Store for cooldown tracking
+            templateText: template.text,
           });
         }
       });
@@ -5276,7 +5407,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       const getDifficultyLabel = (difficulty) => {
         switch(difficulty) {
           case 1: return { text: '5 min', color: '#8FD4A0' };
-          case 2: return { text: '15 min', color: '#F9D07A' };
           case 3: return { text: '30 min', color: '#E8A090' };
           default: return { text: 'Task', color: '#7EB3E0' };
         }
