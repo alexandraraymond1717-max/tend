@@ -1428,22 +1428,26 @@
               hasVlqScores: !!data.vlqScores 
             });
             
-            // Check if tendies are from today by BOTH date field AND id prefix, AND not stale
+            // Check if tendies are old format (has difficulty=2, which we no longer use)
+            const hasOldFormat = data.todaysTendies?.some(t => t.difficulty === 2);
+            
+            // Check if tendies are from today by BOTH date field AND id prefix, AND not stale, AND not old format
             const tendiesAreFromToday = data.todaysTendies && 
               data.todaysTendies.length > 0 && 
               storedTendiesDate === today &&
               storedTendyId?.startsWith(today) &&
-              !isStale;
+              !isStale &&
+              !hasOldFormat;
             
             if (tendiesAreFromToday) {
               // Tendies are from today, use them
               console.log('Using stored tendies from today');
               setTodaysTendies(data.todaysTendies);
             } else if (data.vlqScores && Object.keys(data.vlqScores).length > 0) {
-              // Tendies are old, stale, or missing - generate new ones
+              // Tendies are old, stale, old format, or missing - generate new ones
               // Pass the previous domain so we don't repeat it
               const previousDomain = data.todaysTendies?.[0]?.domain || null;
-              console.log('Generating fresh daily tendies for', today, '- stored date was', storedTendiesDate, 'isStale:', isStale, 'previousDomain:', previousDomain);
+              console.log('Generating fresh daily tendies for', today, '- stored date was', storedTendiesDate, 'isStale:', isStale, 'hasOldFormat:', hasOldFormat, 'previousDomain:', previousDomain);
               const newTendies = generateDailyTendies(data.vlqScores, data.tendyHistory || [], previousDomain);
               setTodaysTendies(newTendies);
             } else {
@@ -5210,13 +5214,15 @@ This has been your year of growth and intention. What are you most proud of? Wha
         const tendiesDate = todaysTendies[0]?.date;
         const generatedAt = todaysTendies[0]?.generatedAt;
         const isStale = !generatedAt || (new Date() - new Date(generatedAt)) > (18 * 60 * 60 * 1000);
-        const tendiesAreFromToday = todaysTendies.length > 0 && tendiesDate === today && !isStale;
+        const hasOldFormat = todaysTendies.some(t => t.difficulty === 2);
+        const tendiesAreFromToday = todaysTendies.length > 0 && tendiesDate === today && !isStale && !hasOldFormat;
         
         console.log('TendyView check:', { 
           today, 
           tendiesDate,
           generatedAt,
           isStale,
+          hasOldFormat,
           tendiesAreFromToday, 
           tendiesCount: todaysTendies.length 
         });
@@ -5225,11 +5231,11 @@ This has been your year of growth and intention. What are you most proud of? Wha
         const allSameDomain = todaysTendies.length > 0 && 
           todaysTendies.every(t => t.domain === todaysTendies[0]?.domain);
         
-        // Regenerate if: not from today, stale, OR have different domains (old version)
+        // Regenerate if: not from today, stale, old format, OR have different domains
         if (!tendiesAreFromToday || (tendiesAreFromToday && !allSameDomain)) {
           // Pass the previous domain so we don't repeat it
           const previousDomain = todaysTendies[0]?.domain || null;
-          console.log('Generating new tendies - date mismatch, stale, or domain issue. Previous domain:', previousDomain);
+          console.log('Generating new tendies - date mismatch, stale, old format, or domain issue. Previous domain:', previousDomain);
           const newTendies = generateDailyTendies(vlqScores, tendyHistory, previousDomain);
           setTodaysTendies(newTendies);
         }
