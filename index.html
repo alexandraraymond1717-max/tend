@@ -3346,6 +3346,8 @@ I'm here to help with any planning.`
             setFlexPoints={setFlexPoints}
             weeklyCustomTendy={weeklyCustomTendy}
             setWeeklyCustomTendy={setWeeklyCustomTendy}
+            userProfile={userProfile}
+            setUserProfile={setUserProfile}
             apiKey={apiKey}
             onBack={() => setAppMode(null)}
           />
@@ -5156,6 +5158,8 @@ This has been your year of growth and intention. What are you most proud of? Wha
       setFlexPoints,
       weeklyCustomTendy,
       setWeeklyCustomTendy,
+      userProfile,
+      setUserProfile,
       apiKey,
       onBack 
     }) {
@@ -5165,6 +5169,13 @@ This has been your year of growth and intention. What are you most proud of? Wha
       const [showCustomTendyForm, setShowCustomTendyForm] = useState(false);
       const [customTendyText, setCustomTendyText] = useState('');
       const [isSubmittingCustom, setIsSubmittingCustom] = useState(false);
+      
+      // Tend chat state
+      const [showTendChat, setShowTendChat] = useState(false);
+      const [tendChatMessages, setTendChatMessages] = useState([]);
+      const [tendChatInput, setTendChatInput] = useState('');
+      const [isTendChatTyping, setIsTendChatTyping] = useState(false);
+      const tendChatRef = useRef(null);
 
       // Get the week identifier (e.g., "2026-W03")
       const getWeekIdentifier = () => {
@@ -5247,6 +5258,132 @@ This has been your year of growth and intention. What are you most proud of? Wha
           selected: false
         })));
       };
+
+      // Tend chat function
+      const sendTendChatMessage = async () => {
+        if (!tendChatInput.trim() || !apiKey || !selectedTendy) return;
+        
+        const userMessage = tendChatInput.trim();
+        setTendChatInput('');
+        setTendChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+        setIsTendChatTyping(true);
+        
+        try {
+          const tendPreferences = userProfile?.tendPreferences || {};
+          
+          const systemPrompt = `You are Tend, a helpful assistant for a daily wellness app. The user has selected a daily tend (task) and wants to chat about it.
+
+Current tend: "${selectedTendy.text}"
+Life area: ${selectedTendy.domainName}
+Type: ${selectedTendy.type || 'action'}
+Difficulty: ${selectedTendy.difficulty === 1 ? '5 minutes' : '30 minutes'}
+
+User's existing preferences (if any): ${JSON.stringify(tendPreferences)}
+
+Your job is to:
+1. Help them with this tend - clarify, motivate, or adapt it to their situation
+2. Learn about their context, resources, and preferences to improve future tends
+3. If they share relevant info (like "I have a gym", "I work from home", "I don't have a partner"), acknowledge it and let them know you'll remember it
+
+When you learn something useful, include it at the END of your response in this exact format:
+[LEARN: category | info]
+
+Categories:
+- resources: things they have (gym, meditation app, etc.)
+- context: life situation (works from home, has kids, etc.)
+- preferences: what they like/dislike about tends
+- lifeAreaNotes: specific notes about a life area
+
+Examples:
+[LEARN: resources | has gym membership]
+[LEARN: context | works from home]
+[LEARN: preferences | prefers outdoor activities]
+[LEARN: lifeAreaNotes.family | not close with extended family]
+
+Keep responses concise and supportive. Don't mention the LEARN tags will be processed - just naturally acknowledge you'll remember.`;
+
+          const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 500,
+              system: systemPrompt,
+              messages: [...tendChatMessages, { role: 'user', content: userMessage }].map(m => ({
+                role: m.role,
+                content: m.content
+              }))
+            })
+          });
+
+          const data = await response.json();
+          let assistantMessage = data.content?.[0]?.text || "I'm sorry, I couldn't process that.";
+          
+          // Extract and process LEARN tags
+          const learnMatches = assistantMessage.matchAll(/\[LEARN:\s*([^\|]+)\s*\|\s*([^\]]+)\]/g);
+          const newPreferences = { ...tendPreferences };
+          
+          for (const match of learnMatches) {
+            const category = match[1].trim();
+            const info = match[2].trim();
+            
+            if (category.startsWith('lifeAreaNotes.')) {
+              const lifeArea = category.split('.')[1];
+              newPreferences.lifeAreaNotes = newPreferences.lifeAreaNotes || {};
+              newPreferences.lifeAreaNotes[lifeArea] = info;
+            } else if (category === 'resources') {
+              newPreferences.resources = newPreferences.resources || [];
+              if (!newPreferences.resources.includes(info)) {
+                newPreferences.resources.push(info);
+              }
+            } else if (category === 'context') {
+              newPreferences.context = newPreferences.context || {};
+              // Parse key-value from info like "works from home" -> { worksFromHome: true }
+              const key = info.replace(/\s+/g, '_').toLowerCase();
+              newPreferences.context[key] = true;
+            } else if (category === 'preferences') {
+              newPreferences.preferences = newPreferences.preferences || [];
+              if (!newPreferences.preferences.includes(info)) {
+                newPreferences.preferences.push(info);
+              }
+            }
+          }
+          
+          // Update user profile if we learned something new
+          if (JSON.stringify(newPreferences) !== JSON.stringify(tendPreferences)) {
+            setUserProfile(prev => ({
+              ...prev,
+              tendPreferences: newPreferences
+            }));
+            console.log('Updated tend preferences:', newPreferences);
+          }
+          
+          // Remove LEARN tags from displayed message
+          assistantMessage = assistantMessage.replace(/\[LEARN:[^\]]+\]/g, '').trim();
+          
+          setTendChatMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+        } catch (error) {
+          console.error('Tend chat error:', error);
+          setTendChatMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: "Sorry, I couldn't connect right now. Try again in a moment." 
+          }]);
+        }
+        
+        setIsTendChatTyping(false);
+      };
+
+      // Scroll tend chat to bottom
+      useEffect(() => {
+        if (tendChatRef.current) {
+          tendChatRef.current.scrollTop = tendChatRef.current.scrollHeight;
+        }
+      }, [tendChatMessages]);
 
       const completeTendy = () => {
         // Check if custom tendy is selected
@@ -5667,6 +5804,142 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 <div style={tendyStyles.celebrationPoints}>+{justCompletedPoints} point{justCompletedPoints !== 1 ? 's' : ''}</div>
               </div>
             )}
+            
+            {/* Tend Chat Modal */}
+            {showTendChat && (
+              <div style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000,
+                padding: '1rem',
+              }}>
+                <div style={{
+                  backgroundColor: 'var(--bg-card)',
+                  borderRadius: '16px',
+                  width: '100%',
+                  maxWidth: '500px',
+                  maxHeight: '80vh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                }}>
+                  {/* Chat Header */}
+                  <div style={{
+                    padding: '1rem',
+                    borderBottom: '1px solid var(--border)',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: 600, color: 'var(--text)' }}>Chat about this tend</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{selectedTendy?.domainName}</div>
+                    </div>
+                    <button 
+                      onClick={() => setShowTendChat(false)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '1.5rem',
+                        cursor: 'pointer',
+                        color: 'var(--text-muted)',
+                      }}
+                    >×</button>
+                  </div>
+                  
+                  {/* Chat Messages */}
+                  <div 
+                    ref={tendChatRef}
+                    style={{
+                      flex: 1,
+                      overflowY: 'auto',
+                      padding: '1rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem',
+                    }}
+                  >
+                    {tendChatMessages.map((msg, i) => (
+                      <div 
+                        key={i}
+                        style={{
+                          alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                          backgroundColor: msg.role === 'user' ? 'var(--accent)' : 'var(--bg-elevated)',
+                          color: msg.role === 'user' ? 'white' : 'var(--text)',
+                          padding: '0.75rem 1rem',
+                          borderRadius: '12px',
+                          maxWidth: '85%',
+                          fontSize: '0.9rem',
+                          whiteSpace: 'pre-wrap',
+                        }}
+                      >
+                        {msg.content}
+                      </div>
+                    ))}
+                    {isTendChatTyping && (
+                      <div style={{
+                        alignSelf: 'flex-start',
+                        backgroundColor: 'var(--bg-elevated)',
+                        padding: '0.75rem 1rem',
+                        borderRadius: '12px',
+                        color: 'var(--text-muted)',
+                        fontSize: '0.9rem',
+                      }}>
+                        Thinking...
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Chat Input */}
+                  <div style={{
+                    padding: '1rem',
+                    borderTop: '1px solid var(--border)',
+                    display: 'flex',
+                    gap: '0.5rem',
+                  }}>
+                    <input
+                      type="text"
+                      value={tendChatInput}
+                      onChange={(e) => setTendChatInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendTendChatMessage()}
+                      placeholder="Ask about this tend..."
+                      style={{
+                        flex: 1,
+                        padding: '0.75rem',
+                        borderRadius: '10px',
+                        border: '1px solid var(--border)',
+                        backgroundColor: 'var(--bg-main)',
+                        color: 'var(--text)',
+                        fontSize: '0.9rem',
+                      }}
+                    />
+                    <button
+                      onClick={sendTendChatMessage}
+                      disabled={!tendChatInput.trim() || isTendChatTyping}
+                      style={{
+                        padding: '0.75rem 1rem',
+                        borderRadius: '10px',
+                        border: 'none',
+                        backgroundColor: 'var(--accent)',
+                        color: 'white',
+                        cursor: tendChatInput.trim() && !isTendChatTyping ? 'pointer' : 'not-allowed',
+                        opacity: tendChatInput.trim() && !isTendChatTyping ? 1 : 0.5,
+                      }}
+                    >
+                      Send
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             <div style={tendyStyles.header}>
               <button style={tendyStyles.backButton} onClick={onBack}>
                 ← Back
@@ -5741,6 +6014,35 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       <span>Spend 1 flex point to pick a different difficulty</span>
                     </button>
                   )}
+                  
+                  {/* Chat about this tend button */}
+                  <button 
+                    onClick={() => {
+                      setShowTendChat(true);
+                      setTendChatMessages([{
+                        role: 'assistant',
+                        content: `This tend is: "${selectedTendy.text}"\n\nHow can I help? You can ask me to clarify, adapt it to your situation, or share what works/doesn't work for you.`
+                      }]);
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      backgroundColor: 'transparent',
+                      border: '1px solid var(--border)',
+                      borderRadius: '10px',
+                      color: 'var(--text-muted)',
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      marginBottom: '0.75rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <span>💬</span>
+                    <span>Chat about this tend</span>
+                  </button>
                   
                   <button style={tendyStyles.completeButton} onClick={() => {
                     // Complete regular tendy
