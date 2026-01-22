@@ -2006,6 +2006,14 @@ Respond with ONLY the task text, nothing else.`,
         console.log(`Saved ${currentConversationType} conversation:`, conversationId);
       };
 
+      // Wrapper to save conversation before switching modes
+      const switchAppMode = (newMode) => {
+        if (messages.length >= 3) {
+          saveCurrentConversation();
+        }
+        setAppMode(newMode);
+      };
+
       // Calculate user trends from existing data
       const calculateTrends = () => {
         const now = new Date();
@@ -3788,7 +3796,7 @@ I'm here to help with any planning.`
                   backgroundColor: 'var(--bg-elevated)',
                   border: '1px solid var(--border)',
                 }}
-                onClick={() => setAppMode('tendy')}
+                onClick={() => switchAppMode('tendy')}
                 title="Daily Tend"
               >
                 🌱 Daily Tend
@@ -3805,7 +3813,7 @@ I'm here to help with any planning.`
                   backgroundColor: 'var(--bg-elevated)',
                   border: '1px solid var(--border)',
                 }}
-                onClick={() => setAppMode('journal')}
+                onClick={() => switchAppMode('journal')}
                 title="Switch to Daily Journal"
               >
                 📝 Journal
@@ -3822,7 +3830,7 @@ I'm here to help with any planning.`
                   backgroundColor: 'var(--bg-elevated)',
                   border: '1px solid var(--border)',
                 }}
-                onClick={() => setAppMode('insights')}
+                onClick={() => switchAppMode('insights')}
                 title="Your Insights"
               >
                 📊 Insights
@@ -8400,6 +8408,19 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
                       {VLQ_ORDER.map(domain => {
                         const readiness = summary.allReadiness[domain];
+                        const prefs = userProfile?.tendPreferences || {};
+                        const lifeAreaNote = prefs.lifeAreaNotes?.[domain];
+                        const keywords = DOMAIN_CONTEXT_KEYWORDS[domain] || [];
+                        
+                        // Get all relevant info for this domain
+                        const relevantResources = (prefs.resources || [])
+                          .filter(r => keywords.some(kw => r.toLowerCase().includes(kw)));
+                        const relevantContext = Object.entries(prefs.context || {})
+                          .filter(([k, v]) => v && keywords.some(kw => k.toLowerCase().includes(kw)))
+                          .map(([k]) => k.replace(/_/g, ' '));
+                        const relevantPreferences = (prefs.preferences || [])
+                          .filter(p => keywords.some(kw => p.toLowerCase().includes(kw)));
+                        
                         return (
                           <div key={domain} style={{
                             padding: '0.75rem',
@@ -8438,18 +8459,37 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                               }} />
                             </div>
                             
-                            {/* Capabilities */}
-                            {readiness.capabilities.length > 0 ? (
+                            {/* Show ALL info for this domain */}
+                            {(lifeAreaNote || relevantResources.length > 0 || relevantContext.length > 0 || relevantPreferences.length > 0) ? (
                               <div style={{fontSize: '0.75rem'}}>
-                                {readiness.capabilities.map((cap, i) => (
-                                  <div key={i} style={{color: '#8FD4A0', marginBottom: '0.15rem'}}>
-                                    ✓ {cap.detail || cap.label}
+                                {lifeAreaNote && (
+                                  <div style={{marginBottom: '0.5rem', padding: '0.5rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '4px'}}>
+                                    <div style={{color: 'var(--text-muted)', fontSize: '0.65rem', marginBottom: '0.25rem'}}>📝 Life Area Notes</div>
+                                    <div style={{color: 'var(--text)'}}>{lifeAreaNote}</div>
                                   </div>
-                                ))}
+                                )}
+                                {relevantResources.length > 0 && (
+                                  <div style={{marginBottom: '0.35rem'}}>
+                                    <span style={{color: 'var(--text-muted)'}}>🎒 Resources: </span>
+                                    <span style={{color: '#8FD4A0'}}>{relevantResources.join(', ')}</span>
+                                  </div>
+                                )}
+                                {relevantContext.length > 0 && (
+                                  <div style={{marginBottom: '0.35rem'}}>
+                                    <span style={{color: 'var(--text-muted)'}}>🏠 Context: </span>
+                                    <span style={{color: '#8FD4A0'}}>{relevantContext.join(', ')}</span>
+                                  </div>
+                                )}
+                                {relevantPreferences.length > 0 && (
+                                  <div style={{marginBottom: '0.35rem'}}>
+                                    <span style={{color: 'var(--text-muted)'}}>💜 Preferences: </span>
+                                    <span style={{color: '#8FD4A0'}}>{relevantPreferences.join(', ')}</span>
+                                  </div>
+                                )}
                               </div>
                             ) : (
                               <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic'}}>
-                                {readiness.missing[0]?.label || 'No info yet'}
+                                No info yet - share details via "Chat about this tend"
                               </div>
                             )}
                           </div>
