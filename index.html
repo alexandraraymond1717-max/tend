@@ -351,46 +351,163 @@
 
     // ============ TEND PERSONALIZATION SYSTEM ============
     
-    // Calculate user's info score based on how much they've shared
-    function calculateInfoScore(userProfile) {
+    // Context keywords that are relevant to each life area
+    const DOMAIN_CONTEXT_KEYWORDS = {
+      family: ['family', 'parent', 'sibling', 'mom', 'dad', 'brother', 'sister', 'kids', 'children'],
+      partner: ['partner', 'spouse', 'husband', 'wife', 'girlfriend', 'boyfriend', 'relationship', 'married'],
+      friendships: ['friend', 'social', 'friends'],
+      career: ['work', 'job', 'career', 'office', 'remote', 'project', 'professional'],
+      education: ['learn', 'study', 'course', 'school', 'skill', 'read'],
+      recreation: ['hobby', 'fun', 'game', 'play', 'creative', 'music', 'art', 'sport'],
+      spirituality: ['meditation', 'spiritual', 'faith', 'mindful', 'religion', 'practice'],
+      community: ['volunteer', 'community', 'local', 'neighborhood', 'civic'],
+      health: ['gym', 'exercise', 'fitness', 'workout', 'yoga', 'run', 'health', 'diet'],
+      finances: ['budget', 'money', 'savings', 'invest', 'financial'],
+      mentalHealth: ['therapy', 'mental', 'stress', 'anxiety', 'self-care', 'boundaries'],
+    };
+    
+    // Calculate personalization readiness for a specific life area
+    function calculateDomainReadiness(domain, userProfile) {
       const prefs = userProfile?.tendPreferences || {};
-      let score = 0;
+      const keywords = DOMAIN_CONTEXT_KEYWORDS[domain] || [];
       
-      // Count resources (gym, guitar, etc.)
-      score += (prefs.resources || []).length;
+      const capabilities = [];
+      const missing = [];
       
-      // Count context items (works from home, has kids, etc.)
-      score += Object.keys(prefs.context || {}).length;
+      // Check 1: Life area specific notes (most valuable - 2 points)
+      const hasLifeAreaNotes = !!prefs.lifeAreaNotes?.[domain];
+      if (hasLifeAreaNotes) {
+        capabilities.push({
+          type: 'notes',
+          label: `Has ${VLQ_DOMAINS[domain]?.name} notes`,
+          detail: prefs.lifeAreaNotes[domain].substring(0, 50) + (prefs.lifeAreaNotes[domain].length > 50 ? '...' : ''),
+          points: 2
+        });
+      } else {
+        missing.push({
+          type: 'notes',
+          label: `Share details about ${VLQ_DOMAINS[domain]?.name.toLowerCase()}`,
+          example: domain === 'family' ? "e.g., 'My mom is Sarah, we talk weekly'" : 
+                   domain === 'career' ? "e.g., 'I work from home as a developer'" :
+                   domain === 'health' ? "e.g., 'I have a gym membership'" :
+                   `Share specific details about your ${VLQ_DOMAINS[domain]?.name.toLowerCase()}`
+        });
+      }
       
-      // Count preferences
-      score += (prefs.preferences || []).length;
+      // Check 2: Relevant context items (1 point each, max 2)
+      const relevantContext = Object.entries(prefs.context || {})
+        .filter(([key, value]) => value && keywords.some(kw => key.toLowerCase().includes(kw)))
+        .map(([key]) => key.replace(/_/g, ' '));
       
-      // Count life area notes
-      score += Object.keys(prefs.lifeAreaNotes || {}).length;
+      if (relevantContext.length > 0) {
+        capabilities.push({
+          type: 'context',
+          label: 'Relevant context',
+          detail: relevantContext.slice(0, 3).join(', '),
+          points: Math.min(relevantContext.length, 2)
+        });
+      }
       
-      // Count personal templates
-      score += (prefs.personalTemplates || []).length;
+      // Check 3: Relevant resources (1 point each, max 2)
+      const relevantResources = (prefs.resources || [])
+        .filter(r => keywords.some(kw => r.toLowerCase().includes(kw)));
       
-      return score;
-    }
-
-    // Get AI generation ratio based on info score
-    function getAIRatio(infoScore) {
-      if (infoScore >= 13) return 0.7;  // Rich info: 70% AI fresh
-      if (infoScore >= 8) return 0.5;   // Good info: 50% AI fresh
-      if (infoScore >= 4) return 0.3;   // Some info: 30% AI fresh
-      return 0.1;                        // Low info: 10% AI fresh
+      if (relevantResources.length > 0) {
+        capabilities.push({
+          type: 'resources',
+          label: 'Has resources',
+          detail: relevantResources.slice(0, 3).join(', '),
+          points: Math.min(relevantResources.length, 2)
+        });
+      }
+      
+      // Check 4: Relevant preferences (1 point)
+      const relevantPreferences = (prefs.preferences || [])
+        .filter(p => keywords.some(kw => p.toLowerCase().includes(kw)));
+      
+      if (relevantPreferences.length > 0) {
+        capabilities.push({
+          type: 'preferences',
+          label: 'Has preferences',
+          detail: relevantPreferences.slice(0, 2).join(', '),
+          points: 1
+        });
+      }
+      
+      // Calculate total score (max 7 points per domain)
+      const score = capabilities.reduce((sum, c) => sum + c.points, 0);
+      const maxScore = 7;
+      
+      // Determine readiness level
+      let level, color, aiRatio;
+      if (score >= 5) {
+        level = 'Rich';
+        color = '#8FD4A0';
+        aiRatio = 0.7; // 70% AI generation
+      } else if (score >= 3) {
+        level = 'Good';
+        color = '#7EB3E0';
+        aiRatio = 0.5; // 50% AI generation
+      } else if (score >= 1) {
+        level = 'Some';
+        color = '#F9D07A';
+        aiRatio = 0.2; // 20% AI generation
+      } else {
+        level = 'None';
+        color = '#E8A090';
+        aiRatio = 0; // 0% AI generation - pool only
+      }
+      
+      return {
+        domain,
+        domainName: VLQ_DOMAINS[domain]?.name,
+        score,
+        maxScore,
+        percentage: Math.round((score / maxScore) * 100),
+        level,
+        color,
+        aiRatio,
+        capabilities,
+        missing,
+        canPersonalize: score >= 1,
+        canGenerateAI: score >= 3
+      };
     }
     
-    // Get info level label
-    function getInfoLevel(infoScore) {
-      if (infoScore >= 13) return { level: 'Rich', color: '#8FD4A0' };
-      if (infoScore >= 8) return { level: 'Good', color: '#7EB3E0' };
-      if (infoScore >= 4) return { level: 'Some', color: '#F9D07A' };
-      return { level: 'Low', color: '#E8A090' };
+    // Calculate readiness for all domains
+    function calculateAllDomainReadiness(userProfile) {
+      const readiness = {};
+      VLQ_ORDER.forEach(domain => {
+        readiness[domain] = calculateDomainReadiness(domain, userProfile);
+      });
+      return readiness;
+    }
+    
+    // Get overall personalization summary
+    function getPersonalizationSummary(userProfile) {
+      const allReadiness = calculateAllDomainReadiness(userProfile);
+      const domains = Object.values(allReadiness);
+      
+      const richCount = domains.filter(d => d.level === 'Rich').length;
+      const goodCount = domains.filter(d => d.level === 'Good').length;
+      const someCount = domains.filter(d => d.level === 'Some').length;
+      const noneCount = domains.filter(d => d.level === 'None').length;
+      
+      const avgScore = domains.reduce((sum, d) => sum + d.score, 0) / domains.length;
+      
+      return {
+        allReadiness,
+        richCount,
+        goodCount,
+        someCount,
+        noneCount,
+        avgScore: Math.round(avgScore * 10) / 10,
+        totalDomains: domains.length,
+        personalizedDomains: domains.filter(d => d.canPersonalize).length
+      };
     }
 
-    // Personalize a template using AI
+    // Personalize a template using AI (only if domain has context)
     async function personalizeTemplate(templateText, userProfile, domain, apiKey) {
       const prefs = userProfile?.tendPreferences || {};
       
@@ -727,6 +844,7 @@ Respond with ONLY the task text, nothing else.`,
     }
 
     // Async version that personalizes or generates fresh AI tends
+    // Uses PER-DOMAIN readiness, not global score
     async function generatePersonalizedTendies(vlqScores, tendyHistory, previousShownDomain, userProfile, apiKey) {
       // First generate base tendies from pool
       const baseTendies = generateDailyTendies(vlqScores, tendyHistory, previousShownDomain);
@@ -735,19 +853,36 @@ Respond with ONLY the task text, nothing else.`,
         return baseTendies;
       }
       
-      const infoScore = calculateInfoScore(userProfile);
-      const aiRatio = getAIRatio(infoScore);
+      // Get the domain for today's tendies (they all share the same domain)
+      const todaysDomain = baseTendies[0]?.domain;
+      if (!todaysDomain) return baseTendies;
       
-      console.log('Tend personalization:', { infoScore, aiRatio: `${(aiRatio * 100).toFixed(0)}%` });
+      // Calculate readiness for THIS SPECIFIC domain
+      const domainReadiness = calculateDomainReadiness(todaysDomain, userProfile);
       
-      // Process each tendy
+      console.log(`Tend personalization for ${domainReadiness.domainName}:`, {
+        score: `${domainReadiness.score}/${domainReadiness.maxScore}`,
+        level: domainReadiness.level,
+        aiRatio: `${(domainReadiness.aiRatio * 100).toFixed(0)}%`,
+        capabilities: domainReadiness.capabilities.map(c => c.label)
+      });
+      
+      // If no context for this domain at all, just return pool templates as-is
+      if (!domainReadiness.canPersonalize) {
+        console.log(`No ${domainReadiness.domainName} context - using pool templates only`);
+        return baseTendies.map(t => ({
+          ...t,
+          personalizationNote: `No ${domainReadiness.domainName.toLowerCase()} info yet - share details via tend chat!`
+        }));
+      }
+      
+      // Process each tendy using THIS DOMAIN's AI ratio
       const enhancedTendies = await Promise.all(baseTendies.map(async (tendy) => {
         const roll = Math.random();
         
-        // Decision: use AI fresh OR personalize pool template
-        if (roll < aiRatio) {
-          // Try to generate fresh AI tend
-          console.log(`Rolling AI generation for ${tendy.difficulty === 1 ? '5min' : '30min'} (roll: ${roll.toFixed(2)} < ${aiRatio})`);
+        // Only try AI generation if domain has enough context
+        if (domainReadiness.canGenerateAI && roll < domainReadiness.aiRatio) {
+          console.log(`Rolling AI generation for ${tendy.difficulty === 1 ? '5min' : '30min'} (roll: ${roll.toFixed(2)} < ${domainReadiness.aiRatio})`);
           const freshText = await generateFreshAITend(
             tendy.domain, 
             tendy.difficulty, 
@@ -763,21 +898,31 @@ Respond with ONLY the task text, nothing else.`,
               isAIGenerated: true,
               isPersonalized: true,
               source: 'ai-generated',
+              domainReadiness: domainReadiness.level,
             };
           }
-          // Fall through to personalization if AI generation fails
         }
         
-        // Try to personalize the pool template
-        console.log(`Personalizing pool template for ${tendy.difficulty === 1 ? '5min' : '30min'}`);
-        const personalizedText = await personalizeTemplate(tendy.originalText, userProfile, tendy.domain, apiKey);
+        // Try to personalize the pool template (if we have at least some context)
+        if (domainReadiness.canPersonalize) {
+          console.log(`Personalizing pool template for ${tendy.difficulty === 1 ? '5min' : '30min'}`);
+          const personalizedText = await personalizeTemplate(tendy.originalText, userProfile, tendy.domain, apiKey);
+          
+          const wasPersonalized = personalizedText !== tendy.originalText;
+          return {
+            ...tendy,
+            text: personalizedText,
+            isPersonalized: wasPersonalized,
+            source: wasPersonalized ? 'pool-personalized' : 'pool',
+            domainReadiness: domainReadiness.level,
+          };
+        }
         
-        const wasPersonalized = personalizedText !== tendy.originalText;
+        // No personalization possible
         return {
           ...tendy,
-          text: personalizedText,
-          isPersonalized: wasPersonalized,
-          source: wasPersonalized ? 'pool-personalized' : 'pool',
+          source: 'pool',
+          domainReadiness: domainReadiness.level,
         };
       }));
       
@@ -1814,7 +1959,7 @@ Respond with ONLY the task text, nothing else.`,
         if (messages.length === 0) return;
         
         // Only save certain types of conversations
-        const typesToSave = ['monthly_review', 'yearly_review', 'onboarding'];
+        const typesToSave = ['monthly_review', 'yearly_review', 'onboarding', 'year_theme', 'values_exploration', 'life_design', 'general'];
         if (!typesToSave.includes(currentConversationType)) {
           // For general conversations, just extract insights but don't save full conversation
           const insights = extractInsights(messages);
@@ -8215,187 +8360,105 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 color: 'var(--text-muted)',
                 lineHeight: 1.5
               }}>
-                <strong style={{color: 'var(--text)'}}>How it works:</strong> The more you share with Tend (via the "Chat about this tend" button), the more personalized your daily tends become. Your <strong>Info Score</strong> determines how often AI generates completely custom tends vs. selecting from the template pool.
+                <strong style={{color: 'var(--text)'}}>How it works:</strong> Personalization is <strong>per life area</strong>. When a domain is selected for your daily tend, AI generation depends on how much you've shared about <em>that specific area</em>. Share details via the "Chat about this tend" button.
               </div>
               
-              {/* Info Score Card */}
+              {/* Per-Domain Readiness */}
               {(() => {
-                const infoScore = calculateInfoScore(userProfile);
-                const infoLevel = getInfoLevel(infoScore);
-                const aiRatio = getAIRatio(infoScore);
-                
-                // Thresholds for progress bar
-                const thresholds = [
-                  { min: 0, max: 3, label: 'Low', color: '#E8A090', aiPercent: 10 },
-                  { min: 4, max: 7, label: 'Some', color: '#F9D07A', aiPercent: 30 },
-                  { min: 8, max: 12, label: 'Good', color: '#7EB3E0', aiPercent: 50 },
-                  { min: 13, max: 20, label: 'Rich', color: '#8FD4A0', aiPercent: 70 },
-                ];
-                const currentThreshold = thresholds.find(t => infoScore >= t.min && infoScore <= t.max) || thresholds[3];
-                const nextThreshold = thresholds.find(t => t.min > infoScore);
-                
+                const summary = getPersonalizationSummary(userProfile);
                 return (
-                  <div style={{
-                    padding: '1.25rem',
-                    backgroundColor: 'var(--bg-elevated)',
-                    borderRadius: '12px',
-                    marginBottom: '1rem',
-                    border: `2px solid ${infoLevel.color}40`
-                  }}>
-                    {/* Score Header */}
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem'}}>
-                      <div>
-                        <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem'}}>Your Info Score</div>
-                        <div style={{display: 'flex', alignItems: 'baseline', gap: '0.5rem'}}>
-                          <span style={{fontSize: '3rem', fontWeight: 700, color: infoLevel.color, lineHeight: 1}}>{infoScore}</span>
-                          <span style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>/ 20+</span>
-                        </div>
+                  <div style={{marginBottom: '1rem'}}>
+                    {/* Summary Stats */}
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(4, 1fr)',
+                      gap: '0.5rem',
+                      marginBottom: '1rem'
+                    }}>
+                      <div style={{padding: '0.75rem', backgroundColor: '#8FD4A020', borderRadius: '8px', textAlign: 'center'}}>
+                        <div style={{fontSize: '1.5rem', fontWeight: 700, color: '#8FD4A0'}}>{summary.richCount}</div>
+                        <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>Rich</div>
                       </div>
-                      <div style={{textAlign: 'right'}}>
-                        <div style={{
-                          padding: '0.35rem 0.85rem',
-                          backgroundColor: `${infoLevel.color}20`,
-                          color: infoLevel.color,
-                          borderRadius: '20px',
-                          fontSize: '0.8rem',
-                          fontWeight: 600,
-                          marginBottom: '0.35rem'
-                        }}>{infoLevel.level} Info</div>
-                        <div style={{fontSize: '0.85rem', color: 'var(--text)'}}>
-                          <strong>{(aiRatio * 100).toFixed(0)}%</strong> AI-generated tends
-                        </div>
+                      <div style={{padding: '0.75rem', backgroundColor: '#7EB3E020', borderRadius: '8px', textAlign: 'center'}}>
+                        <div style={{fontSize: '1.5rem', fontWeight: 700, color: '#7EB3E0'}}>{summary.goodCount}</div>
+                        <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>Good</div>
+                      </div>
+                      <div style={{padding: '0.75rem', backgroundColor: '#F9D07A20', borderRadius: '8px', textAlign: 'center'}}>
+                        <div style={{fontSize: '1.5rem', fontWeight: 700, color: '#F9D07A'}}>{summary.someCount}</div>
+                        <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>Some</div>
+                      </div>
+                      <div style={{padding: '0.75rem', backgroundColor: '#E8A09020', borderRadius: '8px', textAlign: 'center'}}>
+                        <div style={{fontSize: '1.5rem', fontWeight: 700, color: '#E8A090'}}>{summary.noneCount}</div>
+                        <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>None</div>
                       </div>
                     </div>
                     
-                    {/* Progress Bar */}
-                    <div style={{marginBottom: '1rem'}}>
-                      <div style={{display: 'flex', gap: '2px', height: '8px', borderRadius: '4px', overflow: 'hidden'}}>
-                        {thresholds.map((t, i) => (
-                          <div key={i} style={{
-                            flex: t.max - t.min + 1,
-                            backgroundColor: infoScore >= t.min ? t.color : 'var(--border)',
-                            opacity: infoScore >= t.min ? 1 : 0.3,
-                          }} />
-                        ))}
-                      </div>
-                      <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '0.65rem', color: 'var(--text-muted)', marginTop: '0.25rem'}}>
-                        <span>0</span>
-                        <span>4</span>
-                        <span>8</span>
-                        <span>13</span>
-                        <span>20+</span>
-                      </div>
+                    {/* Domain List */}
+                    <div style={{fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text)', fontSize: '0.9rem'}}>
+                      Per-Domain Readiness
                     </div>
-                    
-                    {/* Next Level Hint */}
-                    {nextThreshold && (
-                      <div style={{
-                        padding: '0.5rem 0.75rem',
-                        backgroundColor: 'var(--bg-card)',
-                        borderRadius: '6px',
-                        fontSize: '0.75rem',
-                        color: 'var(--text-muted)',
-                        marginBottom: '1rem'
-                      }}>
-                        📈 <strong>{nextThreshold.min - infoScore} more</strong> to reach <strong style={{color: nextThreshold.color}}>{nextThreshold.label}</strong> level ({nextThreshold.aiPercent}% AI-generated)
-                      </div>
-                    )}
-                    
-                    {/* Score Breakdown */}
-                    <div style={{fontSize: '0.8rem'}}>
-                      <div style={{fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem'}}>Score Breakdown</div>
-                      <div style={{display: 'grid', gap: '0.5rem'}}>
-                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid var(--border)'}}>
-                          <div>
-                            <div style={{color: 'var(--text)'}}>🎒 Resources</div>
-                            <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>Things you have (gym, guitar, etc.)</div>
+                    <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
+                      {VLQ_ORDER.map(domain => {
+                        const readiness = summary.allReadiness[domain];
+                        return (
+                          <div key={domain} style={{
+                            padding: '0.75rem',
+                            backgroundColor: 'var(--bg-card)',
+                            borderRadius: '8px',
+                            borderLeft: `3px solid ${readiness.color}`
+                          }}>
+                            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem'}}>
+                              <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                                <span>{VLQ_DOMAINS[domain]?.icon}</span>
+                                <span style={{fontWeight: 500, color: 'var(--text)'}}>{readiness.domainName}</span>
+                              </div>
+                              <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                                <span style={{
+                                  padding: '0.2rem 0.5rem',
+                                  backgroundColor: `${readiness.color}20`,
+                                  color: readiness.color,
+                                  borderRadius: '4px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 600
+                                }}>{readiness.level}</span>
+                                <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
+                                  {(readiness.aiRatio * 100).toFixed(0)}% AI
+                                </span>
+                              </div>
+                            </div>
+                            
+                            {/* Progress bar */}
+                            <div style={{height: '4px', backgroundColor: 'var(--border)', borderRadius: '2px', marginBottom: '0.5rem'}}>
+                              <div style={{
+                                height: '100%',
+                                width: `${readiness.percentage}%`,
+                                backgroundColor: readiness.color,
+                                borderRadius: '2px',
+                                transition: 'width 0.3s'
+                              }} />
+                            </div>
+                            
+                            {/* Capabilities */}
+                            {readiness.capabilities.length > 0 ? (
+                              <div style={{fontSize: '0.75rem'}}>
+                                {readiness.capabilities.map((cap, i) => (
+                                  <div key={i} style={{color: '#8FD4A0', marginBottom: '0.15rem'}}>
+                                    ✓ {cap.detail || cap.label}
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic'}}>
+                                {readiness.missing[0]?.label || 'No info yet'}
+                              </div>
+                            )}
                           </div>
-                          <div style={{fontWeight: 600, color: 'var(--accent)'}}>{(userProfile?.tendPreferences?.resources || []).length}</div>
-                        </div>
-                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid var(--border)'}}>
-                          <div>
-                            <div style={{color: 'var(--text)'}}>🏠 Context</div>
-                            <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>Life situation (work from home, has kids, etc.)</div>
-                          </div>
-                          <div style={{fontWeight: 600, color: 'var(--accent)'}}>{Object.keys(userProfile?.tendPreferences?.context || {}).length}</div>
-                        </div>
-                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid var(--border)'}}>
-                          <div>
-                            <div style={{color: 'var(--text)'}}>💜 Preferences</div>
-                            <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>What you like (outdoor activities, mornings, etc.)</div>
-                          </div>
-                          <div style={{fontWeight: 600, color: 'var(--accent)'}}>{(userProfile?.tendPreferences?.preferences || []).length}</div>
-                        </div>
-                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0', borderBottom: '1px solid var(--border)'}}>
-                          <div>
-                            <div style={{color: 'var(--text)'}}>📝 Life Area Notes</div>
-                            <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>Specific details (sister's name, work project, etc.)</div>
-                          </div>
-                          <div style={{fontWeight: 600, color: 'var(--accent)'}}>{Object.keys(userProfile?.tendPreferences?.lifeAreaNotes || {}).length}</div>
-                        </div>
-                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0'}}>
-                          <div>
-                            <div style={{color: 'var(--text)'}}>✨ Personal Templates</div>
-                            <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>Custom tends created from your info</div>
-                          </div>
-                          <div style={{fontWeight: 600, color: 'var(--accent)'}}>{(userProfile?.tendPreferences?.personalTemplates || []).length}</div>
-                        </div>
-                      </div>
+                        );
+                      })}
                     </div>
                   </div>
                 );
               })()}
-              
-              {/* Learned Preferences */}
-              {userProfile?.tendPreferences && Object.keys(userProfile.tendPreferences).length > 0 && (
-                <div style={{marginBottom: '1rem'}}>
-                  <div style={{fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text)', fontSize: '0.9rem'}}>📚 Learned Preferences</div>
-                  
-                  {userProfile.tendPreferences.resources?.length > 0 && (
-                    <div style={{marginBottom: '0.5rem'}}>
-                      <div style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>Resources:</div>
-                      <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem'}}>
-                        {userProfile.tendPreferences.resources.map((r, i) => (
-                          <span key={i} style={{padding: '0.2rem 0.5rem', backgroundColor: 'var(--bg-card)', borderRadius: '4px', fontSize: '0.8rem'}}>{r}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {userProfile.tendPreferences.context && Object.keys(userProfile.tendPreferences.context).length > 0 && (
-                    <div style={{marginBottom: '0.5rem'}}>
-                      <div style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>Context:</div>
-                      <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem'}}>
-                        {Object.entries(userProfile.tendPreferences.context).filter(([k,v]) => v).map(([k], i) => (
-                          <span key={i} style={{padding: '0.2rem 0.5rem', backgroundColor: 'var(--bg-card)', borderRadius: '4px', fontSize: '0.8rem'}}>{k.replace(/_/g, ' ')}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {userProfile.tendPreferences.preferences?.length > 0 && (
-                    <div style={{marginBottom: '0.5rem'}}>
-                      <div style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>Preferences:</div>
-                      <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.25rem', marginTop: '0.25rem'}}>
-                        {userProfile.tendPreferences.preferences.map((p, i) => (
-                          <span key={i} style={{padding: '0.2rem 0.5rem', backgroundColor: 'var(--bg-card)', borderRadius: '4px', fontSize: '0.8rem'}}>{p}</span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {userProfile.tendPreferences.lifeAreaNotes && Object.keys(userProfile.tendPreferences.lifeAreaNotes).length > 0 && (
-                    <div style={{marginBottom: '0.5rem'}}>
-                      <div style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>Life Area Notes:</div>
-                      {Object.entries(userProfile.tendPreferences.lifeAreaNotes).map(([area, note], i) => (
-                        <div key={i} style={{padding: '0.5rem', backgroundColor: 'var(--bg-card)', borderRadius: '4px', fontSize: '0.8rem', marginTop: '0.25rem'}}>
-                          <strong>{VLQ_DOMAINS[area]?.name || area}:</strong> {note}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
               
               {/* Template Pool Summary */}
               <div style={{marginBottom: '1rem'}}>
@@ -8426,44 +8489,56 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 <div style={{fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text)', fontSize: '0.9rem'}}>🌿 Today's Generated Tendies</div>
                 {(todaysTendies || []).length > 0 ? (
                   <div>
-                    {(todaysTendies || []).map((tendy, i) => (
-                      <div key={i} style={{
-                        padding: '0.75rem',
-                        backgroundColor: 'var(--bg-card)',
-                        borderRadius: '8px',
-                        marginBottom: '0.5rem',
-                        borderLeft: `3px solid ${
-                          tendy.isAIGenerated ? 'var(--accent)' : 
-                          tendy.isPersonalized ? '#8FD4A0' : 
-                          'var(--border)'
-                        }`
-                      }}>
-                        <div style={{color: 'var(--text)', fontSize: '0.9rem', marginBottom: '0.25rem'}}>{tendy.text}</div>
-                        {tendy.originalText && tendy.originalText !== tendy.text && (
-                          <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: '0.25rem'}}>
-                            Original: {tendy.originalText}
+                    {(todaysTendies || []).map((tendy, i) => {
+                      const domainReadiness = calculateDomainReadiness(tendy.domain, userProfile);
+                      return (
+                        <div key={i} style={{
+                          padding: '0.75rem',
+                          backgroundColor: 'var(--bg-card)',
+                          borderRadius: '8px',
+                          marginBottom: '0.5rem',
+                          borderLeft: `3px solid ${
+                            tendy.isAIGenerated ? 'var(--accent)' : 
+                            tendy.isPersonalized ? '#8FD4A0' : 
+                            'var(--border)'
+                          }`
+                        }}>
+                          <div style={{color: 'var(--text)', fontSize: '0.9rem', marginBottom: '0.25rem'}}>{tendy.text}</div>
+                          {tendy.originalText && tendy.originalText !== tendy.text && (
+                            <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: '0.25rem'}}>
+                              Original: {tendy.originalText}
+                            </div>
+                          )}
+                          <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap'}}>
+                            <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
+                              {tendy.domainIcon} {tendy.domainName}
+                            </span>
+                            <span style={{fontSize: '0.75rem', padding: '0.1rem 0.4rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '4px'}}>
+                              {tendy.difficulty === 1 ? '5 min' : '30 min'}
+                            </span>
+                            <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>{tendy.type}</span>
+                            <span style={{
+                              fontSize: '0.7rem',
+                              padding: '0.1rem 0.4rem',
+                              borderRadius: '4px',
+                              backgroundColor: tendy.isAIGenerated ? 'var(--accent)' : tendy.isPersonalized ? '#8FD4A020' : 'transparent',
+                              color: tendy.isAIGenerated ? 'white' : tendy.isPersonalized ? '#8FD4A0' : 'var(--text-muted)',
+                            }}>
+                              {tendy.source || 'pool'}
+                            </span>
+                            <span style={{
+                              fontSize: '0.65rem',
+                              padding: '0.1rem 0.4rem',
+                              borderRadius: '4px',
+                              backgroundColor: `${domainReadiness.color}20`,
+                              color: domainReadiness.color,
+                            }}>
+                              {domainReadiness.level} context
+                            </span>
                           </div>
-                        )}
-                        <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap'}}>
-                          <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
-                            {tendy.domainIcon} {tendy.domainName}
-                          </span>
-                          <span style={{fontSize: '0.75rem', padding: '0.1rem 0.4rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '4px'}}>
-                            {tendy.difficulty === 1 ? '5 min' : '30 min'}
-                          </span>
-                          <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>{tendy.type}</span>
-                          <span style={{
-                            fontSize: '0.7rem',
-                            padding: '0.1rem 0.4rem',
-                            borderRadius: '4px',
-                            backgroundColor: tendy.isAIGenerated ? 'var(--accent)' : tendy.isPersonalized ? '#8FD4A020' : 'transparent',
-                            color: tendy.isAIGenerated ? 'white' : tendy.isPersonalized ? '#8FD4A0' : 'var(--text-muted)',
-                          }}>
-                            {tendy.source || 'pool'}
-                          </span>
                         </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 ) : (
                   <div style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>No tendies generated yet</div>
