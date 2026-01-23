@@ -9855,47 +9855,6 @@ Respond in JSON only: {"q": "Your question here?", "placeholder": "Example hints
                 </div>
               </div>
             )}
-            
-            {/* Journaling */}
-            <div style={insightsStyles.section}>
-              <h3 style={insightsStyles.sectionTitle}>
-                <span>📝</span>
-                <span>Journaling</span>
-              </h3>
-              <div style={insightsStyles.statsGrid}>
-                <div style={insightsStyles.statCard}>
-                  <div style={insightsStyles.statValue}>{trends.journaling.entriesThisMonth}</div>
-                  <div style={insightsStyles.statLabel}>This Month</div>
-                </div>
-                <div style={insightsStyles.statCard}>
-                  <div style={insightsStyles.statValue}>{trends.journaling.entriesThisYear}</div>
-                  <div style={insightsStyles.statLabel}>This Year</div>
-                </div>
-                <div style={insightsStyles.statCard}>
-                  <div style={insightsStyles.statValue}>{trends.journaling.currentStreak}</div>
-                  <div style={insightsStyles.statLabel}>Current Streak</div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Motivation */}
-            <div style={{
-              padding: '1.5rem',
-              backgroundColor: 'var(--accent-light)',
-              borderRadius: '16px',
-              border: '2px solid var(--accent)',
-              textAlign: 'center',
-            }}>
-              <div style={{fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.5rem'}}>
-                You have
-              </div>
-              <div style={{fontSize: '2rem', fontWeight: 600, color: 'var(--accent)', marginBottom: '0.5rem'}}>
-                {flexPoints} 🪴
-              </div>
-              <div style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
-                flex points for reselecting daily tends
-              </div>
-            </div>
           </div>
         </div>
       );
