@@ -2580,25 +2580,29 @@ ${navigationOptions}`;
       }, [isResizingSidebar]);
 
       // Scroll chat to bottom
-      const scrollChatToBottom = (smooth = true) => {
+      const scrollChatToBottom = () => {
         if (chatContainerRef.current) {
           chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
         }
       };
 
+      // Scroll when messages change
       useEffect(() => {
-        scrollChatToBottom(true);
+        // Use requestAnimationFrame to ensure DOM is updated
+        requestAnimationFrame(() => {
+          scrollChatToBottom();
+        });
       }, [messages]);
 
-      // Scroll to bottom when app first loads with messages
+      // Also scroll on initial load - with multiple attempts to ensure it works
       useEffect(() => {
-        if (dataLoaded && vlqCompleted) {
-          // Give time for messages to render, then scroll
-          setTimeout(() => {
-            scrollChatToBottom(false);
-          }, 300);
+        if (dataLoaded && vlqCompleted && messages.length > 0) {
+          // Multiple attempts with increasing delays
+          [100, 300, 500, 1000].forEach(delay => {
+            setTimeout(scrollChatToBottom, delay);
+          });
         }
-      }, [dataLoaded, vlqCompleted]);
+      }, [dataLoaded, vlqCompleted, messages.length]);
 
       const analyzeText = (text) => {
         const lower = text.toLowerCase();
