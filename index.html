@@ -2582,6 +2582,16 @@ ${navigationOptions}`;
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
       }, [messages]);
 
+      // Scroll to bottom when app first loads with messages
+      useEffect(() => {
+        if (dataLoaded && vlqCompleted) {
+          // Give time for messages to render, then scroll
+          setTimeout(() => {
+            messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
+          }, 200);
+        }
+      }, [dataLoaded, vlqCompleted]);
+
       const analyzeText = (text) => {
         const lower = text.toLowerCase();
         const detected = { values: [] };
