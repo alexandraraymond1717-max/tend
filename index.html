@@ -5742,9 +5742,14 @@ Categories:
 - resources: things they have (gym, meditation app, etc.)
 - context: life situation (works from home, has kids, etc.)
 - preferences: what they like/dislike about tends
-- lifeAreaNotes: specific notes about a life area
+- lifeAreaNotes.AREA: specific notes about a life area (family, partner, friendships, career, education, recreation, spirituality, community, health, mentalHealth)
 
-Examples:
+For info that spans MULTIPLE life areas, use comma-separated areas:
+[LEARN: lifeAreaNotes.family,partner | we cook dinner together every Sunday]
+[LEARN: lifeAreaNotes.health,recreation | loves hiking on weekends]
+[LEARN: lifeAreaNotes.career,education | taking online courses to advance at work]
+
+Single-area examples:
 [LEARN: resources | has gym membership]
 [LEARN: context | works from home]
 [LEARN: preferences | prefers outdoor activities]
@@ -5783,9 +5788,29 @@ Keep responses concise and supportive. Don't mention the LEARN tags will be proc
             const info = match[2].trim();
             
             if (category.startsWith('lifeAreaNotes.')) {
-              const lifeArea = category.split('.')[1];
-              newPreferences.lifeAreaNotes = newPreferences.lifeAreaNotes || {};
-              newPreferences.lifeAreaNotes[lifeArea] = info;
+              // Check for multi-domain (comma-separated)
+              const domainsStr = category.replace('lifeAreaNotes.', '');
+              const domains = domainsStr.split(',').map(d => d.trim()).filter(d => VLQ_ORDER.includes(d));
+              
+              if (domains.length > 1) {
+                // Multi-domain fact - store in special array
+                newPreferences.multiDomainFacts = newPreferences.multiDomainFacts || [];
+                const exists = newPreferences.multiDomainFacts.some(f => f.text === info);
+                if (!exists) {
+                  newPreferences.multiDomainFacts.push({ domains, text: info, addedAt: new Date().toISOString() });
+                }
+              } else if (domains.length === 1) {
+                // Single domain - store as before
+                const lifeArea = domains[0];
+                newPreferences.lifeAreaNotes = newPreferences.lifeAreaNotes || {};
+                // Append to existing notes rather than replace
+                const existing = newPreferences.lifeAreaNotes[lifeArea];
+                if (existing && !existing.includes(info)) {
+                  newPreferences.lifeAreaNotes[lifeArea] = existing + '; ' + info;
+                } else if (!existing) {
+                  newPreferences.lifeAreaNotes[lifeArea] = info;
+                }
+              }
             } else if (category === 'resources') {
               newPreferences.resources = newPreferences.resources || [];
               if (!newPreferences.resources.includes(info)) {
@@ -9165,8 +9190,14 @@ Respond in this exact JSON format only:
               {(() => {
                 const prefs = userProfile?.tendPreferences || {};
                 
-                // Collect all facts from profile
+                // Collect all facts from profile, tracking multi-domain facts
                 const allFacts = [];
+                const domainFactCounts = {};
+                VLQ_ORDER.forEach(d => domainFactCounts[d] = 0);
+                
+                // Check for multi-domain facts (stored as comma-separated domains)
+                const multiDomainFacts = prefs.multiDomainFacts || [];
+                
                 VLQ_ORDER.forEach(domain => {
                   const color = VLQ_DOMAINS[domain]?.color || '#888';
                   const structured = prefs.structuredInfo?.[domain] || {};
@@ -9174,18 +9205,43 @@ Respond in this exact JSON format only:
                   
                   Object.entries(structured).forEach(([key, value]) => {
                     if (value) {
-                      allFacts.push({ domain, text: value, color, type: 'structured' });
+                      allFacts.push({ domain, domains: [domain], text: value, color, type: 'structured' });
+                      domainFactCounts[domain]++;
                     }
                   });
                   
                   if (notes) {
-                    allFacts.push({ domain, text: notes, color, type: 'notes' });
+                    allFacts.push({ domain, domains: [domain], text: notes, color, type: 'notes' });
+                    domainFactCounts[domain]++;
                   }
                 });
                 
+                // Add multi-domain facts
+                multiDomainFacts.forEach(fact => {
+                  if (fact.domains && fact.domains.length > 0 && fact.text) {
+                    const primaryDomain = fact.domains[0];
+                    allFacts.push({
+                      domain: primaryDomain,
+                      domains: fact.domains,
+                      text: fact.text,
+                      color: VLQ_DOMAINS[primaryDomain]?.color || '#888',
+                      type: 'multi'
+                    });
+                    fact.domains.forEach(d => domainFactCounts[d]++);
+                  }
+                });
+                
+                // Calculate icon scale based on fact count (1.0 to 1.6)
+                const maxFacts = Math.max(...Object.values(domainFactCounts), 1);
+                const getIconScale = (domain) => {
+                  const count = domainFactCounts[domain] || 0;
+                  if (count === 0) return 1.0;
+                  return 1.0 + (count / maxFacts) * 0.6; // Scale from 1.0 to 1.6
+                };
+                
                 // Cleaner SVG layout - wider to prevent overlap
                 const width = 400;
-                const height = 260;
+                const height = 280;
                 const centerX = width / 2;
                 const centerY = height / 2;
                 
@@ -9197,18 +9253,39 @@ Respond in this exact JSON format only:
                   return { ...fact, x: centerX + Math.cos(angle) * radius, y: centerY + Math.sin(angle) * radius };
                 });
                 
-                // Life area icons - positioned in a wider ellipse to prevent overlap
+                // Life area icons - positioned in a wider ellipse, with growing sizes
                 const categoryNodes = VLQ_ORDER.map((domain, i) => {
                   const angle = (i / VLQ_ORDER.length) * Math.PI * 2 - Math.PI / 2;
                   const hasContent = prefs.structuredInfo?.[domain] || prefs.lifeAreaNotes?.[domain];
+                  const factCount = domainFactCounts[domain] || 0;
+                  const scale = getIconScale(domain);
                   return {
                     domain,
                     icon: VLQ_DOMAINS[domain]?.icon,
                     color: VLQ_DOMAINS[domain]?.color,
                     x: centerX + Math.cos(angle) * 160,
-                    y: centerY + Math.sin(angle) * 95,
+                    y: centerY + Math.sin(angle) * 100,
                     hasContent: !!hasContent,
+                    factCount,
+                    scale,
+                    baseRadius: 20,
                   };
+                });
+                
+                // Find multi-domain connections (facts that link multiple areas)
+                const connections = [];
+                allFacts.filter(f => f.domains && f.domains.length > 1).forEach(fact => {
+                  const domainNodes = fact.domains.map(d => categoryNodes.find(n => n.domain === d)).filter(Boolean);
+                  for (let i = 0; i < domainNodes.length; i++) {
+                    for (let j = i + 1; j < domainNodes.length; j++) {
+                      connections.push({
+                        from: domainNodes[i],
+                        to: domainNodes[j],
+                        color: fact.color,
+                        text: fact.text
+                      });
+                    }
+                  }
                 });
                 
                 return (
@@ -9227,6 +9304,28 @@ Respond in this exact JSON format only:
                         <circle cx={centerX} cy={centerY} r="30" fill="none" stroke="#C5B89A" strokeWidth="0.5" opacity="0.2" />
                         <circle cx={centerX} cy={centerY} r="65" fill="none" stroke="#C5B89A" strokeWidth="0.5" opacity="0.15" strokeDasharray="3 3" />
                         
+                        {/* Multi-domain connection lines (curved) */}
+                        {connections.map((conn, i) => {
+                          const midX = (conn.from.x + conn.to.x) / 2;
+                          const midY = (conn.from.y + conn.to.y) / 2;
+                          // Curve toward center
+                          const ctrlX = midX + (centerX - midX) * 0.5;
+                          const ctrlY = midY + (centerY - midY) * 0.5;
+                          return (
+                            <g key={`conn-${i}`}>
+                              <path
+                                d={`M ${conn.from.x} ${conn.from.y} Q ${ctrlX} ${ctrlY} ${conn.to.x} ${conn.to.y}`}
+                                fill="none"
+                                stroke={conn.color}
+                                strokeWidth="2.5"
+                                opacity="0.35"
+                                strokeLinecap="round"
+                              />
+                              <title>{conn.text}</title>
+                            </g>
+                          );
+                        })}
+                        
                         {/* Connection lines from center to facts */}
                         {factNodes.map((node, i) => (
                           <line key={`line-${i}`} x1={centerX} y1={centerY} x2={node.x} y2={node.y}
@@ -9236,24 +9335,39 @@ Respond in this exact JSON format only:
                         {/* Fact nodes (colored dots) */}
                         {factNodes.map((node, i) => (
                           <g key={`fact-${i}`}>
-                            <circle cx={node.x} cy={node.y} r="5" fill={node.color} opacity="0.85" />
-                            <title>{node.text}</title>
+                            <circle cx={node.x} cy={node.y} r={node.domains?.length > 1 ? 7 : 5} 
+                              fill={node.color} opacity="0.85" 
+                              stroke={node.domains?.length > 1 ? "white" : "none"}
+                              strokeWidth={node.domains?.length > 1 ? 2 : 0} />
+                            <title>{node.text}{node.domains?.length > 1 ? ` (${node.domains.map(d => VLQ_DOMAINS[d]?.name).join(' + ')})` : ''}</title>
                           </g>
                         ))}
                         
-                        {/* Category icons (outer ellipse) */}
-                        {categoryNodes.map((node, i) => (
-                          <g key={`cat-${i}`} style={{ cursor: 'pointer' }}
-                            onClick={() => setExpandedArea(expandedArea === node.domain ? null : node.domain)}>
-                            <circle cx={node.x} cy={node.y} r="20"
-                              fill={node.hasContent ? node.color : '#FDFBF7'}
-                              stroke={node.color} strokeWidth={node.hasContent ? "0" : "1.5"}
-                              opacity={node.hasContent ? 0.85 : 0.6} />
-                            <text x={node.x} y={node.y + 6} textAnchor="middle" fontSize="15" style={{ pointerEvents: 'none' }}>
-                              {node.icon}
-                            </text>
-                          </g>
-                        ))}
+                        {/* Category icons (outer ellipse) - with growing sizes */}
+                        {categoryNodes.map((node, i) => {
+                          const r = node.baseRadius * node.scale;
+                          const fontSize = 15 * node.scale;
+                          return (
+                            <g key={`cat-${i}`} style={{ cursor: 'pointer' }}
+                              onClick={() => setExpandedArea(expandedArea === node.domain ? null : node.domain)}>
+                              <circle cx={node.x} cy={node.y} r={r}
+                                fill={node.hasContent ? node.color : '#FDFBF7'}
+                                stroke={node.color} strokeWidth={node.hasContent ? "0" : "1.5"}
+                                opacity={node.hasContent ? 0.85 : 0.6} />
+                              <text x={node.x} y={node.y + fontSize * 0.4} textAnchor="middle" fontSize={fontSize} style={{ pointerEvents: 'none' }}>
+                                {node.icon}
+                              </text>
+                              {node.factCount > 0 && (
+                                <g>
+                                  <circle cx={node.x + r * 0.7} cy={node.y - r * 0.7} r="8" fill="var(--accent)" />
+                                  <text x={node.x + r * 0.7} y={node.y - r * 0.7 + 3} textAnchor="middle" fill="white" fontSize="9" fontWeight="600">
+                                    {node.factCount}
+                                  </text>
+                                </g>
+                              )}
+                            </g>
+                          );
+                        })}
                         
                         {/* Center node */}
                         <circle cx={centerX} cy={centerY} r="28" fill="var(--accent)" />
