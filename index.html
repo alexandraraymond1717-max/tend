@@ -530,6 +530,12 @@
       
       // Build context string
       const contextParts = [];
+      
+      // Add gardener type for tone/style guidance
+      if (prefs.gardenerType) {
+        contextParts.push(`Gardener type: ${prefs.gardenerType.name} - ${prefs.gardenerType.strength}`);
+      }
+      
       if (prefs.resources?.length) contextParts.push(`Has: ${prefs.resources.join(', ')}`);
       if (prefs.context) {
         Object.entries(prefs.context).forEach(([k, v]) => {
@@ -587,6 +593,13 @@ User context: ${contextParts.join('. ')}`,
       
       // Build rich context
       const contextParts = [];
+      
+      // Add gardener type for personalized tone and approach
+      if (prefs.gardenerType) {
+        contextParts.push(`User's gardener type: "${prefs.gardenerType.name}" - ${prefs.gardenerType.description}`);
+        contextParts.push(`Their superpower: ${prefs.gardenerType.strength}`);
+      }
+      
       if (prefs.resources?.length) contextParts.push(`User has: ${prefs.resources.join(', ')}`);
       if (prefs.context) {
         Object.entries(prefs.context).forEach(([k, v]) => {
@@ -620,7 +633,8 @@ Requirements:
 - ${type === 'action' ? 'Action-oriented (doing something concrete)' : 'Reflective (journaling, thinking, introspection)'}
 - Specific and actionable, not vague
 - Completable in exactly ${timeLabel}
-- Personal to this user
+- Personal to this user based on their context
+- Match their personality style if gardener type is provided
 - Warm and encouraging, not preachy
 - Under 15 words
 
