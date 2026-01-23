@@ -9226,90 +9226,294 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       </div>
                     )}
                     
-                    {/* Gardener Quiz */}
+                    {/* Gardener Personality Quiz - Multiple Choice */}
                     {expandedArea === 'quiz' && (() => {
+                      // Quiz state from tempFormData
+                      const quizStep = tempFormData.quizStep || 0;
+                      const quizAnswers = tempFormData.quizAnswers || {};
+                      const showResult = tempFormData.showResult || false;
+                      
+                      // Multiple choice questions with trait mappings
                       const quizQuestions = [
-                        { key: 'energy', q: "When do you feel most alive?", placeholder: "Morning light? Late night quiet? After moving your body?" },
-                        { key: 'recharge', q: "How do you recharge?", placeholder: "Alone time? Friends? Nature? Creating something?" },
-                        { key: 'challenge', q: "When things get hard, what do you do?", placeholder: "Dive in? Step back and plan? Ask for help? Sleep on it?" },
-                        { key: 'joy', q: "What brings you unexpected joy?", placeholder: "Small moments that make you smile..." },
-                        { key: 'growth', q: "What does growth look like for you?", placeholder: "Learning? Deeper relationships? Inner peace? Adventure?" },
+                        {
+                          q: "It's Saturday morning. What sounds most appealing?",
+                          options: [
+                            { text: "A quiet cup of coffee and a good book", trait: 'contemplative' },
+                            { text: "Brunch with friends — the more the merrier", trait: 'social' },
+                            { text: "Finally tackling that project I've been putting off", trait: 'productive' },
+                            { text: "No plans — I'll see where the day takes me", trait: 'spontaneous' },
+                          ]
+                        },
+                        {
+                          q: "A friend is going through a hard time. You:",
+                          options: [
+                            { text: "Listen deeply and help them process their feelings", trait: 'contemplative' },
+                            { text: "Rally the troops and organize support", trait: 'social' },
+                            { text: "Research solutions and make a practical plan", trait: 'productive' },
+                            { text: "Surprise them with something to lift their spirits", trait: 'spontaneous' },
+                          ]
+                        },
+                        {
+                          q: "Your ideal vacation involves:",
+                          options: [
+                            { text: "A peaceful retreat with time to reflect", trait: 'contemplative' },
+                            { text: "Exploring a new city with people I love", trait: 'social' },
+                            { text: "A well-planned itinerary hitting all the highlights", trait: 'productive' },
+                            { text: "Booking a flight and figuring out the rest later", trait: 'spontaneous' },
+                          ]
+                        },
+                        {
+                          q: "When you're stressed, you tend to:",
+                          options: [
+                            { text: "Need alone time to think things through", trait: 'contemplative' },
+                            { text: "Talk it out with someone I trust", trait: 'social' },
+                            { text: "Make lists and break things into manageable steps", trait: 'productive' },
+                            { text: "Do something completely different to reset", trait: 'spontaneous' },
+                          ]
+                        },
+                        {
+                          q: "The best part of achieving a goal is:",
+                          options: [
+                            { text: "The growth and self-discovery along the way", trait: 'contemplative' },
+                            { text: "Celebrating with the people who supported me", trait: 'social' },
+                            { text: "The satisfaction of crossing it off my list", trait: 'productive' },
+                            { text: "The freedom to move on to the next adventure", trait: 'spontaneous' },
+                          ]
+                        },
+                        {
+                          q: "In a garden, you'd be drawn to:",
+                          options: [
+                            { text: "A quiet corner with a bench for thinking", trait: 'contemplative' },
+                            { text: "A gathering space where people can connect", trait: 'social' },
+                            { text: "Neat rows of thriving, well-tended plants", trait: 'productive' },
+                            { text: "A wild, overgrown corner full of surprises", trait: 'spontaneous' },
+                          ]
+                        },
                       ];
+                      
+                      // Gardener archetypes based on dominant trait
+                      const gardenerTypes = {
+                        contemplative: {
+                          name: "The Moonlight Gardener",
+                          emoji: "🌙",
+                          description: "You tend with patience and presence. While others rush to see blooms, you find meaning in the quiet moments — the unfurling of a leaf, the subtle shift of seasons. Your garden grows deep roots.",
+                          strength: "Deep awareness and intentional growth",
+                          color: "#7C9CBF",
+                        },
+                        social: {
+                          name: "The Community Cultivator", 
+                          emoji: "🌻",
+                          description: "Your garden is never just for you — it's a gathering place. You nurture relationships as naturally as you nurture plants, knowing that growth is sweeter when shared. Connection is your superpower.",
+                          strength: "Building meaningful relationships",
+                          color: "#E8A87C",
+                        },
+                        productive: {
+                          name: "The Steady Grower",
+                          emoji: "🌿",
+                          description: "You believe in the power of consistency. Small actions, repeated daily, create remarkable results. Your garden thrives because you show up — rain or shine, motivated or not.",
+                          strength: "Disciplined, consistent progress",
+                          color: "#85B79D",
+                        },
+                        spontaneous: {
+                          name: "The Wildflower Spirit",
+                          emoji: "🌸",
+                          description: "You trust life's natural rhythms. While others plan meticulously, you plant seeds of possibility and delight in what emerges. Your garden is full of beautiful surprises — including to you.",
+                          strength: "Adaptability and joyful presence",
+                          color: "#D4A5C9",
+                        },
+                      };
+                      
+                      // Calculate result
+                      const calculateResult = () => {
+                        const traitCounts = { contemplative: 0, social: 0, productive: 0, spontaneous: 0 };
+                        Object.values(quizAnswers).forEach(trait => {
+                          if (traitCounts[trait] !== undefined) traitCounts[trait]++;
+                        });
+                        const dominant = Object.entries(traitCounts).sort((a, b) => b[1] - a[1])[0][0];
+                        return gardenerTypes[dominant];
+                      };
+                      
+                      const currentQ = quizQuestions[quizStep];
+                      const progress = ((quizStep) / quizQuestions.length) * 100;
+                      const result = showResult ? calculateResult() : null;
                       
                       return (
                         <div style={{
                           backgroundColor: '#FFFDF9',
                           borderRadius: '20px',
                           border: '2px solid var(--accent)',
-                          padding: '1.5rem',
+                          overflow: 'hidden',
                           marginBottom: '1rem',
                         }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                              <span style={{ fontSize: '2rem' }}>🌻</span>
-                              <div>
-                                <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '1.1rem' }}>
-                                  What kind of gardener are you?
-                                </div>
-                                <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                                  Answer honestly — there are no wrong answers
+                          {/* Progress bar */}
+                          {!showResult && (
+                            <div style={{ height: '4px', backgroundColor: '#EDE8DD' }}>
+                              <div style={{
+                                height: '100%',
+                                width: `${progress}%`,
+                                backgroundColor: 'var(--accent)',
+                                transition: 'width 0.3s ease',
+                              }} />
+                            </div>
+                          )}
+                          
+                          <div style={{ padding: '1.5rem' }}>
+                            {/* Header */}
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <span style={{ fontSize: '2rem' }}>{showResult ? result?.emoji : '🌱'}</span>
+                                <div>
+                                  <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '1.1rem' }}>
+                                    {showResult ? result?.name : 'What kind of gardener are you?'}
+                                  </div>
+                                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                                    {showResult ? 'Your tending style' : `Question ${quizStep + 1} of ${quizQuestions.length}`}
+                                  </div>
                                 </div>
                               </div>
+                              <button onClick={() => { setExpandedArea(null); setTempFormData({}); }}
+                                style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: 'var(--text-muted)', cursor: 'pointer' }}>×</button>
                             </div>
-                            <button onClick={() => { setExpandedArea(null); setTempFormData({}); }}
-                              style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: 'var(--text-muted)', cursor: 'pointer', marginTop: '-0.25rem' }}>×</button>
+                            
+                            {showResult ? (
+                              /* Result Screen */
+                              <div>
+                                <div style={{
+                                  padding: '1.5rem',
+                                  backgroundColor: `${result?.color}15`,
+                                  borderRadius: '16px',
+                                  marginBottom: '1.25rem',
+                                  border: `1px solid ${result?.color}30`,
+                                }}>
+                                  <div style={{
+                                    fontSize: '3rem',
+                                    textAlign: 'center',
+                                    marginBottom: '1rem',
+                                  }}>
+                                    {result?.emoji}
+                                  </div>
+                                  <div style={{
+                                    fontSize: '0.95rem',
+                                    color: 'var(--text)',
+                                    lineHeight: 1.6,
+                                    textAlign: 'center',
+                                  }}>
+                                    {result?.description}
+                                  </div>
+                                  <div style={{
+                                    marginTop: '1rem',
+                                    padding: '0.75rem',
+                                    backgroundColor: 'white',
+                                    borderRadius: '8px',
+                                    textAlign: 'center',
+                                  }}>
+                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Your superpower</div>
+                                    <div style={{ fontSize: '0.9rem', color: result?.color, fontWeight: 600 }}>{result?.strength}</div>
+                                  </div>
+                                </div>
+                                
+                                <button
+                                  onClick={() => {
+                                    // Save result to profile
+                                    setUserProfile(prev => ({
+                                      ...prev,
+                                      tendPreferences: {
+                                        ...prev?.tendPreferences,
+                                        gardenerType: {
+                                          type: result?.name,
+                                          emoji: result?.emoji,
+                                          description: result?.description,
+                                          strength: result?.strength,
+                                          color: result?.color,
+                                          answers: quizAnswers,
+                                          completedAt: new Date().toISOString(),
+                                        }
+                                      }
+                                    }));
+                                    setTempFormData({});
+                                    setExpandedArea(null);
+                                  }}
+                                  style={{
+                                    width: '100%', padding: '1rem', border: 'none', borderRadius: '12px',
+                                    backgroundColor: result?.color, color: 'white', fontSize: '1rem', cursor: 'pointer', fontWeight: 600,
+                                  }}
+                                >
+                                  Save my gardener type
+                                </button>
+                                
+                                <button
+                                  onClick={() => setTempFormData({ quizStep: 0, quizAnswers: {}, showResult: false })}
+                                  style={{
+                                    width: '100%', padding: '0.75rem', border: 'none', borderRadius: '12px',
+                                    backgroundColor: 'transparent', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer', marginTop: '0.75rem',
+                                  }}
+                                >
+                                  Retake quiz
+                                </button>
+                              </div>
+                            ) : (
+                              /* Question Screen */
+                              <div>
+                                <div style={{
+                                  fontSize: '1.05rem',
+                                  color: 'var(--text)',
+                                  marginBottom: '1.25rem',
+                                  fontWeight: 500,
+                                  lineHeight: 1.4,
+                                }}>
+                                  {currentQ?.q}
+                                </div>
+                                
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                                  {currentQ?.options.map((option, i) => (
+                                    <button
+                                      key={i}
+                                      onClick={() => {
+                                        const newAnswers = { ...quizAnswers, [quizStep]: option.trait };
+                                        if (quizStep < quizQuestions.length - 1) {
+                                          setTempFormData({ quizStep: quizStep + 1, quizAnswers: newAnswers, showResult: false });
+                                        } else {
+                                          setTempFormData({ quizStep, quizAnswers: newAnswers, showResult: true });
+                                        }
+                                      }}
+                                      style={{
+                                        padding: '1rem 1.25rem',
+                                        border: '1px solid #E5DFD3',
+                                        borderRadius: '12px',
+                                        backgroundColor: 'white',
+                                        color: 'var(--text)',
+                                        fontSize: '0.9rem',
+                                        cursor: 'pointer',
+                                        textAlign: 'left',
+                                        transition: 'all 0.15s',
+                                      }}
+                                      onMouseOver={(e) => { e.currentTarget.style.backgroundColor = '#F8F5EE'; e.currentTarget.style.borderColor = 'var(--accent)'; }}
+                                      onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'white'; e.currentTarget.style.borderColor = '#E5DFD3'; }}
+                                    >
+                                      {option.text}
+                                    </button>
+                                  ))}
+                                </div>
+                                
+                                {quizStep > 0 && (
+                                  <button
+                                    onClick={() => setTempFormData({ ...tempFormData, quizStep: quizStep - 1 })}
+                                    style={{
+                                      marginTop: '1rem',
+                                      padding: '0.5rem',
+                                      border: 'none',
+                                      backgroundColor: 'transparent',
+                                      color: 'var(--text-muted)',
+                                      fontSize: '0.85rem',
+                                      cursor: 'pointer',
+                                    }}
+                                  >
+                                    ← Back
+                                  </button>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          
-                          {quizQuestions.map((item, i) => (
-                            <div key={item.key} style={{ marginBottom: '1.5rem' }}>
-                              <label style={{ display: 'block', fontSize: '0.95rem', color: 'var(--text)', marginBottom: '0.5rem', fontWeight: 500 }}>
-                                {item.q}
-                              </label>
-                              <input type="text" value={tempFormData[`quiz_${item.key}`] || ''}
-                                onChange={(e) => setTempFormData(prev => ({...prev, [`quiz_${item.key}`]: e.target.value}))}
-                                placeholder={item.placeholder}
-                                style={{
-                                  width: '100%', padding: '0.85rem 1rem', border: '1px solid #E5DFD3', borderRadius: '12px',
-                                  backgroundColor: 'white', color: 'var(--text)', fontSize: '0.9rem', boxSizing: 'border-box',
-                                }}
-                              />
-                            </div>
-                          ))}
-                          
-                          <div style={{ marginBottom: '1.5rem' }}>
-                            <label style={{ display: 'block', fontSize: '0.95rem', color: 'var(--text)', marginBottom: '0.5rem', fontWeight: 500 }}>
-                              Anything else that makes you, you?
-                            </label>
-                            <textarea value={tempFormData.quiz_freeform || ''}
-                              onChange={(e) => setTempFormData(prev => ({...prev, quiz_freeform: e.target.value}))}
-                              placeholder="Write whatever comes to mind..."
-                              rows={3}
-                              style={{
-                                width: '100%', padding: '0.85rem 1rem', border: '1px solid #E5DFD3', borderRadius: '12px',
-                                backgroundColor: 'white', color: 'var(--text)', fontSize: '0.9rem', resize: 'vertical', boxSizing: 'border-box',
-                              }}
-                            />
-                          </div>
-                          
-                          <button
-                            onClick={() => {
-                              setUserProfile(prev => ({
-                                ...prev,
-                                tendPreferences: {
-                                  ...prev?.tendPreferences,
-                                  gardenerQuiz: { answers: tempFormData, completedAt: new Date().toISOString() }
-                                }
-                              }));
-                              setTempFormData({});
-                              setExpandedArea(null);
-                            }}
-                            style={{
-                              width: '100%', padding: '1rem', border: 'none', borderRadius: '12px',
-                              backgroundColor: 'var(--accent)', color: 'white', fontSize: '1rem', cursor: 'pointer', fontWeight: 600,
-                            }}
-                          >
-                            🌱 Discover my gardener type
-                          </button>
                         </div>
                       );
                     })()}
