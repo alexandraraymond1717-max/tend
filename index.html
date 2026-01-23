@@ -1436,7 +1436,7 @@ Respond with ONLY the task text, nothing else.`,
                   Back
                 </button>
                 <button style={vlqStyles.nextButton} onClick={onComplete}>
-                  Continue to Planning →
+                  Chat with Tend →
                 </button>
               </div>
             </div>
@@ -1670,6 +1670,7 @@ Respond with ONLY the task text, nothing else.`,
         winter: '', spring: '', summer: '', fall: ''
       });
       const [yearTheme, setYearTheme] = useState('');
+      const [onboardingStep, setOnboardingStep] = useState(null); // null, 'theme_discovery', 'theme_just_set'
       const [weeklyHabits, setWeeklyHabits] = useState([]);
       const [dailyHabits, setDailyHabits] = useState([]);
       const [habitCompletions, setHabitCompletions] = useState({}); // { '2026-01-20': { daily: [id1, id2], weekly: [id3] } }
@@ -2437,41 +2438,47 @@ Respond with ONLY the task text, nothing else.`,
 
           let openingMessage = '';
 
-          // If they already have a theme word, welcome them back with next steps
+          // If they already have a theme word, welcome them back with navigation options
           if (yearTheme) {
-            openingMessage = `Welcome back! Your word for the year is <em>${yearTheme}</em>.
+            openingMessage = `Welcome back! Your compass word for the year is <em>${yearTheme}</em>. 🌱
 
-Now that you have your compass, there are a few paths we could explore together:
+Where would you like to go?
 
-<strong>🌸 Seasons</strong> — What do you want each season to feel like? Winter might be for rest, spring for new beginnings...
+<strong>🌱 Generate a daily tend</strong> — a small, meaningful action for today
+<strong>🎯 Talk about goals</strong> — what are you working toward?
+<strong>🗺️ Build your Life Map</strong> — help me know you better
+<strong>🌸 Take the gardener quiz</strong> — discover your tending style
+<strong>📓 Journal</strong> — a quieter space for reflection
 
-<strong>📅 Events</strong> — Are there trips, milestones, or commitments to map out? Let's make sure your calendar reflects your values.
+Or just chat — what's on your mind?
 
-<strong>🔁 Rhythms</strong> — What weekly or daily habits would help you live into <em>${yearTheme}</em>?
-
-What feels most alive for you right now?`;
+[BUTTON: Generate a daily tend | tendy]
+[BUTTON: Let's talk about goals | goals]
+[BUTTON: Show me the Life Map | life map]`;
           } else {
-            // New user - introduce the process
-            openingMessage = `Thank you for sharing what matters to you.
+            // New user - warm intro and start theme discovery
+            setOnboardingStep('theme_discovery');
+            
+            openingMessage = `Welcome to Tend! 🌱
 
-My goal is to help you design a year that actually aligns with your values — not just a list of goals, but a life that feels intentional and true to who you are.
+I'm so glad you're here. I'm your companion for intentional living — not another productivity app, but a thoughtful space to design a life that actually feels like <em>yours</em>.
 
-To do that, we'll start by finding a <em>theme word</em> for your year — one guiding word you can return to when making decisions, setting priorities, or just checking in with yourself.
+Here's how this works: We'll chat, and I'll learn about you. The more you share, the more I can personalize everything — from daily actions to goals to gentle nudges.
 
-But first, I'd love to understand your values a bit more deeply.`;
+But first, let's find your <em>compass word</em> for the year. This is a single guiding word you can return to when making decisions, setting priorities, or just checking in with yourself.`;
           
             if (biggestGap && biggestGap.gap >= 2) {
               openingMessage += `
 
-I noticed <em>${biggestGap.name}</em> really matters to you (${biggestGap.importance}/10), but you rated how you've been living it as ${biggestGap.consistency}/10. That gap is meaningful.
+Looking at what you shared, <em>${biggestGap.name}</em> really matters to you (${biggestGap.importance}/10), but you rated how you've been living it lately as ${biggestGap.consistency}/10.
 
-What's been getting in the way there?`;
+That gap is telling me something. What's been getting in the way there?`;
             } else if (topStrength) {
               openingMessage += `
 
-I see <em>${topStrength.name}</em> is both important to you and something you're living well — that's a real strength.
+I noticed <em>${topStrength.name}</em> is both important to you and something you're already living well — that's a real strength.
 
-What's helped you stay consistent there? And are there other areas you'd like to bring that same energy to?`;
+What's helped you stay consistent there? And what parts of life do you want to bring that same energy to this year?`;
             } else {
               openingMessage += `
 
@@ -3083,6 +3090,7 @@ Current context:
 - Current sidebar tab: ${activeTab}
 - Current season: ${currentSeason}
 - Their year theme: ${yearTheme || 'not set yet'}
+- Onboarding step: ${onboardingStep || 'complete'}
 - Their values: ${values.length > 0 ? values.join(', ') : 'not identified yet'}
 - Life areas (from VLQ): ${lifeAreasContext}
 - Their events: ${events.length > 0 ? events.map(e => `${MONTHS[e.month]}: ${e.title}`).join(', ') : 'none yet'}
@@ -3094,72 +3102,57 @@ ${getMisalignments()}
 
 The user has already completed the VLQ (Valued Living Questionnaire) assessment. You know their values - use this knowledge to personalize your guidance.
 
-IMPORTANT - Theme Word Discovery Process (in EXPLORE phase):
-1. DO NOT ask the user "what word do you want for your year" upfront
-2. Instead, EXPLORE their VLQ results through conversation:
-   - Ask about their growth areas (high importance, low consistency)
+ONBOARDING FLOW:
+If onboardingStep is 'theme_discovery', the user is new and finding their compass word:
+1. DO NOT ask "what word do you want" upfront — discover it through conversation
+2. Explore their VLQ results naturally:
+   - Ask about growth areas (high importance, low consistency)
    - Ask what's been getting in the way
-   - Ask what they wish was different
-   - Ask what they want more of
-3. After 4-6 exchanges of genuine conversation, SUGGEST a theme word based on what you've learned. Frame it like this:
-   - Explain what a theme word is: "A theme word is like a compass — one guiding word you can return to throughout the year to center yourself and make decisions."
-   - Then suggest: "Based on what you've shared about [summarize key themes], I think your word might be *[word]*. It captures [specific reason tied to what they said]."
-   - Ask: "Does that resonate? Feel free to try it on, adjust it, or suggest something else."
-4. Let them accept, modify, or suggest alternatives
-5. Once they accept a word, celebrate briefly then explain the two ways to continue:
-   - "Now that you have your compass, there are a couple ways we can go deeper:"
-   - **Chat with me** — "We can keep chatting right here about seasons, events, rhythms, or anything else — I'll automatically add things to your plan as we talk"
-   - **Use the tabs** — "Or you can click into the sidebar tabs (Seasons, Events, Weekly, Daily) to input things directly"
-   - Ask: "What's on your mind? We can explore seasons, plan events, or set up habits — whatever feels right."
+   - Ask what they want more of this year
+3. After 3-5 exchanges, SUGGEST a theme word based on what you've learned:
+   - "Based on what you've shared about [summary], I think your compass word might be *[word]*. It captures [reason]."
+   - Ask: "Does that resonate?"
+4. When they accept, include [YEAR_THEME: word] at the END of your response
+5. DO NOT list "what's next" options — the app will automatically show those after the theme is set
+
+If onboardingStep is 'theme_just_set', the app just showed them navigation options. Let them lead — respond to whatever they choose.
+
+If onboardingStep is null/complete, they're a returning user. Help them with whatever they need.
 
 CRITICAL - SETTING THE YEAR THEME:
-When the user definitively chooses or accepts a theme word (through agreement, explicit statement, or any clear indication), you MUST include this exact marker at the END of your response:
+When the user definitively chooses or accepts a theme word, include this marker at the END of your response:
 [YEAR_THEME: word]
 
-Examples of when to include the marker:
-- User says "yes, I love that word" after you suggest "foundation" → end with [YEAR_THEME: foundation]
+Examples:
+- User says "yes, I love that" after you suggest "foundation" → end with [YEAR_THEME: foundation]
 - User says "my word is growth" → end with [YEAR_THEME: growth]
 - User says "let's go with balance" → end with [YEAR_THEME: balance]
-- User says "I want to change my theme to clarity" → end with [YEAR_THEME: clarity]
-- User says "actually, presence feels better" → end with [YEAR_THEME: presence]
 
-Do NOT include the marker if:
-- You're just suggesting a word and waiting for their response
-- The user is still exploring or undecided
-- The user is asking questions about themes
-
-The word must be a single word, 4-15 characters, no spaces. This marker will be hidden from the user - it's just for the system to update their theme.
+Do NOT include if you're just suggesting and waiting for their response.
+The word must be a single word, 4-15 characters. This marker is hidden from the user.
 
 CRITICAL - EXTRACTING HABITS, EVENTS, AND INTENTIONS:
-When the user commits to a specific habit, event, or intention, include the appropriate marker at the END of your response (these are hidden from the user):
+When the user commits to something specific, include the appropriate marker at the END (hidden from user):
 
-For WEEKLY habits (e.g., "I want to exercise 3 times a week"):
-[WEEKLY_HABIT: habit text | frequency]
+For WEEKLY habits: [WEEKLY_HABIT: habit text | frequency]
 Example: [WEEKLY_HABIT: exercise | 3]
 
-For DAILY habits (e.g., "I want to meditate every morning"):
-[DAILY_HABIT: habit text]
+For DAILY habits: [DAILY_HABIT: habit text]
 Example: [DAILY_HABIT: morning meditation]
 
-For EVENTS (e.g., "I'm planning a trip to Japan in April", "We're moving to Colorado in June"):
-[EVENT: descriptive title | month | life_area | event_type]
-- Title should be SPECIFIC and DESCRIPTIVE (e.g., "Move to Colorado", "Japan trip", "Mom's birthday party", "Sarah's wedding") - NEVER use generic titles like "event" or "thing"
-- Month should be 0-11 (0=January, 11=December)
-- Life area should be one of: family, partner, friendships, career, education, recreation, spirituality, community, health, finances, growth, fun
-- Event type should be one of: trip, celebration, project, personal
+For EVENTS: [EVENT: descriptive title | month | life_area | event_type]
+- Title should be SPECIFIC (never generic like "event")
+- Month: 0-11 (0=January)
+- Life area: family, partner, friendships, career, education, recreation, spirituality, community, health, finances, growth, fun
+- Event type: trip, celebration, project, personal
 Examples:
 [EVENT: Move to Colorado | 5 | personal | project]
 [EVENT: Japan trip | 3 | fun | trip]
-[EVENT: Mom's 60th birthday | 7 | family | celebration]
-[EVENT: Half marathon | 9 | health | personal]
 
-For SEASON INTENTIONS (e.g., "I want winter to feel restful"):
-[SEASON: season | intention]
-Season should be: winter, spring, summer, or fall
+For SEASON INTENTIONS: [SEASON: season | intention]
 Example: [SEASON: winter | rest and reflection]
 
-Only include these markers when the user has clearly committed to something specific. Don't add markers for vague ideas or things they're still considering.
-Multiple markers can be included in one response if user mentions multiple items.
+Only include markers when user has clearly committed, not for vague ideas.
 
 CURRENT VIEW: ${centerView.toUpperCase()}
 ${centerView === 'year' ? `
@@ -3419,7 +3412,32 @@ When user says "what can I do?" or seems lost, offer options warmly:
         if (themeMatch && themeMatch[1]) {
           const newTheme = themeMatch[1].toLowerCase();
           setYearTheme(newTheme);
+          setOnboardingStep('theme_just_set');
           console.log('Year theme set by Claude:', newTheme);
+          
+          // Add a follow-up "what's next" message after a brief delay
+          setTimeout(() => {
+            setMessages(prev => [...prev, {
+              role: 'assistant',
+              content: `Your compass is set. ✨
+
+Now that you have <em>${newTheme}</em> as your guiding word, here's what we can do together:
+
+<strong>🌱 Generate a daily tend</strong> — a small, personalized action for today
+<strong>🎯 Talk about your goals</strong> — what are you working toward this year?
+<strong>🗺️ Build your Life Map</strong> — tell me more about your life so I can personalize things
+<strong>🌸 Take the gardener quiz</strong> — discover your unique tending style
+<strong>📓 Journal</strong> — a quieter space for reflection
+
+What sounds good? You can also just keep chatting — I'm here for all of it.
+
+[BUTTON: Generate a daily tend | tendy]
+[BUTTON: Let's talk about goals | goals]
+[BUTTON: Show me the Life Map | life map]
+[BUTTON: Take the gardener quiz | quiz]
+[BUTTON: Go to journal | journal]`
+            }]);
+          }, 800);
         }
         
         // Parse for weekly habits: [WEEKLY_HABIT: habit text | frequency]
