@@ -9226,116 +9226,157 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       </div>
                     )}
                     
-                    {/* Gardener Personality Quiz - Multiple Choice */}
+                    {/* Gardener Personality Quiz - AI Generated */}
                     {expandedArea === 'quiz' && (() => {
                       // Quiz state from tempFormData
                       const quizStep = tempFormData.quizStep || 0;
                       const quizAnswers = tempFormData.quizAnswers || {};
-                      const showResult = tempFormData.showResult || false;
+                      const isGenerating = tempFormData.isGenerating || false;
+                      const generatedResult = tempFormData.generatedResult || null;
                       
-                      // Multiple choice questions with trait mappings
+                      // Multiple choice questions
                       const quizQuestions = [
                         {
                           q: "It's Saturday morning. What sounds most appealing?",
                           options: [
-                            { text: "A quiet cup of coffee and a good book", trait: 'contemplative' },
-                            { text: "Brunch with friends — the more the merrier", trait: 'social' },
-                            { text: "Finally tackling that project I've been putting off", trait: 'productive' },
-                            { text: "No plans — I'll see where the day takes me", trait: 'spontaneous' },
+                            { text: "A quiet cup of coffee and a good book", id: 'a' },
+                            { text: "Brunch with friends — the more the merrier", id: 'b' },
+                            { text: "Finally tackling that project I've been putting off", id: 'c' },
+                            { text: "No plans — I'll see where the day takes me", id: 'd' },
                           ]
                         },
                         {
                           q: "A friend is going through a hard time. You:",
                           options: [
-                            { text: "Listen deeply and help them process their feelings", trait: 'contemplative' },
-                            { text: "Rally the troops and organize support", trait: 'social' },
-                            { text: "Research solutions and make a practical plan", trait: 'productive' },
-                            { text: "Surprise them with something to lift their spirits", trait: 'spontaneous' },
+                            { text: "Listen deeply and help them process their feelings", id: 'a' },
+                            { text: "Rally the troops and organize support", id: 'b' },
+                            { text: "Research solutions and make a practical plan", id: 'c' },
+                            { text: "Surprise them with something to lift their spirits", id: 'd' },
                           ]
                         },
                         {
                           q: "Your ideal vacation involves:",
                           options: [
-                            { text: "A peaceful retreat with time to reflect", trait: 'contemplative' },
-                            { text: "Exploring a new city with people I love", trait: 'social' },
-                            { text: "A well-planned itinerary hitting all the highlights", trait: 'productive' },
-                            { text: "Booking a flight and figuring out the rest later", trait: 'spontaneous' },
+                            { text: "A peaceful retreat with time to reflect", id: 'a' },
+                            { text: "Exploring a new city with people I love", id: 'b' },
+                            { text: "A well-planned itinerary hitting all the highlights", id: 'c' },
+                            { text: "Booking a flight and figuring out the rest later", id: 'd' },
                           ]
                         },
                         {
                           q: "When you're stressed, you tend to:",
                           options: [
-                            { text: "Need alone time to think things through", trait: 'contemplative' },
-                            { text: "Talk it out with someone I trust", trait: 'social' },
-                            { text: "Make lists and break things into manageable steps", trait: 'productive' },
-                            { text: "Do something completely different to reset", trait: 'spontaneous' },
+                            { text: "Need alone time to think things through", id: 'a' },
+                            { text: "Talk it out with someone I trust", id: 'b' },
+                            { text: "Make lists and break things into manageable steps", id: 'c' },
+                            { text: "Do something completely different to reset", id: 'd' },
                           ]
                         },
                         {
                           q: "The best part of achieving a goal is:",
                           options: [
-                            { text: "The growth and self-discovery along the way", trait: 'contemplative' },
-                            { text: "Celebrating with the people who supported me", trait: 'social' },
-                            { text: "The satisfaction of crossing it off my list", trait: 'productive' },
-                            { text: "The freedom to move on to the next adventure", trait: 'spontaneous' },
+                            { text: "The growth and self-discovery along the way", id: 'a' },
+                            { text: "Celebrating with the people who supported me", id: 'b' },
+                            { text: "The satisfaction of crossing it off my list", id: 'c' },
+                            { text: "The freedom to move on to the next adventure", id: 'd' },
                           ]
                         },
                         {
                           q: "In a garden, you'd be drawn to:",
                           options: [
-                            { text: "A quiet corner with a bench for thinking", trait: 'contemplative' },
-                            { text: "A gathering space where people can connect", trait: 'social' },
-                            { text: "Neat rows of thriving, well-tended plants", trait: 'productive' },
-                            { text: "A wild, overgrown corner full of surprises", trait: 'spontaneous' },
+                            { text: "A quiet corner with a bench for thinking", id: 'a' },
+                            { text: "A gathering space where people can connect", id: 'b' },
+                            { text: "Neat rows of thriving, well-tended plants", id: 'c' },
+                            { text: "A wild, overgrown corner full of surprises", id: 'd' },
                           ]
                         },
                       ];
                       
-                      // Gardener archetypes based on dominant trait
-                      const gardenerTypes = {
-                        contemplative: {
-                          name: "The Moonlight Gardener",
-                          emoji: "🌙",
-                          description: "You tend with patience and presence. While others rush to see blooms, you find meaning in the quiet moments — the unfurling of a leaf, the subtle shift of seasons. Your garden grows deep roots.",
-                          strength: "Deep awareness and intentional growth",
-                          color: "#7C9CBF",
-                        },
-                        social: {
-                          name: "The Community Cultivator", 
-                          emoji: "🌻",
-                          description: "Your garden is never just for you — it's a gathering place. You nurture relationships as naturally as you nurture plants, knowing that growth is sweeter when shared. Connection is your superpower.",
-                          strength: "Building meaningful relationships",
-                          color: "#E8A87C",
-                        },
-                        productive: {
-                          name: "The Steady Grower",
-                          emoji: "🌿",
-                          description: "You believe in the power of consistency. Small actions, repeated daily, create remarkable results. Your garden thrives because you show up — rain or shine, motivated or not.",
-                          strength: "Disciplined, consistent progress",
-                          color: "#85B79D",
-                        },
-                        spontaneous: {
-                          name: "The Wildflower Spirit",
-                          emoji: "🌸",
-                          description: "You trust life's natural rhythms. While others plan meticulously, you plant seeds of possibility and delight in what emerges. Your garden is full of beautiful surprises — including to you.",
-                          strength: "Adaptability and joyful presence",
-                          color: "#D4A5C9",
-                        },
-                      };
-                      
-                      // Calculate result
-                      const calculateResult = () => {
-                        const traitCounts = { contemplative: 0, social: 0, productive: 0, spontaneous: 0 };
-                        Object.values(quizAnswers).forEach(trait => {
-                          if (traitCounts[trait] !== undefined) traitCounts[trait]++;
+                      // Generate unique gardener type with AI
+                      const generateGardenerType = async (answers) => {
+                        setTempFormData(prev => ({ ...prev, isGenerating: true }));
+                        
+                        // Build context from quiz answers
+                        const answerSummary = quizQuestions.map((q, i) => {
+                          const selectedOption = q.options.find(o => o.id === answers[i]);
+                          return `Q: ${q.q}\nA: ${selectedOption?.text || 'No answer'}`;
+                        }).join('\n\n');
+                        
+                        // Include any life map data they've shared
+                        const prefs = userProfile?.tendPreferences || {};
+                        const lifeMapContext = [];
+                        VLQ_ORDER.forEach(domain => {
+                          const structured = prefs.structuredInfo?.[domain] || {};
+                          const notes = prefs.lifeAreaNotes?.[domain];
+                          const filledValues = Object.values(structured).filter(v => v);
+                          if (filledValues.length > 0 || notes) {
+                            lifeMapContext.push(`${VLQ_DOMAINS[domain]?.name}: ${[...filledValues, notes].filter(Boolean).join(', ')}`);
+                          }
                         });
-                        const dominant = Object.entries(traitCounts).sort((a, b) => b[1] - a[1])[0][0];
-                        return gardenerTypes[dominant];
+                        
+                        try {
+                          const response = await fetch('https://api.anthropic.com/v1/messages', {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json',
+                              'x-api-key': apiKey,
+                              'anthropic-version': '2023-06-01',
+                              'anthropic-dangerous-direct-browser-access': 'true'
+                            },
+                            body: JSON.stringify({
+                              model: 'claude-sonnet-4-20250514',
+                              max_tokens: 500,
+                              system: `You are creating a unique, personalized "gardener archetype" for someone based on their personality quiz answers. This is for a wellness app called Tend.
+
+Create a ONE-OF-A-KIND gardener type that feels deeply personal. Be creative, warm, and poetic. The name should be evocative and unique (not generic like "The Caring Gardener").
+
+Respond in this exact JSON format only, no other text:
+{
+  "name": "The [Unique Evocative Name]",
+  "emoji": "[single plant/nature emoji that fits]",
+  "description": "[2-3 sentences that feel personally written for this person based on their answers. Be specific and insightful. Use 'you' language.]",
+  "strength": "[Their unique superpower in 4-6 words]",
+  "poeticLine": "[One beautiful, memorable line about their garden/growth style]",
+  "color": "[hex color that matches the vibe, like #7C9CBF]"
+}`,
+                              messages: [{
+                                role: 'user',
+                                content: `Based on these quiz answers, create a unique gardener archetype:\n\n${answerSummary}${lifeMapContext.length > 0 ? `\n\nAdditional context about this person:\n${lifeMapContext.join('\n')}` : ''}`
+                              }]
+                            })
+                          });
+                          
+                          const data = await response.json();
+                          const text = data.content?.[0]?.text;
+                          
+                          // Parse JSON response
+                          const jsonMatch = text.match(/\{[\s\S]*\}/);
+                          if (jsonMatch) {
+                            const result = JSON.parse(jsonMatch[0]);
+                            setTempFormData(prev => ({ ...prev, isGenerating: false, generatedResult: result }));
+                          } else {
+                            throw new Error('Could not parse response');
+                          }
+                        } catch (error) {
+                          console.error('Error generating gardener type:', error);
+                          // Fallback to a default
+                          setTempFormData(prev => ({
+                            ...prev,
+                            isGenerating: false,
+                            generatedResult: {
+                              name: "The Gentle Cultivator",
+                              emoji: "🌱",
+                              description: "You have a unique way of nurturing growth in yourself and others. Your approach to life is thoughtful and intentional.",
+                              strength: "Nurturing potential into bloom",
+                              poeticLine: "In your garden, every seed knows it's welcome.",
+                              color: "#85B79D"
+                            }
+                          }));
+                        }
                       };
                       
                       const currentQ = quizQuestions[quizStep];
                       const progress = ((quizStep) / quizQuestions.length) * 100;
-                      const result = showResult ? calculateResult() : null;
                       
                       return (
                         <div style={{
@@ -9346,7 +9387,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                           marginBottom: '1rem',
                         }}>
                           {/* Progress bar */}
-                          {!showResult && (
+                          {!generatedResult && !isGenerating && (
                             <div style={{ height: '4px', backgroundColor: '#EDE8DD' }}>
                               <div style={{
                                 height: '100%',
@@ -9361,70 +9402,103 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                             {/* Header */}
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <span style={{ fontSize: '2rem' }}>{showResult ? result?.emoji : '🌱'}</span>
+                                <span style={{ fontSize: '2rem' }}>{generatedResult?.emoji || '🌱'}</span>
                                 <div>
                                   <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '1.1rem' }}>
-                                    {showResult ? result?.name : 'What kind of gardener are you?'}
+                                    {generatedResult ? generatedResult.name : isGenerating ? 'Discovering your type...' : 'What kind of gardener are you?'}
                                   </div>
                                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                                    {showResult ? 'Your tending style' : `Question ${quizStep + 1} of ${quizQuestions.length}`}
+                                    {generatedResult ? 'Your unique tending style' : isGenerating ? 'This takes a moment' : `Question ${quizStep + 1} of ${quizQuestions.length}`}
                                   </div>
                                 </div>
                               </div>
-                              <button onClick={() => { setExpandedArea(null); setTempFormData({}); }}
-                                style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: 'var(--text-muted)', cursor: 'pointer' }}>×</button>
+                              {!isGenerating && (
+                                <button onClick={() => { setExpandedArea(null); setTempFormData({}); }}
+                                  style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: 'var(--text-muted)', cursor: 'pointer' }}>×</button>
+                              )}
                             </div>
                             
-                            {showResult ? (
+                            {isGenerating ? (
+                              /* Loading State */
+                              <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                                <div style={{
+                                  fontSize: '3rem',
+                                  marginBottom: '1rem',
+                                  animation: 'pulse 1.5s ease-in-out infinite',
+                                }}>
+                                  🌱
+                                </div>
+                                <div style={{ color: 'var(--text)', marginBottom: '0.5rem', fontWeight: 500 }}>
+                                  Growing your unique gardener profile...
+                                </div>
+                                <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                                  Analyzing your answers to create something just for you
+                                </div>
+                                <style>{`
+                                  @keyframes pulse {
+                                    0%, 100% { transform: scale(1); opacity: 1; }
+                                    50% { transform: scale(1.1); opacity: 0.8; }
+                                  }
+                                `}</style>
+                              </div>
+                            ) : generatedResult ? (
                               /* Result Screen */
                               <div>
                                 <div style={{
                                   padding: '1.5rem',
-                                  backgroundColor: `${result?.color}15`,
+                                  backgroundColor: `${generatedResult.color}12`,
                                   borderRadius: '16px',
                                   marginBottom: '1.25rem',
-                                  border: `1px solid ${result?.color}30`,
+                                  border: `1px solid ${generatedResult.color}25`,
                                 }}>
-                                  <div style={{
-                                    fontSize: '3rem',
-                                    textAlign: 'center',
-                                    marginBottom: '1rem',
-                                  }}>
-                                    {result?.emoji}
+                                  <div style={{ fontSize: '3.5rem', textAlign: 'center', marginBottom: '1rem' }}>
+                                    {generatedResult.emoji}
                                   </div>
                                   <div style={{
                                     fontSize: '0.95rem',
                                     color: 'var(--text)',
-                                    lineHeight: 1.6,
+                                    lineHeight: 1.7,
                                     textAlign: 'center',
+                                    marginBottom: '1rem',
                                   }}>
-                                    {result?.description}
+                                    {generatedResult.description}
                                   </div>
+                                  
+                                  {/* Poetic line */}
                                   <div style={{
-                                    marginTop: '1rem',
+                                    padding: '1rem',
+                                    backgroundColor: 'white',
+                                    borderRadius: '10px',
+                                    textAlign: 'center',
+                                    fontStyle: 'italic',
+                                    color: generatedResult.color,
+                                    fontSize: '0.9rem',
+                                    marginBottom: '1rem',
+                                    borderLeft: `3px solid ${generatedResult.color}`,
+                                  }}>
+                                    "{generatedResult.poeticLine}"
+                                  </div>
+                                  
+                                  {/* Superpower */}
+                                  <div style={{
                                     padding: '0.75rem',
                                     backgroundColor: 'white',
                                     borderRadius: '8px',
                                     textAlign: 'center',
                                   }}>
-                                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>Your superpower</div>
-                                    <div style={{ fontSize: '0.9rem', color: result?.color, fontWeight: 600 }}>{result?.strength}</div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Your superpower</div>
+                                    <div style={{ fontSize: '0.95rem', color: generatedResult.color, fontWeight: 600 }}>{generatedResult.strength}</div>
                                   </div>
                                 </div>
                                 
                                 <button
                                   onClick={() => {
-                                    // Save result to profile
                                     setUserProfile(prev => ({
                                       ...prev,
                                       tendPreferences: {
                                         ...prev?.tendPreferences,
                                         gardenerType: {
-                                          type: result?.name,
-                                          emoji: result?.emoji,
-                                          description: result?.description,
-                                          strength: result?.strength,
-                                          color: result?.color,
+                                          ...generatedResult,
                                           answers: quizAnswers,
                                           completedAt: new Date().toISOString(),
                                         }
@@ -9435,14 +9509,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                   }}
                                   style={{
                                     width: '100%', padding: '1rem', border: 'none', borderRadius: '12px',
-                                    backgroundColor: result?.color, color: 'white', fontSize: '1rem', cursor: 'pointer', fontWeight: 600,
+                                    backgroundColor: generatedResult.color, color: 'white', fontSize: '1rem', cursor: 'pointer', fontWeight: 600,
                                   }}
                                 >
                                   Save my gardener type
                                 </button>
                                 
                                 <button
-                                  onClick={() => setTempFormData({ quizStep: 0, quizAnswers: {}, showResult: false })}
+                                  onClick={() => setTempFormData({ quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null })}
                                   style={{
                                     width: '100%', padding: '0.75rem', border: 'none', borderRadius: '12px',
                                     backgroundColor: 'transparent', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer', marginTop: '0.75rem',
@@ -9469,11 +9543,13 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                     <button
                                       key={i}
                                       onClick={() => {
-                                        const newAnswers = { ...quizAnswers, [quizStep]: option.trait };
+                                        const newAnswers = { ...quizAnswers, [quizStep]: option.id };
                                         if (quizStep < quizQuestions.length - 1) {
-                                          setTempFormData({ quizStep: quizStep + 1, quizAnswers: newAnswers, showResult: false });
+                                          setTempFormData({ quizStep: quizStep + 1, quizAnswers: newAnswers });
                                         } else {
-                                          setTempFormData({ quizStep, quizAnswers: newAnswers, showResult: true });
+                                          // Quiz complete - trigger AI generation
+                                          setTempFormData({ quizStep, quizAnswers: newAnswers });
+                                          generateGardenerType(newAnswers);
                                         }
                                       }}
                                       style={{
