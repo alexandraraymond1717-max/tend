@@ -3300,6 +3300,42 @@ When user says "what can I do?" or seems lost, offer options warmly:
         }
       };
 
+      // Handle returning from an experience (Category 2) - add welcome back message
+      const handleReturnFromExperience = (fromMode) => {
+        setChatMinimized(false);
+        setAppMode(null);
+        
+        // Add a welcome back message based on where they were
+        const welcomeMessages = {
+          'journal': `Welcome back from journaling! 📓
+
+How did that feel? Is there anything you want to explore or work on next?
+
+[BUTTON: Generate a daily tend | tendy]
+[BUTTON: Let's talk about goals | goals]
+[BUTTON: Show me the Life Map | life map]`,
+          'insights': `Welcome back! 🗺️
+
+Did you discover anything interesting? Where would you like to go next?
+
+[BUTTON: Generate a daily tend | tendy]
+[BUTTON: Let's talk about goals | goals]
+[BUTTON: Go to journal | journal]`,
+          'tendy': `Welcome back! 🌱
+
+How did your tends go? What would you like to explore next?
+
+[BUTTON: Let's talk about goals | goals]
+[BUTTON: Show me the Life Map | life map]
+[BUTTON: Go to journal | journal]`,
+        };
+        
+        const message = welcomeMessages[fromMode];
+        if (message) {
+          setMessages(prev => [...prev, { role: 'assistant', content: message }]);
+        }
+      };
+
       const handleSendMessage = async () => {
         if (!inputValue.trim()) return;
         
@@ -3846,7 +3882,7 @@ I'm here to help with any planning.`
             {/* Floating chat bubble for navigation */}
             <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 1000 }}>
               <button
-                onClick={() => { setChatMinimized(false); setAppMode(null); }}
+                onClick={() => handleReturnFromExperience('journal')}
                 style={{
                   width: '60px', height: '60px', borderRadius: '50%',
                   backgroundColor: 'var(--accent)', border: 'none',
@@ -3877,7 +3913,7 @@ I'm here to help with any planning.`
             {/* Floating chat bubble for navigation */}
             <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 1000 }}>
               <button
-                onClick={() => { setChatMinimized(false); setAppMode(null); }}
+                onClick={() => handleReturnFromExperience('insights')}
                 style={{
                   width: '60px', height: '60px', borderRadius: '50%',
                   backgroundColor: 'var(--accent)', border: 'none',
@@ -3917,7 +3953,7 @@ I'm here to help with any planning.`
             {/* Floating chat bubble for navigation */}
             <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 1000 }}>
               <button
-                onClick={() => { setChatMinimized(false); setAppMode(null); }}
+                onClick={() => handleReturnFromExperience('tendy')}
                 style={{
                   width: '60px', height: '60px', borderRadius: '50%',
                   backgroundColor: 'var(--accent)', border: 'none',
