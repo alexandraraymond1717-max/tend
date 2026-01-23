@@ -2425,13 +2425,13 @@ Respond with ONLY the task text, nothing else.`,
 
           // Same options for everyone
           const navigationOptions = `
+Or if you'd rather explore on your own:
+
 <strong>🌱 Generate a daily tend</strong> — a small, meaningful action for today
 <strong>🎯 Set some goals</strong> — what are you working toward?
 <strong>🗺️ Build your Life Map</strong> — help me know you better
 <strong>🌸 Take the gardener quiz</strong> — discover your tending style
 <strong>📓 Journal</strong> — a quieter space for reflection
-
-Or just chat — I'm here for whatever's on your mind.
 
 [BUTTON: Generate a daily tend | tendy]
 [BUTTON: Let's talk about goals | goals]
@@ -2440,7 +2440,6 @@ Or just chat — I'm here for whatever's on your mind.
           if (yearTheme) {
             // Has theme - personalized greeting connecting to their compass word
             const themeConnections = {
-              // Common themes with personalized language
               'growth': 'nurturing your growth',
               'balance': 'finding your balance',
               'presence': 'cultivating presence',
@@ -2463,14 +2462,54 @@ Or just chat — I'm here for whatever's on your mind.
             openingMessage = `Hey! Your compass word for the year is <em>${yearTheme}</em>. 🌱
 
 Where would you like to go today to support you in ${themePhrase}?
-${navigationOptions}`;
+
+<strong>🌱 Generate a daily tend</strong> — a small, meaningful action for today
+<strong>🎯 Set some goals</strong> — what are you working toward?
+<strong>🗺️ Build your Life Map</strong> — help me know you better
+<strong>🌸 Take the gardener quiz</strong> — discover your tending style
+<strong>📓 Journal</strong> — a quieter space for reflection
+
+Or just chat — I'm here for whatever's on your mind.
+
+[BUTTON: Generate a daily tend | tendy]
+[BUTTON: Let's talk about goals | goals]
+[BUTTON: Show me the Life Map | life map]`;
           } else {
-            // No theme yet - invite them to chat, but don't gate them
+            // No theme yet - use VLQ data to start a meaningful conversation
+            const gaps = VLQ_ORDER.map(key => ({
+              key,
+              name: VLQ_DOMAINS[key].name,
+              importance: vlqScores[key]?.importance || 5,
+              consistency: vlqScores[key]?.consistency || 5,
+              gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)
+            })).sort((a, b) => b.gap - a.gap);
+            
+            const biggestGap = gaps.find(g => g.gap >= 2);
+            const topStrength = gaps.find(a => a.importance >= 7 && a.consistency >= 6);
+            
             openingMessage = `Hey! 🌱
 
-Before we dive in, I'd love to chat a bit about your values and what matters most to you this year. The more I understand, the better I can help — whether that's suggesting daily actions, helping you think through goals, or just being a sounding board.
+I'd love to understand your values a bit more before we dive in. The more I know, the better I can personalize things for you.`;
 
-But no pressure — feel free to explore on your own too. Where would you like to go?
+            if (biggestGap && biggestGap.gap >= 2) {
+              openingMessage += `
+
+Looking at what you shared, <em>${biggestGap.name}</em> really matters to you (${biggestGap.importance}/10), but you rated how you've been living it lately as ${biggestGap.consistency}/10. That's a meaningful gap.
+
+What's been getting in the way there?`;
+            } else if (topStrength) {
+              openingMessage += `
+
+I noticed <em>${topStrength.name}</em> is both important to you and something you're already living well — that's a real strength.
+
+What's helped you stay consistent there? And what other parts of life do you want to bring that same energy to?`;
+            } else {
+              openingMessage += `
+
+What's been on your mind lately? What do you wish had more space in your life this year?`;
+            }
+            
+            openingMessage += `
 ${navigationOptions}`;
           }
 
