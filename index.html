@@ -1719,6 +1719,7 @@ Respond with ONLY the task text, nothing else.`,
       const [showSettingsModal, setShowSettingsModal] = useState(false);
       const [apiKey, setApiKey] = useState(() => localStorage.getItem('tend_api_key') || '');
       const [chatWidth, setChatWidth] = useState(320);
+      const [chatMinimized, setChatMinimized] = useState(false);
       const [isResizing, setIsResizing] = useState(false);
       const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
       const [showAdminDashboard, setShowAdminDashboard] = useState(() => {
@@ -3190,7 +3191,37 @@ If you notice a misalignment between their VLQ values (high importance areas) an
 
 Remember: You can add things to their plan automatically using markers. When they say "I want to exercise 3 times a week", add [WEEKLY_HABIT: exercise | 3]. When they commit to "a trip to Hawaii in June", add [EVENT: Hawaii trip | 5 | fun | trip]. When they mention "we're moving to Colorado in June", add [EVENT: Move to Colorado | 5 | personal | project]. Always use SPECIFIC, DESCRIPTIVE titles - never generic names like "event" or "thing". This makes the conversation feel magical — they talk, and things appear in their plan.
 
-Keep responses focused and conversational. You're not a productivity app — you're helping them live with more intention.`;
+Keep responses focused and conversational. You're not a productivity app — you're helping them live with more intention.
+
+NAVIGATION SYSTEM:
+You are not just a chat assistant — you ARE the app's guide. You can navigate users to different parts of the app and help them do things through conversation.
+
+CATEGORY 1 - Dual Input (Chat OR Direct):
+These can be done through chat OR directly in the app tabs. User's choice.
+- Goals, Events, Habits: User can tell you about them (you add via markers) OR add directly in tabs
+- When suggesting these, offer both options with a button:
+  "I've added that goal! You can keep telling me more, or add them directly in the Goals tab."
+  [BUTTON: Take me to Goals | goals]
+
+CATEGORY 2 - Experience Required (You Navigate):
+These REQUIRE the user to interact with the UI directly. Navigate them there.
+- Gardener Quiz: "Let me take you to discover your gardener type!" [NAVIGATE: quiz]
+- Life Map: "Let me show you your Life Map where you can tell me about your life visually." [NAVIGATE: life map]  
+- Journal Mode: "I'll take you to journal mode — a quieter space for reflection." [NAVIGATE: journal]
+
+HOW TO USE:
+- [BUTTON: Label | action] - Shows a clickable button in your message (for Category 1)
+- [NAVIGATE: destination] - Auto-navigates the user (for Category 2, chat minimizes)
+
+Valid destinations: goals, events, notes, plan, journal, insights, life map, quiz, tendy
+
+When user says "what can I do?" or seems lost, offer options warmly:
+"We could:
+• Talk about goals you're working toward
+• Build out your Life Map (I can take you there)
+• Take the gardener personality quiz (it's fun!)
+• Generate a daily tend
+• Or just chat — what's on your mind?"`;
       };
 
       // Call Claude API
@@ -3236,6 +3267,43 @@ Keep responses focused and conversational. You're not a productivity app — you
         } catch (error) {
           console.error('Fetch error:', error);
           return "I couldn't connect to Claude. Check your internet connection and try again.";
+        }
+      };
+
+      // Handle navigation from chat buttons and NAVIGATE tags
+      const handleChatNavigation = (action) => {
+        const actionLower = action.toLowerCase().trim();
+        
+        // Map actions to navigation
+        const navigationMap = {
+          'goals': () => { setActiveTab('notes'); setSidebarExpanded(true); },
+          'events': () => { setActiveTab('events'); setSidebarExpanded(true); },
+          'lifeareas': () => { setActiveTab('lifeareas'); setSidebarExpanded(true); },
+          'life areas': () => { setActiveTab('lifeareas'); setSidebarExpanded(true); },
+          'notes': () => { setActiveTab('notes'); setSidebarExpanded(true); },
+          'plan': () => setAppMode('plan'),
+          'design': () => setAppMode('plan'),
+          'plan & design': () => setAppMode('plan'),
+          'journal': () => setAppMode('journal'),
+          'insights': () => setAppMode('insights'),
+          'life map': () => setAppMode('insights'),
+          'lifemap': () => setAppMode('insights'),
+          'quiz': () => setAppMode('insights'),
+          'gardener quiz': () => setAppMode('insights'),
+          'personality quiz': () => setAppMode('insights'),
+          'tendy': () => setAppMode('tendy'),
+          'daily tend': () => setAppMode('tendy'),
+          'tends': () => setAppMode('tendy'),
+        };
+        
+        const navAction = navigationMap[actionLower];
+        if (navAction) {
+          navAction();
+          // Don't minimize chat for Category 1 (dual-input) actions
+          const category2Actions = ['journal', 'insights', 'life map', 'lifemap', 'quiz', 'gardener quiz', 'personality quiz'];
+          if (category2Actions.includes(actionLower)) {
+            setChatMinimized(true);
+          }
         }
       };
 
@@ -3424,13 +3492,24 @@ Keep responses focused and conversational. You're not a productivity app — you
           }
         }
         
-        // Remove all markers from displayed response
+        // Process NAVIGATE tags (auto-navigation for Category 2 experiences)
+        const navigateMatch = response.match(/\[NAVIGATE:\s*([^\]]+)\]/);
+        if (navigateMatch) {
+          const navTarget = navigateMatch[1].trim();
+          // Delay navigation slightly so user sees the message first
+          setTimeout(() => {
+            handleChatNavigation(navTarget);
+          }, 500);
+        }
+        
+        // Remove all markers from displayed response (buttons handled by ChatMessage)
         response = response
           .replace(/\[YEAR_THEME:\s*[a-zA-Z]{4,15}\]/g, '')
           .replace(/\[WEEKLY_HABIT:\s*[^\]]+\]/g, '')
           .replace(/\[DAILY_HABIT:\s*[^\]]+\]/g, '')
           .replace(/\[EVENT:\s*[^\]]+\]/g, '')
           .replace(/\[SEASON:\s*[^\]]+\]/g, '')
+          .replace(/\[NAVIGATE:\s*[^\]]+\]/g, '')
           .trim();
         
         setMessages(prev => [...prev, { 
@@ -3724,68 +3803,113 @@ I'm here to help with any planning.`
       // Journal mode
       if (appMode === 'journal') {
         return (
-          <JournalView 
-            yearTheme={yearTheme}
-            vlqScores={vlqScores}
-            journalEntries={journalEntries}
-            setJournalEntries={setJournalEntries}
-            monthlyReviews={monthlyReviews}
-            setMonthlyReviews={setMonthlyReviews}
-            yearlyReflections={yearlyReflections}
-            setYearlyReflections={setYearlyReflections}
-            todaysTendies={todaysTendies}
-            tendyHistory={tendyHistory}
-            flexPoints={flexPoints}
-            setFlexPoints={setFlexPoints}
-            flexPointsTracking={flexPointsTracking}
-            setFlexPointsTracking={setFlexPointsTracking}
-            goals={goals}
-            setAppMode={setAppMode}
-            setMessages={setMessages}
-            onSwitchMode={() => setAppMode('plan')}
-            onBack={() => setAppMode(null)}
-          />
+          <>
+            <JournalView 
+              yearTheme={yearTheme}
+              vlqScores={vlqScores}
+              journalEntries={journalEntries}
+              setJournalEntries={setJournalEntries}
+              monthlyReviews={monthlyReviews}
+              setMonthlyReviews={setMonthlyReviews}
+              yearlyReflections={yearlyReflections}
+              setYearlyReflections={setYearlyReflections}
+              todaysTendies={todaysTendies}
+              tendyHistory={tendyHistory}
+              flexPoints={flexPoints}
+              setFlexPoints={setFlexPoints}
+              flexPointsTracking={flexPointsTracking}
+              setFlexPointsTracking={setFlexPointsTracking}
+              goals={goals}
+              setAppMode={setAppMode}
+              setMessages={setMessages}
+              onSwitchMode={() => setAppMode('plan')}
+              onBack={() => setAppMode(null)}
+            />
+            {/* Floating chat bubble for navigation */}
+            <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 1000 }}>
+              <button
+                onClick={() => { setChatMinimized(false); setAppMode(null); }}
+                style={{
+                  width: '60px', height: '60px', borderRadius: '50%',
+                  backgroundColor: 'var(--accent)', border: 'none',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.2)', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem',
+                }}
+                title="Chat with Tend"
+              >💬</button>
+            </div>
+          </>
         );
       }
 
       // Insights mode
       if (appMode === 'insights') {
         return (
-          <InsightsView
-            trends={calculateTrends()}
-            vlqScores={vlqScores}
-            yearTheme={yearTheme}
-            flexPoints={flexPoints}
-            userProfile={userProfile}
-            setUserProfile={setUserProfile}
-            onBack={() => setAppMode(null)}
-            apiKey={apiKey}
-          />
+          <>
+            <InsightsView
+              trends={calculateTrends()}
+              vlqScores={vlqScores}
+              yearTheme={yearTheme}
+              flexPoints={flexPoints}
+              userProfile={userProfile}
+              setUserProfile={setUserProfile}
+              onBack={() => setAppMode(null)}
+              apiKey={apiKey}
+            />
+            {/* Floating chat bubble for navigation */}
+            <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 1000 }}>
+              <button
+                onClick={() => { setChatMinimized(false); setAppMode(null); }}
+                style={{
+                  width: '60px', height: '60px', borderRadius: '50%',
+                  backgroundColor: 'var(--accent)', border: 'none',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.2)', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem',
+                }}
+                title="Chat with Tend"
+              >💬</button>
+            </div>
+          </>
         );
       }
 
       // Tendy mode
       if (appMode === 'tendy') {
         return (
-          <TendyView
-            vlqScores={vlqScores}
-            todaysTendies={todaysTendies}
-            setTodaysTendies={setTodaysTendies}
-            tendyHistory={tendyHistory}
-            setTendyHistory={setTendyHistory}
-            tendyPoints={tendyPoints}
-            setTendyPoints={setTendyPoints}
-            tendyStreak={tendyStreak}
-            setTendyStreak={setTendyStreak}
-            flexPoints={flexPoints}
-            setFlexPoints={setFlexPoints}
-            weeklyCustomTendy={weeklyCustomTendy}
-            setWeeklyCustomTendy={setWeeklyCustomTendy}
-            userProfile={userProfile}
-            setUserProfile={setUserProfile}
-            apiKey={apiKey}
-            onBack={() => setAppMode(null)}
-          />
+          <>
+            <TendyView
+              vlqScores={vlqScores}
+              todaysTendies={todaysTendies}
+              setTodaysTendies={setTodaysTendies}
+              tendyHistory={tendyHistory}
+              setTendyHistory={setTendyHistory}
+              tendyPoints={tendyPoints}
+              setTendyPoints={setTendyPoints}
+              tendyStreak={tendyStreak}
+              setTendyStreak={setTendyStreak}
+              flexPoints={flexPoints}
+              setFlexPoints={setFlexPoints}
+              weeklyCustomTendy={weeklyCustomTendy}
+              setWeeklyCustomTendy={setWeeklyCustomTendy}
+              userProfile={userProfile}
+              setUserProfile={setUserProfile}
+              apiKey={apiKey}
+              onBack={() => setAppMode(null)}
+            />
+            {/* Floating chat bubble for navigation */}
+            <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 1000 }}>
+              <button
+                onClick={() => { setChatMinimized(false); setAppMode(null); }}
+                style={{
+                  width: '60px', height: '60px', borderRadius: '50%',
+                  backgroundColor: 'var(--accent)', border: 'none',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.2)', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem',
+                }}
+                title="Chat with Tend"
+              >💬</button>
+            </div>
+          </>
         );
       }
 
@@ -3886,7 +4010,7 @@ I'm here to help with any planning.`
             </div>
           </header>
 
-          <main style={{...styles.main, gridTemplateColumns: `${sidebarExpanded ? sidebarWidth : 64}px 1fr ${chatWidth}px`}}>
+          <main style={{...styles.main, gridTemplateColumns: `${sidebarExpanded ? sidebarWidth : 64}px 1fr ${chatMinimized ? '0px' : chatWidth + 'px'}`}}>
             {/* Left Sidebar */}
             <aside style={{
               ...styles.sidebar,
@@ -4082,46 +4206,125 @@ I'm here to help with any planning.`
               </div>
             </div>
 
-            <div style={styles.chatPanel}>
-              <div 
-                style={styles.resizeHandle} 
-                onMouseDown={handleMouseDown}
-                title="Drag to resize"
-              />
-              <div style={styles.chatMessages}>
-                {messages.map((msg, idx) => (
-                  <ChatMessage key={idx} message={msg} />
-                ))}
-                {isTyping && <TypingIndicator />}
-                <div ref={messagesEndRef} />
-              </div>
-              
-              <div style={styles.chatInputArea}>
-                {!revealed && phase === PHASES.EXPLORE && (
-                  <button style={styles.skipButton} onClick={handleSkip}>Skip to planning →</button>
-                )}
-                <div style={styles.inputRow}>
-                  <textarea
-                    style={styles.chatInput}
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
+            {/* Chat Panel - Full or Minimized */}
+            {!chatMinimized ? (
+              <div style={styles.chatPanel}>
+                <div 
+                  style={styles.resizeHandle} 
+                  onMouseDown={handleMouseDown}
+                  title="Drag to resize"
+                />
+                {/* Chat header with minimize button */}
+                <div style={{
+                  padding: '0.75rem 1rem',
+                  borderBottom: '1px solid var(--border)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  backgroundColor: 'var(--bg-elevated)',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ fontSize: '1rem' }}>💬</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text)' }}>Tend</span>
+                  </div>
+                  <button
+                    onClick={() => setChatMinimized(true)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '1.25rem',
+                      color: 'var(--text-muted)',
+                      cursor: 'pointer',
+                      padding: '0.25rem',
+                      lineHeight: 1,
                     }}
-                    placeholder="Say whatever comes to mind..."
-                    rows={2}
-                  />
-                  <button 
-                    style={{...styles.sendButton, ...(inputValue.trim() ? {} : styles.sendButtonDisabled)}}
-                    onClick={handleSendMessage}
-                    disabled={!inputValue.trim()}
-                  >↑</button>
+                    title="Minimize chat"
+                  >
+                    −
+                  </button>
+                </div>
+                <div style={styles.chatMessages}>
+                  {messages.map((msg, idx) => (
+                    <ChatMessage 
+                      key={idx} 
+                      message={msg} 
+                      onButtonClick={handleChatNavigation}
+                    />
+                  ))}
+                  {isTyping && <TypingIndicator />}
+                  <div ref={messagesEndRef} />
+                </div>
+                
+                <div style={styles.chatInputArea}>
+                  {!revealed && phase === PHASES.EXPLORE && (
+                    <button style={styles.skipButton} onClick={handleSkip}>Skip to planning →</button>
+                  )}
+                  <div style={styles.inputRow}>
+                    <textarea
+                      style={styles.chatInput}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
+                      placeholder="Say whatever comes to mind..."
+                      rows={2}
+                    />
+                    <button 
+                      style={{...styles.sendButton, ...(inputValue.trim() ? {} : styles.sendButtonDisabled)}}
+                      onClick={handleSendMessage}
+                      disabled={!inputValue.trim()}
+                    >↑</button>
+                  </div>
                 </div>
               </div>
-            </div>
+            ) : (
+              /* Minimized Chat Bubble */
+              <div style={{
+                position: 'fixed',
+                bottom: '1.5rem',
+                right: '1.5rem',
+                zIndex: 1000,
+              }}>
+                <button
+                  onClick={() => setChatMinimized(false)}
+                  style={{
+                    width: '60px',
+                    height: '60px',
+                    borderRadius: '50%',
+                    backgroundColor: 'var(--accent)',
+                    border: 'none',
+                    boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '1.5rem',
+                    transition: 'transform 0.2s, box-shadow 0.2s',
+                  }}
+                  onMouseOver={(e) => { e.currentTarget.style.transform = 'scale(1.1)'; e.currentTarget.style.boxShadow = '0 6px 25px rgba(0,0,0,0.25)'; }}
+                  onMouseOut={(e) => { e.currentTarget.style.transform = 'scale(1)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)'; }}
+                  title="Chat with Tend"
+                >
+                  💬
+                </button>
+                <div style={{
+                  position: 'absolute',
+                  bottom: '-0.25rem',
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  fontSize: '0.65rem',
+                  color: 'var(--text-muted)',
+                  whiteSpace: 'nowrap',
+                  marginTop: '0.25rem',
+                }}>
+                  Chat with Tend
+                </div>
+              </div>
+            )}
           </main>
 
           {showEventModal && <EventModal onClose={() => setShowEventModal(false)} onAdd={handleAddEvent} />}
@@ -8072,13 +8275,60 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       );
     }
 
-    function ChatMessage({ message }) {
+    function ChatMessage({ message, onNavigate, onButtonClick }) {
       const isAssistant = message.role === 'assistant';
+      
+      // Parse content for buttons and clean display text
+      const parseContent = (content) => {
+        // Extract buttons [BUTTON: label | action]
+        const buttons = [];
+        const buttonRegex = /\[BUTTON:\s*([^\|]+)\s*\|\s*([^\]]+)\]/g;
+        let match;
+        while ((match = buttonRegex.exec(content)) !== null) {
+          buttons.push({ label: match[1].trim(), action: match[2].trim() });
+        }
+        
+        // Remove button tags from display
+        let cleanContent = content.replace(/\[BUTTON:[^\]]+\]/g, '').trim();
+        // Remove navigate tags from display (handled separately)
+        cleanContent = cleanContent.replace(/\[NAVIGATE:[^\]]+\]/g, '').trim();
+        
+        return { cleanContent, buttons };
+      };
+      
+      const { cleanContent, buttons } = parseContent(message.content);
+      
       return (
         <div style={{...styles.chatMessage, justifyContent: isAssistant ? 'flex-start' : 'flex-end'}} className="fade-in">
           {isAssistant && <div style={styles.chatAvatar}><span style={styles.chatAvatarText}>T</span></div>}
           <div style={{...styles.chatBubble, ...(isAssistant ? styles.chatBubbleAssistant : styles.chatBubbleUser)}}>
-            <div dangerouslySetInnerHTML={{ __html: message.content.replace(/\n/g, '<br/>') }} />
+            <div dangerouslySetInnerHTML={{ __html: cleanContent.replace(/\n/g, '<br/>') }} />
+            {buttons.length > 0 && (
+              <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {buttons.map((btn, i) => (
+                  <button
+                    key={i}
+                    onClick={() => onButtonClick && onButtonClick(btn.action)}
+                    style={{
+                      padding: '0.6rem 1rem',
+                      backgroundColor: 'var(--accent)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '0.85rem',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    <span>📍</span> {btn.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       );
