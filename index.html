@@ -9399,24 +9399,32 @@ Respond in this exact JSON format only, no other text:
                           )}
                           
                           <div style={{ padding: '1.5rem' }}>
-                            {/* Header */}
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <span style={{ fontSize: '2rem' }}>{generatedResult?.emoji || '🌱'}</span>
-                                <div>
-                                  <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '1.1rem' }}>
-                                    {generatedResult ? generatedResult.name : isGenerating ? 'Discovering your type...' : 'What kind of gardener are you?'}
-                                  </div>
-                                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                                    {generatedResult ? 'Your unique tending style' : isGenerating ? 'This takes a moment' : `Question ${quizStep + 1} of ${quizQuestions.length}`}
+                            {/* Header - minimal for results, full for questions */}
+                            {!generatedResult && (
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                  <span style={{ fontSize: '2rem' }}>🌱</span>
+                                  <div>
+                                    <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '1.1rem' }}>
+                                      {isGenerating ? 'Discovering your type...' : 'What kind of gardener are you?'}
+                                    </div>
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                                      {isGenerating ? 'This takes a moment' : `Question ${quizStep + 1} of ${quizQuestions.length}`}
+                                    </div>
                                   </div>
                                 </div>
+                                {!isGenerating && (
+                                  <button onClick={() => { setExpandedArea(null); setTempFormData({}); }}
+                                    style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: 'var(--text-muted)', cursor: 'pointer' }}>×</button>
+                                )}
                               </div>
-                              {!isGenerating && (
+                            )}
+                            {generatedResult && (
+                              <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
                                 <button onClick={() => { setExpandedArea(null); setTempFormData({}); }}
                                   style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: 'var(--text-muted)', cursor: 'pointer' }}>×</button>
-                              )}
-                            </div>
+                              </div>
+                            )}
                             
                             {isGenerating ? (
                               /* Loading State */
@@ -9445,21 +9453,48 @@ Respond in this exact JSON format only, no other text:
                               /* Result Screen */
                               <div>
                                 <div style={{
-                                  padding: '1.5rem',
+                                  padding: '1.75rem 1.5rem',
                                   backgroundColor: `${generatedResult.color}12`,
                                   borderRadius: '16px',
                                   marginBottom: '1.25rem',
                                   border: `1px solid ${generatedResult.color}25`,
                                 }}>
-                                  <div style={{ fontSize: '3.5rem', textAlign: 'center', marginBottom: '1rem' }}>
+                                  {/* Emoji */}
+                                  <div style={{ fontSize: '4rem', textAlign: 'center', marginBottom: '0.75rem' }}>
                                     {generatedResult.emoji}
                                   </div>
+                                  
+                                  {/* NAME - Big and prominent in center */}
+                                  <div style={{
+                                    fontSize: '1.5rem',
+                                    fontWeight: 700,
+                                    color: generatedResult.color,
+                                    textAlign: 'center',
+                                    marginBottom: '0.35rem',
+                                    fontFamily: "'Fraunces', serif",
+                                  }}>
+                                    {generatedResult.name}
+                                  </div>
+                                  
+                                  {/* Subtitle */}
+                                  <div style={{
+                                    fontSize: '0.75rem',
+                                    color: 'var(--text-muted)',
+                                    textAlign: 'center',
+                                    marginBottom: '1.25rem',
+                                    textTransform: 'uppercase',
+                                    letterSpacing: '1px',
+                                  }}>
+                                    Your Gardener Type
+                                  </div>
+                                  
+                                  {/* Description */}
                                   <div style={{
                                     fontSize: '0.95rem',
                                     color: 'var(--text)',
                                     lineHeight: 1.7,
                                     textAlign: 'center',
-                                    marginBottom: '1rem',
+                                    marginBottom: '1.25rem',
                                   }}>
                                     {generatedResult.description}
                                   </div>
