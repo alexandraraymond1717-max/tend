@@ -1707,6 +1707,7 @@ Respond with ONLY the task text, nothing else.`,
       const [isTyping, setIsTyping] = useState(false);
       const [exchangeCount, setExchangeCount] = useState(0);
       const messagesEndRef = useRef(null);
+      const chatContainerRef = useRef(null);
 
       const [revealed, setRevealed] = useState(false);
       const [activeTab, setActiveTab] = useState('events');
@@ -2578,8 +2579,15 @@ ${navigationOptions}`;
         };
       }, [isResizingSidebar]);
 
+      // Scroll chat to bottom
+      const scrollChatToBottom = (smooth = true) => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+      };
+
       useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        scrollChatToBottom(true);
       }, [messages]);
 
       // Scroll to bottom when app first loads with messages
@@ -2587,8 +2595,8 @@ ${navigationOptions}`;
         if (dataLoaded && vlqCompleted) {
           // Give time for messages to render, then scroll
           setTimeout(() => {
-            messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
-          }, 200);
+            scrollChatToBottom(false);
+          }, 300);
         }
       }, [dataLoaded, vlqCompleted]);
 
@@ -4307,7 +4315,7 @@ I'm here to help with any planning.`
                     −
                   </button>
                 </div>
-                <div style={styles.chatMessages}>
+                <div ref={chatContainerRef} style={styles.chatMessages}>
                   {messages.map((msg, idx) => (
                     <ChatMessage 
                       key={idx} 
