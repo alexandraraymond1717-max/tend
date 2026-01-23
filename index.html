@@ -9077,151 +9077,315 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               </div>
             </div>
             
-            {/* Help Tend Know You - Profile Section */}
+            {/* Your Life Map - Visual Knowledge Graph */}
             <div style={insightsStyles.section}>
               <h3 style={insightsStyles.sectionTitle}>
-                <span>🌱</span>
-                <span>Help Tend Know You</span>
+                <span>✨</span>
+                <span>Your Life Map</span>
               </h3>
               
-              <div style={{
-                padding: '1rem',
-                backgroundColor: 'var(--accent-light)',
-                borderRadius: '12px',
-                marginBottom: '1.5rem',
-                fontSize: '0.85rem',
-                color: 'var(--text)',
-                lineHeight: 1.5
-              }}>
-                The more I know about you, the more personal your daily tends become. Share what feels comfortable — everything here helps me give you better suggestions.
-              </div>
-              
-              {/* Progress indicator */}
+              {/* Visual Knowledge Graph */}
               {(() => {
                 const prefs = userProfile?.tendPreferences || {};
-                const filledAreas = VLQ_ORDER.filter(domain => {
+                
+                // Collect all facts from profile
+                const allFacts = [];
+                VLQ_ORDER.forEach(domain => {
+                  const color = VLQ_DOMAINS[domain]?.color || '#888';
+                  const structured = prefs.structuredInfo?.[domain] || {};
                   const notes = prefs.lifeAreaNotes?.[domain];
-                  const structured = prefs.structuredInfo?.[domain];
-                  return notes || (structured && Object.values(structured).some(v => v));
-                }).length;
+                  
+                  Object.entries(structured).forEach(([key, value]) => {
+                    if (value) {
+                      allFacts.push({ 
+                        domain, 
+                        text: value.length > 25 ? value.substring(0, 25) + '...' : value,
+                        fullText: value,
+                        color,
+                        type: 'structured'
+                      });
+                    }
+                  });
+                  
+                  if (notes) {
+                    allFacts.push({ 
+                      domain, 
+                      text: notes.length > 25 ? notes.substring(0, 25) + '...' : notes,
+                      fullText: notes,
+                      color,
+                      type: 'notes'
+                    });
+                  }
+                });
+                
+                // Calculate positions for constellation layout
+                const width = 340;
+                const height = 300;
+                const centerX = width / 2;
+                const centerY = height / 2;
+                
+                // Position facts in a circular pattern around center
+                const factNodes = allFacts.map((fact, i) => {
+                  const angle = (i / Math.max(allFacts.length, 1)) * Math.PI * 2 - Math.PI / 2;
+                  const radius = 80 + (i % 3) * 25; // Vary distance
+                  return {
+                    ...fact,
+                    x: centerX + Math.cos(angle) * radius,
+                    y: centerY + Math.sin(angle) * radius,
+                  };
+                });
+                
+                // Life area category nodes (positioned further out)
+                const categoryNodes = VLQ_ORDER.map((domain, i) => {
+                  const angle = (i / VLQ_ORDER.length) * Math.PI * 2 - Math.PI / 2;
+                  const hasContent = prefs.structuredInfo?.[domain] || prefs.lifeAreaNotes?.[domain];
+                  return {
+                    domain,
+                    icon: VLQ_DOMAINS[domain]?.icon,
+                    color: VLQ_DOMAINS[domain]?.color,
+                    x: centerX + Math.cos(angle) * 130,
+                    y: centerY + Math.sin(angle) * 115,
+                    hasContent: !!hasContent,
+                  };
+                });
                 
                 return (
-                  <div style={{marginBottom: '1.5rem'}}>
-                    <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem'}}>
-                      <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Profile completeness</span>
-                      <span style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent)'}}>{filledAreas} of {VLQ_ORDER.length} areas</span>
-                    </div>
-                    <div style={{height: '8px', backgroundColor: 'var(--bg-elevated)', borderRadius: '4px', overflow: 'hidden'}}>
-                      <div style={{
-                        height: '100%',
-                        width: `${(filledAreas / VLQ_ORDER.length) * 100}%`,
-                        backgroundColor: 'var(--accent)',
-                        borderRadius: '4px',
-                        transition: 'width 0.3s'
-                      }} />
-                    </div>
-                  </div>
-                );
-              })()}
-              
-              {/* Life Area Cards */}
-              <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
-                {VLQ_ORDER.map(domain => {
-                  const areaConfig = LIFE_AREA_PROMPTS[domain];
-                  const prefs = userProfile?.tendPreferences || {};
-                  const notes = prefs.lifeAreaNotes?.[domain] || '';
-                  const structured = prefs.structuredInfo?.[domain] || {};
-                  const hasInfo = notes || Object.values(structured).some(v => v);
-                  const isExpanded = expandedArea === domain;
-                  const isEditing = editingArea === domain;
-                  const readiness = calculateDomainReadiness(domain, userProfile);
-                  
-                  return (
-                    <div key={domain} style={{
+                  <div>
+                    {/* The Constellation */}
+                    <div style={{
+                      position: 'relative',
                       backgroundColor: 'var(--bg-elevated)',
-                      borderRadius: '12px',
-                      border: `1px solid ${hasInfo ? readiness.color + '40' : 'var(--border)'}`,
+                      borderRadius: '16px',
+                      padding: '1rem',
+                      marginBottom: '1.5rem',
                       overflow: 'hidden',
-                      transition: 'border-color 0.2s'
                     }}>
-                      {/* Header - always visible */}
-                      <div 
-                        style={{
-                          padding: '1rem',
-                          display: 'flex',
-                          justifyContent: 'space-between',
-                          alignItems: 'center',
-                          cursor: 'pointer',
-                        }}
-                        onClick={() => {
-                          if (isEditing) return;
-                          setExpandedArea(isExpanded ? null : domain);
-                        }}
-                      >
-                        <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
-                          <span style={{fontSize: '1.25rem'}}>{VLQ_DOMAINS[domain]?.icon}</span>
-                          <div>
-                            <div style={{fontWeight: 500, color: 'var(--text)', fontSize: '0.95rem'}}>
-                              {areaConfig?.title || VLQ_DOMAINS[domain]?.name}
-                            </div>
-                            {!isExpanded && hasInfo && (
-                              <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem'}}>
-                                {Object.values(structured).filter(v => v).length > 0 && 
-                                  `${Object.values(structured).filter(v => v).length} details`}
-                                {Object.values(structured).filter(v => v).length > 0 && notes && ' • '}
-                                {notes && 'Has notes'}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                          {hasInfo ? (
-                            <span style={{
-                              padding: '0.25rem 0.5rem',
-                              backgroundColor: `${readiness.color}20`,
-                              color: readiness.color,
-                              borderRadius: '4px',
-                              fontSize: '0.7rem',
-                              fontWeight: 600
-                            }}>{readiness.level}</span>
-                          ) : (
-                            <span style={{
-                              padding: '0.25rem 0.5rem',
-                              backgroundColor: 'var(--bg-card)',
-                              color: 'var(--text-muted)',
-                              borderRadius: '4px',
-                              fontSize: '0.7rem'
-                            }}>Empty</span>
-                          )}
-                          <span style={{color: 'var(--text-muted)', fontSize: '0.75rem'}}>
-                            {isExpanded ? '▼' : '▶'}
-                          </span>
-                        </div>
-                      </div>
+                      {/* Subtle gradient background */}
+                      <div style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        background: 'radial-gradient(circle at center, var(--accent-light) 0%, transparent 70%)',
+                        opacity: 0.3,
+                      }} />
                       
-                      {/* Expanded content */}
-                      {isExpanded && (
-                        <div style={{padding: '0 1rem 1rem 1rem', borderTop: '1px solid var(--border)'}}>
-                          {/* Why this helps */}
+                      <svg width={width} height={height} style={{ display: 'block', margin: '0 auto' }}>
+                        {/* Connection lines from center to facts */}
+                        {factNodes.map((node, i) => (
+                          <line
+                            key={`line-${i}`}
+                            x1={centerX}
+                            y1={centerY}
+                            x2={node.x}
+                            y2={node.y}
+                            stroke={node.color}
+                            strokeWidth="1"
+                            opacity="0.3"
+                          />
+                        ))}
+                        
+                        {/* Subtle rings */}
+                        <circle cx={centerX} cy={centerY} r="40" fill="none" stroke="var(--border)" strokeWidth="1" opacity="0.2" />
+                        <circle cx={centerX} cy={centerY} r="90" fill="none" stroke="var(--border)" strokeWidth="1" opacity="0.15" />
+                        <circle cx={centerX} cy={centerY} r="130" fill="none" stroke="var(--border)" strokeWidth="1" opacity="0.1" />
+                        
+                        {/* Fact nodes */}
+                        {factNodes.map((node, i) => (
+                          <g key={`fact-${i}`}>
+                            <circle
+                              cx={node.x}
+                              cy={node.y}
+                              r="6"
+                              fill={node.color}
+                              opacity="0.8"
+                            />
+                            <title>{node.fullText}</title>
+                          </g>
+                        ))}
+                        
+                        {/* Category nodes (outer ring) */}
+                        {categoryNodes.map((node, i) => (
+                          <g 
+                            key={`cat-${i}`} 
+                            style={{ cursor: 'pointer' }}
+                            onClick={() => {
+                              setExpandedArea(expandedArea === node.domain ? null : node.domain);
+                            }}
+                          >
+                            <circle
+                              cx={node.x}
+                              cy={node.y}
+                              r="18"
+                              fill={node.hasContent ? node.color : 'var(--bg-card)'}
+                              stroke={node.color}
+                              strokeWidth="2"
+                              opacity={node.hasContent ? 0.9 : 0.4}
+                            />
+                            <text
+                              x={node.x}
+                              y={node.y + 5}
+                              textAnchor="middle"
+                              fontSize="14"
+                              style={{ pointerEvents: 'none' }}
+                            >
+                              {node.icon}
+                            </text>
+                          </g>
+                        ))}
+                        
+                        {/* Center "You" node */}
+                        <circle cx={centerX} cy={centerY} r="28" fill="var(--accent)" opacity="0.9" />
+                        <text
+                          x={centerX}
+                          y={centerY + 1}
+                          textAnchor="middle"
+                          dominantBaseline="middle"
+                          fill="white"
+                          fontSize="12"
+                          fontWeight="600"
+                        >
+                          You
+                        </text>
+                        <text
+                          x={centerX}
+                          y={centerY + 13}
+                          textAnchor="middle"
+                          fill="white"
+                          fontSize="8"
+                          opacity="0.8"
+                        >
+                          {allFacts.length} facts
+                        </text>
+                      </svg>
+                      
+                      {/* Empty state overlay */}
+                      {allFacts.length === 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '50%',
+                          left: '50%',
+                          transform: 'translate(-50%, -50%)',
+                          textAlign: 'center',
+                          color: 'var(--text-muted)',
+                          fontSize: '0.85rem',
+                          padding: '1rem',
+                          marginTop: '2rem',
+                        }}>
+                          <div style={{ marginBottom: '0.5rem' }}>Your map is waiting to be filled</div>
+                          <div style={{ fontSize: '0.75rem' }}>Tap a category below to start</div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* Discovery prompt hint */}
+                    <div style={{
+                      textAlign: 'center',
+                      color: 'var(--text-muted)',
+                      fontSize: '0.8rem',
+                      marginBottom: '1.5rem',
+                    }}>
+                      Tap any life area to discover more about yourself
+                    </div>
+                    
+                    {/* Discovery Cards - Show when an area is selected */}
+                    {expandedArea && (() => {
+                      const domain = expandedArea;
+                      const areaConfig = LIFE_AREA_PROMPTS[domain];
+                      const prefs = userProfile?.tendPreferences || {};
+                      const notes = prefs.lifeAreaNotes?.[domain] || '';
+                      const structured = prefs.structuredInfo?.[domain] || {};
+                      const hasInfo = notes || Object.values(structured).some(v => v);
+                      const domainColor = VLQ_DOMAINS[domain]?.color;
+                      
+                      // Fun discovery questions per area
+                      const discoveryQuestions = {
+                        family: ["Who makes you laugh the most?", "What's a family tradition you love?"],
+                        partner: ["What's your favorite thing to do together?", "What song reminds you of them?"],
+                        friendships: ["Who would you call at 2am?", "What's an inside joke you share?"],
+                        career: ["What part of your work energizes you?", "What's your current focus?"],
+                        education: ["What are you curious about lately?", "What skill would you love to master?"],
+                        recreation: ["What makes you lose track of time?", "What did you love doing as a kid?"],
+                        spirituality: ["What brings you peace?", "What do you believe in deeply?"],
+                        community: ["Where do you feel you belong?", "How do you want to contribute?"],
+                        health: ["What makes your body feel good?", "What's your favorite way to move?"],
+                        mentalHealth: ["What helps you recharge?", "What boundaries matter most to you?"],
+                      };
+                      
+                      return (
+                        <div style={{
+                          backgroundColor: 'var(--bg-elevated)',
+                          borderRadius: '16px',
+                          border: `2px solid ${domainColor}40`,
+                          padding: '1.25rem',
+                          marginBottom: '1rem',
+                          animation: 'fadeIn 0.2s ease',
+                        }}>
                           <div style={{
-                            padding: '0.75rem 0',
-                            fontSize: '0.8rem',
-                            color: 'var(--text-muted)',
-                            lineHeight: 1.5
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            marginBottom: '1rem',
                           }}>
-                            {areaConfig?.why}
-                            <div style={{marginTop: '0.25rem', fontStyle: 'italic', color: 'var(--accent)'}}>
-                              Example: {areaConfig?.example}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <span style={{ 
+                                fontSize: '1.5rem',
+                                width: '40px',
+                                height: '40px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                backgroundColor: `${domainColor}20`,
+                                borderRadius: '10px',
+                              }}>
+                                {VLQ_DOMAINS[domain]?.icon}
+                              </span>
+                              <div>
+                                <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '1rem' }}>
+                                  {areaConfig?.title || VLQ_DOMAINS[domain]?.name}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                  {hasInfo ? `${Object.values(structured).filter(v => v).length + (notes ? 1 : 0)} things shared` : 'Nothing shared yet'}
+                                </div>
+                              </div>
                             </div>
+                            <button
+                              onClick={() => setExpandedArea(null)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                fontSize: '1.25rem',
+                                color: 'var(--text-muted)',
+                                cursor: 'pointer',
+                                padding: '0.25rem',
+                              }}
+                            >
+                              ×
+                            </button>
                           </div>
                           
-                          {isEditing ? (
-                            /* Edit Mode */
-                            <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
-                              {/* Structured prompts */}
+                          {isEditing === domain ? (
+                            /* Edit/Discovery Mode */
+                            <div>
+                              <div style={{
+                                fontSize: '0.85rem',
+                                color: 'var(--text-muted)',
+                                marginBottom: '1rem',
+                                fontStyle: 'italic',
+                              }}>
+                                {discoveryQuestions[domain]?.[0] || "Tell me about this part of your life..."}
+                              </div>
+                              
                               {areaConfig?.prompts.map(prompt => (
-                                <div key={prompt.key}>
-                                  <label style={{display: 'block', fontSize: '0.8rem', color: 'var(--text)', marginBottom: '0.35rem', fontWeight: 500}}>
+                                <div key={prompt.key} style={{ marginBottom: '1rem' }}>
+                                  <label style={{
+                                    display: 'block',
+                                    fontSize: '0.8rem',
+                                    color: 'var(--text)',
+                                    marginBottom: '0.35rem',
+                                    fontWeight: 500,
+                                  }}>
                                     {prompt.label}
                                   </label>
                                   <input
@@ -9231,44 +9395,48 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                     placeholder={prompt.placeholder}
                                     style={{
                                       width: '100%',
-                                      padding: '0.65rem 0.75rem',
+                                      padding: '0.75rem',
                                       border: '1px solid var(--border)',
-                                      borderRadius: '8px',
+                                      borderRadius: '10px',
                                       backgroundColor: 'var(--bg-card)',
                                       color: 'var(--text)',
-                                      fontSize: '0.85rem',
+                                      fontSize: '0.9rem',
                                       boxSizing: 'border-box',
                                     }}
                                   />
                                 </div>
                               ))}
                               
-                              {/* Free-form notes */}
-                              <div>
-                                <label style={{display: 'block', fontSize: '0.8rem', color: 'var(--text)', marginBottom: '0.35rem', fontWeight: 500}}>
-                                  Anything else? (free-form)
+                              <div style={{ marginBottom: '1rem' }}>
+                                <label style={{
+                                  display: 'block',
+                                  fontSize: '0.8rem',
+                                  color: 'var(--text)',
+                                  marginBottom: '0.35rem',
+                                  fontWeight: 500,
+                                }}>
+                                  Anything else?
                                 </label>
                                 <textarea
                                   value={tempNotes}
                                   onChange={(e) => setTempNotes(e.target.value)}
-                                  placeholder="Add any other details that might help personalize your tends..."
-                                  rows={3}
+                                  placeholder="Share whatever feels right..."
+                                  rows={2}
                                   style={{
                                     width: '100%',
-                                    padding: '0.65rem 0.75rem',
+                                    padding: '0.75rem',
                                     border: '1px solid var(--border)',
-                                    borderRadius: '8px',
+                                    borderRadius: '10px',
                                     backgroundColor: 'var(--bg-card)',
                                     color: 'var(--text)',
-                                    fontSize: '0.85rem',
+                                    fontSize: '0.9rem',
                                     resize: 'vertical',
                                     boxSizing: 'border-box',
                                   }}
                                 />
                               </div>
                               
-                              {/* Save/Cancel buttons */}
-                              <div style={{display: 'flex', gap: '0.5rem', justifyContent: 'flex-end'}}>
+                              <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end' }}>
                                 <button
                                   onClick={() => {
                                     setEditingArea(null);
@@ -9276,12 +9444,12 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                     setTempNotes('');
                                   }}
                                   style={{
-                                    padding: '0.5rem 1rem',
+                                    padding: '0.6rem 1.25rem',
                                     border: '1px solid var(--border)',
-                                    borderRadius: '8px',
+                                    borderRadius: '10px',
                                     backgroundColor: 'transparent',
                                     color: 'var(--text-muted)',
-                                    fontSize: '0.85rem',
+                                    fontSize: '0.9rem',
                                     cursor: 'pointer',
                                   }}
                                 >
@@ -9289,7 +9457,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                 </button>
                                 <button
                                   onClick={() => {
-                                    // Save to userProfile
                                     setUserProfile(prev => ({
                                       ...prev,
                                       tendPreferences: {
@@ -9309,17 +9476,17 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                     setTempNotes('');
                                   }}
                                   style={{
-                                    padding: '0.5rem 1rem',
+                                    padding: '0.6rem 1.25rem',
                                     border: 'none',
-                                    borderRadius: '8px',
-                                    backgroundColor: 'var(--accent)',
+                                    borderRadius: '10px',
+                                    backgroundColor: domainColor,
                                     color: 'white',
-                                    fontSize: '0.85rem',
+                                    fontSize: '0.9rem',
                                     cursor: 'pointer',
                                     fontWeight: 500,
                                   }}
                                 >
-                                  Save
+                                  Save to map
                                 </button>
                               </div>
                             </div>
@@ -9327,51 +9494,51 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                             /* View Mode */
                             <div>
                               {hasInfo ? (
-                                <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem'}}>
-                                  {/* Show structured info */}
+                                <div style={{ marginBottom: '1rem' }}>
                                   {areaConfig?.prompts.map(prompt => {
                                     const value = structured[prompt.key];
                                     if (!value) return null;
                                     return (
                                       <div key={prompt.key} style={{
-                                        padding: '0.5rem 0.75rem',
-                                        backgroundColor: 'var(--bg-card)',
-                                        borderRadius: '6px',
-                                        fontSize: '0.85rem'
+                                        display: 'flex',
+                                        alignItems: 'flex-start',
+                                        gap: '0.5rem',
+                                        padding: '0.5rem 0',
+                                        borderBottom: '1px solid var(--border)',
                                       }}>
-                                        <span style={{color: 'var(--text-muted)'}}>{prompt.label}: </span>
-                                        <span style={{color: 'var(--text)'}}>{value}</span>
+                                        <span style={{ color: domainColor, fontSize: '0.9rem' }}>•</span>
+                                        <span style={{ color: 'var(--text)', fontSize: '0.9rem' }}>{value}</span>
                                       </div>
                                     );
                                   })}
-                                  {/* Show notes */}
                                   {notes && (
                                     <div style={{
-                                      padding: '0.5rem 0.75rem',
-                                      backgroundColor: 'var(--bg-card)',
-                                      borderRadius: '6px',
-                                      fontSize: '0.85rem'
+                                      display: 'flex',
+                                      alignItems: 'flex-start',
+                                      gap: '0.5rem',
+                                      padding: '0.5rem 0',
                                     }}>
-                                      <span style={{color: 'var(--text-muted)'}}>Notes: </span>
-                                      <span style={{color: 'var(--text)'}}>{notes}</span>
+                                      <span style={{ color: domainColor, fontSize: '0.9rem' }}>•</span>
+                                      <span style={{ color: 'var(--text)', fontSize: '0.9rem' }}>{notes}</span>
                                     </div>
                                   )}
                                 </div>
                               ) : (
                                 <div style={{
-                                  padding: '1rem',
-                                  backgroundColor: 'var(--bg-card)',
-                                  borderRadius: '8px',
-                                  marginBottom: '1rem',
+                                  padding: '1.5rem',
                                   textAlign: 'center',
                                   color: 'var(--text-muted)',
-                                  fontSize: '0.85rem'
+                                  marginBottom: '1rem',
                                 }}>
-                                  No information yet — add some to personalize your tends!
+                                  <div style={{ fontSize: '0.95rem', marginBottom: '0.5rem' }}>
+                                    {discoveryQuestions[domain]?.[0]}
+                                  </div>
+                                  <div style={{ fontSize: '0.8rem', opacity: 0.7 }}>
+                                    {discoveryQuestions[domain]?.[1]}
+                                  </div>
                                 </div>
                               )}
                               
-                              {/* Edit button */}
                               <button
                                 onClick={() => {
                                   setEditingArea(domain);
@@ -9380,30 +9547,62 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                 }}
                                 style={{
                                   width: '100%',
-                                  padding: '0.65rem',
-                                  border: '1px solid var(--border)',
-                                  borderRadius: '8px',
-                                  backgroundColor: 'var(--bg-card)',
-                                  color: 'var(--text)',
-                                  fontSize: '0.85rem',
+                                  padding: '0.75rem',
+                                  border: 'none',
+                                  borderRadius: '10px',
+                                  backgroundColor: `${domainColor}15`,
+                                  color: domainColor,
+                                  fontSize: '0.9rem',
                                   cursor: 'pointer',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  justifyContent: 'center',
-                                  gap: '0.5rem',
+                                  fontWeight: 500,
                                 }}
                               >
-                                <span>{hasInfo ? '✏️ Edit' : '➕ Add'}</span>
-                                <span>{hasInfo ? 'Details' : 'Information'}</span>
+                                {hasInfo ? '✏️ Add more' : '✨ Start discovering'}
                               </button>
                             </div>
                           )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
+                      );
+                    })()}
+                    
+                    {/* Quick category pills when nothing selected */}
+                    {!expandedArea && (
+                      <div style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '0.5rem',
+                        justifyContent: 'center',
+                      }}>
+                        {VLQ_ORDER.map(domain => {
+                          const hasContent = prefs.structuredInfo?.[domain] || prefs.lifeAreaNotes?.[domain];
+                          const color = VLQ_DOMAINS[domain]?.color;
+                          return (
+                            <button
+                              key={domain}
+                              onClick={() => setExpandedArea(domain)}
+                              style={{
+                                padding: '0.4rem 0.75rem',
+                                border: hasContent ? 'none' : '1px dashed var(--border)',
+                                borderRadius: '20px',
+                                backgroundColor: hasContent ? `${color}20` : 'transparent',
+                                color: hasContent ? color : 'var(--text-muted)',
+                                fontSize: '0.8rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                              }}
+                            >
+                              <span>{VLQ_DOMAINS[domain]?.icon}</span>
+                              <span>{VLQ_DOMAINS[domain]?.name}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
             
             {/* Motivation */}
