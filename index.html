@@ -2427,12 +2427,20 @@ Respond with ONLY the task text, nothing else.`,
         
         if (!confirmed) return;
         
+        // Ask for password to re-authenticate
+        const password = window.prompt('Please enter your password to confirm deletion:');
+        if (!password) {
+          return; // User cancelled
+        }
+        
         try {
+          // Re-authenticate the user first
+          const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
+          await user.reauthenticateWithCredential(credential);
+          
           // Delete user data from Firestore
-          if (user) {
-            await db.collection('users').doc(user.uid).delete();
-            console.log('User data deleted from Firestore');
-          }
+          await db.collection('users').doc(user.uid).delete();
+          console.log('User data deleted from Firestore');
           
           // Delete the Firebase Auth user
           await user.delete();
@@ -2469,7 +2477,9 @@ Respond with ONLY the task text, nothing else.`,
           alert('Your account has been deleted.');
         } catch (error) {
           console.error('Error deleting account:', error);
-          if (error.code === 'auth/requires-recent-login') {
+          if (error.code === 'auth/wrong-password') {
+            alert('Incorrect password. Please try again.');
+          } else if (error.code === 'auth/requires-recent-login') {
             alert('For security, please sign out and sign back in, then try deleting your account again.');
           } else {
             alert('Error deleting account: ' + error.message);
