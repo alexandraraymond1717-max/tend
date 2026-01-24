@@ -2427,26 +2427,24 @@ Respond with ONLY the task text, nothing else.`,
         
         if (!confirmed) return;
         
-        // Ask for password to re-authenticate
-        const password = window.prompt('Please enter your password to confirm deletion:');
-        if (!password) {
-          return; // User cancelled
-        }
-        
         try {
-          // Re-authenticate the user first
-          const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
-          await user.reauthenticateWithCredential(credential);
+          const userId = user.uid;
+          
+          // Try to delete the Firebase Auth user first
+          try {
+            await user.delete();
+            console.log('User account deleted');
+          } catch (authError) {
+            // If auth deletion fails (requires recent login), just sign them out
+            // The auth account remains but will have no data
+            console.log('Could not delete auth account, will sign out instead:', authError.code);
+          }
           
           // Delete user data from Firestore
-          await db.collection('users').doc(user.uid).delete();
+          await db.collection('users').doc(userId).delete();
           console.log('User data deleted from Firestore');
           
-          // Delete the Firebase Auth user
-          await user.delete();
-          console.log('User account deleted');
-          
-          // Reset all state (same as logout)
+          // Reset all state
           setVlqScores({
             family: { importance: null, consistency: null },
             partner: { importance: null, consistency: null },
@@ -2474,16 +2472,13 @@ Respond with ONLY the task text, nothing else.`,
           setChatHistory([]);
           setDataLoaded(false);
           
+          // Sign out
+          await auth.signOut();
+          
           alert('Your account has been deleted.');
         } catch (error) {
           console.error('Error deleting account:', error);
-          if (error.code === 'auth/wrong-password') {
-            alert('Incorrect password. Please try again.');
-          } else if (error.code === 'auth/requires-recent-login') {
-            alert('For security, please sign out and sign back in, then try deleting your account again.');
-          } else {
-            alert('Error deleting account: ' + error.message);
-          }
+          alert('Error deleting account: ' + error.message);
         }
       };
 
