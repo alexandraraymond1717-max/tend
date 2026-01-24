@@ -985,6 +985,17 @@ Respond with ONLY the task text, nothing else.`,
 
     const PHASES = { EXPLORE: 'explore', GROUND: 'ground', REVEAL: 'reveal', PLAN: 'plan' };
     const CENTER_VIEWS = { YEAR: 'year', SEASONS: 'seasons', MONTHLY: 'monthly', WEEKLY: 'weekly', DAILY: 'daily' };
+    
+    // Onboarding steps configuration
+    const ONBOARDING_STEPS = {
+      1: { id: 'goals', label: 'Goals', icon: '🎯', required: true },
+      2: { id: 'habits', label: 'Habits', icon: '🔄', required: true },
+      3: { id: 'events', label: 'Events', icon: '📅', required: false },
+      4: { id: 'quiz', label: 'Quiz', icon: '🌸', required: false },
+      5: { id: 'lifemap', label: 'Life Map', icon: '🗺️', required: true },
+      6: { id: 'compass', label: 'Compass', icon: '🧭', required: true },
+      7: { id: 'tend', label: 'First Tend', icon: '🌱', required: true },
+    };
 
     // ============ MAIN APP ============
     // ============ VLQ ASSESSMENT ============
@@ -1667,7 +1678,13 @@ Respond with ONLY the task text, nothing else.`,
         winter: '', spring: '', summer: '', fall: ''
       });
       const [yearTheme, setYearTheme] = useState('');
-      const [onboardingStep, setOnboardingStep] = useState(null); // null, 'theme_discovery', 'theme_just_set'
+      
+      // Onboarding system (1-7 steps, null = completed)
+      // 1: Goals, 2: Weekly Habits, 3: Events (optional), 4: Gardener Quiz (optional), 
+      // 5: Life Map, 6: Compass Word, 7: Daily Tend
+      const [onboardingStep, setOnboardingStep] = useState(1);
+      const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+      
       const [weeklyHabits, setWeeklyHabits] = useState([]);
       const [dailyHabits, setDailyHabits] = useState([]);
       const [habitCompletions, setHabitCompletions] = useState({}); // { '2026-01-20': { daily: [id1, id2], weekly: [id3] } }
@@ -1730,6 +1747,100 @@ Respond with ONLY the task text, nothing else.`,
         const params = new URLSearchParams(window.location.search);
         return params.get('admin') === 'true';
       });
+
+      // Get "Focus on" life areas (gap >= 2)
+      const getFocusAreas = () => {
+        return VLQ_ORDER
+          .map(key => ({
+            key,
+            importance: vlqScores[key]?.importance || 5,
+            consistency: vlqScores[key]?.consistency || 5,
+            gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)
+          }))
+          .filter(a => a.gap >= 2)
+          .map(a => a.key);
+      };
+
+      // Check if onboarding step is complete
+      const isStepComplete = (step) => {
+        const focusAreas = getFocusAreas();
+        
+        switch(step) {
+          case 1: // Goals - at least 3, with 1+ per focus area
+            if (goals.length < 3) return false;
+            for (const area of focusAreas) {
+              if (!goals.some(g => g.lifeArea === area)) return false;
+            }
+            return true;
+          case 2: // Weekly Habits - at least 3, with 1+ per focus area
+            if (weeklyHabits.length < 3) return false;
+            for (const area of focusAreas) {
+              if (!weeklyHabits.some(h => h.lifeArea === area)) return false;
+            }
+            return true;
+          case 3: // Events - optional, always "complete"
+            return true;
+          case 4: // Gardener Quiz - optional, always "complete"
+            return true;
+          case 5: // Life Map - at least 1 prompt answered
+            const prefs = userProfile?.tendPreferences || {};
+            return !!(prefs.lifeAreaNotes && Object.values(prefs.lifeAreaNotes).some(v => v && v.trim()));
+          case 6: // Compass Word - has yearTheme
+            return !!yearTheme;
+          case 7: // Daily Tend - has generated tends
+            return todaysTendies.length > 0;
+          default:
+            return false;
+        }
+      };
+
+      // Get onboarding progress info for UI
+      const getOnboardingProgress = () => {
+        const focusAreas = getFocusAreas();
+        return {
+          1: {
+            current: goals.length,
+            required: 3,
+            focusAreasCovered: focusAreas.filter(a => goals.some(g => g.lifeArea === a)).length,
+            focusAreasRequired: focusAreas.length
+          },
+          2: {
+            current: weeklyHabits.length,
+            required: 3,
+            focusAreasCovered: focusAreas.filter(a => weeklyHabits.some(h => h.lifeArea === a)).length,
+            focusAreasRequired: focusAreas.length
+          },
+          3: { current: events.length, required: 0 },
+          4: { current: userProfile?.tendPreferences?.gardenerType ? 1 : 0, required: 0 },
+          5: { 
+            current: Object.values(userProfile?.tendPreferences?.lifeAreaNotes || {}).filter(v => v && v.trim()).length,
+            required: 1 
+          },
+          6: { current: yearTheme ? 1 : 0, required: 1 },
+          7: { current: todaysTendies.length, required: 1 },
+        };
+      };
+
+      // Suggest a compass word based on user data
+      const getSuggestedCompassWord = () => {
+        const focusAreas = getFocusAreas();
+        const topFocus = focusAreas[0];
+        
+        const wordSuggestions = {
+          'family': 'connection',
+          'partner': 'love',
+          'friendships': 'community',
+          'career': 'growth',
+          'education': 'learning',
+          'recreation': 'joy',
+          'spirituality': 'presence',
+          'community': 'service',
+          'health': 'vitality',
+          'mentalHealth': 'balance',
+        };
+        
+        return wordSuggestions[topFocus] || 'intention';
+      };
 
       // Auth state listener
       useEffect(() => {
@@ -1905,6 +2016,14 @@ Respond with ONLY the task text, nothing else.`,
             // Trends are calculated, not loaded
             if (data.revealed) setRevealed(data.revealed);
             if (data.phase) setPhase(data.phase);
+            // Load onboarding state
+            if (data.onboardingStep !== undefined) setOnboardingStep(data.onboardingStep);
+            if (data.onboardingCompleted !== undefined) setOnboardingCompleted(data.onboardingCompleted);
+            // For existing users who already have compass word but no onboarding tracking, mark complete
+            if (data.yearTheme && data.onboardingCompleted === undefined) {
+              setOnboardingCompleted(true);
+              setOnboardingStep(null);
+            }
             // If VLQ was completed, skip to step 2 (after summary) and reveal content
             if (data.vlqCompleted) {
               setVlqStep(2);
@@ -1935,6 +2054,8 @@ Respond with ONLY the task text, nothing else.`,
             setGoals([]);
             setRevealed(false);
             setShowSettingsModal(false);
+            setOnboardingStep(1);
+            setOnboardingCompleted(false);
           }
           setDataLoaded(true);
         } catch (error) {
@@ -2303,6 +2424,9 @@ Respond with ONLY the task text, nothing else.`,
               weeklyCustomTendy,
               revealed,
               phase,
+              // Onboarding
+              onboardingStep,
+              onboardingCompleted,
               // NEW: Knowledge & Intelligence
               savedConversations,
               userProfile,
@@ -2324,7 +2448,22 @@ Respond with ONLY the task text, nothing else.`,
             console.error('Error saving user data:', error);
           }
         }, 1000);
-      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, savedConversations, userProfile, messages, exchangeCount, currentConversationType, chatHistory, currentChatId]);
+      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, onboardingStep, onboardingCompleted, savedConversations, userProfile, messages, exchangeCount, currentConversationType, chatHistory, currentChatId]);
+
+      // Onboarding: Auto-advance when required steps are complete
+      useEffect(() => {
+        if (!vlqCompleted || onboardingCompleted || !onboardingStep) return;
+        
+        // Check if current step is complete and auto-show "continue" prompt
+        // We don't auto-advance because user should consciously move forward
+        // But we update the progress bar which shows completion
+        
+        // Special case: When daily tend is generated (step 7), mark onboarding complete
+        if (onboardingStep === 7 && todaysTendies.length > 0) {
+          setOnboardingCompleted(true);
+          setOnboardingStep(null);
+        }
+      }, [vlqCompleted, onboardingCompleted, onboardingStep, goals, weeklyHabits, userProfile, yearTheme, todaysTendies]);
 
       // Flex Points Awarding System
       useEffect(() => {
@@ -2558,103 +2697,146 @@ Respond with ONLY the task text, nothing else.`,
       // Session greeting - add a fresh greeting each time user returns
       useEffect(() => {
         // Only greet after VLQ is complete and we haven't greeted this session
-        // For new users, dataLoaded becomes true but vlqCompleted is still false until they finish VLQ
         if (vlqCompleted && !sessionGreeted) {
-          // Small delay to ensure state is settled (helps with new users)
           const timer = setTimeout(() => {
             setSessionGreeted(true);
             
             let openingMessage = '';
+            const focusAreas = getFocusAreas();
+            const focusAreaNames = focusAreas.map(k => VLQ_DOMAINS[k].name).slice(0, 3);
 
-            // Same options for everyone
-            const navigationOptions = `
-Or if you'd rather explore on your own:
+            // If onboarding is NOT complete, show step-specific message
+            if (!onboardingCompleted && onboardingStep) {
+              switch(onboardingStep) {
+                case 1: // Goals
+                  openingMessage = `Welcome to Tend! 🌱 I'm here to help you design your year with intention.
 
-<strong>🌱 Generate a daily tend</strong> — a small, meaningful action for today
-<strong>🎯 Set some goals</strong> — what are you working toward?
-<strong>🗺️ Build your Life Map</strong> — help me know you better
-<strong>🌸 Take the gardener quiz</strong> — discover your tending style
-<strong>📓 Journal</strong> — a quieter space for reflection
+Based on your values assessment, ${focusAreaNames.length > 0 ? `you want to focus on growing in: <strong>${focusAreaNames.join('</strong>, <strong>')}</strong>` : 'there are areas where you want to grow'}.
 
-[BUTTON: Generate a daily tend | tendy]
-[BUTTON: Let's talk about goals | goals]
-[BUTTON: Show me the Life Map | life map]`;
+Let's start by setting <strong>at least 3 goals</strong>${focusAreaNames.length > 0 ? ` — and make sure at least one goal covers each of your focus areas` : ''}.
 
-          if (yearTheme) {
-            // Has theme - personalized greeting connecting to their compass word
-            const themeConnections = {
-              'growth': 'nurturing your growth',
-              'balance': 'finding your balance',
-              'presence': 'cultivating presence',
-              'intention': 'living with intention',
-              'connection': 'deepening your connections',
-              'foundation': 'building your foundation',
-              'clarity': 'finding clarity',
-              'peace': 'cultivating peace',
-              'freedom': 'creating freedom',
-              'joy': 'inviting more joy',
-              'courage': 'practicing courage',
-              'simplicity': 'embracing simplicity',
-              'authenticity': 'living authentically',
-              'resilience': 'building resilience',
-              'creativity': 'nurturing your creativity',
-            };
-            
-            const themePhrase = themeConnections[yearTheme.toLowerCase()] || `living into <em>${yearTheme}</em>`;
-            
-            openingMessage = `Hey! Your compass word for the year is <em>${yearTheme}</em>. 🌱
+What's something you'd love to accomplish this year? You can tell me here, or add goals directly in the sidebar.
 
-Where would you like to go today to support you in ${themePhrase}?
+[BUTTON: Open Goals sidebar | goals]`;
+                  break;
+                  
+                case 2: // Weekly Habits
+                  openingMessage = `Great progress on your goals! 🎯 
 
-<strong>🌱 Generate a daily tend</strong> — a small, meaningful action for today
-<strong>🎯 Set some goals</strong> — what are you working toward?
-<strong>🗺️ Build your Life Map</strong> — help me know you better
-<strong>🌸 Take the gardener quiz</strong> — discover your tending style
-<strong>📓 Journal</strong> — a quieter space for reflection
+Now let's build the <strong>weekly habits</strong> that will help you reach them. Small, consistent actions compound over time.
 
-Or just chat — I'm here for whatever's on your mind.
+You'll need <strong>at least 3 weekly habits</strong>${focusAreaNames.length > 0 ? `, with at least one supporting each focus area (${focusAreaNames.join(', ')})` : ''}.
 
-[BUTTON: Generate a daily tend | tendy]
-[BUTTON: Let's talk about goals | goals]
-[BUTTON: Show me the Life Map | life map]`;
-          } else {
-            // No theme yet - use VLQ data to start a meaningful conversation
-            const gaps = VLQ_ORDER.map(key => ({
-              key,
-              name: VLQ_DOMAINS[key].name,
-              importance: vlqScores[key]?.importance || 5,
-              consistency: vlqScores[key]?.consistency || 5,
-              gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)
-            })).sort((a, b) => b.gap - a.gap);
-            
-            const biggestGap = gaps.find(g => g.gap >= 2);
-            const topStrength = gaps.find(a => a.importance >= 7 && a.consistency >= 6);
-            
-            openingMessage = `Hey! 🌱
+What's one small thing you could do each week? Or add them in the sidebar.
 
-I'd love to understand your values a bit more before we dive in. The more I know, the better I can personalize things for you.`;
+[BUTTON: Open Habits | habits]`;
+                  break;
+                  
+                case 3: // Events (optional)
+                  openingMessage = `Let's map out your year! 📅
 
-            if (biggestGap && biggestGap.gap >= 2) {
-              openingMessage += `
+Do you have any big events, trips, or milestones coming up? Adding them helps me understand the rhythm of your year and suggest timely tends.
 
-Looking at what you shared, <em>${biggestGap.name}</em> really matters to you (${biggestGap.importance}/10), but you rated how you've been living it lately as ${biggestGap.consistency}/10. That's a meaningful gap.
+This step is optional — skip ahead if you don't have events to add right now.
 
-What's been getting in the way there?`;
-            } else if (topStrength) {
-              openingMessage += `
+[BUTTON: Add an event | add event]
+[BUTTON: Skip to next step | next step]`;
+                  break;
+                  
+                case 4: // Gardener Quiz (optional)
+                  openingMessage = `Let's discover your tending style! 🌸
 
-I noticed <em>${topStrength.name}</em> is both important to you and something you're already living well — that's a real strength.
+The Gardener Quiz is a quick, fun way for me to understand how you approach growth and self-care. Your style helps me personalize your tends.
 
-What's helped you stay consistent there? And what other parts of life do you want to bring that same energy to?`;
+This is optional — you can always take it later.
+
+[BUTTON: Take the Quiz | gardener quiz]
+[BUTTON: Skip to next step | next step]`;
+                  break;
+                  
+                case 5: // Life Map
+                  openingMessage = `Let's build your Life Map! 🗺️
+
+I'd love to know more about what's happening in your life right now. The more context I have, the better I can personalize your experience.
+
+Answer at least one prompt to continue — but the more you share, the more I can help.
+
+[BUTTON: Build my Life Map | life map]`;
+                  break;
+                  
+                case 6: // Compass Word
+                  const suggestedWord = getSuggestedCompassWord();
+                  openingMessage = `Almost there! 🧭
+
+Based on everything you've shared — your values, goals, and what you want to focus on — I think your <strong>compass word</strong> for this year could be:
+
+<div style="text-align: center; margin: 1.5rem 0; padding: 1rem; background: var(--accent-light); border-radius: 12px; border: 1px solid var(--accent);">
+<span style="font-size: 1.8rem; font-weight: 600; color: var(--accent); text-transform: capitalize;">${suggestedWord}</span>
+</div>
+
+This word can guide your decisions and intentions throughout the year. Does it feel right?
+
+[BUTTON: Yes, that's perfect! | set compass ${suggestedWord}]
+[BUTTON: I have a different word in mind | suggest compass]`;
+                  break;
+                  
+                case 7: // Daily Tend
+                  openingMessage = `You're all set up! 🌱
+
+Your compass word is <strong>${yearTheme}</strong>, and you have goals, habits, and a Life Map to guide your journey.
+
+Let's generate your first <strong>Daily Tend</strong> — a small, meaningful action aligned with your values.
+
+[BUTTON: Generate my first tend | tendy]`;
+                  break;
+                  
+                default:
+                  openingMessage = `Hey! 🌱 Ready to continue setting up your intentional year?`;
+              }
             } else {
-              openingMessage += `
+              // Onboarding complete - show returning user message
+              if (yearTheme) {
+                const themeConnections = {
+                  'growth': 'nurturing your growth',
+                  'balance': 'finding your balance',
+                  'presence': 'cultivating presence',
+                  'intention': 'living with intention',
+                  'connection': 'deepening your connections',
+                  'foundation': 'building your foundation',
+                  'clarity': 'finding clarity',
+                  'peace': 'cultivating peace',
+                  'freedom': 'creating freedom',
+                  'joy': 'inviting more joy',
+                  'courage': 'practicing courage',
+                  'simplicity': 'embracing simplicity',
+                  'authenticity': 'living authentically',
+                  'resilience': 'building resilience',
+                  'creativity': 'nurturing your creativity',
+                };
+                
+                const themePhrase = themeConnections[yearTheme.toLowerCase()] || `living into <em>${yearTheme}</em>`;
+                
+                openingMessage = `Hey! Your compass word is <em>${yearTheme}</em>. 🌱
 
-What's been on your mind lately? What do you wish had more space in your life this year?`;
+Where would you like to go today?
+
+<strong>🌱 Generate a daily tend</strong> — a small action for today
+<strong>🎯 Check your goals</strong> — see your progress
+<strong>📓 Journal</strong> — reflect on your day
+
+Or just chat — I'm here.
+
+[BUTTON: Generate a daily tend | tendy]
+[BUTTON: Check my goals | goals]
+[BUTTON: Journal | journal]`;
+              } else {
+                openingMessage = `Hey! 🌱 What would you like to explore today?
+
+[BUTTON: Generate a daily tend | tendy]
+[BUTTON: Set some goals | goals]
+[BUTTON: Journal | journal]`;
+              }
             }
-            
-            openingMessage += `
-${navigationOptions}`;
-          }
 
           // Set greeting as the first message of new chat
           setMessages([{
@@ -2665,11 +2847,11 @@ ${navigationOptions}`;
           
           // Scroll to bottom after greeting is added
           setTimeout(() => scrollChatToBottom(), 100);
-          }, 50); // Small delay for state to settle
+          }, 50);
           
           return () => clearTimeout(timer);
         }
-      }, [vlqCompleted, sessionGreeted, yearTheme]);
+      }, [vlqCompleted, sessionGreeted, onboardingCompleted, onboardingStep, yearTheme]);
 
       // Track view/tab for system prompt context (no auto-messages)
 
@@ -3514,13 +3696,53 @@ When user says "what can I do?" or seems lost, offer options warmly:
       const handleChatNavigation = (action) => {
         const actionLower = action.toLowerCase().trim();
         
+        // Handle "set compass X" pattern
+        if (actionLower.startsWith('set compass ')) {
+          const word = action.substring(12).trim();
+          setYearTheme(word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+          if (!onboardingCompleted && onboardingStep === 6) {
+            setOnboardingStep(7);
+            setSessionGreeted(false); // Trigger new greeting for next step
+          }
+          return;
+        }
+        
+        // Handle "suggest compass" - user wants to suggest their own word
+        if (actionLower === 'suggest compass') {
+          const assistantMsg = {
+            role: 'assistant',
+            content: `What word feels right to you? Type a single word that could guide your year — like "growth", "balance", "courage", or "joy".`,
+            timestamp: new Date().toISOString()
+          };
+          setMessages(prev => [...prev, assistantMsg]);
+          setTimeout(() => scrollChatToBottom(), 100);
+          return;
+        }
+        
+        // Handle "next step" - advance to next onboarding step
+        if (actionLower === 'next step') {
+          if (!onboardingCompleted && onboardingStep && onboardingStep < 7) {
+            setOnboardingStep(prev => prev + 1);
+            setSessionGreeted(false); // Trigger new greeting for next step
+          }
+          return;
+        }
+        
+        // Handle "add event" - show event modal
+        if (actionLower === 'add event') {
+          setShowEventModal(true);
+          return;
+        }
+        
         // Map actions to navigation
         const navigationMap = {
-          'goals': () => { setActiveTab('notes'); setSidebarExpanded(true); },
+          'goals': () => { setActiveTab('lifeareas'); setSidebarExpanded(true); setShowGoalModal(true); },
+          'habits': () => { setCenterView(CENTER_VIEWS.WEEKLY); },
+          'weekly habits': () => { setCenterView(CENTER_VIEWS.WEEKLY); },
           'events': () => { setActiveTab('events'); setSidebarExpanded(true); },
           'lifeareas': () => { setActiveTab('lifeareas'); setSidebarExpanded(true); },
           'life areas': () => { setActiveTab('lifeareas'); setSidebarExpanded(true); },
-          'notes': () => { setActiveTab('notes'); setSidebarExpanded(true); },
+          'notes': () => { setActiveTab('lifeareas'); setSidebarExpanded(true); },
           'plan': () => setAppMode('plan'),
           'design': () => setAppMode('plan'),
           'plan & design': () => setAppMode('plan'),
@@ -4183,6 +4405,7 @@ I'm here to help with any planning.`
               setUserProfile={setUserProfile}
               apiKey={apiKey}
               onBack={() => setAppMode(null)}
+              onTendComplete={() => setAppMode('journal')}
             />
             {/* Floating chat bubble for navigation */}
             <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 1000 }}>
@@ -4203,6 +4426,19 @@ I'm here to help with any planning.`
 
       return (
         <div style={styles.container}>
+          {/* Onboarding Progress Bar */}
+          {!onboardingCompleted && onboardingStep && (
+            <OnboardingProgressBar 
+              currentStep={onboardingStep}
+              onStepClick={(step) => {
+                setOnboardingStep(step);
+                setSessionGreeted(false); // Trigger new greeting
+              }}
+              isStepComplete={isStepComplete}
+              getProgress={getOnboardingProgress}
+            />
+          )}
+          
           <header style={styles.header}>
             <div style={styles.logoContainer}>
               <svg width="28" height="28" viewBox="0 0 32 32" fill="none" style={{ marginRight: '8px' }}>
@@ -4430,6 +4666,7 @@ I'm here to help with any planning.`
                   weeklyHabits={weeklyHabits}
                   setWeeklyHabits={setWeeklyHabits}
                   revealed={revealed}
+                  focusAreas={getFocusAreas()}
                 />
               )}
               {centerView === CENTER_VIEWS.DAILY && (
@@ -4713,7 +4950,7 @@ I'm here to help with any planning.`
           </main>
 
           {showEventModal && <EventModal onClose={() => setShowEventModal(false)} onAdd={handleAddEvent} />}
-          {showGoalModal && <GoalModal onClose={() => setShowGoalModal(false)} onAdd={handleAddGoal} />}
+          {showGoalModal && <GoalModal onClose={() => setShowGoalModal(false)} onAdd={handleAddGoal} focusAreas={getFocusAreas()} />}
           {showSettingsModal && (
             <SettingsModal 
               apiKey={apiKey} 
@@ -6187,7 +6424,8 @@ This has been your year of growth and intention. What are you most proud of? Wha
       userProfile,
       setUserProfile,
       apiKey,
-      onBack 
+      onBack,
+      onTendComplete
     }) {
       const today = getLocalDateString();
       const [showCelebration, setShowCelebration] = useState(false);
@@ -6509,7 +6747,10 @@ Keep responses concise and supportive. Don't mention the LEARN tags will be proc
           // Show celebration
           setJustCompletedPoints(1);
           setShowCelebration(true);
-          setTimeout(() => setShowCelebration(false), 2500);
+          setTimeout(() => {
+            setShowCelebration(false);
+            if (onTendComplete) onTendComplete();
+          }, 2500);
           return;
         }
 
@@ -6550,7 +6791,10 @@ Keep responses concise and supportive. Don't mention the LEARN tags will be proc
         // Show celebration
         setJustCompletedPoints(selectedTendy.points);
         setShowCelebration(true);
-        setTimeout(() => setShowCelebration(false), 2500);
+        setTimeout(() => {
+          setShowCelebration(false);
+          if (onTendComplete) onTendComplete();
+        }, 2500);
       };
 
       const submitCustomTendy = async () => {
@@ -7148,7 +7392,10 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     }
                     setJustCompletedPoints(selectedTendy.points);
                     setShowCelebration(true);
-                    setTimeout(() => setShowCelebration(false), 2500);
+                    setTimeout(() => {
+                      setShowCelebration(false);
+                      if (onTendComplete) onTendComplete();
+                    }, 2500);
                   }}>
                     ✓ Mark Complete
                   </button>
@@ -7215,7 +7462,10 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     });
                     setJustCompletedPoints(1);
                     setShowCelebration(true);
-                    setTimeout(() => setShowCelebration(false), 2500);
+                    setTimeout(() => {
+                      setShowCelebration(false);
+                      if (onTendComplete) onTendComplete();
+                    }, 2500);
                   }}>
                     ✓ Mark Complete
                   </button>
@@ -7484,9 +7734,10 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
     }
 
     // ============ WEEKLY VIEW ============
-    function WeeklyView({ weeklyHabits, setWeeklyHabits, revealed }) {
+    function WeeklyView({ weeklyHabits, setWeeklyHabits, revealed, focusAreas = [] }) {
       const [newHabit, setNewHabit] = useState('');
       const [newFrequency, setNewFrequency] = useState(3);
+      const [newLifeArea, setNewLifeArea] = useState('');
 
       const addHabit = () => {
         if (!newHabit.trim()) return;
@@ -7494,10 +7745,12 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           id: generateId(),
           text: newHabit,
           frequency: newFrequency,
-          color: ['#7EB3E0', '#8FD4A0', '#F9D07A', '#E8A090', '#B8A9C9'][weeklyHabits.length % 5]
+          lifeArea: newLifeArea,
+          color: newLifeArea ? VLQ_DOMAINS[newLifeArea]?.color : ['#7EB3E0', '#8FD4A0', '#F9D07A', '#E8A090', '#B8A9C9'][weeklyHabits.length % 5]
         }]);
         setNewHabit('');
         setNewFrequency(3);
+        setNewLifeArea('');
       };
 
       return (
@@ -7505,6 +7758,11 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           <div style={styles.weeklyHeader}>
             <h2 style={styles.weeklyTitle}>Weekly Rhythms</h2>
             <p style={styles.weeklySubtitle}>What do you want to do each week?</p>
+            {focusAreas.length > 0 && (
+              <p style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem'}}>
+                Cover your focus areas: {focusAreas.map(a => VLQ_DOMAINS[a]?.name.split(' ')[0]).join(', ')}
+              </p>
+            )}
           </div>
 
           {weeklyHabits.length > 0 ? (
@@ -7519,7 +7777,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 }}>
                   <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
                     <span style={{...styles.weeklyHabitDot, backgroundColor: habit.color}}></span>
-                    <span style={styles.weeklyHabitText}>{habit.text}</span>
+                    <div>
+                      <span style={styles.weeklyHabitText}>{habit.text}</span>
+                      {habit.lifeArea && (
+                        <span style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.5rem'}}>
+                          {VLQ_DOMAINS[habit.lifeArea]?.icon} {VLQ_DOMAINS[habit.lifeArea]?.name.split(' ')[0]}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
                     <span style={{
@@ -7561,6 +7826,16 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               >
                 {[1,2,3,4,5,6,7].map(n => (
                   <option key={n} value={n}>{n}x/week</option>
+                ))}
+              </select>
+              <select 
+                value={newLifeArea} 
+                onChange={(e) => setNewLifeArea(e.target.value)}
+                style={{...styles.addHabitSelect, minWidth: '100px'}}
+              >
+                <option value="">Life Area</option>
+                {VLQ_ORDER.map(key => (
+                  <option key={key} value={key}>{VLQ_DOMAINS[key].icon} {VLQ_DOMAINS[key].name.split(' ')[0]}</option>
                 ))}
               </select>
               <button onClick={addHabit} style={styles.addHabitButton}>+ Add</button>
@@ -8733,6 +9008,146 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       );
     }
 
+    // Onboarding Progress Bar Component
+    function OnboardingProgressBar({ currentStep, onStepClick, isStepComplete, getProgress }) {
+      const steps = [
+        { num: 1, id: 'goals', label: 'Goals', icon: '🎯' },
+        { num: 2, id: 'habits', label: 'Habits', icon: '🔄' },
+        { num: 3, id: 'events', label: 'Events', icon: '📅', optional: true },
+        { num: 4, id: 'quiz', label: 'Quiz', icon: '🌸', optional: true },
+        { num: 5, id: 'lifemap', label: 'Life Map', icon: '🗺️' },
+        { num: 6, id: 'compass', label: 'Compass', icon: '🧭' },
+        { num: 7, id: 'tend', label: 'First Tend', icon: '🌱' },
+      ];
+
+      const progress = getProgress();
+
+      return (
+        <div style={{
+          background: 'linear-gradient(180deg, var(--bg-card) 0%, var(--bg) 100%)',
+          borderBottom: '1px solid var(--border)',
+          padding: '1rem 1.5rem 0.75rem',
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '0.125rem',
+            maxWidth: '700px',
+            margin: '0 auto',
+          }}>
+            {steps.map((step, idx) => {
+              const isActive = currentStep === step.num;
+              const isComplete = isStepComplete(step.num);
+              const isPast = step.num < currentStep;
+              const isClickable = step.num <= currentStep || isComplete;
+              const stepProgress = progress[step.num];
+              
+              return (
+                <React.Fragment key={step.num}>
+                  {idx > 0 && (
+                    <div style={{
+                      flex: '1',
+                      height: '2px',
+                      maxWidth: '30px',
+                      backgroundColor: isPast || isComplete ? 'var(--accent)' : 'var(--border)',
+                      transition: 'background-color 0.3s ease',
+                      borderRadius: '1px',
+                    }} />
+                  )}
+                  <button
+                    onClick={() => isClickable && onStepClick(step.num)}
+                    disabled={!isClickable}
+                    style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      gap: '0.375rem',
+                      padding: '0.5rem 0.5rem 0.375rem',
+                      backgroundColor: isActive ? 'var(--accent-light)' : 'transparent',
+                      border: 'none',
+                      borderRadius: '12px',
+                      cursor: isClickable ? 'pointer' : 'default',
+                      opacity: isClickable ? 1 : 0.4,
+                      transition: 'all 0.2s ease',
+                      minWidth: '52px',
+                      position: 'relative',
+                    }}
+                    title={step.optional ? `${step.label} (optional)` : step.label}
+                  >
+                    <div style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      backgroundColor: isComplete ? 'var(--accent)' : isActive ? 'white' : 'var(--bg-elevated)',
+                      border: isActive ? '2px solid var(--accent)' : '1px solid var(--border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '1rem',
+                      transition: 'all 0.2s ease',
+                      boxShadow: isActive ? '0 2px 8px rgba(107, 139, 98, 0.3)' : 'none',
+                    }}>
+                      {isComplete ? <span style={{ color: 'white', fontSize: '0.8rem' }}>✓</span> : step.icon}
+                    </div>
+                    <span style={{
+                      fontSize: '0.6rem',
+                      fontWeight: isActive ? 600 : 400,
+                      color: isActive ? 'var(--accent)' : 'var(--text-muted)',
+                      whiteSpace: 'nowrap',
+                      letterSpacing: '0.02em',
+                    }}>
+                      {step.label}
+                    </span>
+                    {step.optional && !isComplete && (
+                      <span style={{
+                        position: 'absolute',
+                        top: '2px',
+                        right: '2px',
+                        fontSize: '0.5rem',
+                        color: 'var(--text-muted)',
+                        opacity: 0.6,
+                      }}>skip</span>
+                    )}
+                  </button>
+                </React.Fragment>
+              );
+            })}
+          </div>
+          {/* Progress hint for current step */}
+          {currentStep && progress[currentStep] && (
+            <div style={{
+              textAlign: 'center',
+              marginTop: '0.5rem',
+              fontSize: '0.7rem',
+              color: 'var(--text-muted)',
+            }}>
+              {currentStep === 1 && (
+                <span>
+                  {progress[1].current}/{progress[1].required} goals
+                  {progress[1].focusAreasRequired > 0 && ` · ${progress[1].focusAreasCovered}/${progress[1].focusAreasRequired} focus areas covered`}
+                </span>
+              )}
+              {currentStep === 2 && (
+                <span>
+                  {progress[2].current}/{progress[2].required} habits
+                  {progress[2].focusAreasRequired > 0 && ` · ${progress[2].focusAreasCovered}/${progress[2].focusAreasRequired} focus areas covered`}
+                </span>
+              )}
+              {currentStep === 3 && <span>{progress[3].current} events added (optional)</span>}
+              {currentStep === 4 && <span>{progress[4].current === 1 ? 'Quiz completed!' : 'Take the quiz (optional)'}</span>}
+              {currentStep === 5 && <span>{progress[5].current}/{progress[5].required} prompts answered</span>}
+              {currentStep === 6 && <span>{progress[6].current === 1 ? 'Compass word set!' : 'Choose your compass word'}</span>}
+              {currentStep === 7 && <span>{progress[7].current === 1 ? 'First tend generated!' : 'Generate your first daily tend'}</span>}
+            </div>
+          )}
+        </div>
+      );
+    }
+
     function EventModal({ onClose, onAdd }) {
       const [title, setTitle] = useState('');
       const [month, setMonth] = useState(new Date().getMonth());
@@ -8803,8 +9218,9 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       );
     }
 
-    function GoalModal({ onClose, onAdd }) {
+    function GoalModal({ onClose, onAdd, focusAreas = [] }) {
       const [text, setText] = useState('');
+      const [lifeArea, setLifeArea] = useState('');
       return (
         <div style={styles.modalOverlay} onClick={onClose}>
           <div style={styles.modal} onClick={e => e.stopPropagation()} className="fade-in">
@@ -8812,10 +9228,21 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               <h3 style={styles.modalTitle}>Add a goal</h3>
               <button style={styles.modalClose} onClick={onClose}>×</button>
             </div>
-            <form onSubmit={(e) => { e.preventDefault(); if (text) onAdd({ text }); }} style={styles.modalForm}>
+            <form onSubmit={(e) => { e.preventDefault(); if (text) onAdd({ text, lifeArea }); }} style={styles.modalForm}>
               <div style={styles.formField}>
                 <label style={styles.formLabel}>What do you want to achieve?</label>
                 <input type="text" style={styles.textInput} value={text} onChange={(e) => setText(e.target.value)} placeholder="Run a 5K, read 12 books..." autoFocus />
+              </div>
+              <div style={styles.formField}>
+                <label style={styles.formLabel}>Life Area {focusAreas.length > 0 && <span style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>(cover your focus areas: {focusAreas.map(a => VLQ_DOMAINS[a]?.name.split(' ')[0]).join(', ')})</span>}</label>
+                <select style={styles.selectInput} value={lifeArea} onChange={(e) => setLifeArea(e.target.value)}>
+                  <option value="">— Select life area —</option>
+                  {VLQ_ORDER.map(key => (
+                    <option key={key} value={key} style={focusAreas.includes(key) ? { fontWeight: 'bold' } : {}}>
+                      {VLQ_DOMAINS[key].icon} {VLQ_DOMAINS[key].name} {focusAreas.includes(key) ? '⭐' : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
               <button type="submit" style={{...styles.submitButton, ...(!text ? styles.submitButtonDisabled : {})}} disabled={!text}>Add goal</button>
             </form>
