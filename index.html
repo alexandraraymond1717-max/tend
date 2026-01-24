@@ -2427,18 +2427,6 @@ Respond with ONLY the task text, nothing else.`,
         
         if (!confirmed) return;
         
-        const doubleConfirm = window.confirm(
-          'This is your last chance. Type DELETE in the next prompt to confirm.'
-        );
-        
-        if (!doubleConfirm) return;
-        
-        const typed = window.prompt('Type DELETE to permanently delete your account:');
-        if (typed !== 'DELETE') {
-          alert('Account deletion cancelled.');
-          return;
-        }
-        
         try {
           // Delete user data from Firestore
           if (user) {
