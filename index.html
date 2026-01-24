@@ -1913,6 +1913,9 @@ Respond with ONLY the task text, nothing else.`,
               setVlqStep(2);
               setRevealed(true);
             }
+          } else {
+            // New user - initialize currentChatId
+            setCurrentChatId(Date.now().toString());
           }
           setDataLoaded(true);
         } catch (error) {
@@ -2451,14 +2454,17 @@ Respond with ONLY the task text, nothing else.`,
 
       // Session greeting - add a fresh greeting each time user returns
       useEffect(() => {
-        // Only greet after VLQ is complete, data is loaded, and we haven't greeted this session
-        if (vlqCompleted && dataLoaded && !sessionGreeted) {
-          setSessionGreeted(true);
-          
-          let openingMessage = '';
+        // Only greet after VLQ is complete and we haven't greeted this session
+        // For new users, dataLoaded becomes true but vlqCompleted is still false until they finish VLQ
+        if (vlqCompleted && !sessionGreeted) {
+          // Small delay to ensure state is settled (helps with new users)
+          const timer = setTimeout(() => {
+            setSessionGreeted(true);
+            
+            let openingMessage = '';
 
-          // Same options for everyone
-          const navigationOptions = `
+            // Same options for everyone
+            const navigationOptions = `
 Or if you'd rather explore on your own:
 
 <strong>🌱 Generate a daily tend</strong> — a small, meaningful action for today
@@ -2556,8 +2562,11 @@ ${navigationOptions}`;
           
           // Scroll to bottom after greeting is added
           setTimeout(() => scrollChatToBottom(), 100);
+          }, 50); // Small delay for state to settle
+          
+          return () => clearTimeout(timer);
         }
-      }, [vlqCompleted, dataLoaded, sessionGreeted, yearTheme]);
+      }, [vlqCompleted, sessionGreeted, yearTheme]);
 
       // Track view/tab for system prompt context (no auto-messages)
 
