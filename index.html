@@ -2435,9 +2435,29 @@ Respond with ONLY the task text, nothing else.`,
             await user.delete();
             console.log('User account deleted');
           } catch (authError) {
-            // If auth deletion fails (requires recent login), just sign them out
-            // The auth account remains but will have no data
-            console.log('Could not delete auth account, will sign out instead:', authError.code);
+            if (authError.code === 'auth/requires-recent-login') {
+              // Need to re-authenticate - ask for password
+              const password = window.prompt('For security, please enter your password to delete your account:');
+              if (!password) {
+                return; // User cancelled
+              }
+              
+              try {
+                const credential = firebase.auth.EmailAuthProvider.credential(user.email, password);
+                await user.reauthenticateWithCredential(credential);
+                await user.delete();
+                console.log('User account deleted after re-auth');
+              } catch (reAuthError) {
+                if (reAuthError.code === 'auth/wrong-password') {
+                  alert('Incorrect password. Please try again.');
+                } else {
+                  alert('Error: ' + reAuthError.message);
+                }
+                return;
+              }
+            } else {
+              throw authError;
+            }
           }
           
           // Delete user data from Firestore
@@ -2471,9 +2491,6 @@ Respond with ONLY the task text, nothing else.`,
           setMessages([]);
           setChatHistory([]);
           setDataLoaded(false);
-          
-          // Sign out
-          await auth.signOut();
           
           alert('Your account has been deleted.');
         } catch (error) {
