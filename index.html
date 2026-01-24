@@ -4381,7 +4381,7 @@ I'm here to help with any planning.`
             <div style={styles.centerPanel}>
               <div style={styles.viewSwitcher}>
                 {[
-                  { id: CENTER_VIEWS.YEAR, label: 'Year' },
+                  { id: CENTER_VIEWS.YEAR, label: 'Home' },
                   { id: CENTER_VIEWS.SEASONS, label: 'Seasons' },
                   { id: CENTER_VIEWS.MONTHLY, label: 'Monthly' },
                   { id: CENTER_VIEWS.WEEKLY, label: 'Weekly' },
@@ -4453,13 +4453,9 @@ I'm here to help with any planning.`
                           consistency: vlqScores[key]?.consistency || 5,
                           gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)
                         }));
-                        // Strengths: high importance AND consistency is close to importance (gap < 2)
-                        const strengthKeys = allAreas
-                          .filter(a => a.importance >= 7 && a.consistency >= 6 && a.gap < 2)
-                          .map(a => a.key);
-                        // Growth: gap >= 2 AND not already a strength
+                        // Growth areas: gap >= 2
                         return allAreas
-                          .filter(a => a.gap >= 2 && !strengthKeys.includes(a.key))
+                          .filter(a => a.gap >= 2)
                           .sort((a, b) => b.gap - a.gap)
                           .slice(0, 3)
                           .map(area => (
@@ -4475,7 +4471,8 @@ I'm here to help with any planning.`
                     <div style={styles.vlqSummaryItems}>
                       {VLQ_ORDER
                         .map(key => ({key, ...VLQ_DOMAINS[key], importance: vlqScores[key]?.importance || 5, consistency: vlqScores[key]?.consistency || 5, gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)}))
-                        .filter(a => a.importance >= 7 && a.consistency >= 6 && a.gap < 2)
+                        .filter(a => a.importance >= 6 && a.consistency >= 5 && a.gap < 2)
+                        .sort((a, b) => b.consistency - a.consistency)
                         .slice(0, 3)
                         .map(area => (
                           <span key={area.key} style={{...styles.vlqSummaryTag, borderColor: area.color, color: area.color, opacity: 0.8}}>
