@@ -2599,6 +2599,16 @@ ${navigationOptions}`;
         });
       }, [messages]);
 
+      // Scroll after session greeting is added
+      useEffect(() => {
+        if (sessionGreeted) {
+          // Give time for the greeting message to render
+          [100, 300, 500].forEach(delay => {
+            setTimeout(scrollChatToBottom, delay);
+          });
+        }
+      }, [sessionGreeted]);
+
       // Also scroll on initial load - with multiple attempts to ensure it works
       useEffect(() => {
         if (dataLoaded && vlqCompleted && messages.length > 0) {
