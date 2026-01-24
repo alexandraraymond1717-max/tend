@@ -1315,15 +1315,11 @@ Respond with ONLY the task text, nothing else.`,
                 {VLQ_ORDER.map(key => {
                   const domain = VLQ_DOMAINS[key];
                   const score = vlqScores[key]?.consistency || 5;
-                  const importance = vlqScores[key]?.importance || 5;
                   return (
                     <div key={key} style={vlqStyles.valueRow}>
                       <div style={vlqStyles.valueInfo}>
                         <span style={vlqStyles.valueIcon}>{domain.icon}</span>
                         <span style={vlqStyles.valueName}>{domain.name}</span>
-                        <span style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.25rem'}}>
-                          (imp: {importance})
-                        </span>
                       </div>
                       <input
                         type="range"
@@ -1914,8 +1910,28 @@ Respond with ONLY the task text, nothing else.`,
               setRevealed(true);
             }
           } else {
-            // New user - initialize currentChatId
+            // New user - reset all state and initialize
             setCurrentChatId(Date.now().toString());
+            setUserProfile({ name: '', occupation: '', location: '', lifeStage: '' });
+            setMessages([]);
+            setChatHistory([]);
+            setVlqScores({
+              family: { importance: null, consistency: null },
+              partner: { importance: null, consistency: null },
+              friendships: { importance: null, consistency: null },
+              career: { importance: null, consistency: null },
+              education: { importance: null, consistency: null },
+              recreation: { importance: null, consistency: null },
+              spirituality: { importance: null, consistency: null },
+              community: { importance: null, consistency: null },
+              health: { importance: null, consistency: null },
+              mentalHealth: { importance: null, consistency: null },
+            });
+            setVlqCompleted(false);
+            setVlqStep(-1);
+            setYearTheme('');
+            setEvents([]);
+            setGoals([]);
           }
           setDataLoaded(true);
         } catch (error) {
@@ -2413,6 +2429,8 @@ Respond with ONLY the task text, nothing else.`,
           setRevealed(false);
           setPhase(PHASES.EXPLORE);
           setMessages([]);
+          setChatHistory([]);
+          setUserProfile({ name: '', occupation: '', location: '', lifeStage: '' });
           setDataLoaded(false);
         } catch (error) {
           console.error('Error signing out:', error);
@@ -4294,7 +4312,6 @@ I'm here to help with any planning.`
               <div style={styles.sidebarNav}>
                 {[
                   { id: 'events', icon: '📅', label: 'Events' },
-                  { id: 'notes', icon: '🗒️', label: 'Notes' },
                   { id: 'lifeareas', icon: '🌱', label: 'Life Areas' }
                 ].map(item => (
                   <button
@@ -4340,9 +4357,6 @@ I'm here to help with any planning.`
                       apiKey={apiKey}
                     />
                   )}
-                  {activeTab === 'notes' && (
-                    <NotesTab notes={notes} setNotes={setNotes} revealed={revealed} />
-                  )}
                   {activeTab === 'lifeareas' && (
                     <LifeAreasTab 
                       vlqScores={vlqScores}
@@ -4365,7 +4379,6 @@ I'm here to help with any planning.`
                   { id: CENTER_VIEWS.SEASONS, label: 'Seasons' },
                   { id: CENTER_VIEWS.MONTHLY, label: 'Monthly' },
                   { id: CENTER_VIEWS.WEEKLY, label: 'Weekly' },
-                  { id: CENTER_VIEWS.DAILY, label: 'Daily' },
                 ].map(view => (
                   <button
                     key={view.id}
@@ -8720,7 +8733,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
     function EventModal({ onClose, onAdd }) {
       const [title, setTitle] = useState('');
       const [month, setMonth] = useState(new Date().getMonth());
-      const [lifeArea, setLifeArea] = useState('fun');
+      const [lifeArea, setLifeArea] = useState('recreation');
       const [eventType, setEventType] = useState('personal');
       
       const EVENT_TYPES = {
@@ -8774,8 +8787,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               <div style={styles.formField}>
                 <label style={styles.formLabel}>Life Area</label>
                 <select style={styles.selectInput} value={lifeArea} onChange={(e) => setLifeArea(e.target.value)}>
-                  {Object.entries(LIFE_AREAS).map(([key, area]) => (
-                    <option key={key} value={key}>{area.icon} {area.name}</option>
+                  {VLQ_ORDER.map(key => (
+                    <option key={key} value={key}>{VLQ_DOMAINS[key].icon} {VLQ_DOMAINS[key].name}</option>
                   ))}
                 </select>
               </div>
