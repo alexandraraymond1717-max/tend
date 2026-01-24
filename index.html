@@ -1703,10 +1703,14 @@ Respond with ONLY the task text, nothing else.`,
         lifeStage: ''
       });
       
+      // Chat history system
+      const [chatHistory, setChatHistory] = useState([]); // Array of past chats
+      const [currentChatId, setCurrentChatId] = useState(null);
       const [messages, setMessages] = useState([]);
       const [inputValue, setInputValue] = useState('');
       const [isTyping, setIsTyping] = useState(false);
       const [exchangeCount, setExchangeCount] = useState(0);
+      const [showChatHistory, setShowChatHistory] = useState(false);
       const messagesEndRef = useRef(null);
       const chatContainerRef = useRef(null);
 
@@ -1885,12 +1889,22 @@ Respond with ONLY the task text, nothing else.`,
             if (data.weeklyCustomTendy) setWeeklyCustomTendy(data.weeklyCustomTendy);
             if (data.savedConversations) setSavedConversations(data.savedConversations);
             if (data.userProfile) setUserProfile(data.userProfile);
-            // Load current chat session (persists across refresh)
-            if (data.currentChat) {
-              if (data.currentChat.messages) setMessages(data.currentChat.messages);
-              if (data.currentChat.exchangeCount) setExchangeCount(data.currentChat.exchangeCount);
-              if (data.currentChat.conversationType) setCurrentConversationType(data.currentChat.conversationType);
+            // Load chat history
+            if (data.chatHistory) setChatHistory(data.chatHistory);
+            // Archive previous chat to history if it had real conversation (more than 1 message)
+            if (data.currentChat && data.currentChat.messages && data.currentChat.messages.length > 1) {
+              const prevChat = {
+                id: data.currentChat.id || Date.now().toString(),
+                messages: data.currentChat.messages,
+                createdAt: data.currentChat.createdAt || new Date().toISOString(),
+                title: generateChatTitle(data.currentChat.messages)
+              };
+              setChatHistory(prev => [prevChat, ...(prev || [])].slice(0, 50)); // Keep last 50 chats
             }
+            // Start fresh - messages will be set by the greeting effect
+            setMessages([]);
+            setExchangeCount(0);
+            setCurrentChatId(Date.now().toString());
             // Trends are calculated, not loaded
             if (data.revealed) setRevealed(data.revealed);
             if (data.phase) setPhase(data.phase);
@@ -1907,7 +1921,19 @@ Respond with ONLY the task text, nothing else.`,
         }
       };
 
-      // Extract insights from a conversation
+      // Generate a title for a chat based on its messages
+      const generateChatTitle = (msgs) => {
+        if (!msgs || msgs.length === 0) return 'New chat';
+        // Find first user message
+        const firstUserMsg = msgs.find(m => m.role === 'user');
+        if (firstUserMsg) {
+          const text = firstUserMsg.content.replace(/<[^>]*>/g, '').trim();
+          return text.length > 40 ? text.substring(0, 40) + '...' : text;
+        }
+        // Fall back to date
+        const date = msgs[0].timestamp ? new Date(msgs[0].timestamp) : new Date();
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      };
       const extractInsights = (messages) => {
         const allText = messages.map(m => m.content).join(' ').toLowerCase();
         const userMessages = messages.filter(m => m.role === 'user').map(m => m.content).join(' ');
@@ -2259,11 +2285,15 @@ Respond with ONLY the task text, nothing else.`,
               savedConversations,
               userProfile,
               trends,
+              // Chat history system
+              chatHistory: chatHistory.slice(0, 50), // Keep last 50 chats
               // NEW: Current chat session (persists across refresh)
               currentChat: {
+                id: currentChatId,
                 messages,
                 exchangeCount,
-                conversationType: currentConversationType
+                conversationType: currentConversationType,
+                createdAt: new Date().toISOString()
               },
               updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
             }, { merge: true });
@@ -2272,7 +2302,7 @@ Respond with ONLY the task text, nothing else.`,
             console.error('Error saving user data:', error);
           }
         }, 1000);
-      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, savedConversations, userProfile, messages, exchangeCount, currentConversationType]);
+      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, savedConversations, userProfile, messages, exchangeCount, currentConversationType, chatHistory, currentChatId]);
 
       // Flex Points Awarding System
       useEffect(() => {
@@ -2517,12 +2547,15 @@ What's been on your mind lately? What do you wish had more space in your life th
 ${navigationOptions}`;
           }
 
-          // Append greeting to existing messages (don't replace history)
-          setMessages(prev => [...prev, {
+          // Set greeting as the first message of new chat
+          setMessages([{
             role: 'assistant',
             content: openingMessage,
             timestamp: new Date().toISOString()
           }]);
+          
+          // Scroll to bottom after greeting is added
+          setTimeout(() => scrollChatToBottom(), 100);
         }
       }, [vlqCompleted, dataLoaded, sessionGreeted, yearTheme]);
 
@@ -3312,6 +3345,57 @@ When user says "what can I do?" or seems lost, offer options warmly:
           console.error('Fetch error:', error);
           return "I couldn't connect to Claude. Check your internet connection and try again.";
         }
+      };
+
+      // Switch to a past chat
+      const switchToChat = (chatId) => {
+        // Save current chat to history first if it has messages
+        if (messages.length > 1) {
+          const currentChat = {
+            id: currentChatId,
+            messages: messages,
+            createdAt: new Date().toISOString(),
+            title: generateChatTitle(messages)
+          };
+          setChatHistory(prev => {
+            // Remove if already exists, then add to front
+            const filtered = prev.filter(c => c.id !== currentChatId);
+            return [currentChat, ...filtered].slice(0, 50);
+          });
+        }
+        
+        // Load the selected chat
+        const chat = chatHistory.find(c => c.id === chatId);
+        if (chat) {
+          setMessages(chat.messages);
+          setCurrentChatId(chat.id);
+          setShowChatHistory(false);
+          setTimeout(() => scrollChatToBottom(), 100);
+        }
+      };
+
+      // Start a new chat
+      const startNewChat = () => {
+        // Save current chat to history first if it has messages
+        if (messages.length > 1) {
+          const currentChat = {
+            id: currentChatId,
+            messages: messages,
+            createdAt: new Date().toISOString(),
+            title: generateChatTitle(messages)
+          };
+          setChatHistory(prev => {
+            const filtered = prev.filter(c => c.id !== currentChatId);
+            return [currentChat, ...filtered].slice(0, 50);
+          });
+        }
+        
+        // Reset for new chat
+        setCurrentChatId(Date.now().toString());
+        setSessionGreeted(false); // This will trigger a new greeting
+        setMessages([]);
+        setExchangeCount(0);
+        setShowChatHistory(false);
       };
 
       // Handle navigation from chat buttons and NAVIGATE tags
@@ -4318,21 +4402,126 @@ I'm here to help with any planning.`
                     <span style={{ fontSize: '1rem' }}>💬</span>
                     <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text)' }}>Tend</span>
                   </div>
-                  <button
-                    onClick={() => setChatMinimized(true)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      fontSize: '1.25rem',
-                      color: 'var(--text-muted)',
-                      cursor: 'pointer',
-                      padding: '0.25rem',
-                      lineHeight: 1,
-                    }}
-                    title="Minimize chat"
-                  >
-                    −
-                  </button>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    {/* New Chat button */}
+                    <button
+                      onClick={startNewChat}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '1rem',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: '0.25rem 0.5rem',
+                        lineHeight: 1,
+                        borderRadius: '4px',
+                      }}
+                      title="New chat"
+                    >
+                      ✏️
+                    </button>
+                    {/* Chat History button */}
+                    <div style={{ position: 'relative' }}>
+                      <button
+                        onClick={() => setShowChatHistory(!showChatHistory)}
+                        style={{
+                          background: showChatHistory ? 'var(--bg-main)' : 'none',
+                          border: 'none',
+                          fontSize: '1rem',
+                          color: 'var(--text-muted)',
+                          cursor: 'pointer',
+                          padding: '0.25rem 0.5rem',
+                          lineHeight: 1,
+                          borderRadius: '4px',
+                        }}
+                        title="Chat history"
+                      >
+                        📋
+                      </button>
+                      {/* History dropdown */}
+                      {showChatHistory && (
+                        <div style={{
+                          position: 'absolute',
+                          top: '100%',
+                          right: 0,
+                          marginTop: '0.5rem',
+                          backgroundColor: 'var(--bg-card)',
+                          border: '1px solid var(--border)',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+                          width: '280px',
+                          maxHeight: '400px',
+                          overflowY: 'auto',
+                          zIndex: 1000,
+                        }}>
+                          <div style={{
+                            padding: '0.75rem 1rem',
+                            borderBottom: '1px solid var(--border)',
+                            fontWeight: 500,
+                            fontSize: '0.85rem',
+                            color: 'var(--text)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                          }}>
+                            <span>Past Chats</span>
+                            <button
+                              onClick={() => setShowChatHistory(false)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}
+                            >✕</button>
+                          </div>
+                          {chatHistory.length === 0 ? (
+                            <div style={{ padding: '1rem', color: 'var(--text-muted)', fontSize: '0.85rem', textAlign: 'center' }}>
+                              No past chats yet
+                            </div>
+                          ) : (
+                            chatHistory.map(chat => (
+                              <button
+                                key={chat.id}
+                                onClick={() => switchToChat(chat.id)}
+                                style={{
+                                  display: 'block',
+                                  width: '100%',
+                                  padding: '0.75rem 1rem',
+                                  textAlign: 'left',
+                                  background: 'none',
+                                  border: 'none',
+                                  borderBottom: '1px solid var(--border)',
+                                  cursor: 'pointer',
+                                  transition: 'background 0.15s',
+                                }}
+                                onMouseEnter={e => e.target.style.background = 'var(--bg-main)'}
+                                onMouseLeave={e => e.target.style.background = 'none'}
+                              >
+                                <div style={{ fontSize: '0.85rem', color: 'var(--text)', marginBottom: '0.25rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                  {chat.title}
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                  {new Date(chat.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                                </div>
+                              </button>
+                            ))
+                          )}
+                        </div>
+                      )}
+                    </div>
+                    {/* Minimize button */}
+                    <button
+                      onClick={() => setChatMinimized(true)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '1.25rem',
+                        color: 'var(--text-muted)',
+                        cursor: 'pointer',
+                        padding: '0.25rem',
+                        lineHeight: 1,
+                      }}
+                      title="Minimize chat"
+                    >
+                      −
+                    </button>
+                  </div>
                 </div>
                 <div ref={chatContainerRef} style={styles.chatMessages}>
                   {messages.map((msg, idx) => (
