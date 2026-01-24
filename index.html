@@ -1619,6 +1619,7 @@ Respond with ONLY the task text, nothing else.`,
       const [user, setUser] = useState(null);
       const [authLoading, setAuthLoading] = useState(true);
       const [dataLoaded, setDataLoaded] = useState(false);
+      const [sessionGreeted, setSessionGreeted] = useState(false);
       const [showLoadingIcon, setShowLoadingIcon] = useState(true);
       const [appMode, setAppMode] = useState(null); // null = choose, 'journal', 'plan'
 
@@ -2418,10 +2419,12 @@ Respond with ONLY the task text, nothing else.`,
         </div>
       );
 
-      // Initial chat message after VLQ
+      // Session greeting - add a fresh greeting each time user returns
       useEffect(() => {
-        // Only set initial message after VLQ is complete and data is loaded
-        if (vlqCompleted && messages.length === 0 && dataLoaded) {
+        // Only greet after VLQ is complete, data is loaded, and we haven't greeted this session
+        if (vlqCompleted && dataLoaded && !sessionGreeted) {
+          setSessionGreeted(true);
+          
           let openingMessage = '';
 
           // Same options for everyone
@@ -2514,12 +2517,14 @@ What's been on your mind lately? What do you wish had more space in your life th
 ${navigationOptions}`;
           }
 
-          setMessages([{
+          // Append greeting to existing messages (don't replace history)
+          setMessages(prev => [...prev, {
             role: 'assistant',
-            content: openingMessage
+            content: openingMessage,
+            timestamp: new Date().toISOString()
           }]);
         }
-      }, [vlqCompleted, dataLoaded, yearTheme]);
+      }, [vlqCompleted, dataLoaded, sessionGreeted, yearTheme]);
 
       // Track view/tab for system prompt context (no auto-messages)
 
