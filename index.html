@@ -1696,7 +1696,8 @@ Respond with ONLY the task text, nothing else.`,
         name: '',
         occupation: '',
         location: '',
-        lifeStage: ''
+        lifeStage: '',
+        tendPreferences: {}
       });
       
       // Chat history system
@@ -1912,7 +1913,7 @@ Respond with ONLY the task text, nothing else.`,
           } else {
             // New user - reset all state and initialize
             setCurrentChatId(Date.now().toString());
-            setUserProfile({ name: '', occupation: '', location: '', lifeStage: '' });
+            setUserProfile({ name: '', occupation: '', location: '', lifeStage: '', tendPreferences: {} });
             setMessages([]);
             setChatHistory([]);
             setVlqScores({
@@ -2430,7 +2431,7 @@ Respond with ONLY the task text, nothing else.`,
           setPhase(PHASES.EXPLORE);
           setMessages([]);
           setChatHistory([]);
-          setUserProfile({ name: '', occupation: '', location: '', lifeStage: '' });
+          setUserProfile({ name: '', occupation: '', location: '', lifeStage: '', tendPreferences: {} });
           setDataLoaded(false);
         } catch (error) {
           console.error('Error signing out:', error);
@@ -2508,6 +2509,7 @@ Respond with ONLY the task text, nothing else.`,
           setPhase(PHASES.EXPLORE);
           setMessages([]);
           setChatHistory([]);
+          setUserProfile({ name: '', occupation: '', location: '', lifeStage: '', tendPreferences: {} });
           setDataLoaded(false);
           
           alert('Your account has been deleted.');
@@ -8733,7 +8735,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
     function EventModal({ onClose, onAdd }) {
       const [title, setTitle] = useState('');
       const [month, setMonth] = useState(new Date().getMonth());
-      const [lifeArea, setLifeArea] = useState('recreation');
+      const [lifeArea, setLifeArea] = useState('');
       const [eventType, setEventType] = useState('personal');
       
       const EVENT_TYPES = {
@@ -8787,6 +8789,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               <div style={styles.formField}>
                 <label style={styles.formLabel}>Life Area</label>
                 <select style={styles.selectInput} value={lifeArea} onChange={(e) => setLifeArea(e.target.value)}>
+                  <option value="">— N/A —</option>
                   {VLQ_ORDER.map(key => (
                     <option key={key} value={key}>{VLQ_DOMAINS[key].icon} {VLQ_DOMAINS[key].name}</option>
                   ))}
