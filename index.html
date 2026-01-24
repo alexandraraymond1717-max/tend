@@ -1933,6 +1933,8 @@ Respond with ONLY the task text, nothing else.`,
             setYearTheme('');
             setEvents([]);
             setGoals([]);
+            setRevealed(false);
+            setShowSettingsModal(false);
           }
           setDataLoaded(true);
         } catch (error) {
@@ -2432,6 +2434,7 @@ Respond with ONLY the task text, nothing else.`,
           setMessages([]);
           setChatHistory([]);
           setUserProfile({ name: '', occupation: '', location: '', lifeStage: '', tendPreferences: {} });
+          setShowSettingsModal(false);
           setDataLoaded(false);
         } catch (error) {
           console.error('Error signing out:', error);
@@ -3871,6 +3874,7 @@ I'm here to help with any planning.`
 
       const handleVlqComplete = () => {
         setVlqCompleted(true);
+        setRevealed(true);
         // Pre-fill values based on high-importance domains
         const highImportance = VLQ_ORDER
           .filter(key => vlqScores[key]?.importance >= 7)
