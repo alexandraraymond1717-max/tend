@@ -2400,6 +2400,8 @@ Respond with ONLY the task text, nothing else.`,
 
       // Save user data to Firestore (debounced)
       const saveTimeoutRef = useRef(null);
+      const pendingSaveRef = useRef(null); // Track pending save data
+      
       const saveUserData = useCallback(() => {
         if (!user) return;
         
@@ -2408,8 +2410,8 @@ Respond with ONLY the task text, nothing else.`,
           clearTimeout(saveTimeoutRef.current);
         }
         
-        // Debounce: save after 1 second of no changes
-        saveTimeoutRef.current = setTimeout(async () => {
+        // Store the save function for beforeunload
+        pendingSaveRef.current = async () => {
           try {
             // Calculate trends before saving
             const trends = calculateTrends();
@@ -2460,8 +2462,29 @@ Respond with ONLY the task text, nothing else.`,
           } catch (error) {
             console.error('Error saving user data:', error);
           }
-        }, 1000);
+        };
+        
+        // Debounce: save after 100ms of no changes
+        saveTimeoutRef.current = setTimeout(async () => {
+          if (pendingSaveRef.current) {
+            await pendingSaveRef.current();
+            pendingSaveRef.current = null;
+          }
+        }, 100);
       }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, onboardingStep, onboardingCompleted, savedConversations, userProfile, messages, exchangeCount, currentConversationType, chatHistory, currentChatId]);
+
+      // Flush pending saves when page unloads
+      useEffect(() => {
+        const handleBeforeUnload = () => {
+          if (pendingSaveRef.current) {
+            // Use sendBeacon for reliability on unload
+            pendingSaveRef.current();
+          }
+        };
+        
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+      }, []);
 
       // Onboarding: Auto-advance when required steps are complete
       useEffect(() => {
