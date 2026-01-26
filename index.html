@@ -2789,7 +2789,7 @@ Do you have any big events, trips, or milestones coming up? Adding them helps me
 I've opened the Events panel — you can add events there or tell me about them here. This step is optional.
 
 [BUTTON: I've added some events | next step]
-[BUTTON: Skip this step | next step]`;
+[BUTTON: Skip this step | skip to quiz]`;
                   break;
                   
                 case 4: // Gardener Quiz (optional)
@@ -2797,20 +2797,15 @@ I've opened the Events panel — you can add events there or tell me about them 
 
 The Gardener Quiz is a quick, fun way for me to understand how you approach growth and self-care. Your style helps me personalize your tends.
 
-I've taken you to Insights where you can find the quiz. This is optional.
+Take the quiz on the left — it's optional but fun!
 
-[BUTTON: I've taken the quiz | next step]
-[BUTTON: Skip this step | next step]`;
+[BUTTON: Skip this step | skip to lifemap]`;
                   break;
                   
                 case 5: // Life Map
                   openingMessage = `Let's build your Life Map! 🗺️
 
-I'd love to know more about what's happening in your life right now. The more context I have, the better I can personalize your experience.
-
-I've taken you to Insights where you'll find the Life Map prompts. Answer at least one to continue.
-
-[BUTTON: I've answered some prompts | next step]`;
+Click on any life area icon on the left to share details about your life. The more I know, the better I can personalize your experience!`;
                   break;
                   
                 case 6: // Compass Word
@@ -4039,22 +4034,19 @@ What's one thing you'd like to do regularly?`;
 Do you have any big events, trips, or milestones coming up? Tell me about them or add them in the Events panel. This step is optional.
 
 [BUTTON: I've added some events | next step]
-[BUTTON: Skip this step | next step]`;
+[BUTTON: Skip this step | skip to quiz]`;
                 break;
               case 4: // Quiz
                 greeting = `Let's discover your tending style! 🌸
 
-Take the Gardener Quiz in Insights — it helps me understand how you approach growth. This is optional.
+Take the Gardener Quiz on the left — it helps me understand how you approach growth. This is optional.
 
-[BUTTON: I've taken the quiz | next step]
-[BUTTON: Skip this step | next step]`;
+[BUTTON: Skip this step | skip to lifemap]`;
                 break;
               case 5: // Life Map
                 greeting = `Let's build your Life Map! 🗺️
 
-Head to Insights and answer at least one Life Map prompt. The more you share, the better I can help!
-
-[BUTTON: I've answered some prompts | next step]`;
+Click on any life area icon on the left to add some details about your life. The more you share, the better I can help!`;
                 break;
               case 6: // Compass Word
                 const suggestedWord = getSuggestedCompassWord();
