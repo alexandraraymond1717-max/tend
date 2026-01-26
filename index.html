@@ -4325,6 +4325,30 @@ I'm here to help with any planning.`
         if (highImportance.length > 0) {
           setValues(highImportance.slice(0, 3));
         }
+        
+        // Immediately trigger onboarding greeting for new users
+        // This ensures the greeting shows right after VLQ without waiting for effect
+        const focusAreas = getFocusAreas();
+        const focusAreaNames = focusAreas.map(k => VLQ_DOMAINS[k].name).slice(0, 3);
+        
+        const welcomeMessage = `Welcome to Tend! 🌱 I'm here to help you design your year with intention.
+
+Based on your values assessment, ${focusAreaNames.length > 0 ? `you want to focus on growing in: <strong>${focusAreaNames.join('</strong>, <strong>')}</strong>` : 'there are areas where you want to grow'}.
+
+Let's start by setting <strong>at least 3 goals</strong>${focusAreaNames.length > 0 ? ` — and make sure at least one goal covers each of your focus areas` : ''}.
+
+I've opened the Life Areas panel where your goals will appear. What's something you'd love to accomplish this year?`;
+        
+        setMessages([{
+          role: 'assistant',
+          content: welcomeMessage,
+          timestamp: new Date().toISOString()
+        }]);
+        setSessionGreeted(true);
+        
+        // Open Life Areas panel for goals step
+        setActiveTab('lifeareas');
+        setSidebarExpanded(true);
       };
 
       // Mode selection screen
