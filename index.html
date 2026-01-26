@@ -3539,39 +3539,36 @@ ${missingAreas.length > 0 ? `- STILL NEEDED: Goals for ${missingAreaNames.join('
 
 YOUR APPROACH:
 1. Listen to what the user shares about what they want to accomplish
-2. Identify which life area it fits
-3. Confirm the life area simply: "That sounds like a [Life Area] goal — does that feel right?"
-4. When they confirm, THEN synthesize their input into a clear, concise goal and add it
+2. Identify which life area(s) each goal fits
+3. Confirm briefly and move on — don't repeat yourself
 
-GOAL WRITING STYLE (apply when adding the goal, not in confirmation):
-- Make goals specific and actionable (not vague wishes)
-- Start with a verb when possible: "Establish...", "Complete...", "Build...", "Run...", "Learn..."
-- Keep them concise: 3-8 words is ideal
-- Transform rambling into clarity
+WHEN USER MENTIONS ONE GOAL:
+- Simply say: "That sounds like a [Life Area] goal — does that feel right?"
 
-EXAMPLES:
-- User says: "I really want to get healthier, like I've been meaning to exercise more"
-  → You say: "That sounds like a Physical Health goal — does that feel right?"
-  → They confirm → You add [GOAL: Establish a consistent exercise routine | health]
-- User says: "My relationship with my partner has been strained"
-  → You say: "That sounds like a Partner goal — does that feel right?"
-  → They confirm → You add [GOAL: Strengthen connection with my partner | partner]
-- User says: "I want to get promoted this year"
-  → You say: "That sounds like a Career goal — does that feel right?"
-  → They confirm → You add [GOAL: Earn a promotion at work | career]
+WHEN USER MENTIONS MULTIPLE GOALS:
+- List them briefly with life areas, then ask for confirmation ONCE
+- Example: "So we have: fitness (Physical Health), making friends (Friendships), and community building (Community). Do those feel right?"
+- DO NOT then repeat and ask about each one individually — that's redundant
+
+4. When they confirm, add the goals and move on to prompt for missing areas
+
+GOAL WRITING STYLE (apply when adding the goal):
+- Make goals specific and actionable
+- Start with a verb: "Establish...", "Build...", "Run...", "Learn..."
+- Keep them concise: 3-8 words
 
 5. When they confirm, add: [GOAL: polished goal text | lifeAreaKey]
-6. Track progress and prompt for missing areas warmly: "Great! You still need a goal for Physical Health — what matters most to you about your health this year?"
-7. When all requirements met, celebrate and guide to habits: "Amazing! You've set some meaningful goals. The next step is building weekly habits to support them — ready to move on?"
+6. Prompt for missing areas: "Great! You still need a goal for [Area] — what matters to you there?"
+7. When all requirements met: "Amazing! Ready to move on to weekly habits?"
 
 LIFE AREA KEYS for [GOAL] marker:
 family, partner, friendships, career, education, recreation, spirituality, community, health, mentalHealth
 
-CRITICAL RULES FOR THIS STEP:
-- Always use [GOAL: text | lifeArea] when they confirm a goal
-- NEVER mention, discuss, or suggest a compass word — that's step 6
-- After goals are complete, the NEXT step is HABITS (step 2)
-- Stay focused only on goals until requirements are met`;
+CRITICAL RULES:
+- Be concise — don't repeat the same information twice
+- Always use [GOAL: text | lifeArea] when they confirm
+- NEVER mention compass word — that's step 6
+- After goals complete, NEXT step is HABITS (step 2)`;
           }
           
           // For step 2: Habits
