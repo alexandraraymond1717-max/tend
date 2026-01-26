@@ -4774,8 +4774,99 @@ I've opened the Life Areas panel where your goals will appear. What's something 
         );
       }
 
-      // Insights mode
+      // Insights mode - during onboarding keep chat visible, otherwise full screen
       if (appMode === 'insights') {
+        // During onboarding steps 4-5, show insights with chat panel
+        if (!onboardingCompleted && (onboardingStep === 4 || onboardingStep === 5)) {
+          return (
+            <div style={styles.container}>
+              <header style={styles.header}>
+                <div style={styles.headerLeft}>
+                  <button 
+                    style={styles.backButton}
+                    onClick={() => setAppMode(null)}
+                    title="Back to main view"
+                  >← Back</button>
+                  <div style={styles.logo}>
+                    <svg width="28" height="28" viewBox="0 0 80 80" fill="none">
+                      <path d="M40 70 L40 45" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round"/>
+                      <path d="M40 55 Q30 50 25 40 Q35 45 40 55" stroke="var(--accent)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                      <path d="M40 45 Q50 38 55 28 Q45 35 40 45" stroke="var(--accent)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                      <circle cx="40" cy="70" r="4" fill="none" stroke="var(--accent)" strokeWidth="2"/>
+                    </svg>
+                    <span style={styles.logoText}>Insights</span>
+                  </div>
+                </div>
+              </header>
+              
+              <main style={{...styles.main, gridTemplateColumns: `64px 1fr ${chatWidth}px`}}>
+                {/* Empty sidebar space */}
+                <aside style={{...styles.sidebar, width: 64}}></aside>
+                
+                {/* Insights content in center */}
+                <div style={{...styles.centerPanel, padding: '1rem'}}>
+                  {/* Onboarding Progress Bar */}
+                  <OnboardingProgressBar 
+                    currentStep={onboardingStep}
+                    onStepClick={(step) => {
+                      setOnboardingStep(step);
+                      setSessionGreeted(false);
+                    }}
+                    isStepComplete={isStepComplete}
+                    getProgress={getOnboardingProgress}
+                  />
+                  <InsightsView
+                    trends={calculateTrends()}
+                    vlqScores={vlqScores}
+                    yearTheme={yearTheme}
+                    flexPoints={flexPoints}
+                    userProfile={userProfile}
+                    setUserProfile={setUserProfile}
+                    onBack={() => setAppMode(null)}
+                    apiKey={apiKey}
+                    embedded={true}
+                  />
+                </div>
+                
+                {/* Chat panel */}
+                <div style={styles.chatPanel}>
+                  <div style={styles.chatHeader}>
+                    <span style={styles.chatTitle}>💬 Chat with Tend</span>
+                  </div>
+                  <div style={styles.chatMessages} ref={chatMessagesRef}>
+                    {messages.map((msg, i) => (
+                      <ChatMessage 
+                        key={i} 
+                        message={msg} 
+                        onButtonClick={handleChatNavigation}
+                      />
+                    ))}
+                    {isTyping && (
+                      <div style={{...styles.message, ...styles.assistantMessage, opacity: 0.7}}>
+                        <em>Tend is thinking...</em>
+                      </div>
+                    )}
+                  </div>
+                  <form onSubmit={handleSendMessage} style={styles.chatInputForm}>
+                    <input
+                      type="text"
+                      value={inputMessage}
+                      onChange={(e) => setInputMessage(e.target.value)}
+                      placeholder="Type a message..."
+                      style={styles.chatInput}
+                      disabled={isTyping}
+                    />
+                    <button type="submit" style={styles.sendButton} disabled={isTyping || !inputMessage.trim()}>
+                      →
+                    </button>
+                  </form>
+                </div>
+              </main>
+            </div>
+          );
+        }
+        
+        // Normal full-screen insights mode
         return (
           <>
             <InsightsView
@@ -10385,7 +10476,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       },
     };
 
-    function InsightsView({ trends, vlqScores, yearTheme, flexPoints, userProfile, setUserProfile, onBack, apiKey }) {
+    function InsightsView({ trends, vlqScores, yearTheme, flexPoints, userProfile, setUserProfile, onBack, apiKey, embedded = false }) {
       const [expandedArea, setExpandedArea] = useState(null);
       const [editingArea, setEditingArea] = useState(null);
       const [tempFormData, setTempFormData] = useState({});
@@ -10395,10 +10486,12 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       
       const insightsStyles = {
         container: {
-          minHeight: '100vh',
+          minHeight: embedded ? 'auto' : '100vh',
           backgroundColor: 'var(--bg-main)',
           display: 'flex',
           flexDirection: 'column',
+          height: embedded ? '100%' : 'auto',
+          overflow: embedded ? 'auto' : 'visible',
         },
         header: {
           padding: '1rem 2rem',
@@ -10502,17 +10595,19 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       
       return (
         <div style={insightsStyles.container}>
-          <div style={insightsStyles.header}>
-            <div style={insightsStyles.headerLeft}>
-              <button style={insightsStyles.backButton} onClick={onBack} title="Back">
-                ←
-              </button>
-              <h2 style={insightsStyles.title}>Your Insights</h2>
+          {!embedded && (
+            <div style={insightsStyles.header}>
+              <div style={insightsStyles.headerLeft}>
+                <button style={insightsStyles.backButton} onClick={onBack} title="Back">
+                  ←
+                </button>
+                <h2 style={insightsStyles.title}>Your Insights</h2>
+              </div>
+              <div style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>
+                {yearTheme && `${new Date().getFullYear()}: ${yearTheme}`}
+              </div>
             </div>
-            <div style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>
-              {yearTheme && `${new Date().getFullYear()}: ${yearTheme}`}
-            </div>
-          </div>
+          )}
           
           <div style={insightsStyles.content}>
             {/* Gardener Type Section - At the very top */}
