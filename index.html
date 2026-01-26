@@ -1390,9 +1390,9 @@ Respond with ONLY the task text, nothing else.`,
                       <span style={vlqStyles.summaryItemIcon}>{item.icon}</span>
                       <span style={vlqStyles.summaryItemName}>{item.name}</span>
                       <div style={vlqStyles.summaryItemScores}>
-                        <span style={{color: 'var(--text-muted)'}}>{item.consistency}</span>
-                        <span style={{color: 'var(--text-muted)'}}>→</span>
                         <span style={{color: item.color, fontWeight: 600}}>{item.importance}</span>
+                        <span style={{color: 'var(--text-muted)'}}>/</span>
+                        <span style={{color: 'var(--text-muted)'}}>{item.consistency}</span>
                       </div>
                       <span style={{
                         ...vlqStyles.summaryItemGap,
@@ -1417,9 +1417,9 @@ Respond with ONLY the task text, nothing else.`,
                       <span style={vlqStyles.summaryItemIcon}>{item.icon}</span>
                       <span style={vlqStyles.summaryItemName}>{item.name}</span>
                       <div style={vlqStyles.summaryItemScores}>
-                        <span style={{color: item.color, fontWeight: 600}}>{item.consistency}</span>
-                        <span style={{color: 'var(--text-muted)'}}>/</span>
                         <span style={{color: item.color, fontWeight: 600}}>{item.importance}</span>
+                        <span style={{color: 'var(--text-muted)'}}>/</span>
+                        <span style={{color: item.color, fontWeight: 600}}>{item.consistency}</span>
                       </div>
                     </div>
                   ))}
@@ -1433,7 +1433,11 @@ Respond with ONLY the task text, nothing else.`,
                     <div key={item.key} style={{...vlqStyles.summaryItem, opacity: 0.7}}>
                       <span style={vlqStyles.summaryItemIcon}>{item.icon}</span>
                       <span style={vlqStyles.summaryItemName}>{item.name}</span>
-                      <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>{item.importance}/10</span>
+                      <div style={vlqStyles.summaryItemScores}>
+                        <span style={{color: 'var(--text-muted)'}}>{item.importance}</span>
+                        <span style={{color: 'var(--text-muted)'}}>/</span>
+                        <span style={{color: 'var(--text-muted)'}}>{item.consistency}</span>
+                      </div>
                     </div>
                   ))}
                 </div>
