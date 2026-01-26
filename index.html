@@ -4128,6 +4128,11 @@ Your compass word is <strong>${yearTheme}</strong>. Head to the Tendy tab and ma
         setChatMinimized(false);
         setAppMode(null);
         
+        // Don't show welcome back message during onboarding
+        if (!onboardingCompleted && onboardingStep) {
+          return;
+        }
+        
         // Add a welcome back message based on where they were
         const welcomeMessages = {
           'journal': `Welcome back from journaling! 📓
