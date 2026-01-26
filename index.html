@@ -3903,8 +3903,71 @@ When user says "what can I do?" or seems lost, offer options warmly:
         // Handle "next step" - advance to next onboarding step
         if (actionLower === 'next step') {
           if (!onboardingCompleted && onboardingStep && onboardingStep < 7) {
-            setOnboardingStep(prev => prev + 1);
-            setSessionGreeted(false); // Trigger new greeting for next step
+            const nextStep = onboardingStep + 1;
+            setOnboardingStep(nextStep);
+            
+            // Add step-specific greeting message
+            const focusAreas = getFocusAreas();
+            const focusAreaNames = focusAreas.map(k => VLQ_DOMAINS[k]?.name).slice(0, 3);
+            
+            let greeting = '';
+            switch(nextStep) {
+              case 2: // Habits
+                greeting = `Great progress on your goals! 🎯 
+
+Now let's build <strong>habits</strong> that will help you reach them. You'll need <strong>at least 3 habits</strong>${focusAreaNames.length > 0 ? `, with at least one for each focus area` : ''}.
+
+What's one thing you'd like to do regularly?`;
+                break;
+              case 3: // Events
+                greeting = `Let's map out your year! 📅
+
+Do you have any big events, trips, or milestones coming up? This step is optional.
+
+[BUTTON: Skip to next step | next step]`;
+                break;
+              case 4: // Quiz
+                greeting = `Let's discover your tending style! 🌸
+
+The Gardener Quiz helps me understand how you approach growth. This is optional.
+
+[BUTTON: Skip to next step | next step]`;
+                break;
+              case 5: // Life Map
+                greeting = `Let's build your Life Map! 🗺️
+
+I'd love to know more about what's happening in your life right now. Answer at least one prompt to continue.`;
+                break;
+              case 6: // Compass Word
+                const suggestedWord = getSuggestedCompassWord();
+                greeting = `Almost there! 🧭
+
+Based on everything you've shared, I think your <strong>compass word</strong> for this year could be:
+
+<div style="text-align: center; margin: 1.5rem 0; padding: 1rem; background: var(--accent-light); border-radius: 12px; border: 1px solid var(--accent);">
+<span style="font-size: 1.8rem; font-weight: 600; color: var(--accent); text-transform: capitalize;">${suggestedWord}</span>
+</div>
+
+Does it feel right?
+
+[BUTTON: Yes, that's perfect! | set compass ${suggestedWord}]
+[BUTTON: I have a different word in mind | suggest compass]`;
+                break;
+              case 7: // Daily Tend
+                greeting = `You're all set up! 🌱
+
+Your compass word is <strong>${yearTheme}</strong>. Select a tend and mark it complete to finish onboarding!`;
+                break;
+            }
+            
+            if (greeting) {
+              setMessages(prev => [...prev, {
+                role: 'assistant',
+                content: greeting,
+                timestamp: new Date().toISOString()
+              }]);
+              setTimeout(() => scrollChatToBottom(), 100);
+            }
           }
           return;
         }
