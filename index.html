@@ -3470,6 +3470,85 @@ Click on the event in the sidebar to add details.`;
             : '';
         };
 
+        // Get onboarding-specific context and instructions
+        const getOnboardingContext = () => {
+          if (onboardingCompleted || !onboardingStep) return '';
+          
+          const focusAreas = getFocusAreas();
+          const focusAreaNames = focusAreas.map(k => VLQ_DOMAINS[k]?.name || k);
+          
+          // For step 1: Goals
+          if (onboardingStep === 1) {
+            const goalsWithAreas = goals.filter(g => g.lifeArea);
+            const coveredAreas = focusAreas.filter(a => goals.some(g => g.lifeArea === a));
+            const missingAreas = focusAreas.filter(a => !goals.some(g => g.lifeArea === a));
+            const missingAreaNames = missingAreas.map(k => VLQ_DOMAINS[k]?.name || k);
+            
+            return `
+
+=== ONBOARDING MODE: GOALS (Step 1 of 7) ===
+The user is setting up Tend for the first time. Help them set meaningful goals.
+
+REQUIREMENTS:
+- Minimum 3 goals total
+- At least one goal for EACH focus area: ${focusAreaNames.join(', ')}
+
+CURRENT PROGRESS:
+- Total goals: ${goals.length}/3 minimum
+- Focus areas covered: ${coveredAreas.length}/${focusAreas.length}
+${missingAreas.length > 0 ? `- STILL NEEDED: Goals for ${missingAreaNames.join(', ')}` : '- All focus areas covered! ✓'}
+
+YOUR APPROACH:
+1. When user mentions a goal, identify which life area it fits
+2. Confirm with them: "That sounds like a great [Life Area] goal — [goal text]. Does that feel right?"
+3. When they confirm, add: [GOAL: goal text | lifeAreaKey]
+4. Track progress and prompt for missing areas: "You've covered Career! You still need a goal for Physical Health — what would you like to work on there?"
+5. When all requirements met, celebrate and ask if they want to continue chatting about goals OR move to the next step
+
+LIFE AREA KEYS for [GOAL] marker:
+family, partner, friendships, career, education, recreation, spirituality, community, health, mentalHealth
+
+IMPORTANT: Always use [GOAL: text | lifeArea] when they confirm a goal. This saves it to their plan.`;
+          }
+          
+          // For step 2: Habits
+          if (onboardingStep === 2) {
+            const habitsWithAreas = weeklyHabits.filter(h => h.lifeArea);
+            const coveredAreas = focusAreas.filter(a => weeklyHabits.some(h => h.lifeArea === a));
+            const missingAreas = focusAreas.filter(a => !weeklyHabits.some(h => h.lifeArea === a));
+            const missingAreaNames = missingAreas.map(k => VLQ_DOMAINS[k]?.name || k);
+            
+            return `
+
+=== ONBOARDING MODE: WEEKLY HABITS (Step 2 of 7) ===
+Help the user establish weekly habits that support their goals.
+
+REQUIREMENTS:
+- Minimum 3 weekly habits total
+- At least one habit for EACH focus area: ${focusAreaNames.join(', ')}
+
+CURRENT PROGRESS:
+- Total habits: ${weeklyHabits.length}/3 minimum
+- Focus areas covered: ${coveredAreas.length}/${focusAreas.length}
+${missingAreas.length > 0 ? `- STILL NEEDED: Habits for ${missingAreaNames.join(', ')}` : '- All focus areas covered! ✓'}
+
+YOUR APPROACH:
+1. When user mentions a habit, identify the life area and suggest a frequency
+2. Confirm: "How about [habit] [X] times a week? That would support your [Life Area] goal."
+3. When they confirm, add: [WEEKLY_HABIT: habit text | frequency | lifeAreaKey]
+4. Prompt for missing areas
+5. When complete, offer to continue or move to next step
+
+Use [WEEKLY_HABIT: text | frequency | lifeArea] when they confirm.`;
+          }
+          
+          // Default for other steps
+          return `
+
+=== ONBOARDING MODE: Step ${onboardingStep} of 7 ===
+Guide the user through their onboarding journey. Be encouraging and help them make progress.`;
+        };
+
         return `You are Tend, a thoughtful AI companion for intentional living and life design. You help people design their year with intention — not just survive, but live intentionally and mindfully.
 
 Your personality:
@@ -3487,12 +3566,14 @@ Current context:
 - Their year theme: ${yearTheme || 'not set yet'}
 - Their values: ${values.length > 0 ? values.join(', ') : 'not identified yet'}
 - Life areas (from VLQ): ${lifeAreasContext}
+- Their goals: ${goals.length > 0 ? goals.map(g => `${g.text}${g.lifeArea ? ` (${VLQ_DOMAINS[g.lifeArea]?.name || g.lifeArea})` : ''}`).join(', ') : 'none yet'}
 - Their events: ${events.length > 0 ? events.map(e => `${MONTHS[e.month]}: ${e.title}`).join(', ') : 'none yet'}
-- Weekly habits: ${weeklyHabits.length > 0 ? weeklyHabits.map(h => `${h.text} (${h.frequency}x/week)`).join(', ') : 'none yet'}
+- Weekly habits: ${weeklyHabits.length > 0 ? weeklyHabits.map(h => `${h.text} (${h.frequency}x/week)${h.lifeArea ? ` [${VLQ_DOMAINS[h.lifeArea]?.name || h.lifeArea}]` : ''}`).join(', ') : 'none yet'}
 - Daily habits: ${dailyHabits.length > 0 ? dailyHabits.map(h => h.text).join(', ') : 'none yet'}
 - Phase: ${phase} (explore = getting to know them, ground = understanding commitments, reveal = unlocking the app, plan = ongoing planning)
 - Conversation length: ${messages.length} messages so far
 ${getMisalignments()}
+${getOnboardingContext()}
 
 The user has already completed the VLQ (Valued Living Questionnaire) assessment. You know their values - use this knowledge to personalize your guidance.
 
@@ -3513,11 +3594,15 @@ Examples:
 
 Do NOT include if you're just suggesting and waiting for response.
 
-EXTRACTING HABITS, EVENTS, AND INTENTIONS:
+EXTRACTING HABITS, EVENTS, GOALS, AND INTENTIONS:
 When the user commits to something specific, include the appropriate marker at the END (hidden from user):
 
-For WEEKLY habits: [WEEKLY_HABIT: habit text | frequency]
-Example: [WEEKLY_HABIT: exercise | 3]
+For GOALS: [GOAL: goal text | lifeArea]
+Example: [GOAL: Run a 5K | health]
+Life areas: family, partner, friendships, career, education, recreation, spirituality, community, health, mentalHealth
+
+For WEEKLY habits: [WEEKLY_HABIT: habit text | frequency | lifeArea]
+Example: [WEEKLY_HABIT: exercise | 3 | health]
 
 For DAILY habits: [DAILY_HABIT: habit text]
 Example: [DAILY_HABIT: morning meditation]
@@ -3940,17 +4025,44 @@ Where would you like to go from here?
           }, 800);
         }
         
-        // Parse for weekly habits: [WEEKLY_HABIT: habit text | frequency]
-        const weeklyHabitMatches = response.matchAll(/\[WEEKLY_HABIT:\s*([^|]+)\s*\|\s*(\d+)\]/g);
+        // Parse for weekly habits: [WEEKLY_HABIT: habit text | frequency] or [WEEKLY_HABIT: habit text | frequency | lifeArea]
+        const weeklyHabitMatches = response.matchAll(/\[WEEKLY_HABIT:\s*([^|]+)\s*\|\s*(\d+)(?:\s*\|\s*([a-zA-Z]+))?\]/g);
         for (const match of weeklyHabitMatches) {
           const habitText = match[1].trim();
           const frequency = parseInt(match[2]);
+          const lifeArea = match[3]?.trim() || '';
           if (habitText && frequency >= 1 && frequency <= 7) {
             setWeeklyHabits(prev => {
               // Don't add duplicates
               if (prev.some(h => h.text.toLowerCase() === habitText.toLowerCase())) return prev;
-              console.log('Weekly habit added by Claude:', habitText, frequency + 'x/week');
-              return [...prev, { id: generateId(), text: habitText, frequency }];
+              console.log('Weekly habit added by Claude:', habitText, frequency + 'x/week', lifeArea ? `[${lifeArea}]` : '');
+              return [...prev, { 
+                id: generateId(), 
+                text: habitText, 
+                frequency,
+                lifeArea: lifeArea || undefined,
+                color: lifeArea && VLQ_DOMAINS[lifeArea]?.color ? VLQ_DOMAINS[lifeArea].color : ['#7EB3E0', '#8FD4A0', '#F9D07A', '#E8A090', '#B8A9C9'][prev.length % 5]
+              }];
+            });
+          }
+        }
+        
+        // Parse for goals: [GOAL: goal text | lifeArea]
+        const goalMatches = response.matchAll(/\[GOAL:\s*([^|]+)\s*\|\s*([a-zA-Z]+)\]/g);
+        for (const match of goalMatches) {
+          const goalText = match[1].trim();
+          const lifeArea = match[2].trim();
+          if (goalText && lifeArea) {
+            setGoals(prev => {
+              // Don't add duplicates
+              if (prev.some(g => g.text.toLowerCase() === goalText.toLowerCase())) return prev;
+              console.log('Goal added by Claude:', goalText, `[${lifeArea}]`);
+              return [...prev, { 
+                id: generateId(), 
+                text: goalText, 
+                lifeArea: lifeArea,
+                completed: false
+              }];
             });
           }
         }
