@@ -4224,6 +4224,7 @@ Where would you like to go from here?
         // Remove all markers from displayed response (buttons handled by ChatMessage)
         response = response
           .replace(/\[YEAR_THEME:\s*[a-zA-Z]{4,15}\]/g, '')
+          .replace(/\[GOAL:\s*[^\]]+\]/g, '')
           .replace(/\[WEEKLY_HABIT:\s*[^\]]+\]/g, '')
           .replace(/\[DAILY_HABIT:\s*[^\]]+\]/g, '')
           .replace(/\[EVENT:\s*[^\]]+\]/g, '')
