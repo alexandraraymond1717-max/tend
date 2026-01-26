@@ -2003,31 +2003,27 @@ Respond with ONLY the task text, nothing else.`,
             if (data.userProfile) setUserProfile(data.userProfile);
             // Load chat history
             if (data.chatHistory) setChatHistory(data.chatHistory);
-            // Archive previous chat to history if it had real conversation (more than 1 message)
-            if (data.currentChat && data.currentChat.messages && data.currentChat.messages.length > 1) {
-              const prevChat = {
-                id: data.currentChat.id || Date.now().toString(),
-                messages: data.currentChat.messages,
-                createdAt: data.currentChat.createdAt || new Date().toISOString(),
-                title: generateChatTitle(data.currentChat.messages)
-              };
-              setChatHistory(prev => [prevChat, ...(prev || [])].slice(0, 50)); // Keep last 50 chats
-            }
             
-            // Check if user is still in onboarding and has saved onboarding conversation
+            // Check if user is still in onboarding
             const isStillOnboarding = !data.onboardingCompleted && data.onboardingStep;
-            const savedOnboardingConvo = data.savedConversations && 
-              Object.entries(data.savedConversations)
-                .filter(([key, _]) => key.startsWith('onboarding_'))
-                .sort(([a], [b]) => b.localeCompare(a))[0]; // Get most recent
             
-            if (isStillOnboarding && savedOnboardingConvo) {
-              // Restore onboarding conversation
-              console.log('Restoring onboarding conversation:', savedOnboardingConvo[0]);
-              setMessages(savedOnboardingConvo[1].messages || []);
-              setExchangeCount(savedOnboardingConvo[1].messages?.length || 0);
+            // For onboarding users: restore current chat directly (don't archive it)
+            if (isStillOnboarding && data.currentChat && data.currentChat.messages && data.currentChat.messages.length > 0) {
+              console.log('Restoring onboarding chat from currentChat');
+              setMessages(data.currentChat.messages);
+              setExchangeCount(data.currentChat.exchangeCount || data.currentChat.messages.length);
               setSessionGreeted(true); // Don't add another greeting
             } else {
+              // Archive previous chat to history if it had real conversation (more than 1 message)
+              if (data.currentChat && data.currentChat.messages && data.currentChat.messages.length > 1) {
+                const prevChat = {
+                  id: data.currentChat.id || Date.now().toString(),
+                  messages: data.currentChat.messages,
+                  createdAt: data.currentChat.createdAt || new Date().toISOString(),
+                  title: generateChatTitle(data.currentChat.messages)
+                };
+                setChatHistory(prev => [prevChat, ...(prev || [])].slice(0, 50)); // Keep last 50 chats
+              }
               // Start fresh - messages will be set by the greeting effect
               setMessages([]);
               setExchangeCount(0);
@@ -2756,7 +2752,8 @@ Respond with ONLY the task text, nothing else.`,
       // Session greeting - add a fresh greeting each time user returns
       useEffect(() => {
         // Only greet after VLQ is complete and we haven't greeted this session
-        if (vlqCompleted && !sessionGreeted) {
+        // Also skip if messages already exist (restored from saved conversation)
+        if (vlqCompleted && !sessionGreeted && messages.length === 0) {
           const timer = setTimeout(() => {
             setSessionGreeted(true);
             
@@ -2900,7 +2897,7 @@ Or just chat — I'm here.
           
           return () => clearTimeout(timer);
         }
-      }, [vlqCompleted, sessionGreeted, onboardingCompleted, onboardingStep, yearTheme]);
+      }, [vlqCompleted, sessionGreeted, onboardingCompleted, onboardingStep, yearTheme, messages.length]);
 
       // Track view/tab for system prompt context (no auto-messages)
 
