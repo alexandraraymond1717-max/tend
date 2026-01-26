@@ -2462,12 +2462,47 @@ Respond with ONLY the task text, nothing else.`,
         // We don't auto-advance because user should consciously move forward
         // But we update the progress bar which shows completion
         
-        // Special case: When daily tend is generated (step 7), mark onboarding complete
-        if (onboardingStep === 7 && todaysTendies.length > 0) {
+        // Special case: When daily tend is completed (step 7), mark onboarding complete
+        if (onboardingStep === 7 && todaysTendies.some(t => t.completed)) {
           setOnboardingCompleted(true);
           setOnboardingStep(null);
         }
       }, [vlqCompleted, onboardingCompleted, onboardingStep, goals, weeklyHabits, userProfile, yearTheme, todaysTendies]);
+
+      // Onboarding: Auto-navigate to relevant view when step changes
+      useEffect(() => {
+        if (!vlqCompleted || onboardingCompleted || onboardingStep === null || onboardingStep === undefined) return;
+        
+        // Navigate to the appropriate view for each step
+        switch(onboardingStep) {
+          case 1: // Goals - open Life Areas sidebar
+            setActiveTab('lifeareas');
+            setSidebarExpanded(true);
+            setAppMode(null); // Ensure we're in main view
+            break;
+          case 2: // Habits - show Weekly view
+            setCenterView(CENTER_VIEWS.WEEKLY);
+            setAppMode(null);
+            break;
+          case 3: // Events - open Events sidebar
+            setActiveTab('events');
+            setSidebarExpanded(true);
+            setAppMode(null);
+            break;
+          case 4: // Quiz - go to Insights
+            setAppMode('insights');
+            break;
+          case 5: // Life Map - go to Insights
+            setAppMode('insights');
+            break;
+          case 6: // Compass Word - main chat
+            setAppMode(null);
+            break;
+          case 7: // Daily Tend - go to Tendy
+            setAppMode('tendy');
+            break;
+        }
+      }, [vlqCompleted, onboardingCompleted, onboardingStep]);
 
       // Flex Points Awarding System
       useEffect(() => {
@@ -2719,9 +2754,7 @@ Based on your values assessment, ${focusAreaNames.length > 0 ? `you want to focu
 
 Let's start by setting <strong>at least 3 goals</strong>${focusAreaNames.length > 0 ? ` — and make sure at least one goal covers each of your focus areas` : ''}.
 
-What's something you'd love to accomplish this year? You can tell me here, or add goals directly in the sidebar.
-
-[BUTTON: Open Goals sidebar | goals]`;
+I've opened the Life Areas sidebar where your goals will appear. What's something you'd love to accomplish this year?`;
                   break;
                   
                 case 2: // Weekly Habits
@@ -2731,9 +2764,7 @@ Now let's build the <strong>weekly habits</strong> that will help you reach them
 
 You'll need <strong>at least 3 weekly habits</strong>${focusAreaNames.length > 0 ? `, with at least one supporting each focus area (${focusAreaNames.join(', ')})` : ''}.
 
-What's one small thing you could do each week? Or add them in the sidebar.
-
-[BUTTON: Open Habits | habits]`;
+I've switched to the Weekly view where you can see your habits. What's one small thing you could do each week?`;
                   break;
                   
                 case 3: // Events (optional)
@@ -2741,9 +2772,8 @@ What's one small thing you could do each week? Or add them in the sidebar.
 
 Do you have any big events, trips, or milestones coming up? Adding them helps me understand the rhythm of your year and suggest timely tends.
 
-This step is optional — skip ahead if you don't have events to add right now.
+I've opened the Events sidebar — you can add events there or tell me about them here. This step is optional.
 
-[BUTTON: Add an event | add event]
 [BUTTON: Skip to next step | next step]`;
                   break;
                   
@@ -2752,9 +2782,8 @@ This step is optional — skip ahead if you don't have events to add right now.
 
 The Gardener Quiz is a quick, fun way for me to understand how you approach growth and self-care. Your style helps me personalize your tends.
 
-This is optional — you can always take it later.
+I've taken you to Insights where you can find the quiz. This is optional — you can skip if you'd like.
 
-[BUTTON: Take the Quiz | gardener quiz]
 [BUTTON: Skip to next step | next step]`;
                   break;
                   
@@ -2763,9 +2792,7 @@ This is optional — you can always take it later.
 
 I'd love to know more about what's happening in your life right now. The more context I have, the better I can personalize your experience.
 
-Answer at least one prompt to continue — but the more you share, the more I can help.
-
-[BUTTON: Build my Life Map | life map]`;
+I've taken you to Insights where you'll find the Life Map prompts. Answer at least one to continue — but the more you share, the more I can help.`;
                   break;
                   
                 case 6: // Compass Word
@@ -2789,9 +2816,7 @@ This word can guide your decisions and intentions throughout the year. Does it f
 
 Your compass word is <strong>${yearTheme}</strong>, and you have goals, habits, and a Life Map to guide your journey.
 
-Let's generate your first <strong>Daily Tend</strong> — a small, meaningful action aligned with your values.
-
-[BUTTON: Generate my first tend | tendy]`;
+I've taken you to your Daily Tend — select one and mark it complete to finish onboarding!`;
                   break;
                   
                 default:
