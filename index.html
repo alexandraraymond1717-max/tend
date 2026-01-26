@@ -10503,16 +10503,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       const [tempFormData, setTempFormData] = useState(autoExpandSection === 'quiz' ? { quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null } : {});
       const [tempNotes, setTempNotes] = useState('');
       
-      // Auto-expand when prop changes
-      React.useEffect(() => {
-        if (autoExpandSection) {
-          setExpandedArea(autoExpandSection);
-          if (autoExpandSection === 'quiz') {
-            setTempFormData({ quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null });
-          }
-        }
-      }, [autoExpandSection]);
-      
       if (!trends) return null;
       
       const insightsStyles = {
