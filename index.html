@@ -4817,7 +4817,7 @@ I've opened the Life Areas panel where your goals will appear. What's something 
                     onBack={() => setAppMode(null)}
                     apiKey={apiKey}
                     embedded={true}
-                    autoExpandSection={onboardingStep === 4 ? 'quiz' : onboardingStep === 5 ? 'lifemap' : null}
+                    autoExpandSection={onboardingStep === 4 ? 'quiz' : null}
                     onQuizComplete={(result) => {
                       // Add message to chat prompting next step
                       const msg = {
