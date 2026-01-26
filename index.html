@@ -3624,7 +3624,7 @@ EXAMPLES:
 7. When complete: "Great! Ready to add any events to your year?
 
 [BUTTON: Yes, let's add events | next step]
-[BUTTON: Skip events | next step]"
+[BUTTON: Skip events | skip to quiz]"
 
 CRITICAL RULES:
 - NEVER ask about "daily habits vs weekly habits" — all habits are weekly with frequency 1-7
@@ -4005,9 +4005,19 @@ When user says "what can I do?" or seems lost, offer options warmly:
         }
         
         // Handle "next step" - advance to next onboarding step
-        if (actionLower === 'next step') {
+        if (actionLower === 'next step' || actionLower.startsWith('skip to ')) {
           if (!onboardingCompleted && onboardingStep && onboardingStep < 7) {
-            const nextStep = onboardingStep + 1;
+            let nextStep;
+            
+            // Handle skip actions
+            if (actionLower === 'skip to quiz') {
+              nextStep = 4;
+            } else if (actionLower === 'skip to lifemap') {
+              nextStep = 5;
+            } else {
+              nextStep = onboardingStep + 1;
+            }
+            
             setOnboardingStep(nextStep);
             
             // Add step-specific greeting message
