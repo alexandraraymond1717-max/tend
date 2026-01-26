@@ -2776,7 +2776,7 @@ I've opened the Life Areas sidebar where your goals will appear. What's somethin
 
 Now let's build <strong>habits</strong> that will help you reach them. Small, consistent actions compound over time.
 
-You'll need <strong>at least 3 habits</strong>${focusAreaNames.length > 0 ? `, with at least one supporting each focus area (${focusAreaNames.join(', ')})` : ''}.
+You'll need <strong>at least 3 habits</strong>, with at least one supporting each of your goals.
 
 I've switched to the Weekly view where you can track your habits. What's one thing you'd like to do regularly?`;
                   break;
@@ -3581,32 +3581,33 @@ CRITICAL RULES:
           
           // For step 2: Habits
           if (onboardingStep === 2) {
-            const habitsWithAreas = weeklyHabits.filter(h => h.lifeArea);
-            const coveredAreas = focusAreas.filter(a => weeklyHabits.some(h => h.lifeArea === a));
-            const missingAreas = focusAreas.filter(a => !weeklyHabits.some(h => h.lifeArea === a));
-            const missingAreaNames = missingAreas.map(k => VLQ_DOMAINS[k]?.name || k);
+            const goalsList = goals.map(g => g.text).join(', ');
+            const goalsWithHabits = goals.filter(g => weeklyHabits.some(h => h.lifeArea === g.lifeArea));
+            const goalsWithoutHabits = goals.filter(g => !weeklyHabits.some(h => h.lifeArea === g.lifeArea));
             
             return `
 
 === ONBOARDING MODE: HABITS (Step 2 of 7) ===
 Help the user establish habits that support their goals.
 
+USER'S GOALS: ${goalsList}
+
 REQUIREMENTS:
 - Minimum 3 habits total
-- At least one habit for EACH focus area: ${focusAreaNames.join(', ')}
+- At least one habit supporting each goal
 
 CURRENT PROGRESS:
 - Total habits: ${weeklyHabits.length}/3 minimum
-- Focus areas covered: ${coveredAreas.length}/${focusAreas.length}
-${missingAreas.length > 0 ? `- STILL NEEDED: Habits for ${missingAreaNames.join(', ')}` : '- All focus areas covered! ✓'}
+- Goals with supporting habits: ${goalsWithHabits.length}/${goals.length}
+${goalsWithoutHabits.length > 0 ? `- STILL NEEDED: Habits for goals: ${goalsWithoutHabits.map(g => g.text).join(', ')}` : '- All goals have habits! ✓'}
 
 YOUR APPROACH:
 1. Listen to what the user shares about habits or routines they want to build
-2. Identify which life area it supports
-3. Ask about frequency: "That sounds like a [Life Area] habit — how many times a week?"
+2. Connect the habit to one of their goals
+3. Ask about frequency: "That would support your [goal] — how many times a week?"
 4. When they give a frequency, confirm and add the habit
 
-IMPORTANT: Daily habits are just habits with frequency 7. Don't ask about "daily vs weekly" — just ask how many times per week. If they say "daily" or "every day", that's frequency 7.
+IMPORTANT: Daily habits are just habits with frequency 7. If they say "daily" or "every day", that's frequency 7.
 
 HABIT WRITING STYLE:
 - Keep habits simple and specific (2-5 words)
@@ -3614,13 +3615,12 @@ HABIT WRITING STYLE:
 - Make them trackable/completable
 
 EXAMPLES:
-- "I want to go to the gym" → "Physical Health habit — how many times a week?" → "3" → [WEEKLY_HABIT: Go to the gym | 3 | health]
-- "I want to walk 10K steps daily" → [WEEKLY_HABIT: Walk 10K steps | 7 | health]
-- "Call my parents" → "Family habit — how often?" → "once a week" → [WEEKLY_HABIT: Call parents | 1 | family]
+- User has goal "Get fit" and says "I want to go to the gym" → "That would support your fitness goal — how many times a week?" → "3" → [WEEKLY_HABIT: Go to the gym | 3 | health]
+- User says "I want to walk 10K steps daily" → [WEEKLY_HABIT: Walk 10K steps | 7 | health]
 
 5. Include the marker (hidden): [WEEKLY_HABIT: habit text | frequency | lifeAreaKey]
    - Just say "Got it!" — the marker is invisible to the user
-6. Prompt for missing areas: "Got it! What about [Area]?"
+6. Prompt for goals without habits: "Got it! What habit could support your [goal name] goal?"
 7. When complete: "Great! Ready to add any events to your year?
 
 [BUTTON: Yes, let's add events | next step]
@@ -4019,7 +4019,7 @@ When user says "what can I do?" or seems lost, offer options warmly:
               case 2: // Habits
                 greeting = `Great progress on your goals! 🎯 
 
-Now let's build <strong>habits</strong> that will help you reach them. You'll need <strong>at least 3 habits</strong>${focusAreaNames.length > 0 ? `, with at least one for each focus area` : ''}.
+Now let's build <strong>habits</strong> that will help you reach them. You'll need <strong>at least 3 habits</strong>, with at least one supporting each of your goals.
 
 What's one thing you'd like to do regularly?`;
                 break;
