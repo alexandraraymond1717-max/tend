@@ -4871,13 +4871,13 @@ Ready to choose your compass word?
                   <form onSubmit={handleSendMessage} style={styles.chatInputForm}>
                     <input
                       type="text"
-                      value={inputMessage}
-                      onChange={(e) => setInputMessage(e.target.value)}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
                       placeholder="Type a message..."
                       style={styles.chatInput}
                       disabled={isTyping}
                     />
-                    <button type="submit" style={styles.sendButton} disabled={isTyping || !inputMessage.trim()}>
+                    <button type="submit" style={styles.sendButton} disabled={isTyping || !inputValue.trim()}>
                       →
                     </button>
                   </form>
