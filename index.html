@@ -4426,19 +4426,6 @@ I'm here to help with any planning.`
 
       return (
         <div style={styles.container}>
-          {/* Onboarding Progress Bar */}
-          {!onboardingCompleted && onboardingStep && (
-            <OnboardingProgressBar 
-              currentStep={onboardingStep}
-              onStepClick={(step) => {
-                setOnboardingStep(step);
-                setSessionGreeted(false); // Trigger new greeting
-              }}
-              isStepComplete={isStepComplete}
-              getProgress={getOnboardingProgress}
-            />
-          )}
-          
           <header style={styles.header}>
             <div style={styles.logoContainer}>
               <svg width="28" height="28" viewBox="0 0 32 32" fill="none" style={{ marginRight: '8px' }}>
@@ -4533,6 +4520,19 @@ I'm here to help with any planning.`
               </button>
             </div>
           </header>
+
+          {/* Onboarding Progress Bar */}
+          {!onboardingCompleted && onboardingStep && (
+            <OnboardingProgressBar 
+              currentStep={onboardingStep}
+              onStepClick={(step) => {
+                setOnboardingStep(step);
+                setSessionGreeted(false); // Trigger new greeting
+              }}
+              isStepComplete={isStepComplete}
+              getProgress={getOnboardingProgress}
+            />
+          )}
 
           <main style={{...styles.main, gridTemplateColumns: `${sidebarExpanded ? sidebarWidth : 64}px 1fr ${chatMinimized ? '0px' : chatWidth + 'px'}`}}>
             {/* Left Sidebar */}
