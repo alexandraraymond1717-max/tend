@@ -3545,28 +3545,29 @@ ${missingAreas.length > 0 ? `- STILL NEEDED: Goals for ${missingAreaNames.join('
 
 YOUR APPROACH:
 1. Listen to what the user shares about what they want to accomplish
-2. Synthesize their thoughts into a CLEAR, CONCISE, ACTIONABLE goal statement (not just repeating what they said)
-3. Identify which life area it fits
-4. Present your articulated version for confirmation: "It sounds like your goal is to *[polished goal statement]*. I'd put that under [Life Area] — does that capture it?"
+2. Identify which life area it fits
+3. Confirm the life area simply: "That sounds like a [Life Area] goal — does that feel right?"
+4. When they confirm, THEN synthesize their input into a clear, concise goal and add it
 
-GOAL WRITING STYLE:
+GOAL WRITING STYLE (apply when adding the goal, not in confirmation):
 - Make goals specific and actionable (not vague wishes)
 - Start with a verb when possible: "Establish...", "Complete...", "Build...", "Run...", "Learn..."
 - Keep them concise: 3-8 words is ideal
 - Transform rambling into clarity
 
-EXAMPLES of synthesizing user input into goals:
-- User says: "I really want to get healthier, like I've been meaning to exercise more and maybe lose some weight"
-  → Goal: "Establish a consistent exercise routine" (health)
-- User says: "My relationship with my partner has been strained and I want to work on that"
-  → Goal: "Strengthen connection with my partner" (partner)
-- User says: "I've been thinking about maybe going back to school or learning something new"
-  → Goal: "Pursue continued education or skill development" (education)
+EXAMPLES:
+- User says: "I really want to get healthier, like I've been meaning to exercise more"
+  → You say: "That sounds like a Physical Health goal — does that feel right?"
+  → They confirm → You add [GOAL: Establish a consistent exercise routine | health]
+- User says: "My relationship with my partner has been strained"
+  → You say: "That sounds like a Partner goal — does that feel right?"
+  → They confirm → You add [GOAL: Strengthen connection with my partner | partner]
 - User says: "I want to get promoted this year"
-  → Goal: "Earn a promotion at work" (career)
+  → You say: "That sounds like a Career goal — does that feel right?"
+  → They confirm → You add [GOAL: Earn a promotion at work | career]
 
 5. When they confirm, add: [GOAL: polished goal text | lifeAreaKey]
-6. Track progress and prompt for missing areas warmly: "Great! You still need a goal for Physical Health — we can hone in on one together. What matters most to you about your health this year?"
+6. Track progress and prompt for missing areas warmly: "Great! You still need a goal for Physical Health — what matters most to you about your health this year?"
 7. When all requirements met, celebrate and guide to habits: "Amazing! You've set some meaningful goals. The next step is building weekly habits to support them — ready to move on?"
 
 LIFE AREA KEYS for [GOAL] marker:
@@ -3602,30 +3603,30 @@ ${missingAreas.length > 0 ? `- STILL NEEDED: Habits for ${missingAreaNames.join(
 
 YOUR APPROACH:
 1. Listen to what the user shares about habits or routines they want to build
-2. Synthesize their thoughts into a CLEAR, CONCISE habit statement
-3. Suggest an appropriate frequency (1-7x per week)
-4. Identify which life area it supports
-5. Present for confirmation: "How about *[polished habit]* [X] times a week? That would support your [Life Area] goals — sound good?"
+2. Identify which life area it supports
+3. Ask about frequency: "That sounds like a [Life Area] habit — how many times a week would you like to do that?"
+4. When they give a frequency, confirm and add the habit
 
-HABIT WRITING STYLE:
+HABIT WRITING STYLE (apply when adding the habit):
 - Keep habits simple and specific
 - 2-5 words is ideal
 - Use present tense action words
 - Make them trackable/completable
 
-EXAMPLES of synthesizing user input into habits:
-- User says: "I want to try to exercise more regularly, maybe go to the gym or something"
-  → Habit: "Go to the gym" 3x/week (health)
+EXAMPLES:
+- User says: "I want to try to exercise more regularly, maybe go to the gym"
+  → You say: "That sounds like a Physical Health habit — how many times a week?"
+  → They say "3" → You add [WEEKLY_HABIT: Go to the gym | 3 | health]
 - User says: "I should probably call my parents more"
-  → Habit: "Call parents" 1x/week (family)
-- User says: "I've been meaning to read more books"
-  → Habit: "Read for 30 minutes" 4x/week (education or recreation)
+  → You say: "That sounds like a Family habit — how often?"
+  → They say "once a week" → You add [WEEKLY_HABIT: Call parents | 1 | family]
 - User says: "We never go on dates anymore"
-  → Habit: "Date night" 1x/week (partner)
+  → You say: "That sounds like a Partner habit — how many times a week?"
+  → They say "1" → You add [WEEKLY_HABIT: Date night | 1 | partner]
 
-6. When they confirm, add: [WEEKLY_HABIT: habit text | frequency | lifeAreaKey]
-7. Prompt for missing areas warmly: "Nice! You still need a habit for [Area] — we can figure one out together. What small action could support that part of your life?"
-8. When complete, celebrate and guide to events: "Great habits! Next up is adding any big events or milestones to your year — ready?"
+5. When they confirm frequency, add: [WEEKLY_HABIT: habit text | frequency | lifeAreaKey]
+6. Prompt for missing areas warmly: "Nice! You still need a habit for [Area] — what small action could support that part of your life?"
+7. When complete, celebrate and guide to events: "Great habits! Next up is adding any big events or milestones to your year — ready?"
 
 CRITICAL RULES FOR THIS STEP:
 - Use [WEEKLY_HABIT: text | frequency | lifeArea] when they confirm
