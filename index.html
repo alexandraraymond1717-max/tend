@@ -3582,11 +3582,11 @@ CRITICAL RULES:
             
             return `
 
-=== ONBOARDING MODE: WEEKLY HABITS (Step 2 of 7) ===
-Help the user establish weekly habits that support their goals.
+=== ONBOARDING MODE: HABITS (Step 2 of 7) ===
+Help the user establish habits that support their goals.
 
 REQUIREMENTS:
-- Minimum 3 weekly habits total
+- Minimum 3 habits total
 - At least one habit for EACH focus area: ${focusAreaNames.join(', ')}
 
 CURRENT PROGRESS:
@@ -3597,30 +3597,29 @@ ${missingAreas.length > 0 ? `- STILL NEEDED: Habits for ${missingAreaNames.join(
 YOUR APPROACH:
 1. Listen to what the user shares about habits or routines they want to build
 2. Identify which life area it supports
-3. Ask about frequency: "That sounds like a [Life Area] habit — how many times a week would you like to do that?"
+3. Ask about frequency: "That sounds like a [Life Area] habit — how many times a week?"
 4. When they give a frequency, confirm and add the habit
 
-HABIT WRITING STYLE (apply when adding the habit):
-- Keep habits simple and specific
-- 2-5 words is ideal
+IMPORTANT: Daily habits are just habits with frequency 7. Don't ask about "daily vs weekly" — just ask how many times per week. If they say "daily" or "every day", that's frequency 7.
+
+HABIT WRITING STYLE:
+- Keep habits simple and specific (2-5 words)
 - Use present tense action words
 - Make them trackable/completable
 
 EXAMPLES:
-- User says: "I want to try to exercise more regularly, maybe go to the gym"
-  → You say: "That sounds like a Physical Health habit — how many times a week?"
-  → They say "3" → You say "Got it!" and include [WEEKLY_HABIT: Go to the gym | 3 | health]
-- User says: "I should probably call my parents more"
-  → You say: "That sounds like a Family habit — how often?"
-  → They say "once a week" → You say "Added!" and include [WEEKLY_HABIT: Call parents | 1 | family]
+- "I want to go to the gym" → "Physical Health habit — how many times a week?" → "3" → [WEEKLY_HABIT: Go to the gym | 3 | health]
+- "I want to walk 10K steps daily" → [WEEKLY_HABIT: Walk 10K steps | 7 | health]
+- "Call my parents" → "Family habit — how often?" → "once a week" → [WEEKLY_HABIT: Call parents | 1 | family]
 
-5. When they confirm frequency, include the marker (hidden from display): [WEEKLY_HABIT: habit text | frequency | lifeAreaKey]
-   - Just say "Got it!" or "Added!" — the marker is invisible to the user
-6. Prompt for missing areas: "Got it! What about [Area] — what small action could support that?"
+5. Include the marker (hidden): [WEEKLY_HABIT: habit text | frequency | lifeAreaKey]
+   - Just say "Got it!" — the marker is invisible to the user
+6. Prompt for missing areas: "Got it! What about [Area]?"
 7. When complete: "Great! Ready to add any events to your year?"
 
 CRITICAL RULES:
-- The [WEEKLY_HABIT: ...] marker is HIDDEN from the user — don't write it as visible text
+- NEVER ask about "daily habits vs weekly habits" — all habits are weekly with frequency 1-7
+- The [WEEKLY_HABIT: ...] marker is HIDDEN from the user
 - NEVER mention compass word — that's step 6
 - After habits complete, NEXT step is EVENTS (step 3)`;
           }
