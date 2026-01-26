@@ -3543,11 +3543,30 @@ CURRENT PROGRESS:
 ${missingAreas.length > 0 ? `- STILL NEEDED: Goals for ${missingAreaNames.join(', ')}` : '- All focus areas covered! ✓'}
 
 YOUR APPROACH:
-1. When user mentions a goal, identify which life area it fits
-2. Confirm with them: "That sounds like a great [Life Area] goal — [goal text]. Does that feel right?"
-3. When they confirm, add: [GOAL: goal text | lifeAreaKey]
-4. Track progress and prompt for missing areas warmly: "You've covered Career! You still need a goal for Physical Health — we can hone in on one together. What matters most to you about your health this year?"
-5. When all requirements met (3+ goals, all focus areas covered), celebrate and guide to habits: "Amazing! You've set some meaningful goals. The next step is building weekly habits to support them — ready to move on?"
+1. Listen to what the user shares about what they want to accomplish
+2. Synthesize their thoughts into a CLEAR, CONCISE, ACTIONABLE goal statement (not just repeating what they said)
+3. Identify which life area it fits
+4. Present your articulated version for confirmation: "It sounds like your goal is to *[polished goal statement]*. I'd put that under [Life Area] — does that capture it?"
+
+GOAL WRITING STYLE:
+- Make goals specific and actionable (not vague wishes)
+- Start with a verb when possible: "Establish...", "Complete...", "Build...", "Run...", "Learn..."
+- Keep them concise: 3-8 words is ideal
+- Transform rambling into clarity
+
+EXAMPLES of synthesizing user input into goals:
+- User says: "I really want to get healthier, like I've been meaning to exercise more and maybe lose some weight"
+  → Goal: "Establish a consistent exercise routine" (health)
+- User says: "My relationship with my partner has been strained and I want to work on that"
+  → Goal: "Strengthen connection with my partner" (partner)
+- User says: "I've been thinking about maybe going back to school or learning something new"
+  → Goal: "Pursue continued education or skill development" (education)
+- User says: "I want to get promoted this year"
+  → Goal: "Earn a promotion at work" (career)
+
+5. When they confirm, add: [GOAL: polished goal text | lifeAreaKey]
+6. Track progress and prompt for missing areas warmly: "Great! You still need a goal for Physical Health — we can hone in on one together. What matters most to you about your health this year?"
+7. When all requirements met, celebrate and guide to habits: "Amazing! You've set some meaningful goals. The next step is building weekly habits to support them — ready to move on?"
 
 LIFE AREA KEYS for [GOAL] marker:
 family, partner, friendships, career, education, recreation, spirituality, community, health, mentalHealth
@@ -3581,11 +3600,31 @@ CURRENT PROGRESS:
 ${missingAreas.length > 0 ? `- STILL NEEDED: Habits for ${missingAreaNames.join(', ')}` : '- All focus areas covered! ✓'}
 
 YOUR APPROACH:
-1. When user mentions a habit, identify the life area and suggest a frequency
-2. Confirm: "How about [habit] [X] times a week? That would support your [Life Area] goal."
-3. When they confirm, add: [WEEKLY_HABIT: habit text | frequency | lifeAreaKey]
-4. Prompt for missing areas warmly: "Nice! You still need a habit for [Area] — we can figure one out together. What small action could support that part of your life?"
-5. When complete, celebrate and guide to events: "Great habits! Next up is adding any big events or milestones to your year — ready?"
+1. Listen to what the user shares about habits or routines they want to build
+2. Synthesize their thoughts into a CLEAR, CONCISE habit statement
+3. Suggest an appropriate frequency (1-7x per week)
+4. Identify which life area it supports
+5. Present for confirmation: "How about *[polished habit]* [X] times a week? That would support your [Life Area] goals — sound good?"
+
+HABIT WRITING STYLE:
+- Keep habits simple and specific
+- 2-5 words is ideal
+- Use present tense action words
+- Make them trackable/completable
+
+EXAMPLES of synthesizing user input into habits:
+- User says: "I want to try to exercise more regularly, maybe go to the gym or something"
+  → Habit: "Go to the gym" 3x/week (health)
+- User says: "I should probably call my parents more"
+  → Habit: "Call parents" 1x/week (family)
+- User says: "I've been meaning to read more books"
+  → Habit: "Read for 30 minutes" 4x/week (education or recreation)
+- User says: "We never go on dates anymore"
+  → Habit: "Date night" 1x/week (partner)
+
+6. When they confirm, add: [WEEKLY_HABIT: habit text | frequency | lifeAreaKey]
+7. Prompt for missing areas warmly: "Nice! You still need a habit for [Area] — we can figure one out together. What small action could support that part of your life?"
+8. When complete, celebrate and guide to events: "Great habits! Next up is adding any big events or milestones to your year — ready?"
 
 CRITICAL RULES FOR THIS STEP:
 - Use [WEEKLY_HABIT: text | frequency | lifeArea] when they confirm
