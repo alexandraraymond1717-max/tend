@@ -2786,9 +2786,10 @@ I've switched to the Weekly view where you can track your habits. What's one thi
 
 Do you have any big events, trips, or milestones coming up? Adding them helps me understand the rhythm of your year and suggest timely tends.
 
-I've opened the Events sidebar — you can add events there or tell me about them here. This step is optional.
+I've opened the Events panel — you can add events there or tell me about them here. This step is optional.
 
-[BUTTON: Skip to next step | next step]`;
+[BUTTON: I've added some events | next step]
+[BUTTON: Skip this step | next step]`;
                   break;
                   
                 case 4: // Gardener Quiz (optional)
@@ -2796,9 +2797,10 @@ I've opened the Events sidebar — you can add events there or tell me about the
 
 The Gardener Quiz is a quick, fun way for me to understand how you approach growth and self-care. Your style helps me personalize your tends.
 
-I've taken you to Insights where you can find the quiz. This is optional — you can skip if you'd like.
+I've taken you to Insights where you can find the quiz. This is optional.
 
-[BUTTON: Skip to next step | next step]`;
+[BUTTON: I've taken the quiz | next step]
+[BUTTON: Skip this step | next step]`;
                   break;
                   
                 case 5: // Life Map
@@ -2806,7 +2808,9 @@ I've taken you to Insights where you can find the quiz. This is optional — you
 
 I'd love to know more about what's happening in your life right now. The more context I have, the better I can personalize your experience.
 
-I've taken you to Insights where you'll find the Life Map prompts. Answer at least one to continue — but the more you share, the more I can help.`;
+I've taken you to Insights where you'll find the Life Map prompts. Answer at least one to continue.
+
+[BUTTON: I've answered some prompts | next step]`;
                   break;
                   
                 case 6: // Compass Word
@@ -3629,7 +3633,107 @@ CRITICAL RULES:
 - After habits complete, NEXT step is EVENTS (step 3)`;
           }
           
-          // Default for other steps
+          // Step 3: Events (optional)
+          if (onboardingStep === 3) {
+            return `
+
+=== ONBOARDING MODE: EVENTS (Step 3 of 7) ===
+Help the user add any upcoming events, trips, or milestones. This step is OPTIONAL.
+
+The user can:
+- Tell you about events and you add them with [EVENT: title | month | type]
+- Add events directly in the Events panel
+- Skip this step entirely
+
+When user adds at least one event OR wants to skip:
+"Got it! Ready to move on?
+
+[BUTTON: Continue to Quiz | next step]
+[BUTTON: Skip ahead | next step]"
+
+EVENT TYPES: travel, work, social, health, milestone, other
+MONTHS: 0-11 (January=0, December=11)
+
+CRITICAL: Do NOT discuss compass word — that's step 6.`;
+          }
+          
+          // Step 4: Gardener Quiz (optional)
+          if (onboardingStep === 4) {
+            return `
+
+=== ONBOARDING MODE: GARDENER QUIZ (Step 4 of 7) ===
+Encourage the user to take the Gardener Quiz in Insights. This step is OPTIONAL.
+
+The quiz is in the Insights tab. You can:
+- Encourage them to take it
+- Let them skip if they prefer
+
+When user completes quiz OR wants to skip:
+"Ready to continue?
+
+[BUTTON: Continue to Life Map | next step]
+[BUTTON: Skip ahead | next step]"
+
+CRITICAL: Do NOT discuss compass word — that's step 6.`;
+          }
+          
+          // Step 5: Life Map
+          if (onboardingStep === 5) {
+            return `
+
+=== ONBOARDING MODE: LIFE MAP (Step 5 of 7) ===
+Help the user share context about their life through Life Map prompts in Insights.
+
+This step requires at least one Life Map response. Encourage them to share what's happening in their life.
+
+When user has answered at least one prompt:
+"Thanks for sharing! Ready to choose your compass word?
+
+[BUTTON: Yes, let's do it! | next step]"
+
+CRITICAL: Do NOT discuss or suggest compass word yet — that's the NEXT step.`;
+          }
+          
+          // Step 6: Compass Word
+          if (onboardingStep === 6) {
+            const suggestedWord = getSuggestedCompassWord();
+            return `
+
+=== ONBOARDING MODE: COMPASS WORD (Step 6 of 7) ===
+Help the user choose their compass word for the year.
+
+Suggest: "${suggestedWord}" based on their values and goals.
+
+Present it like:
+"Based on everything you've shared, I think your compass word could be *${suggestedWord}*. Does it feel right?
+
+[BUTTON: Yes, that's perfect! | set compass ${suggestedWord}]
+[BUTTON: I have a different word | suggest compass]"
+
+If they want a different word, ask them to share it. When they do, use:
+[YEAR_THEME: theirword]
+
+Then advance to step 7.`;
+          }
+          
+          // Step 7: Daily Tend
+          if (onboardingStep === 7) {
+            return `
+
+=== ONBOARDING MODE: DAILY TEND (Step 7 of 7) ===
+The user just needs to complete one daily tend to finish onboarding!
+
+Their compass word is: ${yearTheme}
+
+Encourage them to:
+1. Look at today's tends in the Tendy tab
+2. Pick one that resonates
+3. Mark it complete
+
+Once they complete a tend, onboarding is done! Celebrate with them.`;
+          }
+          
+          // Default fallback
           return `
 
 === ONBOARDING MODE: Step ${onboardingStep} of 7 ===
@@ -3922,21 +4026,25 @@ What's one thing you'd like to do regularly?`;
               case 3: // Events
                 greeting = `Let's map out your year! 📅
 
-Do you have any big events, trips, or milestones coming up? This step is optional.
+Do you have any big events, trips, or milestones coming up? Tell me about them or add them in the Events panel. This step is optional.
 
-[BUTTON: Skip to next step | next step]`;
+[BUTTON: I've added some events | next step]
+[BUTTON: Skip this step | next step]`;
                 break;
               case 4: // Quiz
                 greeting = `Let's discover your tending style! 🌸
 
-The Gardener Quiz helps me understand how you approach growth. This is optional.
+Take the Gardener Quiz in Insights — it helps me understand how you approach growth. This is optional.
 
-[BUTTON: Skip to next step | next step]`;
+[BUTTON: I've taken the quiz | next step]
+[BUTTON: Skip this step | next step]`;
                 break;
               case 5: // Life Map
                 greeting = `Let's build your Life Map! 🗺️
 
-I'd love to know more about what's happening in your life right now. Answer at least one prompt to continue.`;
+Head to Insights and answer at least one Life Map prompt. The more you share, the better I can help!
+
+[BUTTON: I've answered some prompts | next step]`;
                 break;
               case 6: // Compass Word
                 const suggestedWord = getSuggestedCompassWord();
@@ -3956,7 +4064,7 @@ Does it feel right?
               case 7: // Daily Tend
                 greeting = `You're all set up! 🌱
 
-Your compass word is <strong>${yearTheme}</strong>. Select a tend and mark it complete to finish onboarding!`;
+Your compass word is <strong>${yearTheme}</strong>. Head to the Tendy tab and mark one tend complete to finish!`;
                 break;
             }
             
