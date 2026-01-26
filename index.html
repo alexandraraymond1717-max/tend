@@ -2497,6 +2497,7 @@ Respond with ONLY the task text, nothing else.`,
             setAppMode(null); // Ensure we're in main view
             break;
           case 2: // Habits - show Weekly view
+            setSidebarExpanded(false);
             setCenterView(CENTER_VIEWS.WEEKLY);
             setAppMode(null);
             break;
@@ -4741,23 +4742,13 @@ I'm here to help with any planning.`
             </div>
           </header>
 
-          <main style={{...styles.main, gridTemplateColumns: `${sidebarExpanded ? sidebarWidth : 64}px 1fr ${chatMinimized ? '0px' : chatWidth + 'px'}`}}>
-            {/* Left Sidebar */}
+          <main style={{...styles.main, gridTemplateColumns: `64px 1fr ${chatMinimized ? '0px' : chatWidth + 'px'}`}}>
+            {/* Left Sidebar - Always narrow, just icons */}
             <aside style={{
               ...styles.sidebar,
-              width: sidebarExpanded ? sidebarWidth : 64,
-              transition: sidebarExpanded ? 'none' : 'width 0.2s ease',
+              width: 64,
               position: 'relative'
             }}>
-              {/* Resize handle when expanded */}
-              {sidebarExpanded && (
-                <div 
-                  style={styles.sidebarResizeHandle}
-                  onMouseDown={handleSidebarMouseDown}
-                  title="Drag to resize"
-                />
-              )}
-              
               <div style={styles.sidebarNav}>
                 {[
                   { id: 'events', icon: '📅', label: 'Events' },
@@ -4767,8 +4758,8 @@ I'm here to help with any planning.`
                     key={item.id}
                     style={{
                       ...styles.sidebarNavItem,
-                      ...(activeTab === item.id && sidebarExpanded && styles.sidebarNavItemActive),
-                      backgroundColor: activeTab === item.id && sidebarExpanded ? 'var(--bg-elevated)' : 'transparent'
+                      backgroundColor: activeTab === item.id && sidebarExpanded ? 'var(--accent-light)' : 'transparent',
+                      borderLeft: activeTab === item.id && sidebarExpanded ? '3px solid var(--accent)' : '3px solid transparent'
                     }}
                     onClick={() => {
                       if (activeTab === item.id && sidebarExpanded) {
@@ -4781,44 +4772,9 @@ I'm here to help with any planning.`
                     title={item.label}
                   >
                     <span style={styles.sidebarNavIcon}>{item.icon}</span>
-                    <span style={{
-                      ...styles.sidebarNavLabel,
-                      opacity: sidebarExpanded ? 1 : 0,
-                      width: sidebarExpanded ? 'auto' : 0
-                    }}>{item.label}</span>
                   </button>
                 ))}
               </div>
-
-              {/* Tab content when expanded */}
-              {sidebarExpanded && (
-                <div style={styles.tabContent}>
-                  {activeTab === 'events' && (
-                    <EventsTab
-                      events={events}
-                      setEvents={setEvents}
-                      expandedEvent={expandedEvent}
-                      setExpandedEvent={setExpandedEvent}
-                      onUpdateDetails={handleUpdateEventDetails}
-                      onDelete={(id) => setEvents(events.filter(e => e.id !== id))}
-                      onAdd={() => setShowEventModal(true)}
-                      revealed={revealed}
-                      apiKey={apiKey}
-                    />
-                  )}
-                  {activeTab === 'lifeareas' && (
-                    <LifeAreasTab 
-                      vlqScores={vlqScores}
-                      setVlqScores={setVlqScores}
-                      goals={goals}
-                      setGoals={setGoals}
-                      onReassess={() => { setVlqStep(-1); setVlqCompleted(false); }}
-                      onAddGoal={() => setShowGoalModal(true)}
-                      revealed={revealed}
-                    />
-                  )}
-                </div>
-              )}
             </aside>
 
             <div style={styles.centerPanel}>
@@ -4844,103 +4800,182 @@ I'm here to help with any planning.`
                 ].map(view => (
                   <button
                     key={view.id}
-                    style={{...styles.viewButton, ...(centerView === view.id && styles.viewButtonActive)}}
-                    onClick={() => setCenterView(view.id)}
+                    style={{
+                      ...styles.viewButton, 
+                      ...(centerView === view.id && !sidebarExpanded && styles.viewButtonActive)
+                    }}
+                    onClick={() => {
+                      setCenterView(view.id);
+                      setSidebarExpanded(false); // Close sidebar when switching to a view
+                    }}
                   >
                     {view.label}
                   </button>
                 ))}
               </div>
 
-              {centerView === CENTER_VIEWS.YEAR && (
-                <YearCircleView 
-                  events={events}
-                  revealed={revealed}
-                  onAddEvent={() => setShowEventModal(true)}
-                  yearTheme={yearTheme}
-                  setYearTheme={setYearTheme}
-                />
-              )}
-              {centerView === CENTER_VIEWS.SEASONS && (
-                <SeasonsView 
-                  seasonIntentions={seasonIntentions}
-                  setSeasonIntentions={setSeasonIntentions}
-                  revealed={revealed}
-                />
-              )}
-              {centerView === CENTER_VIEWS.MONTHLY && (
-                <MonthlyView 
-                  events={events}
-                  selectedMonth={selectedMonth}
-                  setSelectedMonth={setSelectedMonth}
-                  revealed={revealed}
-                  onAddEvent={() => setShowEventModal(true)}
-                  weeklyHabits={weeklyHabits}
-                  dailyHabits={dailyHabits}
-                  habitCompletions={habitCompletions}
-                  setHabitCompletions={setHabitCompletions}
-                />
-              )}
-              {centerView === CENTER_VIEWS.WEEKLY && (
-                <WeeklyView 
-                  weeklyHabits={weeklyHabits}
-                  setWeeklyHabits={setWeeklyHabits}
-                  revealed={revealed}
-                  focusAreas={getFocusAreas()}
-                />
-              )}
-              {centerView === CENTER_VIEWS.DAILY && (
-                <DailyView 
-                  dailyHabits={dailyHabits}
-                  setDailyHabits={setDailyHabits}
-                  revealed={revealed}
-                />
-              )}
-
-              <div style={styles.bottomSection}>
-                <div style={styles.vlqSummary}>
-                  <div style={styles.vlqSummaryColumn}>
-                    <span style={styles.vlqSummaryLabel}>🌱 Focus on</span>
-                    <div style={styles.vlqSummaryItems}>
-                      {(() => {
-                        const allAreas = VLQ_ORDER.map(key => ({
-                          key, 
-                          ...VLQ_DOMAINS[key], 
-                          importance: vlqScores[key]?.importance || 5,
-                          consistency: vlqScores[key]?.consistency || 5,
-                          gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)
-                        }));
-                        // Growth areas: gap >= 2
-                        return allAreas
-                          .filter(a => a.gap >= 2)
-                          .sort((a, b) => b.gap - a.gap)
-                          .slice(0, 3)
-                          .map(area => (
-                            <span key={area.key} style={{...styles.vlqSummaryTag, borderColor: area.color, color: area.color}}>
-                              {area.icon} {area.name.split(' ')[0]}
-                            </span>
-                          ));
-                      })()}
-                    </div>
+              {/* Show sidebar content when expanded, otherwise show regular views */}
+              {sidebarExpanded ? (
+                <div style={{
+                  flex: 1,
+                  overflow: 'auto',
+                  padding: '0 1rem',
+                  maxWidth: '600px',
+                  width: '100%',
+                  margin: '0 auto'
+                }}>
+                  {/* Tab header */}
+                  <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    marginBottom: '1rem',
+                    paddingBottom: '0.75rem',
+                    borderBottom: '1px solid var(--border)'
+                  }}>
+                    <h2 style={{
+                      fontSize: '1.1rem',
+                      fontWeight: 600,
+                      color: 'var(--text)',
+                      margin: 0,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      {activeTab === 'events' && '📅 Events'}
+                      {activeTab === 'lifeareas' && '🌱 Life Areas & Goals'}
+                    </h2>
+                    <button
+                      onClick={() => setSidebarExpanded(false)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '1.2rem',
+                        cursor: 'pointer',
+                        color: 'var(--text-muted)',
+                        padding: '0.25rem'
+                      }}
+                    >×</button>
                   </div>
-                  <div style={styles.vlqSummaryColumn}>
-                    <span style={styles.vlqSummaryLabel}>💪 Thriving in</span>
-                    <div style={styles.vlqSummaryItems}>
-                      {VLQ_ORDER
-                        .map(key => ({key, ...VLQ_DOMAINS[key], importance: vlqScores[key]?.importance || 5, consistency: vlqScores[key]?.consistency || 5, gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)}))
-                        .filter(a => a.importance >= 6 && a.consistency >= 5 && a.gap < 2)
-                        .sort((a, b) => b.consistency - a.consistency)
-                        .slice(0, 3)
-                        .map(area => (
-                          <span key={area.key} style={{...styles.vlqSummaryTag, borderColor: area.color, color: area.color, opacity: 0.8}}>
-                            {area.icon} {area.name.split(' ')[0]}
-                          </span>
-                        ))
-                      }
-                    </div>
-                  </div>
+                  
+                  {activeTab === 'events' && (
+                    <EventsTab
+                      events={events}
+                      setEvents={setEvents}
+                      expandedEvent={expandedEvent}
+                      setExpandedEvent={setExpandedEvent}
+                      onUpdateDetails={handleUpdateEventDetails}
+                      onDelete={(id) => setEvents(events.filter(e => e.id !== id))}
+                      onAdd={() => setShowEventModal(true)}
+                      revealed={revealed}
+                      apiKey={apiKey}
+                    />
+                  )}
+                  {activeTab === 'lifeareas' && (
+                    <LifeAreasTab 
+                      vlqScores={vlqScores}
+                      setVlqScores={setVlqScores}
+                      goals={goals}
+                      setGoals={setGoals}
+                      onReassess={() => { setVlqStep(-1); setVlqCompleted(false); }}
+                      onAddGoal={() => setShowGoalModal(true)}
+                      revealed={revealed}
+                    />
+                  )}
                 </div>
-              </div>
+              ) : (
+                <>
+                  {centerView === CENTER_VIEWS.YEAR && (
+                    <YearCircleView 
+                      events={events}
+                      revealed={revealed}
+                      onAddEvent={() => setShowEventModal(true)}
+                      yearTheme={yearTheme}
+                      setYearTheme={setYearTheme}
+                    />
+                  )}
+                  {centerView === CENTER_VIEWS.SEASONS && (
+                    <SeasonsView 
+                      seasonIntentions={seasonIntentions}
+                      setSeasonIntentions={setSeasonIntentions}
+                      revealed={revealed}
+                    />
+                  )}
+                  {centerView === CENTER_VIEWS.MONTHLY && (
+                    <MonthlyView 
+                      events={events}
+                      selectedMonth={selectedMonth}
+                      setSelectedMonth={setSelectedMonth}
+                      revealed={revealed}
+                      onAddEvent={() => setShowEventModal(true)}
+                      weeklyHabits={weeklyHabits}
+                      dailyHabits={dailyHabits}
+                      habitCompletions={habitCompletions}
+                      setHabitCompletions={setHabitCompletions}
+                    />
+                  )}
+                  {centerView === CENTER_VIEWS.WEEKLY && (
+                    <WeeklyView 
+                      weeklyHabits={weeklyHabits}
+                      setWeeklyHabits={setWeeklyHabits}
+                      revealed={revealed}
+                      focusAreas={getFocusAreas()}
+                    />
+                  )}
+                  {centerView === CENTER_VIEWS.DAILY && (
+                    <DailyView 
+                      dailyHabits={dailyHabits}
+                      setDailyHabits={setDailyHabits}
+                      revealed={revealed}
+                    />
+                  )}
+
+                  <div style={styles.bottomSection}>
+                    <div style={styles.vlqSummary}>
+                      <div style={styles.vlqSummaryColumn}>
+                        <span style={styles.vlqSummaryLabel}>🌱 Focus on</span>
+                        <div style={styles.vlqSummaryItems}>
+                          {(() => {
+                            const allAreas = VLQ_ORDER.map(key => ({
+                              key, 
+                              ...VLQ_DOMAINS[key], 
+                              importance: vlqScores[key]?.importance || 5,
+                              consistency: vlqScores[key]?.consistency || 5,
+                              gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)
+                            }));
+                            // Growth areas: gap >= 2
+                            return allAreas
+                              .filter(a => a.gap >= 2)
+                              .sort((a, b) => b.gap - a.gap)
+                              .slice(0, 3)
+                              .map(area => (
+                                <span key={area.key} style={{...styles.vlqSummaryTag, borderColor: area.color, color: area.color}}>
+                                  {area.icon} {area.name.split(' ')[0]}
+                                </span>
+                              ));
+                          })()}
+                        </div>
+                      </div>
+                      <div style={styles.vlqSummaryColumn}>
+                        <span style={styles.vlqSummaryLabel}>💪 Thriving in</span>
+                        <div style={styles.vlqSummaryItems}>
+                          {VLQ_ORDER
+                            .map(key => ({key, ...VLQ_DOMAINS[key], importance: vlqScores[key]?.importance || 5, consistency: vlqScores[key]?.consistency || 5, gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)}))
+                            .filter(a => a.importance >= 6 && a.consistency >= 5 && a.gap < 2)
+                            .sort((a, b) => b.consistency - a.consistency)
+                            .slice(0, 3)
+                            .map(area => (
+                              <span key={area.key} style={{...styles.vlqSummaryTag, borderColor: area.color, color: area.color, opacity: 0.8}}>
+                                {area.icon} {area.name.split(' ')[0]}
+                              </span>
+                            ))
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Chat Panel - Full or Minimized */}
