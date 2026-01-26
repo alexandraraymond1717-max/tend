@@ -4825,6 +4825,35 @@ I've opened the Life Areas panel where your goals will appear. What's something 
                     onBack={() => setAppMode(null)}
                     apiKey={apiKey}
                     embedded={true}
+                    autoExpandSection={onboardingStep === 4 ? 'quiz' : onboardingStep === 5 ? 'lifemap' : null}
+                    onQuizComplete={(result) => {
+                      // Add message to chat prompting next step
+                      const msg = {
+                        role: 'assistant',
+                        content: `You're a <strong>${result.name}</strong>! 🌸 ${result.description}
+
+Ready to continue to the Life Map?
+
+[BUTTON: Yes, let's do it! | next step]`,
+                        timestamp: new Date().toISOString()
+                      };
+                      setMessages(prev => [...prev, msg]);
+                      setTimeout(() => scrollChatToBottom(), 100);
+                    }}
+                    onLifeMapAnswer={() => {
+                      // Add message to chat prompting next step
+                      const msg = {
+                        role: 'assistant',
+                        content: `Thanks for sharing! The more I know about your life, the better I can help.
+
+Ready to choose your compass word?
+
+[BUTTON: Yes, let's do it! | next step]`,
+                        timestamp: new Date().toISOString()
+                      };
+                      setMessages(prev => [...prev, msg]);
+                      setTimeout(() => scrollChatToBottom(), 100);
+                    }}
                   />
                 </div>
                 
@@ -10476,11 +10505,21 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       },
     };
 
-    function InsightsView({ trends, vlqScores, yearTheme, flexPoints, userProfile, setUserProfile, onBack, apiKey, embedded = false }) {
-      const [expandedArea, setExpandedArea] = useState(null);
+    function InsightsView({ trends, vlqScores, yearTheme, flexPoints, userProfile, setUserProfile, onBack, apiKey, embedded = false, autoExpandSection = null, onQuizComplete = null, onLifeMapAnswer = null }) {
+      const [expandedArea, setExpandedArea] = useState(autoExpandSection);
       const [editingArea, setEditingArea] = useState(null);
-      const [tempFormData, setTempFormData] = useState({});
+      const [tempFormData, setTempFormData] = useState(autoExpandSection === 'quiz' ? { quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null } : {});
       const [tempNotes, setTempNotes] = useState('');
+      
+      // Auto-expand when prop changes
+      React.useEffect(() => {
+        if (autoExpandSection) {
+          setExpandedArea(autoExpandSection);
+          if (autoExpandSection === 'quiz') {
+            setTempFormData({ quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null });
+          }
+        }
+      }, [autoExpandSection]);
       
       if (!trends) return null;
       
@@ -10790,7 +10829,7 @@ Respond in this exact JSON format only:
                             <div style={{ fontSize: '0.95rem', color: generatedResult.color, fontWeight: 600 }}>{generatedResult.strength}</div>
                           </div>
                         </div>
-                        <button onClick={() => { setUserProfile(prev => ({ ...prev, tendPreferences: { ...prev?.tendPreferences, gardenerType: { ...generatedResult, answers: quizAnswers, completedAt: new Date().toISOString() } } })); setTempFormData({}); setExpandedArea(null); }}
+                        <button onClick={() => { setUserProfile(prev => ({ ...prev, tendPreferences: { ...prev?.tendPreferences, gardenerType: { ...generatedResult, answers: quizAnswers, completedAt: new Date().toISOString() } } })); setTempFormData({}); setExpandedArea(null); if (onQuizComplete) onQuizComplete(generatedResult); }}
                           style={{ width: '100%', padding: '1rem', border: 'none', borderRadius: '12px', backgroundColor: generatedResult.color, color: 'white', fontSize: '1rem', cursor: 'pointer', fontWeight: 600 }}>
                           Save my gardener type
                         </button>
@@ -11312,6 +11351,7 @@ Respond in JSON only: {"q": "Your question here?", "placeholder": "Example hints
                               setTempFormData({});
                               setTempNotes('');
                               setExpandedArea(null);
+                              if (onLifeMapAnswer) onLifeMapAnswer(domain);
                             }}
                             style={{
                               width: '100%', padding: '1rem', border: 'none', borderRadius: '12px',
