@@ -4854,7 +4854,7 @@ Ready to choose your compass word?
                   <div style={styles.chatHeader}>
                     <span style={styles.chatTitle}>💬 Chat with Tend</span>
                   </div>
-                  <div style={styles.chatMessages} ref={chatMessagesRef}>
+                  <div style={styles.chatMessages} ref={chatContainerRef}>
                     {messages.map((msg, i) => (
                       <ChatMessage 
                         key={i} 
