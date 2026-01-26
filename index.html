@@ -3557,16 +3557,18 @@ GOAL WRITING STYLE (apply when adding the goal):
 - Start with a verb: "Establish...", "Build...", "Run...", "Learn..."
 - Keep them concise: 3-8 words
 
-5. When they confirm, add: [GOAL: polished goal text | lifeAreaKey]
-6. Prompt for missing areas: "Great! You still need a goal for [Area] — what matters to you there?"
-7. When all requirements met: "Amazing! Ready to move on to weekly habits?"
+5. When they confirm, include the marker (it's hidden from display): [GOAL: polished goal text | lifeAreaKey]
+   - Just say something brief like "Got it!" or "Added!" — the marker is invisible to the user
+   - Then immediately prompt for the next missing area or move on
+6. Prompt for missing areas: "Got it! What about [Area] — what matters to you there?"
+7. When all requirements met: "Great! Ready to move on to weekly habits?"
 
 LIFE AREA KEYS for [GOAL] marker:
 family, partner, friendships, career, education, recreation, spirituality, community, health, mentalHealth
 
 CRITICAL RULES:
 - Be concise — don't repeat the same information twice
-- Always use [GOAL: text | lifeArea] when they confirm
+- The [GOAL: ...] marker is HIDDEN from the user — don't write it as visible text
 - NEVER mention compass word — that's step 6
 - After goals complete, NEXT step is HABITS (step 2)`;
           }
@@ -3607,23 +3609,20 @@ HABIT WRITING STYLE (apply when adding the habit):
 EXAMPLES:
 - User says: "I want to try to exercise more regularly, maybe go to the gym"
   → You say: "That sounds like a Physical Health habit — how many times a week?"
-  → They say "3" → You add [WEEKLY_HABIT: Go to the gym | 3 | health]
+  → They say "3" → You say "Got it!" and include [WEEKLY_HABIT: Go to the gym | 3 | health]
 - User says: "I should probably call my parents more"
   → You say: "That sounds like a Family habit — how often?"
-  → They say "once a week" → You add [WEEKLY_HABIT: Call parents | 1 | family]
-- User says: "We never go on dates anymore"
-  → You say: "That sounds like a Partner habit — how many times a week?"
-  → They say "1" → You add [WEEKLY_HABIT: Date night | 1 | partner]
+  → They say "once a week" → You say "Added!" and include [WEEKLY_HABIT: Call parents | 1 | family]
 
-5. When they confirm frequency, add: [WEEKLY_HABIT: habit text | frequency | lifeAreaKey]
-6. Prompt for missing areas warmly: "Nice! You still need a habit for [Area] — what small action could support that part of your life?"
-7. When complete, celebrate and guide to events: "Great habits! Next up is adding any big events or milestones to your year — ready?"
+5. When they confirm frequency, include the marker (hidden from display): [WEEKLY_HABIT: habit text | frequency | lifeAreaKey]
+   - Just say "Got it!" or "Added!" — the marker is invisible to the user
+6. Prompt for missing areas: "Got it! What about [Area] — what small action could support that?"
+7. When complete: "Great! Ready to add any events to your year?"
 
-CRITICAL RULES FOR THIS STEP:
-- Use [WEEKLY_HABIT: text | frequency | lifeArea] when they confirm
-- NEVER mention, discuss, or suggest a compass word — that's step 6
-- After habits are complete, the NEXT step is EVENTS (step 3)
-- Stay focused only on habits until requirements are met`;
+CRITICAL RULES:
+- The [WEEKLY_HABIT: ...] marker is HIDDEN from the user — don't write it as visible text
+- NEVER mention compass word — that's step 6
+- After habits complete, NEXT step is EVENTS (step 3)`;
           }
           
           // Default for other steps
