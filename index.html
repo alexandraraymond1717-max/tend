@@ -10759,10 +10759,10 @@ Respond in this exact JSON format only:
                       )}
                     </div>
                     
-                    {/* Life Area Cards - Expandable */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    {/* Life Area Cards - Grouped by category */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
                       {/* Action buttons */}
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
                         {onReassessVLQ && (
                           <button onClick={onReassessVLQ}
                             style={{ padding: '0.35rem 0.65rem', fontSize: '0.7rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '6px', cursor: 'pointer', color: 'var(--text-muted)' }}>
@@ -10777,193 +10777,251 @@ Respond in this exact JSON format only:
                         )}
                       </div>
                       
-                      {VLQ_ORDER.map(areaKey => {
-                        const area = VLQ_DOMAINS[areaKey];
-                        const scores = vlqScores[areaKey] || {};
-                        const importance = scores.importance || 5;
-                        const consistency = scores.consistency || 5;
-                        const gap = importance - consistency;
-                        const areaGoals = goals.filter(g => g.lifeArea === areaKey);
-                        const areaHabits = weeklyHabits.filter(h => h.lifeArea === areaKey);
-                        const isExpanded = expandedArea === areaKey;
+                      {/* Column headers */}
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingRight: '2.5rem', gap: '0.75rem', fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        <span style={{ width: '45px', textAlign: 'center' }}>Value</span>
+                        <span style={{ width: '45px', textAlign: 'center' }}>Living</span>
+                      </div>
+                      
+                      {(() => {
+                        // Categorize life areas
+                        const focusAreas = [];
+                        const strengths = [];
+                        const exploring = [];
                         
-                        // Life map data
-                        const notes = prefs.lifeAreaNotes?.[areaKey] || '';
-                        const structured = prefs.structuredInfo?.[areaKey] || {};
-                        const hasLifeMapInfo = notes || Object.values(structured).some(v => v);
+                        VLQ_ORDER.forEach(areaKey => {
+                          const scores = vlqScores[areaKey] || {};
+                          const importance = scores.importance || 5;
+                          const consistency = scores.consistency || 5;
+                          const gap = importance - consistency;
+                          const areaGoals = goals.filter(g => g.lifeArea === areaKey);
+                          const areaHabits = weeklyHabits.filter(h => h.lifeArea === areaKey);
+                          const notes = prefs.lifeAreaNotes?.[areaKey] || '';
+                          const structured = prefs.structuredInfo?.[areaKey] || {};
+                          const hasLifeMapInfo = notes || Object.values(structured).some(v => v);
+                          
+                          const areaData = { areaKey, importance, consistency, gap, areaGoals, areaHabits, hasLifeMapInfo, notes, structured };
+                          
+                          if (importance >= 6 && gap >= 2) {
+                            focusAreas.push(areaData);
+                          } else if (importance >= 6 && consistency >= 6) {
+                            strengths.push(areaData);
+                          } else if (importance >= 4 || areaGoals.length > 0 || areaHabits.length > 0 || hasLifeMapInfo) {
+                            exploring.push(areaData);
+                          }
+                        });
                         
-                        // Discovery questions
-                        const discoveryQs = {
-                          family: [{ key: 'closeTo', q: "Who are you closest to?", placeholder: "Names, relationships..." }, { key: 'tradition', q: "What's a tradition you cherish?", placeholder: "Weekly calls, holiday rituals..." }],
-                          partner: [{ key: 'name', q: "What's their name?", placeholder: "Your person..." }, { key: 'together', q: "What do you love doing together?", placeholder: "Cooking, hiking, lazy Sundays..." }],
-                          friendships: [{ key: 'crew', q: "Who's in your inner circle?", placeholder: "Best friends, your people..." }, { key: 'hangout', q: "How do you like to connect?", placeholder: "Calls, dinners, adventures..." }],
-                          career: [{ key: 'role', q: "What do you do?", placeholder: "Your work, your craft..." }, { key: 'focus', q: "What's energizing you right now?", placeholder: "Projects, goals, challenges..." }],
-                          education: [{ key: 'learning', q: "What are you learning?", placeholder: "Skills, subjects, interests..." }, { key: 'curious', q: "What makes you curious?", placeholder: "Topics you'd love to explore..." }],
-                          recreation: [{ key: 'fun', q: "What's fun for you?", placeholder: "Hobbies, guilty pleasures..." }, { key: 'loseTrack', q: "What makes you lose track of time?", placeholder: "That thing you could do for hours..." }],
-                          spirituality: [{ key: 'peace', q: "What brings you peace?", placeholder: "Meditation, nature, music..." }, { key: 'believe', q: "What do you believe in?", placeholder: "Values, faith, philosophy..." }],
-                          community: [{ key: 'belong', q: "Where do you feel you belong?", placeholder: "Groups, places, causes..." }, { key: 'give', q: "How do you like to give back?", placeholder: "Volunteering, helping..." }],
-                          health: [{ key: 'move', q: "How do you like to move?", placeholder: "Workouts, sports, dancing..." }, { key: 'fuel', q: "What makes your body feel good?", placeholder: "Foods, habits, routines..." }],
-                          mentalHealth: [{ key: 'recharge', q: "How do you recharge?", placeholder: "Rest, solitude, activities..." }, { key: 'boundaries', q: "What boundaries matter to you?", placeholder: "Time, energy, space..." }],
-                        };
-                        const questions = discoveryQs[areaKey] || [];
+                        // Sort each group by importance desc
+                        focusAreas.sort((a, b) => b.gap - a.gap);
+                        strengths.sort((a, b) => b.consistency - a.consistency);
+                        exploring.sort((a, b) => b.importance - a.importance);
                         
-                        // Skip areas with low importance and no content
-                        if (importance < 4 && areaGoals.length === 0 && areaHabits.length === 0 && !hasLifeMapInfo) return null;
-                        
-                        return (
-                          <div key={areaKey} style={{
-                            backgroundColor: 'var(--bg-elevated)',
-                            borderRadius: '12px',
-                            borderLeft: `4px solid ${area.color}`,
-                            overflow: 'hidden',
-                          }}>
-                            {/* Collapsed Header - Always visible */}
-                            <div 
-                              onClick={() => setExpandedArea(isExpanded ? null : areaKey)}
-                              style={{ 
-                                padding: '0.75rem 1rem',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                justifyContent: 'space-between',
-                                alignItems: 'center',
-                              }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <span style={{ fontSize: '1.1rem' }}>{area.icon}</span>
-                                <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.9rem' }}>{area.name}</span>
-                                {(areaGoals.length > 0 || areaHabits.length > 0 || hasLifeMapInfo) && (
-                                  <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.25rem' }}>
-                                    ({areaGoals.length > 0 ? `${areaGoals.length} goal${areaGoals.length > 1 ? 's' : ''}` : ''}{areaGoals.length > 0 && areaHabits.length > 0 ? ', ' : ''}{areaHabits.length > 0 ? `${areaHabits.length} habit${areaHabits.length > 1 ? 's' : ''}` : ''})
-                                  </span>
-                                )}
-                              </div>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                <div style={{ display: 'flex', gap: '0.5rem', fontSize: '0.7rem' }}>
-                                  <span style={{ color: 'var(--text-muted)' }}>
-                                    <strong style={{ color: importance >= 7 ? 'var(--accent)' : 'var(--text)' }}>{importance}</strong>/10
-                                  </span>
-                                  <span style={{ color: 'var(--text-muted)' }}>→</span>
-                                  <span style={{ color: 'var(--text-muted)' }}>
-                                    <strong style={{ color: consistency >= 7 ? 'var(--accent)' : gap >= 2 ? '#E8A090' : 'var(--text)' }}>{consistency}</strong>/10
-                                  </span>
+                        const renderAreaCard = (areaData) => {
+                          const { areaKey, importance, consistency, gap, areaGoals, areaHabits, hasLifeMapInfo, notes, structured } = areaData;
+                          const area = VLQ_DOMAINS[areaKey];
+                          const isExpanded = expandedArea === areaKey;
+                          
+                          const discoveryQs = {
+                            family: [{ key: 'closeTo', q: "Who are you closest to?", placeholder: "Names, relationships..." }, { key: 'tradition', q: "What's a tradition you cherish?", placeholder: "Weekly calls, holiday rituals..." }],
+                            partner: [{ key: 'name', q: "What's their name?", placeholder: "Your person..." }, { key: 'together', q: "What do you love doing together?", placeholder: "Cooking, hiking, lazy Sundays..." }],
+                            friendships: [{ key: 'crew', q: "Who's in your inner circle?", placeholder: "Best friends, your people..." }, { key: 'hangout', q: "How do you like to connect?", placeholder: "Calls, dinners, adventures..." }],
+                            career: [{ key: 'role', q: "What do you do?", placeholder: "Your work, your craft..." }, { key: 'focus', q: "What's energizing you right now?", placeholder: "Projects, goals, challenges..." }],
+                            education: [{ key: 'learning', q: "What are you learning?", placeholder: "Skills, subjects, interests..." }, { key: 'curious', q: "What makes you curious?", placeholder: "Topics you'd love to explore..." }],
+                            recreation: [{ key: 'fun', q: "What's fun for you?", placeholder: "Hobbies, guilty pleasures..." }, { key: 'loseTrack', q: "What makes you lose track of time?", placeholder: "That thing you could do for hours..." }],
+                            spirituality: [{ key: 'peace', q: "What brings you peace?", placeholder: "Meditation, nature, music..." }, { key: 'believe', q: "What do you believe in?", placeholder: "Values, faith, philosophy..." }],
+                            community: [{ key: 'belong', q: "Where do you feel you belong?", placeholder: "Groups, places, causes..." }, { key: 'give', q: "How do you like to give back?", placeholder: "Volunteering, helping..." }],
+                            health: [{ key: 'move', q: "How do you like to move?", placeholder: "Workouts, sports, dancing..." }, { key: 'fuel', q: "What makes your body feel good?", placeholder: "Foods, habits, routines..." }],
+                            mentalHealth: [{ key: 'recharge', q: "How do you recharge?", placeholder: "Rest, solitude, activities..." }, { key: 'boundaries', q: "What boundaries matter to you?", placeholder: "Time, energy, space..." }],
+                          };
+                          const questions = discoveryQs[areaKey] || [];
+                          
+                          return (
+                            <div key={areaKey} style={{
+                              backgroundColor: 'var(--bg-elevated)',
+                              borderRadius: '12px',
+                              borderLeft: `4px solid ${area.color}`,
+                              overflow: 'hidden',
+                            }}>
+                              {/* Collapsed Header */}
+                              <div 
+                                onClick={() => setExpandedArea(isExpanded ? null : areaKey)}
+                                style={{ 
+                                  padding: '0.75rem 1rem',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  justifyContent: 'space-between',
+                                  alignItems: 'center',
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <span style={{ fontSize: '1.1rem' }}>{area.icon}</span>
+                                  <span style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.9rem' }}>{area.name}</span>
+                                  {(areaGoals.length > 0 || areaHabits.length > 0) && (
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginLeft: '0.25rem' }}>
+                                      ({areaGoals.length > 0 ? `${areaGoals.length} goal${areaGoals.length > 1 ? 's' : ''}` : ''}{areaGoals.length > 0 && areaHabits.length > 0 ? ', ' : ''}{areaHabits.length > 0 ? `${areaHabits.length} habit${areaHabits.length > 1 ? 's' : ''}` : ''})
+                                    </span>
+                                  )}
                                 </div>
-                                {gap >= 2 && (
-                                  <span style={{ fontSize: '0.65rem', color: '#E8A090', fontWeight: 500, backgroundColor: '#FDF5F3', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
-                                    Growth
-                                  </span>
-                                )}
-                                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                  <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.85rem' }}>
+                                    <span style={{ width: '45px', textAlign: 'center', fontWeight: 600, color: importance >= 7 ? 'var(--accent)' : 'var(--text)' }}>{importance}</span>
+                                    <span style={{ width: '45px', textAlign: 'center', fontWeight: 600, color: consistency >= 7 ? 'var(--accent)' : gap >= 2 ? '#E8A090' : 'var(--text)' }}>{consistency}</span>
+                                  </div>
+                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                                </div>
                               </div>
-                            </div>
-                            
-                            {/* Expanded Content */}
-                            {isExpanded && (
-                              <div style={{ padding: '0 1rem 1rem 1rem', borderTop: '1px solid var(--border)' }}>
-                                {/* Goals */}
-                                {areaGoals.length > 0 && (
-                                  <div style={{ marginTop: '0.75rem' }}>
-                                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>GOALS</div>
-                                    {areaGoals.map(goal => (
-                                      <div key={goal.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0' }}>
-                                        <span style={{ color: 'var(--accent)', fontSize: '0.85rem' }}>🎯</span>
-                                        <span style={{ flex: 1, fontSize: '0.85rem', textDecoration: goal.completed ? 'line-through' : 'none', color: goal.completed ? 'var(--text-muted)' : 'var(--text)' }}>{goal.title}</span>
-                                        {goal.completed && <span style={{ fontSize: '0.65rem', color: 'var(--accent)', backgroundColor: 'var(--accent-light)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>✓</span>}
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                                
-                                {/* Habits */}
-                                {areaHabits.length > 0 && (
-                                  <div style={{ marginTop: '0.75rem' }}>
-                                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>WEEKLY HABITS</div>
-                                    {areaHabits.map(habit => (
-                                      <div key={habit.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0', fontSize: '0.85rem', color: 'var(--text)' }}>
-                                        <span>🔄</span>
-                                        <span style={{ flex: 1 }}>{habit.text}</span>
-                                        <span style={{ fontSize: '0.65rem', backgroundColor: 'var(--bg-card)', padding: '0.1rem 0.35rem', borderRadius: '4px', color: 'var(--text-muted)' }}>{habit.frequency}x/wk</span>
-                                      </div>
-                                    ))}
-                                  </div>
-                                )}
-                                
-                                {/* Life Map Info - Existing answers */}
-                                {hasLifeMapInfo && (
-                                  <div style={{ marginTop: '0.75rem' }}>
-                                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>ABOUT THIS AREA</div>
-                                    <div style={{ padding: '0.5rem 0.75rem', backgroundColor: `${area.color}10`, borderRadius: '8px', fontSize: '0.85rem' }}>
-                                      {Object.entries(structured).filter(([_, v]) => v).map(([key, value]) => (
-                                        <div key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', padding: '0.25rem 0' }}>
-                                          <span style={{ color: area.color }}>•</span>
-                                          <span style={{ color: 'var(--text)' }}>{value}</span>
+                              
+                              {/* Expanded Content */}
+                              {isExpanded && (
+                                <div style={{ padding: '0 1rem 1rem 1rem', borderTop: '1px solid var(--border)' }}>
+                                  {/* Goals */}
+                                  {areaGoals.length > 0 && (
+                                    <div style={{ marginTop: '0.75rem' }}>
+                                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>GOALS</div>
+                                      {areaGoals.map(goal => (
+                                        <div key={goal.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0' }}>
+                                          <span style={{ color: 'var(--accent)', fontSize: '0.85rem' }}>🎯</span>
+                                          <span style={{ flex: 1, fontSize: '0.85rem', textDecoration: goal.completed ? 'line-through' : 'none', color: goal.completed ? 'var(--text-muted)' : 'var(--text)' }}>{goal.title}</span>
+                                          {goal.completed && <span style={{ fontSize: '0.65rem', color: 'var(--accent)', backgroundColor: 'var(--accent-light)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>✓</span>}
                                         </div>
                                       ))}
-                                      {notes && (
-                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', padding: '0.25rem 0' }}>
-                                          <span style={{ color: area.color }}>•</span>
-                                          <span style={{ color: 'var(--text)' }}>{notes}</span>
-                                        </div>
-                                      )}
                                     </div>
-                                  </div>
-                                )}
-                                
-                                {/* Life Map Prompts - Add/Edit */}
-                                <div style={{ marginTop: '0.75rem' }}>
-                                  <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                    {hasLifeMapInfo ? 'ADD MORE DETAILS' : 'TELL ME ABOUT THIS AREA'}
-                                  </div>
-                                  {questions.map((item) => (
-                                    <div key={item.key} style={{ marginBottom: '0.75rem' }}>
-                                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text)', marginBottom: '0.35rem' }}>{item.q}</label>
-                                      <input type="text" 
-                                        value={tempFormData[item.key] !== undefined ? tempFormData[item.key] : (structured[item.key] || '')}
-                                        onChange={(e) => setTempFormData(prev => ({...prev, [item.key]: e.target.value}))}
-                                        placeholder={item.placeholder}
-                                        style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                  )}
+                                  
+                                  {/* Habits */}
+                                  {areaHabits.length > 0 && (
+                                    <div style={{ marginTop: '0.75rem' }}>
+                                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>WEEKLY HABITS</div>
+                                      {areaHabits.map(habit => (
+                                        <div key={habit.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0', fontSize: '0.85rem', color: 'var(--text)' }}>
+                                          <span>🔄</span>
+                                          <span style={{ flex: 1 }}>{habit.text}</span>
+                                          <span style={{ fontSize: '0.65rem', backgroundColor: 'var(--bg-card)', padding: '0.1rem 0.35rem', borderRadius: '4px', color: 'var(--text-muted)' }}>{habit.frequency}x/wk</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+                                  
+                                  {/* Life Map Info */}
+                                  {hasLifeMapInfo && (
+                                    <div style={{ marginTop: '0.75rem' }}>
+                                      <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>ABOUT THIS AREA</div>
+                                      <div style={{ padding: '0.5rem 0.75rem', backgroundColor: `${area.color}10`, borderRadius: '8px', fontSize: '0.85rem' }}>
+                                        {Object.entries(structured).filter(([_, v]) => v).map(([key, value]) => (
+                                          <div key={key} style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', padding: '0.25rem 0' }}>
+                                            <span style={{ color: area.color }}>•</span>
+                                            <span style={{ color: 'var(--text)' }}>{value}</span>
+                                          </div>
+                                        ))}
+                                        {notes && (
+                                          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.4rem', padding: '0.25rem 0' }}>
+                                            <span style={{ color: area.color }}>•</span>
+                                            <span style={{ color: 'var(--text)' }}>{notes}</span>
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {/* Life Map Prompts */}
+                                  <div style={{ marginTop: '0.75rem' }}>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                      {hasLifeMapInfo ? 'ADD MORE DETAILS' : 'TELL ME ABOUT THIS AREA'}
+                                    </div>
+                                    {questions.map((item) => (
+                                      <div key={item.key} style={{ marginBottom: '0.75rem' }}>
+                                        <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text)', marginBottom: '0.35rem' }}>{item.q}</label>
+                                        <input type="text" 
+                                          value={tempFormData[item.key] !== undefined ? tempFormData[item.key] : (structured[item.key] || '')}
+                                          onChange={(e) => setTempFormData(prev => ({...prev, [item.key]: e.target.value}))}
+                                          placeholder={item.placeholder}
+                                          style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                        />
+                                      </div>
+                                    ))}
+                                    <div style={{ marginBottom: '0.75rem' }}>
+                                      <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text)', marginBottom: '0.35rem' }}>Anything else?</label>
+                                      <textarea 
+                                        value={tempNotes !== '' ? tempNotes : notes}
+                                        onChange={(e) => setTempNotes(e.target.value)}
+                                        placeholder="Write whatever comes to mind..."
+                                        rows={2}
+                                        style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', resize: 'vertical', boxSizing: 'border-box' }}
                                       />
                                     </div>
-                                  ))}
-                                  <div style={{ marginBottom: '0.75rem' }}>
-                                    <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text)', marginBottom: '0.35rem' }}>Anything else?</label>
-                                    <textarea 
-                                      value={tempNotes !== '' ? tempNotes : notes}
-                                      onChange={(e) => setTempNotes(e.target.value)}
-                                      placeholder="Write whatever comes to mind..."
-                                      rows={2}
-                                      style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', resize: 'vertical', boxSizing: 'border-box' }}
-                                    />
+                                    <button
+                                      onClick={() => {
+                                        const newStructured = { ...structured };
+                                        Object.keys(tempFormData).forEach(k => {
+                                          if (k !== 'loadingNewQs' && k !== 'customQuestions' && tempFormData[k] !== undefined && tempFormData[k] !== '') {
+                                            newStructured[k] = tempFormData[k];
+                                          }
+                                        });
+                                        setUserProfile(prev => ({
+                                          ...prev,
+                                          tendPreferences: {
+                                            ...prev?.tendPreferences,
+                                            structuredInfo: { ...prev?.tendPreferences?.structuredInfo, [areaKey]: newStructured },
+                                            lifeAreaNotes: { ...prev?.tendPreferences?.lifeAreaNotes, [areaKey]: tempNotes || notes || undefined }
+                                          }
+                                        }));
+                                        setTempFormData({});
+                                        setTempNotes('');
+                                        if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
+                                      }}
+                                      style={{ width: '100%', padding: '0.7rem', border: 'none', borderRadius: '8px', backgroundColor: area.color, color: 'white', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}
+                                    >
+                                      Save
+                                    </button>
                                   </div>
-                                  <button
-                                    onClick={() => {
-                                      const newStructured = { ...structured };
-                                      Object.keys(tempFormData).forEach(k => {
-                                        if (k !== 'loadingNewQs' && k !== 'customQuestions' && tempFormData[k] !== undefined && tempFormData[k] !== '') {
-                                          newStructured[k] = tempFormData[k];
-                                        }
-                                      });
-                                      setUserProfile(prev => ({
-                                        ...prev,
-                                        tendPreferences: {
-                                          ...prev?.tendPreferences,
-                                          structuredInfo: { ...prev?.tendPreferences?.structuredInfo, [areaKey]: newStructured },
-                                          lifeAreaNotes: { ...prev?.tendPreferences?.lifeAreaNotes, [areaKey]: tempNotes || notes || undefined }
-                                        }
-                                      }));
-                                      setTempFormData({});
-                                      setTempNotes('');
-                                      if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
-                                    }}
-                                    style={{ width: '100%', padding: '0.7rem', border: 'none', borderRadius: '8px', backgroundColor: area.color, color: 'white', fontSize: '0.85rem', cursor: 'pointer', fontWeight: 600 }}
-                                  >
-                                    Save
-                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        };
+                        
+                        return (
+                          <>
+                            {/* Focus Areas */}
+                            {focusAreas.length > 0 && (
+                              <div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#E8A090', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <span>🌱</span> FOCUS AREAS
+                                  <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>— room to grow</span>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                  {focusAreas.map(renderAreaCard)}
                                 </div>
                               </div>
                             )}
-                          </div>
+                            
+                            {/* Strengths */}
+                            {strengths.length > 0 && (
+                              <div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <span>💪</span> STRENGTHS
+                                  <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>— thriving here</span>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                  {strengths.map(renderAreaCard)}
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Exploring / Lower Priority */}
+                            {exploring.length > 0 && (
+                              <div>
+                                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                  <span>🌿</span> OTHER AREAS
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                  {exploring.map(renderAreaCard)}
+                                </div>
+                              </div>
+                            )}
+                          </>
                         );
-                      })}
+                      })()}
                     </div>
                   </div>
                 );
