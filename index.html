@@ -4295,11 +4295,6 @@ What's most important to you in this area of your life? You can fill in the prom
             <div style={styles.container}>
               <header style={styles.header}>
                 <div style={styles.headerLeft}>
-                  <button 
-                    style={styles.backButton}
-                    onClick={() => setAppMode(null)}
-                    title="Back to main view"
-                  >← Back</button>
                   <div style={styles.logo}>
                     <svg width="28" height="28" viewBox="0 0 80 80" fill="none">
                       <path d="M40 70 L40 45" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round"/>
@@ -4307,8 +4302,18 @@ What's most important to you in this area of your life? You can fill in the prom
                       <path d="M40 45 Q50 38 55 28 Q45 35 40 45" stroke="var(--accent)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
                       <circle cx="40" cy="70" r="4" fill="none" stroke="var(--accent)" strokeWidth="2"/>
                     </svg>
-                    <span style={styles.logoText}>Insights</span>
+                    <span style={styles.logoText}>tend</span>
                   </div>
+                </div>
+                <p style={styles.tagline}>a space for designing your life with intention</p>
+                <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                  <button 
+                    style={styles.settingsButton} 
+                    onClick={() => setShowSettingsModal(true)}
+                    title="Settings"
+                  >
+                    ⚙
+                  </button>
                 </div>
               </header>
               
@@ -4467,6 +4472,22 @@ Would you like to:
                   </form>
                 </div>
               </main>
+              
+              {/* Settings Modal - accessible from onboarding */}
+              {showSettingsModal && (
+                <SettingsModal 
+                  apiKey={apiKey} 
+                  setApiKey={(key) => {
+                    setApiKey(key);
+                    localStorage.setItem('tend_api_key', key);
+                  }} 
+                  onClose={() => setShowSettingsModal(false)}
+                  user={user}
+                  onLogout={handleLogout}
+                  onDeleteAccount={handleDeleteAccount}
+                  onOpenAdmin={() => setShowAdminDashboard(true)}
+                />
+              )}
             </div>
           );
         }
@@ -9811,12 +9832,30 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
     };
 
     function InsightsView({ trends, vlqScores, flexPoints, userProfile, setUserProfile, goals = [], setGoals, weeklyHabits = [], setWeeklyHabits, onReassessVLQ, onAddGoal, onBack, apiKey, embedded = false, autoExpandSection = null, onQuizComplete = null, onLifeMapAnswer = null, focusedArea = null, onFocusedAreaChange = null, onboardingStep = null, onboardingCompleted = false }) {
-      const [expandedArea, setExpandedArea] = useState(autoExpandSection);
+      const [expandedArea, setExpandedArea] = useState(autoExpandSection || focusedArea);
       const [editingArea, setEditingArea] = useState(null);
       const [tempFormData, setTempFormData] = useState(autoExpandSection === 'quiz' ? { quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null } : {});
       const [tempNotes, setTempNotes] = useState('');
+      const [hasScrolledOnMount, setHasScrolledOnMount] = useState(false);
       
-      // Sync with external focusedArea control
+      // Scroll to focused area on initial mount
+      React.useEffect(() => {
+        if (!hasScrolledOnMount && (focusedArea || autoExpandSection)) {
+          const areaToScroll = focusedArea || autoExpandSection;
+          if (areaToScroll && areaToScroll !== 'quiz') {
+            setExpandedArea(areaToScroll);
+            setTimeout(() => {
+              const element = document.getElementById(`life-area-${areaToScroll}`);
+              if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }, 200);
+            setHasScrolledOnMount(true);
+          }
+        }
+      }, [focusedArea, autoExpandSection, hasScrolledOnMount]);
+      
+      // Sync with external focusedArea control (for subsequent changes)
       React.useEffect(() => {
         if (focusedArea && focusedArea !== expandedArea) {
           setExpandedArea(focusedArea);
