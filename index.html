@@ -1679,6 +1679,7 @@ Respond with ONLY the task text, nothing else.`,
       // 1: Life Map (prompts + goals + habits per focus area), 2: Quiz (optional), 3: First Tend
       const [onboardingStep, setOnboardingStep] = useState(1);
       const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+      const [currentOnboardingArea, setCurrentOnboardingArea] = useState(null); // Which life area is being focused on
       
       const [weeklyHabits, setWeeklyHabits] = useState([]);
       const [dailyHabits, setDailyHabits] = useState([]);
@@ -2720,13 +2721,25 @@ Respond with ONLY the task text, nothing else.`,
             if (!onboardingCompleted && onboardingStep) {
               switch(onboardingStep) {
                 case 1: // Life Map
+                  const firstFocusArea = focusAreas[0];
+                  const firstAreaName = VLQ_DOMAINS[firstFocusArea]?.name || firstFocusArea;
+                  
+                  // Set the first focus area as current
+                  if (firstFocusArea && !currentOnboardingArea) {
+                    setCurrentOnboardingArea(firstFocusArea);
+                  }
+                  
                   openingMessage = `Welcome to Tend! 🌱 I'm here to help you design your year with intention.
 
 Based on your values assessment, ${focusAreaNames.length > 0 ? `you want to focus on growing in: <strong>${focusAreaNames.join('</strong>, <strong>')}</strong>` : 'there are areas where you want to grow'}.
 
-Let's build out your <strong>Life Map</strong> — for each focus area, you'll add some personal context, set a goal, and create a supporting habit.
+Let's build out your <strong>Life Map</strong> — for each focus area, we'll add some personal context, set a goal, and create a supporting habit.
 
-Expand any life area in the Insights view to get started. What area would you like to focus on first?`;
+Let's start with <strong>${firstAreaName}</strong>. I've opened it for you on the left.
+
+[FOCUS_AREA: ${firstFocusArea}]
+
+What's most important to you in this area of your life? You can fill in the prompts directly, or just tell me about it.`;
                   break;
                   
                 case 2: // Quiz (optional)
@@ -3267,50 +3280,53 @@ Click on the event in the sidebar to add details.`;
           const allFocusAreasComplete = focusAreaProgress.every(p => p.complete);
           const incompleteAreas = focusAreaProgress.filter(p => !p.complete);
           
+          // Get current area being worked on
+          const currentArea = currentOnboardingArea || focusAreas[0];
+          const currentAreaName = VLQ_DOMAINS[currentArea]?.name || currentArea;
+          const currentAreaProgress = getAreaProgress(currentArea);
+          
           // Step 1: Life Map (combined goals, habits, prompts per focus area)
           if (onboardingStep === 1) {
             return `
 
 === ONBOARDING MODE: LIFE MAP (Step 1 of 3) ===
-The user just completed their Values assessment. Now help them build out their Life Map for each focus area.
+You're helping the user build out their Life Map one focus area at a time.
 
-FOCUS AREAS (biggest gaps between importance and living): ${focusAreaNames.join(', ')}
+FOCUS AREAS: ${focusAreaNames.join(', ')}
 
-REQUIREMENTS FOR EACH FOCUS AREA:
-✓ At least one Life Map prompt answered (personal context)
-✓ At least one goal set
-✓ At least one weekly habit established
+CURRENTLY WORKING ON: ${currentAreaName} (${currentArea})
+Progress for ${currentAreaName}:
+- Prompt answered: ${currentAreaProgress.hasPrompt ? '✓ done' : '○ NEEDED'}
+- Goal set: ${currentAreaProgress.hasGoal ? '✓ done' : '○ NEEDED'}  
+- Weekly habit: ${currentAreaProgress.hasHabit ? '✓ done' : '○ NEEDED'}
 
-CURRENT PROGRESS:
-${focusAreaProgress.map(p => `${p.name}: ${p.hasPrompt ? '✓' : '○'} prompt | ${p.hasGoal ? '✓' : '○'} goal | ${p.hasHabit ? '✓' : '○'} habit`).join('\n')}
+OVERALL PROGRESS:
+${focusAreaProgress.map(p => `${p.name}: ${p.complete ? '✓ complete' : `${p.hasPrompt ? '✓' : '○'} prompt | ${p.hasGoal ? '✓' : '○'} goal | ${p.hasHabit ? '✓' : '○'} habit`}`).join('\n')}
 
-${allFocusAreasComplete ? '🎉 ALL FOCUS AREAS COMPLETE!' : `STILL NEEDED: ${incompleteAreas.map(p => {
-  const missing = [];
-  if (!p.hasPrompt) missing.push('prompt');
-  if (!p.hasGoal) missing.push('goal');
-  if (!p.hasHabit) missing.push('habit');
-  return `${p.name} (${missing.join(', ')})`;
-}).join('; ')}`}
+${allFocusAreasComplete ? '🎉 ALL FOCUS AREAS COMPLETE!' : ''}
 
-YOUR APPROACH:
-1. Guide them to the Insights tab where they can expand each life area
-2. For each focus area, help them:
-   - Answer at least one prompt about their life
-   - Set a meaningful goal
-   - Create a supporting habit
-3. Be conversational — ask about one area at a time
-4. Use markers to save their inputs:
-   - [GOAL: goal text | lifeAreaKey]
-   - [WEEKLY_HABIT: habit text | frequency | lifeAreaKey]
-   - Life Map prompts they answer directly in the UI
+YOUR APPROACH FOR ${currentAreaName.toUpperCase()}:
+1. The area is already expanded in the UI - user can fill in prompts directly OR chat with you
+2. If they share something about this area, help them identify:
+   - A meaningful goal (use [GOAL: goal text | ${currentArea}])
+   - A supporting habit (use [WEEKLY_HABIT: habit text | frequency | ${currentArea}])
+3. Be conversational - don't just list what's missing, have a real conversation
+4. When they mention a goal or habit, confirm it feels right before adding it
 
-LIFE AREA KEYS: family, partner, friendships, career, education, recreation, spirituality, community, health, mentalHealth
+EXAMPLE FLOW:
+User: "I want to get better at staying in touch with friends"
+You: "That's a meaningful goal! How about: 'Reach out to one friend weekly' — does that capture it?"
+User: "Yes!"
+You: [GOAL: Reach out to one friend weekly | friendships] Got it! What habit would help you do this consistently? Maybe a weekly reminder to call or text someone?
 
-WHEN ALL FOCUS AREAS COMPLETE:
-"Wonderful! You've built out your Life Map. Ready to discover your gardener type?
+WHEN THIS AREA IS COMPLETE:
+- If more focus areas remain: "Great work on ${currentAreaName}! ✓ Let's move on to [next area]. [FOCUS_AREA: nextAreaKey]"
+- If all focus areas done: Offer to explore other areas OR move to quiz
 
-[BUTTON: Take the Quiz | next step]
-[BUTTON: Skip to my first Tend | skip quiz]"`;
+NAVIGATION MARKER:
+Use [FOCUS_AREA: areaKey] to navigate to and expand a different life area.
+
+LIFE AREA KEYS: family, partner, friendships, career, education, recreation, spirituality, community, health, mentalHealth`;
           }
           
           // Step 2: Gardener Quiz (optional)
@@ -3574,6 +3590,21 @@ When user says "what can I do?" or seems lost, offer options warmly:
       // Handle navigation from chat buttons and NAVIGATE tags
       const handleChatNavigation = (action) => {
         const actionLower = action.toLowerCase().trim();
+        
+        // Handle "stay" - user wants to explore other life areas before moving on
+        if (actionLower === 'stay') {
+          const msg = {
+            role: 'assistant',
+            content: `Great! Feel free to expand any life area to add more details. When you're ready to move on, just let me know!
+
+[BUTTON: I'm ready for the quiz | next step]
+[BUTTON: Skip to my first Tend | skip quiz]`,
+            timestamp: new Date().toISOString()
+          };
+          setMessages(prev => [...prev, msg]);
+          setTimeout(() => scrollChatToBottom(), 100);
+          return;
+        }
         
         // Handle "next step" - advance to next onboarding step
         if (actionLower === 'next step' || actionLower.startsWith('skip ')) {
@@ -3903,6 +3934,16 @@ How did your tends go? What would you like to explore next?
           }, 500);
         }
         
+        // Process FOCUS_AREA tags (expand a life area in Insights)
+        const focusAreaMatch = response.match(/\[FOCUS_AREA:\s*([a-zA-Z]+)\]/);
+        if (focusAreaMatch) {
+          const areaKey = focusAreaMatch[1].trim().toLowerCase();
+          if (VLQ_ORDER.includes(areaKey)) {
+            console.log('Focusing on area:', areaKey);
+            setCurrentOnboardingArea(areaKey);
+          }
+        }
+        
         // Remove all markers from displayed response (buttons handled by ChatMessage)
         response = response
           .replace(/\[YEAR_THEME:\s*[a-zA-Z]{4,15}\]/g, '')
@@ -3912,6 +3953,7 @@ How did your tends go? What would you like to explore next?
           .replace(/\[EVENT:\s*[^\]]+\]/g, '')
           .replace(/\[SEASON:\s*[^\]]+\]/g, '')
           .replace(/\[NAVIGATE:\s*[^\]]+\]/g, '')
+          .replace(/\[FOCUS_AREA:\s*[^\]]+\]/g, '')
           .trim();
         
         setMessages(prev => [...prev, { 
@@ -4298,7 +4340,11 @@ I've opened the Life Areas panel where your goals will appear. What's something 
                     onBack={() => setAppMode(null)}
                     apiKey={apiKey}
                     embedded={true}
-                    autoExpandSection={onboardingStep === 2 ? 'quiz' : null}
+                    autoExpandSection={onboardingStep === 2 ? 'quiz' : currentOnboardingArea}
+                    focusedArea={onboardingStep === 1 ? currentOnboardingArea : null}
+                    onFocusedAreaChange={(area) => {
+                      if (onboardingStep === 1) setCurrentOnboardingArea(area);
+                    }}
                     onQuizComplete={(result) => {
                       // Add message to chat prompting next step
                       const msg = {
@@ -4314,21 +4360,59 @@ Ready to try your first Daily Tend?
                       setTimeout(() => scrollChatToBottom(), 100);
                     }}
                     onLifeMapAnswer={() => {
-                      // Check if Life Map step is complete
-                      const complete = isStepComplete(1);
-                      if (complete) {
-                        const msg = {
-                          role: 'assistant',
-                          content: `Wonderful! You've built out your Life Map for all your focus areas. 🗺️
-
-Ready to discover your gardener type?
-
-[BUTTON: Take the Quiz | next step]
-[BUTTON: Skip to my first Tend | skip quiz]`,
-                          timestamp: new Date().toISOString()
+                      // Check if current area is complete, then prompt for next
+                      if (onboardingStep === 1 && currentOnboardingArea) {
+                        const focusAreas = getFocusAreas();
+                        const prefs = userProfile?.tendPreferences || {};
+                        
+                        const getAreaProgress = (areaKey) => {
+                          const hasPrompt = prefs.structuredInfo?.[areaKey] && Object.values(prefs.structuredInfo[areaKey]).some(v => v) || prefs.lifeAreaNotes?.[areaKey];
+                          const hasGoal = goals.some(g => g.lifeArea === areaKey);
+                          const hasHabit = weeklyHabits.some(h => h.lifeArea === areaKey);
+                          return { hasPrompt, hasGoal, hasHabit, complete: hasPrompt && hasGoal && hasHabit };
                         };
-                        setMessages(prev => [...prev, msg]);
-                        setTimeout(() => scrollChatToBottom(), 100);
+                        
+                        const currentProgress = getAreaProgress(currentOnboardingArea);
+                        
+                        // If current area just became complete
+                        if (currentProgress.complete) {
+                          const currentIdx = focusAreas.indexOf(currentOnboardingArea);
+                          const nextIncomplete = focusAreas.slice(currentIdx + 1).find(a => !getAreaProgress(a).complete);
+                          
+                          if (nextIncomplete) {
+                            // Move to next area
+                            setCurrentOnboardingArea(nextIncomplete);
+                            const areaName = VLQ_DOMAINS[nextIncomplete]?.name || nextIncomplete;
+                            const msg = {
+                              role: 'assistant',
+                              content: `Great work on ${VLQ_DOMAINS[currentOnboardingArea]?.name}! ✓
+
+Let's move on to <strong>${areaName}</strong>. I've opened it for you.
+
+[FOCUS_AREA: ${nextIncomplete}]
+
+What matters most to you in this area? You can fill in the prompts directly, or tell me about it and I'll help you set a goal and habit.`,
+                              timestamp: new Date().toISOString()
+                            };
+                            setMessages(prev => [...prev, msg]);
+                            setTimeout(() => scrollChatToBottom(), 100);
+                          } else {
+                            // All focus areas complete!
+                            const msg = {
+                              role: 'assistant',
+                              content: `Wonderful! You've built out your Life Map for all your focus areas. 🗺️
+
+Would you like to:
+
+[BUTTON: Explore other life areas | stay]
+[BUTTON: Take the Gardener Quiz | next step]
+[BUTTON: Skip to my first Tend | skip quiz]`,
+                              timestamp: new Date().toISOString()
+                            };
+                            setMessages(prev => [...prev, msg]);
+                            setTimeout(() => scrollChatToBottom(), 100);
+                          }
+                        }
                       }
                     }}
                   />
@@ -9722,11 +9806,32 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       },
     };
 
-    function InsightsView({ trends, vlqScores, flexPoints, userProfile, setUserProfile, goals = [], setGoals, weeklyHabits = [], setWeeklyHabits, onReassessVLQ, onAddGoal, onBack, apiKey, embedded = false, autoExpandSection = null, onQuizComplete = null, onLifeMapAnswer = null }) {
+    function InsightsView({ trends, vlqScores, flexPoints, userProfile, setUserProfile, goals = [], setGoals, weeklyHabits = [], setWeeklyHabits, onReassessVLQ, onAddGoal, onBack, apiKey, embedded = false, autoExpandSection = null, onQuizComplete = null, onLifeMapAnswer = null, focusedArea = null, onFocusedAreaChange = null }) {
       const [expandedArea, setExpandedArea] = useState(autoExpandSection);
       const [editingArea, setEditingArea] = useState(null);
       const [tempFormData, setTempFormData] = useState(autoExpandSection === 'quiz' ? { quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null } : {});
       const [tempNotes, setTempNotes] = useState('');
+      
+      // Sync with external focusedArea control
+      React.useEffect(() => {
+        if (focusedArea && focusedArea !== expandedArea) {
+          setExpandedArea(focusedArea);
+          // Scroll to the area
+          setTimeout(() => {
+            const element = document.getElementById(`life-area-${focusedArea}`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 100);
+        }
+      }, [focusedArea]);
+      
+      // Notify parent when expanded area changes
+      const handleExpandArea = (area) => {
+        const newArea = expandedArea === area ? null : area;
+        setExpandedArea(newArea);
+        if (onFocusedAreaChange) onFocusedAreaChange(newArea);
+      };
       
       if (!trends) return null;
       
@@ -10287,7 +10392,7 @@ Respond in this exact JSON format only:
                           return (
                             <g key={`cat-${i}`} style={{ cursor: 'pointer' }}
                               onClick={() => {
-                                setExpandedArea(expandedArea === node.domain ? null : node.domain);
+                                handleExpandArea(node.domain);
                                 if (expandedArea !== node.domain) {
                                   setTimeout(() => {
                                     document.getElementById(`life-area-${node.domain}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -10414,7 +10519,7 @@ Respond in this exact JSON format only:
                             }}>
                               {/* Collapsed Header */}
                               <div 
-                                onClick={() => setExpandedArea(isExpanded ? null : areaKey)}
+                                onClick={() => handleExpandArea(areaKey)}
                                 style={{ 
                                   padding: '0.75rem 1rem',
                                   cursor: 'pointer',
