@@ -11036,6 +11036,155 @@ Respond in JSON only: {"q": "Your question here?", "placeholder": "Example hints
               })()}
             </div>
             
+            {/* Life Areas, Goals & Habits */}
+            <div style={insightsStyles.section}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                <h3 style={{...insightsStyles.sectionTitle, marginBottom: 0}}>
+                  <span>🌱</span>
+                  <span>Life Areas & Goals</span>
+                </h3>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  {onReassessVLQ && (
+                    <button
+                      onClick={onReassessVLQ}
+                      style={{
+                        padding: '0.4rem 0.75rem',
+                        fontSize: '0.75rem',
+                        backgroundColor: 'var(--bg-elevated)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        color: 'var(--text-muted)',
+                      }}
+                    >
+                      Retake VLQ
+                    </button>
+                  )}
+                  {onAddGoal && (
+                    <button
+                      onClick={onAddGoal}
+                      style={{
+                        padding: '0.4rem 0.75rem',
+                        fontSize: '0.75rem',
+                        backgroundColor: 'var(--accent)',
+                        border: 'none',
+                        borderRadius: '6px',
+                        cursor: 'pointer',
+                        color: 'white',
+                        fontWeight: 500,
+                      }}
+                    >
+                      + Add Goal
+                    </button>
+                  )}
+                </div>
+              </div>
+              
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                {VLQ_ORDER.map(areaKey => {
+                  const area = VLQ_DOMAINS[areaKey];
+                  const scores = vlqScores[areaKey] || {};
+                  const importance = scores.importance || 5;
+                  const consistency = scores.consistency || 5;
+                  const gap = importance - consistency;
+                  const areaGoals = goals.filter(g => g.lifeArea === areaKey);
+                  const areaHabits = weeklyHabits.filter(h => h.lifeArea === areaKey);
+                  
+                  // Skip areas with low importance and no goals/habits
+                  if (importance < 5 && areaGoals.length === 0 && areaHabits.length === 0) return null;
+                  
+                  return (
+                    <div key={areaKey} style={{
+                      backgroundColor: 'var(--bg-elevated)',
+                      borderRadius: '12px',
+                      padding: '1rem',
+                      borderLeft: `4px solid ${area.color}`,
+                    }}>
+                      {/* Area Header */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: areaGoals.length > 0 || areaHabits.length > 0 ? '0.75rem' : 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span style={{ fontSize: '1.25rem' }}>{area.icon}</span>
+                          <span style={{ fontWeight: 600, color: 'var(--text)' }}>{area.name}</span>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem' }}>
+                          <span style={{ color: 'var(--text-muted)' }}>
+                            Importance: <strong style={{ color: importance >= 7 ? 'var(--accent)' : 'var(--text)' }}>{importance}/10</strong>
+                          </span>
+                          <span style={{ color: 'var(--text-muted)' }}>
+                            Consistency: <strong style={{ color: consistency >= 7 ? 'var(--accent)' : gap >= 2 ? '#E8A090' : 'var(--text)' }}>{consistency}/10</strong>
+                          </span>
+                          {gap >= 2 && (
+                            <span style={{ color: '#E8A090', fontWeight: 500 }}>
+                              Growth area
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Goals */}
+                      {areaGoals.length > 0 && (
+                        <div style={{ marginBottom: areaHabits.length > 0 ? '0.75rem' : 0 }}>
+                          {areaGoals.map(goal => (
+                            <div key={goal.id} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              padding: '0.5rem 0',
+                              borderBottom: '1px solid var(--border)',
+                            }}>
+                              <span style={{ color: 'var(--accent)' }}>🎯</span>
+                              <span style={{ 
+                                flex: 1, 
+                                fontSize: '0.9rem',
+                                textDecoration: goal.completed ? 'line-through' : 'none',
+                                color: goal.completed ? 'var(--text-muted)' : 'var(--text)',
+                              }}>
+                                {goal.title}
+                              </span>
+                              {goal.completed && (
+                                <span style={{ fontSize: '0.7rem', color: 'var(--accent)', backgroundColor: 'var(--accent-light)', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
+                                  ✓ Done
+                                </span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Habits */}
+                      {areaHabits.length > 0 && (
+                        <div>
+                          {areaHabits.map(habit => (
+                            <div key={habit.id} style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '0.5rem',
+                              padding: '0.5rem 0',
+                              fontSize: '0.85rem',
+                              color: 'var(--text-muted)',
+                            }}>
+                              <span>🔄</span>
+                              <span style={{ flex: 1 }}>{habit.text}</span>
+                              <span style={{ fontSize: '0.7rem', backgroundColor: 'var(--bg-card)', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
+                                {habit.frequency}x/week
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      {/* Empty state */}
+                      {areaGoals.length === 0 && areaHabits.length === 0 && (
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '0.25rem' }}>
+                          No goals or habits yet
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+            
             {/* Overview Stats */}
             <div style={insightsStyles.section}>
               <h3 style={insightsStyles.sectionTitle}>
@@ -11214,155 +11363,6 @@ Respond in JSON only: {"q": "Your question here?", "placeholder": "Example hints
                 </div>
               </div>
             )}
-            
-            {/* Life Areas, Goals & Habits */}
-            <div style={insightsStyles.section}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                <h3 style={{...insightsStyles.sectionTitle, marginBottom: 0}}>
-                  <span>🌱</span>
-                  <span>Life Areas & Goals</span>
-                </h3>
-                <div style={{ display: 'flex', gap: '0.5rem' }}>
-                  {onReassessVLQ && (
-                    <button
-                      onClick={onReassessVLQ}
-                      style={{
-                        padding: '0.4rem 0.75rem',
-                        fontSize: '0.75rem',
-                        backgroundColor: 'var(--bg-elevated)',
-                        border: '1px solid var(--border)',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        color: 'var(--text-muted)',
-                      }}
-                    >
-                      Retake VLQ
-                    </button>
-                  )}
-                  {onAddGoal && (
-                    <button
-                      onClick={onAddGoal}
-                      style={{
-                        padding: '0.4rem 0.75rem',
-                        fontSize: '0.75rem',
-                        backgroundColor: 'var(--accent)',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        color: 'white',
-                        fontWeight: 500,
-                      }}
-                    >
-                      + Add Goal
-                    </button>
-                  )}
-                </div>
-              </div>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                {VLQ_ORDER.map(areaKey => {
-                  const area = VLQ_DOMAINS[areaKey];
-                  const scores = vlqScores[areaKey] || {};
-                  const importance = scores.importance || 5;
-                  const consistency = scores.consistency || 5;
-                  const gap = importance - consistency;
-                  const areaGoals = goals.filter(g => g.lifeArea === areaKey);
-                  const areaHabits = weeklyHabits.filter(h => h.lifeArea === areaKey);
-                  
-                  // Skip areas with low importance and no goals/habits
-                  if (importance < 5 && areaGoals.length === 0 && areaHabits.length === 0) return null;
-                  
-                  return (
-                    <div key={areaKey} style={{
-                      backgroundColor: 'var(--bg-elevated)',
-                      borderRadius: '12px',
-                      padding: '1rem',
-                      borderLeft: `4px solid ${area.color}`,
-                    }}>
-                      {/* Area Header */}
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: areaGoals.length > 0 || areaHabits.length > 0 ? '0.75rem' : 0 }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <span style={{ fontSize: '1.25rem' }}>{area.icon}</span>
-                          <span style={{ fontWeight: 600, color: 'var(--text)' }}>{area.name}</span>
-                        </div>
-                        <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.75rem' }}>
-                          <span style={{ color: 'var(--text-muted)' }}>
-                            Importance: <strong style={{ color: importance >= 7 ? 'var(--accent)' : 'var(--text)' }}>{importance}/10</strong>
-                          </span>
-                          <span style={{ color: 'var(--text-muted)' }}>
-                            Consistency: <strong style={{ color: consistency >= 7 ? 'var(--accent)' : gap >= 2 ? '#E8A090' : 'var(--text)' }}>{consistency}/10</strong>
-                          </span>
-                          {gap >= 2 && (
-                            <span style={{ color: '#E8A090', fontWeight: 500 }}>
-                              Growth area
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      {/* Goals */}
-                      {areaGoals.length > 0 && (
-                        <div style={{ marginBottom: areaHabits.length > 0 ? '0.75rem' : 0 }}>
-                          {areaGoals.map(goal => (
-                            <div key={goal.id} style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.5rem',
-                              padding: '0.5rem 0',
-                              borderBottom: '1px solid var(--border)',
-                            }}>
-                              <span style={{ color: 'var(--accent)' }}>🎯</span>
-                              <span style={{ 
-                                flex: 1, 
-                                fontSize: '0.9rem',
-                                textDecoration: goal.completed ? 'line-through' : 'none',
-                                color: goal.completed ? 'var(--text-muted)' : 'var(--text)',
-                              }}>
-                                {goal.title}
-                              </span>
-                              {goal.completed && (
-                                <span style={{ fontSize: '0.7rem', color: 'var(--accent)', backgroundColor: 'var(--accent-light)', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
-                                  ✓ Done
-                                </span>
-                              )}
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {/* Habits */}
-                      {areaHabits.length > 0 && (
-                        <div>
-                          {areaHabits.map(habit => (
-                            <div key={habit.id} style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: '0.5rem',
-                              padding: '0.5rem 0',
-                              fontSize: '0.85rem',
-                              color: 'var(--text-muted)',
-                            }}>
-                              <span>🔄</span>
-                              <span style={{ flex: 1 }}>{habit.text}</span>
-                              <span style={{ fontSize: '0.7rem', backgroundColor: 'var(--bg-card)', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>
-                                {habit.frequency}x/week
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                      
-                      {/* Empty state */}
-                      {areaGoals.length === 0 && areaHabits.length === 0 && (
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic', marginTop: '0.25rem' }}>
-                          No goals or habits yet
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </div>
       );
