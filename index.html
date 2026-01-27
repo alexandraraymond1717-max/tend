@@ -10495,74 +10495,73 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                   {/* 1. Goal */}
                                   <div style={{ marginTop: '0.75rem' }}>
                                     <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                      {areaGoals.length > 0 ? '✓ GOAL' : 'ADD A GOAL'}
+                                      {areaGoals.length > 0 ? `✓ ${areaGoals.length} GOAL${areaGoals.length > 1 ? 'S' : ''} SET` : 'ADD A GOAL'}
                                     </div>
-                                    {areaGoals.map(goal => (
-                                      <div key={goal.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', backgroundColor: `${area.color}10`, borderRadius: '8px', marginBottom: '0.5rem' }}>
-                                        <span style={{ color: 'var(--accent)', fontSize: '0.85rem' }}>🎯</span>
-                                        <span style={{ flex: 1, fontSize: '0.85rem', color: 'var(--text)' }}>{goal.text}</span>
-                                        <button onClick={() => setGoals(prev => prev.filter(g => g.id !== goal.id))} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.75rem' }}>×</button>
-                                      </div>
-                                    ))}
-                                    {areaGoals.length === 0 && (
-                                      <div>
-                                        <input type="text" 
-                                          value={tempFormData.newGoal || ''}
-                                          onChange={(e) => setTempFormData(prev => ({...prev, newGoal: e.target.value}))}
-                                          placeholder="What do you want to accomplish?"
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && tempFormData.newGoal?.trim()) {
-                                              setGoals(prev => [...prev, { id: Date.now().toString(), text: tempFormData.newGoal.trim(), lifeArea: areaKey, completed: false }]);
-                                              setTempFormData(prev => ({...prev, newGoal: ''}));
-                                              if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
-                                            }
-                                          }}
-                                          style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', boxSizing: 'border-box' }}
-                                        />
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>
+                                    
+                                    {/* Show confirmation when goals exist */}
+                                    {areaGoals.length > 0 && (
+                                      <div style={{ fontSize: '0.8rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>
+                                        ✓ Visible in your Life Map
                                       </div>
                                     )}
+                                    
+                                    {/* Always show input to add more goals */}
+                                    <div>
+                                      <input type="text" 
+                                        value={tempFormData.newGoal || ''}
+                                        onChange={(e) => setTempFormData(prev => ({...prev, newGoal: e.target.value}))}
+                                        placeholder={areaGoals.length > 0 ? "Add another goal..." : "What do you want to accomplish?"}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter' && tempFormData.newGoal?.trim()) {
+                                            setGoals(prev => [...prev, { id: Date.now().toString(), text: tempFormData.newGoal.trim(), lifeArea: areaKey, completed: false }]);
+                                            setTempFormData(prev => ({...prev, newGoal: ''}));
+                                            if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
+                                          }
+                                        }}
+                                        style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                      />
+                                      <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>
+                                    </div>
                                   </div>
                                   
                                   {/* 2. Weekly Habit */}
                                   <div style={{ marginTop: '0.75rem' }}>
                                     <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                      {areaHabits.length > 0 ? '✓ WEEKLY HABIT' : 'ADD A WEEKLY HABIT'}
+                                      {areaHabits.length > 0 ? `✓ ${areaHabits.length} HABIT${areaHabits.length > 1 ? 'S' : ''} SET` : 'ADD A WEEKLY HABIT'}
                                     </div>
-                                    {areaHabits.map(habit => (
-                                      <div key={habit.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', backgroundColor: `${area.color}10`, borderRadius: '8px', marginBottom: '0.5rem' }}>
-                                        <span>🔄</span>
-                                        <span style={{ flex: 1, fontSize: '0.85rem', color: 'var(--text)' }}>{habit.text}</span>
-                                        <span style={{ fontSize: '0.65rem', backgroundColor: 'var(--bg-card)', padding: '0.1rem 0.35rem', borderRadius: '4px', color: 'var(--text-muted)' }}>{habit.frequency}x/wk</span>
-                                        <button onClick={() => setWeeklyHabits(prev => prev.filter(h => h.id !== habit.id))} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.75rem' }}>×</button>
-                                      </div>
-                                    ))}
-                                    {areaHabits.length === 0 && (
-                                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                        <input type="text" 
-                                          value={tempFormData.newHabit || ''}
-                                          onChange={(e) => setTempFormData(prev => ({...prev, newHabit: e.target.value}))}
-                                          placeholder="What will you do regularly?"
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && tempFormData.newHabit?.trim()) {
-                                              const freq = parseInt(tempFormData.habitFreq) || 3;
-                                              setWeeklyHabits(prev => [...prev, { id: Date.now().toString(), text: tempFormData.newHabit.trim(), lifeArea: areaKey, frequency: freq, color: area.color }]);
-                                              setTempFormData(prev => ({...prev, newHabit: '', habitFreq: ''}));
-                                              if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
-                                            }
-                                          }}
-                                          style={{ flex: 1, padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem' }}
-                                        />
-                                        <select 
-                                          value={tempFormData.habitFreq || '3'}
-                                          onChange={(e) => setTempFormData(prev => ({...prev, habitFreq: e.target.value}))}
-                                          style={{ padding: '0.6rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem' }}
-                                        >
-                                          {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}x/wk</option>)}
-                                        </select>
+                                    
+                                    {/* Show confirmation when habits exist */}
+                                    {areaHabits.length > 0 && (
+                                      <div style={{ fontSize: '0.8rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>
+                                        ✓ Visible in your Life Map
                                       </div>
                                     )}
-                                    {areaHabits.length === 0 && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>}
+                                    
+                                    {/* Always show input to add more habits */}
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                      <input type="text" 
+                                        value={tempFormData.newHabit || ''}
+                                        onChange={(e) => setTempFormData(prev => ({...prev, newHabit: e.target.value}))}
+                                        placeholder={areaHabits.length > 0 ? "Add another habit..." : "What will you do regularly?"}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter' && tempFormData.newHabit?.trim()) {
+                                            const freq = parseInt(tempFormData.habitFreq) || 3;
+                                            setWeeklyHabits(prev => [...prev, { id: Date.now().toString(), text: tempFormData.newHabit.trim(), lifeArea: areaKey, frequency: freq, color: area.color }]);
+                                            setTempFormData(prev => ({...prev, newHabit: '', habitFreq: ''}));
+                                            if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
+                                          }
+                                        }}
+                                        style={{ flex: 1, padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem' }}
+                                      />
+                                      <select 
+                                        value={tempFormData.habitFreq || '3'}
+                                        onChange={(e) => setTempFormData(prev => ({...prev, habitFreq: e.target.value}))}
+                                        style={{ padding: '0.6rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem' }}
+                                      >
+                                        {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}x/wk</option>)}
+                                      </select>
+                                    </div>
+                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>
                                   </div>
                                   
                                   {/* 3. Life Area Prompt */}
