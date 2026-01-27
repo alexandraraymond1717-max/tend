@@ -10026,7 +10026,25 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               {(() => {
                 const prefs = userProfile?.tendPreferences || {};
                 
-                // Collect all facts from profile, tracking multi-domain facts
+                // Count goals per domain
+                const domainGoalCounts = {};
+                VLQ_ORDER.forEach(d => domainGoalCounts[d] = 0);
+                goals.forEach(g => {
+                  if (g.lifeArea && domainGoalCounts[g.lifeArea] !== undefined) {
+                    domainGoalCounts[g.lifeArea]++;
+                  }
+                });
+                
+                // Count habits per domain
+                const domainHabitCounts = {};
+                VLQ_ORDER.forEach(d => domainHabitCounts[d] = 0);
+                weeklyHabits.forEach(h => {
+                  if (h.lifeArea && domainHabitCounts[h.lifeArea] !== undefined) {
+                    domainHabitCounts[h.lifeArea]++;
+                  }
+                });
+                
+                // Collect all facts (prompt answers) from profile
                 const allFacts = [];
                 const domainFactCounts = {};
                 VLQ_ORDER.forEach(d => domainFactCounts[d] = 0);
@@ -10067,12 +10085,12 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   }
                 });
                 
-                // Calculate icon scale based on fact count (1.0 to 1.6)
-                const maxFacts = Math.max(...Object.values(domainFactCounts), 1);
+                // Calculate icon scale based on GOALS count (1.0 to 1.6)
+                const maxGoals = Math.max(...Object.values(domainGoalCounts), 1);
                 const getIconScale = (domain) => {
-                  const count = domainFactCounts[domain] || 0;
+                  const count = domainGoalCounts[domain] || 0;
                   if (count === 0) return 1.0;
-                  return 1.0 + (count / maxFacts) * 0.6; // Scale from 1.0 to 1.6
+                  return 1.0 + (count / maxGoals) * 0.6; // Scale from 1.0 to 1.6
                 };
                 
                 // Cleaner SVG layout - wider to prevent overlap
@@ -10081,19 +10099,13 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 const centerX = width / 2;
                 const centerY = height / 2;
                 
-                // Position facts in layers around center
-                const factNodes = allFacts.map((fact, i) => {
-                  const angle = (i / Math.max(allFacts.length, 1)) * Math.PI * 2 - Math.PI / 2;
-                  const layer = Math.floor(i / 8);
-                  const radius = 50 + layer * 25;
-                  return { ...fact, x: centerX + Math.cos(angle) * radius, y: centerY + Math.sin(angle) * radius };
-                });
-                
-                // Life area icons - positioned in a wider ellipse, with growing sizes
+                // Life area icons - positioned in a wider ellipse, with growing sizes based on goals
                 const categoryNodes = VLQ_ORDER.map((domain, i) => {
                   const angle = (i / VLQ_ORDER.length) * Math.PI * 2 - Math.PI / 2;
                   const hasContent = prefs.structuredInfo?.[domain] || prefs.lifeAreaNotes?.[domain];
                   const factCount = domainFactCounts[domain] || 0;
+                  const goalCount = domainGoalCounts[domain] || 0;
+                  const habitCount = domainHabitCounts[domain] || 0;
                   const scale = getIconScale(domain);
                   return {
                     domain,
@@ -10103,9 +10115,27 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     y: centerY + Math.sin(angle) * 100,
                     hasContent: !!hasContent,
                     factCount,
+                    goalCount,
+                    habitCount,
                     scale,
                     baseRadius: 20,
                   };
+                });
+                
+                // Create lines from center to each icon for each prompt answer
+                const promptLines = [];
+                allFacts.forEach((fact, idx) => {
+                  const node = categoryNodes.find(n => n.domain === fact.domain);
+                  if (node) {
+                    // Offset lines slightly so multiple don't overlap completely
+                    const offsetAngle = (idx * 0.15);
+                    promptLines.push({
+                      node,
+                      fact,
+                      offsetX: Math.cos(offsetAngle) * 3,
+                      offsetY: Math.sin(offsetAngle) * 3,
+                    });
+                  }
                 });
                 
                 // Find multi-domain connections (facts that link multiple areas)
@@ -10162,33 +10192,55 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                           );
                         })}
                         
-                        {/* Connection lines from center to facts */}
-                        {factNodes.map((node, i) => (
-                          <line key={`line-${i}`} x1={centerX} y1={centerY} x2={node.x} y2={node.y}
-                            stroke={node.color} strokeWidth="1.5" opacity="0.2" />
-                        ))}
-                        
-                        {/* Fact nodes (colored dots) */}
-                        {factNodes.map((node, i) => (
-                          <g key={`fact-${i}`}>
-                            <circle cx={node.x} cy={node.y} r={node.domains?.length > 1 ? 7 : 5} 
-                              fill={node.color} opacity="0.85" 
-                              stroke={node.domains?.length > 1 ? "white" : "none"}
-                              strokeWidth={node.domains?.length > 1 ? 2 : 0} />
-                            <title>{node.text}{node.domains?.length > 1 ? ` (${node.domains.map(d => VLQ_DOMAINS[d]?.name).join(' + ')})` : ''}</title>
+                        {/* Lines from center to icons for each prompt answer */}
+                        {promptLines.map((line, i) => (
+                          <g key={`prompt-line-${i}`}>
+                            <line 
+                              x1={centerX + line.offsetX} 
+                              y1={centerY + line.offsetY} 
+                              x2={line.node.x} 
+                              y2={line.node.y}
+                              stroke={line.fact.color} 
+                              strokeWidth="2" 
+                              opacity="0.4"
+                              strokeLinecap="round"
+                            />
+                            <title>{line.fact.text}</title>
                           </g>
                         ))}
                         
-                        {/* Category icons (outer ellipse) - with growing sizes */}
+                        {/* Category icons (outer ellipse) - size grows with goals */}
                         {categoryNodes.map((node, i) => {
                           const r = node.baseRadius * node.scale;
                           const fontSize = 15 * node.scale;
                           const nodeFacts = allFacts.filter(f => f.domain === node.domain);
+                          const nodeGoals = goals.filter(g => g.lifeArea === node.domain);
+                          const nodeHabits = weeklyHabits.filter(h => h.lifeArea === node.domain);
+                          
+                          // Habit indicators: small dots in a ring around the icon
+                          const habitDots = [];
+                          for (let h = 0; h < Math.min(node.habitCount, 5); h++) {
+                            const dotAngle = (h / Math.min(node.habitCount, 5)) * Math.PI * 2 - Math.PI / 2;
+                            const dotRadius = r + 8;
+                            habitDots.push({
+                              x: node.x + Math.cos(dotAngle) * dotRadius,
+                              y: node.y + Math.sin(dotAngle) * dotRadius,
+                            });
+                          }
+                          
                           return (
                             <g key={`cat-${i}`} style={{ cursor: 'pointer' }}
                               onMouseEnter={() => {
-                                if (nodeFacts.length > 0) {
-                                  setHoveredNode({ domain: node.domain, facts: nodeFacts, x: node.x, y: node.y, name: VLQ_DOMAINS[node.domain]?.name });
+                                if (nodeFacts.length > 0 || nodeGoals.length > 0 || nodeHabits.length > 0) {
+                                  setHoveredNode({ 
+                                    domain: node.domain, 
+                                    facts: nodeFacts, 
+                                    goals: nodeGoals,
+                                    habits: nodeHabits,
+                                    x: node.x, 
+                                    y: node.y, 
+                                    name: VLQ_DOMAINS[node.domain]?.name 
+                                  });
                                 }
                               }}
                               onMouseLeave={() => setHoveredNode(null)}
@@ -10200,18 +10252,27 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                   }, 100);
                                 }
                               }}>
+                              
+                              {/* Habit indicator dots around the icon */}
+                              {habitDots.map((dot, hi) => (
+                                <circle key={`habit-${hi}`} cx={dot.x} cy={dot.y} r="3" fill={node.color} opacity="0.6" />
+                              ))}
+                              
+                              {/* Main icon circle */}
                               <circle cx={node.x} cy={node.y} r={r}
-                                fill={node.hasContent ? node.color : '#FDFBF7'}
-                                stroke={node.color} strokeWidth={node.hasContent ? "0" : "1.5"}
-                                opacity={node.hasContent ? 0.85 : 0.6} />
+                                fill={node.hasContent || node.goalCount > 0 ? node.color : '#FDFBF7'}
+                                stroke={node.color} strokeWidth={node.hasContent || node.goalCount > 0 ? "0" : "1.5"}
+                                opacity={node.hasContent || node.goalCount > 0 ? 0.85 : 0.6} />
                               <text x={node.x} y={node.y + fontSize * 0.4} textAnchor="middle" fontSize={fontSize} style={{ pointerEvents: 'none' }}>
                                 {node.icon}
                               </text>
-                              {node.factCount > 0 && (
+                              
+                              {/* Goal count badge */}
+                              {node.goalCount > 0 && (
                                 <g>
                                   <circle cx={node.x + r * 0.7} cy={node.y - r * 0.7} r="8" fill="var(--accent)" />
                                   <text x={node.x + r * 0.7} y={node.y - r * 0.7 + 3} textAnchor="middle" fill="white" fontSize="9" fontWeight="600">
-                                    {node.factCount}
+                                    {node.goalCount}
                                   </text>
                                 </g>
                               )}
@@ -10223,12 +10284,12 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                         <circle cx={centerX} cy={centerY} r="28" fill="var(--accent)" />
                         <text x={centerX} y={centerY - 2} textAnchor="middle" fill="white" fontSize="11" fontWeight="600">You</text>
                         <text x={centerX} y={centerY + 11} textAnchor="middle" fill="white" fontSize="9" opacity="0.9">
-                          {allFacts.length} {allFacts.length === 1 ? 'fact' : 'facts'}
+                          {goals.length} {goals.length === 1 ? 'goal' : 'goals'}
                         </text>
                       </svg>
                       
-                      {/* Hover tooltip for facts */}
-                      {hoveredNode && hoveredNode.facts.length > 0 && (
+                      {/* Hover tooltip for facts, goals, and habits */}
+                      {hoveredNode && (hoveredNode.facts?.length > 0 || hoveredNode.goals?.length > 0 || hoveredNode.habits?.length > 0) && (
                         <div style={{
                           position: 'absolute',
                           left: '50%',
@@ -10239,24 +10300,55 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                           borderRadius: '10px',
                           padding: '0.75rem 1rem',
                           boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                          maxWidth: '280px',
+                          maxWidth: '300px',
                           zIndex: 100,
                         }}>
                           <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
                             {hoveredNode.name}
                           </div>
-                          {hoveredNode.facts.map((fact, idx) => (
-                            <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--text)', padding: '0.2rem 0', borderBottom: idx < hoveredNode.facts.length - 1 ? '1px solid var(--border)' : 'none' }}>
-                              {fact.text}
+                          
+                          {/* Goals */}
+                          {hoveredNode.goals?.length > 0 && (
+                            <div style={{ marginBottom: '0.4rem' }}>
+                              <div style={{ fontSize: '0.65rem', color: 'var(--accent)', fontWeight: 600, marginBottom: '0.2rem' }}>🎯 Goals</div>
+                              {hoveredNode.goals.map((goal, idx) => (
+                                <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--text)', paddingLeft: '0.5rem' }}>
+                                  • {goal.text}
+                                </div>
+                              ))}
                             </div>
-                          ))}
+                          )}
+                          
+                          {/* Habits */}
+                          {hoveredNode.habits?.length > 0 && (
+                            <div style={{ marginBottom: '0.4rem' }}>
+                              <div style={{ fontSize: '0.65rem', color: 'var(--accent)', fontWeight: 600, marginBottom: '0.2rem' }}>🔄 Habits</div>
+                              {hoveredNode.habits.map((habit, idx) => (
+                                <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--text)', paddingLeft: '0.5rem' }}>
+                                  • {habit.text} ({habit.frequency}x/wk)
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          
+                          {/* Prompt answers */}
+                          {hoveredNode.facts?.length > 0 && (
+                            <div>
+                              <div style={{ fontSize: '0.65rem', color: 'var(--accent)', fontWeight: 600, marginBottom: '0.2rem' }}>💬 About you</div>
+                              {hoveredNode.facts.map((fact, idx) => (
+                                <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--text)', paddingLeft: '0.5rem' }}>
+                                  • {fact.text}
+                                </div>
+                              ))}
+                            </div>
+                          )}
                         </div>
                       )}
                       
                       {/* Empty state text - positioned below SVG */}
-                      {allFacts.length === 0 && (
+                      {goals.length === 0 && allFacts.length === 0 && (
                         <div style={{ textAlign: 'center', color: '#9A8F7D', fontSize: '0.8rem', marginTop: '-0.25rem' }}>
-                          Tap any icon to start building your map
+                          Add goals and answer prompts to build your map
                         </div>
                       )}
                     </div>
