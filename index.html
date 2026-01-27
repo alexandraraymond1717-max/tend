@@ -1994,6 +1994,7 @@ Respond with ONLY the task text, nothing else.`,
             // Load onboarding state
             if (data.onboardingStep !== undefined) setOnboardingStep(data.onboardingStep);
             if (data.onboardingCompleted !== undefined) setOnboardingCompleted(data.onboardingCompleted);
+            if (data.currentOnboardingArea) setCurrentOnboardingArea(data.currentOnboardingArea);
             // For existing users who completed onboarding in old system, mark complete
             if (data.onboardingCompleted === undefined && data.vlqCompleted && (data.goals?.length > 0 || data.weeklyHabits?.length > 0)) {
               setOnboardingCompleted(true);
@@ -2402,6 +2403,7 @@ Respond with ONLY the task text, nothing else.`,
               // Onboarding
               onboardingStep,
               onboardingCompleted,
+              currentOnboardingArea,
               // NEW: Knowledge & Intelligence
               savedConversations,
               userProfile,
@@ -2431,7 +2433,7 @@ Respond with ONLY the task text, nothing else.`,
             pendingSaveRef.current = null;
           }
         }, 100);
-      }, [user, vlqScores, vlqCompleted, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, onboardingStep, onboardingCompleted, savedConversations, userProfile, messages, exchangeCount, currentConversationType, chatHistory, currentChatId]);
+      }, [user, vlqScores, vlqCompleted, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, onboardingStep, onboardingCompleted, currentOnboardingArea, savedConversations, userProfile, messages, exchangeCount, currentConversationType, chatHistory, currentChatId]);
 
       // Flush pending saves when page unloads
       useEffect(() => {
@@ -2784,6 +2786,17 @@ Head to Daily Tend and complete your first one to finish onboarding!`;
           return () => clearTimeout(timer);
         }
       }, [vlqCompleted, sessionGreeted, onboardingCompleted, onboardingStep, messages.length]);
+
+      // Auto-set currentOnboardingArea when in step 1 and it's not set
+      useEffect(() => {
+        if (vlqCompleted && !onboardingCompleted && onboardingStep === 1 && !currentOnboardingArea) {
+          const focusAreas = getFocusAreas();
+          if (focusAreas.length > 0) {
+            console.log('Auto-setting first focus area:', focusAreas[0]);
+            setCurrentOnboardingArea(focusAreas[0]);
+          }
+        }
+      }, [vlqCompleted, onboardingCompleted, onboardingStep, currentOnboardingArea]);
 
       // Track view/tab for system prompt context (no auto-messages)
 
@@ -9836,38 +9849,36 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       const [editingArea, setEditingArea] = useState(null);
       const [tempFormData, setTempFormData] = useState(autoExpandSection === 'quiz' ? { quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null } : {});
       const [tempNotes, setTempNotes] = useState('');
-      const [hasScrolledOnMount, setHasScrolledOnMount] = useState(false);
+      const [lastScrolledArea, setLastScrolledArea] = useState(null);
       
-      // Scroll to focused area on initial mount
+      // Auto-expand and scroll to focusedArea whenever it changes (including initial set)
       React.useEffect(() => {
-        if (!hasScrolledOnMount && (focusedArea || autoExpandSection)) {
-          const areaToScroll = focusedArea || autoExpandSection;
-          if (areaToScroll && areaToScroll !== 'quiz') {
-            setExpandedArea(areaToScroll);
-            setTimeout(() => {
-              const element = document.getElementById(`life-area-${areaToScroll}`);
-              if (element) {
-                element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              }
-            }, 200);
-            setHasScrolledOnMount(true);
-          }
-        }
-      }, [focusedArea, autoExpandSection, hasScrolledOnMount]);
-      
-      // Sync with external focusedArea control (for subsequent changes)
-      React.useEffect(() => {
-        if (focusedArea && focusedArea !== expandedArea) {
+        if (focusedArea && focusedArea !== 'quiz' && focusedArea !== lastScrolledArea) {
+          console.log('Auto-expanding and scrolling to:', focusedArea);
           setExpandedArea(focusedArea);
-          // Scroll to the area
+          setLastScrolledArea(focusedArea);
           setTimeout(() => {
             const element = document.getElementById(`life-area-${focusedArea}`);
             if (element) {
               element.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-          }, 100);
+          }, 300);
         }
-      }, [focusedArea]);
+      }, [focusedArea, lastScrolledArea]);
+      
+      // Also handle autoExpandSection on mount
+      React.useEffect(() => {
+        if (autoExpandSection && autoExpandSection !== 'quiz' && !focusedArea && !lastScrolledArea) {
+          setExpandedArea(autoExpandSection);
+          setLastScrolledArea(autoExpandSection);
+          setTimeout(() => {
+            const element = document.getElementById(`life-area-${autoExpandSection}`);
+            if (element) {
+              element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 300);
+        }
+      }, [autoExpandSection]);
       
       // Notify parent when expanded area changes
       const handleExpandArea = (area) => {
