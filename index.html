@@ -65,9 +65,9 @@
 
     h1, h2, h3, h4 { font-family: 'Fraunces', serif; font-weight: 400; }
 
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--border-dark); border-radius: 3px; }
+    /* Hide scrollbars but keep scrolling functional */
+    ::-webkit-scrollbar { width: 0px; height: 0px; }
+    * { scrollbar-width: none; -ms-overflow-style: none; }
 
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     @keyframes slideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -10012,270 +10012,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           )}
           
           <div style={insightsStyles.content}>
-            {/* Gardener Type Section - At the very top */}
-            {(() => {
-              const savedGardenerType = userProfile?.tendPreferences?.gardenerType;
-              const quizStep = tempFormData.quizStep || 0;
-              const quizAnswers = tempFormData.quizAnswers || {};
-              const isGenerating = tempFormData.isGenerating || false;
-              const generatedResult = tempFormData.generatedResult || null;
-              
-              // If taking the quiz, show it here
-              if (expandedArea === 'quiz') {
-                const quizQuestions = [
-                  { q: "It's Saturday morning. What sounds most appealing?", options: [
-                    { text: "A quiet cup of coffee and a good book", id: 'a' },
-                    { text: "Brunch with friends — the more the merrier", id: 'b' },
-                    { text: "Finally tackling that project I've been putting off", id: 'c' },
-                    { text: "No plans — I'll see where the day takes me", id: 'd' },
-                  ]},
-                  { q: "A friend is going through a hard time. You:", options: [
-                    { text: "Listen deeply and help them process their feelings", id: 'a' },
-                    { text: "Rally the troops and organize support", id: 'b' },
-                    { text: "Research solutions and make a practical plan", id: 'c' },
-                    { text: "Surprise them with something to lift their spirits", id: 'd' },
-                  ]},
-                  { q: "Your ideal vacation involves:", options: [
-                    { text: "A peaceful retreat with time to reflect", id: 'a' },
-                    { text: "Exploring a new city with people I love", id: 'b' },
-                    { text: "A well-planned itinerary hitting all the highlights", id: 'c' },
-                    { text: "Booking a flight and figuring out the rest later", id: 'd' },
-                  ]},
-                  { q: "When you're stressed, you tend to:", options: [
-                    { text: "Need alone time to think things through", id: 'a' },
-                    { text: "Talk it out with someone I trust", id: 'b' },
-                    { text: "Make lists and break things into manageable steps", id: 'c' },
-                    { text: "Do something completely different to reset", id: 'd' },
-                  ]},
-                  { q: "The best part of achieving a goal is:", options: [
-                    { text: "The growth and self-discovery along the way", id: 'a' },
-                    { text: "Celebrating with the people who supported me", id: 'b' },
-                    { text: "The satisfaction of crossing it off my list", id: 'c' },
-                    { text: "The freedom to move on to the next adventure", id: 'd' },
-                  ]},
-                  { q: "Your ideal place to feel grounded is:", options: [
-                    { text: "A quiet forest, surrounded by trees", id: 'a' },
-                    { text: "A cozy café or gathering spot with good energy", id: 'b' },
-                    { text: "A tidy home office or workshop", id: 'c' },
-                    { text: "Somewhere new — a beach, desert, or open road", id: 'd' },
-                  ]},
-                  { q: "Your energy comes from:", options: [
-                    { text: "Meaningful one-on-one conversations", id: 'a' },
-                    { text: "Being around people and social gatherings", id: 'b' },
-                    { text: "Making visible progress on things that matter", id: 'c' },
-                    { text: "New experiences and breaking routine", id: 'd' },
-                  ]},
-                  { q: "When making a big decision, you:", options: [
-                    { text: "Trust your gut and inner wisdom", id: 'a' },
-                    { text: "Ask for input from people you trust", id: 'b' },
-                    { text: "Weigh pros and cons systematically", id: 'c' },
-                    { text: "Go with what excites you most", id: 'd' },
-                  ]},
-                  { q: "You'd most like to be remembered for:", options: [
-                    { text: "Your wisdom and thoughtfulness", id: 'a' },
-                    { text: "Your warmth and the relationships you built", id: 'b' },
-                    { text: "Your reliability and what you accomplished", id: 'c' },
-                    { text: "Your adventurous spirit and zest for life", id: 'd' },
-                  ]},
-                  { q: "In a garden, you'd be drawn to:", options: [
-                    { text: "A quiet corner with a bench for thinking", id: 'a' },
-                    { text: "A gathering space where people can connect", id: 'b' },
-                    { text: "Neat rows of thriving, well-tended plants", id: 'c' },
-                    { text: "A wild, overgrown corner full of surprises", id: 'd' },
-                  ]},
-                ];
-                
-                const generateGardenerType = async (answers) => {
-                  setTempFormData(prev => ({ ...prev, isGenerating: true }));
-                  const answerSummary = quizQuestions.map((q, i) => {
-                    const selectedOption = q.options.find(o => o.id === answers[i]);
-                    return `Q: ${q.q}\nA: ${selectedOption?.text || 'No answer'}`;
-                  }).join('\n\n');
-                  
-                  const prefs = userProfile?.tendPreferences || {};
-                  const lifeMapContext = [];
-                  VLQ_ORDER.forEach(domain => {
-                    const structured = prefs.structuredInfo?.[domain] || {};
-                    const notes = prefs.lifeAreaNotes?.[domain];
-                    const filledValues = Object.values(structured).filter(v => v);
-                    if (filledValues.length > 0 || notes) {
-                      lifeMapContext.push(`${VLQ_DOMAINS[domain]?.name}: ${[...filledValues, notes].filter(Boolean).join(', ')}`);
-                    }
-                  });
-                  
-                  try {
-                    const response = await fetch('https://api.anthropic.com/v1/messages', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-                      body: JSON.stringify({
-                        model: 'claude-sonnet-4-20250514',
-                        max_tokens: 800,
-                        system: `You are creating a unique, personalized "gardener archetype" for someone based on their personality quiz answers. This is for a wellness app called Tend.
-
-Create a ONE-OF-A-KIND gardener type that feels deeply personal and insightful. Be creative, warm, and specific. The name should be evocative and unique (not generic like "The Caring Gardener" — think more like "The Midnight Bloom Keeper" or "The Storm-Dancing Cultivator").
-
-The description should be 4-5 sentences that feel like they were written specifically for this person. Reference patterns you notice in their answers. Make them feel truly seen and understood.
-
-Respond in this exact JSON format only:
-{
-  "name": "The [Unique Evocative Name]",
-  "emoji": "[single plant/nature emoji]",
-  "description": "[4-5 sentences personally written for this person about their patterns, strengths, and approach to life.]",
-  "strength": "[Their superpower in 4-6 words]",
-  "color": "[hex color matching the vibe]"
-}`,
-                        messages: [{ role: 'user', content: `Based on these quiz answers, create a unique gardener archetype:\n\n${answerSummary}${lifeMapContext.length > 0 ? `\n\nAdditional context:\n${lifeMapContext.join('\n')}` : ''}` }]
-                      })
-                    });
-                    const data = await response.json();
-                    const text = data.content?.[0]?.text;
-                    const jsonMatch = text.match(/\{[\s\S]*\}/);
-                    if (jsonMatch) {
-                      const result = JSON.parse(jsonMatch[0]);
-                      setTempFormData(prev => ({ ...prev, isGenerating: false, generatedResult: result }));
-                    } else throw new Error('Parse failed');
-                  } catch (error) {
-                    console.error('Error generating gardener type:', error);
-                    setTempFormData(prev => ({ ...prev, isGenerating: false, generatedResult: {
-                      name: "The Gentle Cultivator", emoji: "🌱",
-                      description: "You have a unique way of nurturing growth in yourself and others. Your approach to life is thoughtful and intentional, always seeking the deeper meaning beneath the surface. You understand that the most beautiful gardens aren't rushed — they unfold in their own time. There's a quiet strength in how you tend to the things that matter most.",
-                      strength: "Nurturing potential into bloom", color: "#85B79D"
-                    }}));
-                  }
-                };
-                
-                const currentQ = quizQuestions[quizStep];
-                const progress = (quizStep / quizQuestions.length) * 100;
-                
-                return (
-                  <div style={{ ...insightsStyles.section, marginBottom: '2rem', border: '2px solid var(--accent)' }}>
-                    {!generatedResult && !isGenerating && (
-                      <div style={{ height: '4px', backgroundColor: '#EDE8DD', marginBottom: '1rem', borderRadius: '2px' }}>
-                        <div style={{ height: '100%', width: `${progress}%`, backgroundColor: 'var(--accent)', transition: 'width 0.3s', borderRadius: '2px' }} />
-                      </div>
-                    )}
-                    
-                    {!generatedResult && (
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                          <span style={{ fontSize: '1.5rem' }}>🌱</span>
-                          <div>
-                            <div style={{ fontWeight: 600, fontSize: '1rem' }}>{isGenerating ? 'Discovering your type...' : 'What kind of gardener are you?'}</div>
-                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{isGenerating ? 'This takes a moment' : `Question ${quizStep + 1} of ${quizQuestions.length}`}</div>
-                          </div>
-                        </div>
-                        {!isGenerating && <button onClick={() => { setExpandedArea(null); setTempFormData({}); }} style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: 'var(--text-muted)', cursor: 'pointer' }}>×</button>}
-                      </div>
-                    )}
-                    {generatedResult && (
-                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
-                        <button onClick={() => { setExpandedArea(null); setTempFormData({}); }} style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: 'var(--text-muted)', cursor: 'pointer' }}>×</button>
-                      </div>
-                    )}
-                    
-                    {isGenerating ? (
-                      <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'pulse 1.5s ease-in-out infinite' }}>🌱</div>
-                        <div style={{ fontWeight: 500 }}>Growing your unique gardener profile...</div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Analyzing your answers to create something just for you</div>
-                        <style>{`@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); opacity: 0.8; } }`}</style>
-                      </div>
-                    ) : generatedResult ? (
-                      <div>
-                        <div style={{ padding: '1.75rem', backgroundColor: `${generatedResult.color}12`, borderRadius: '16px', marginBottom: '1.25rem', border: `1px solid ${generatedResult.color}25` }}>
-                          <div style={{ fontSize: '4rem', textAlign: 'center', marginBottom: '0.75rem' }}>{generatedResult.emoji}</div>
-                          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: generatedResult.color, textAlign: 'center', marginBottom: '0.35rem', fontFamily: "'Fraunces', serif" }}>{generatedResult.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '1.25rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Your Gardener Type</div>
-                          <div style={{ fontSize: '0.95rem', lineHeight: 1.7, textAlign: 'center', marginBottom: '1.25rem' }}>{generatedResult.description}</div>
-                          <div style={{ padding: '0.75rem', backgroundColor: 'white', borderRadius: '8px', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Your superpower</div>
-                            <div style={{ fontSize: '0.95rem', color: generatedResult.color, fontWeight: 600 }}>{generatedResult.strength}</div>
-                          </div>
-                        </div>
-                        <button onClick={() => { setUserProfile(prev => ({ ...prev, tendPreferences: { ...prev?.tendPreferences, gardenerType: { ...generatedResult, answers: quizAnswers, completedAt: new Date().toISOString() } } })); setTempFormData({}); setExpandedArea(null); if (onQuizComplete) onQuizComplete(generatedResult); }}
-                          style={{ width: '100%', padding: '1rem', border: 'none', borderRadius: '12px', backgroundColor: generatedResult.color, color: 'white', fontSize: '1rem', cursor: 'pointer', fontWeight: 600 }}>
-                          Save my gardener type
-                        </button>
-                        <button onClick={() => setTempFormData({ quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null })}
-                          style={{ width: '100%', padding: '0.75rem', border: 'none', backgroundColor: 'transparent', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer', marginTop: '0.75rem' }}>
-                          Retake quiz
-                        </button>
-                      </div>
-                    ) : (
-                      <div>
-                        <div style={{ fontSize: '0.95rem', marginBottom: '1rem', fontWeight: 500, lineHeight: 1.4 }}>{currentQ?.q}</div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                          {currentQ?.options.map((option, i) => (
-                            <button key={i} onClick={() => {
-                              const newAnswers = { ...quizAnswers, [quizStep]: option.id };
-                              if (quizStep < quizQuestions.length - 1) setTempFormData({ quizStep: quizStep + 1, quizAnswers: newAnswers });
-                              else { setTempFormData({ quizStep, quizAnswers: newAnswers }); generateGardenerType(newAnswers); }
-                            }}
-                            style={{ padding: '0.85rem 1rem', border: '1px solid var(--border)', borderRadius: '10px', backgroundColor: 'var(--bg-elevated)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
-                            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-light)'; e.currentTarget.style.borderColor = 'var(--accent)'; }}
-                            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-elevated)'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
-                              {option.text}
-                            </button>
-                          ))}
-                        </div>
-                        {quizStep > 0 && <button onClick={() => setTempFormData({ ...tempFormData, quizStep: quizStep - 1 })} style={{ marginTop: '1rem', padding: '0.5rem', border: 'none', backgroundColor: 'transparent', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer' }}>← Back</button>}
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              
-              // If they have a saved gardener type, show it
-              if (savedGardenerType) {
-                return (
-                  <div style={{ ...insightsStyles.section, marginBottom: '2rem', background: `linear-gradient(135deg, ${savedGardenerType.color}08 0%, ${savedGardenerType.color}15 100%)`, border: `1px solid ${savedGardenerType.color}30` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div style={{ fontSize: '3rem' }}>{savedGardenerType.emoji}</div>
-                      <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>Your Gardener Type</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: savedGardenerType.color, fontFamily: "'Fraunces', serif" }}>{savedGardenerType.name}</div>
-                      </div>
-                      <button onClick={() => { setExpandedArea('quiz'); setTempFormData({ quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null }); }}
-                        style={{ padding: '0.5rem 1rem', border: `1px solid ${savedGardenerType.color}40`, borderRadius: '8px', backgroundColor: 'transparent', color: savedGardenerType.color, fontSize: '0.8rem', cursor: 'pointer' }}>
-                        Retake
-                      </button>
-                    </div>
-                    <div style={{ marginTop: '1rem', fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text)' }}>{savedGardenerType.description}</div>
-                    <div style={{ marginTop: '1rem', padding: '0.6rem 1rem', backgroundColor: 'white', borderRadius: '8px', display: 'inline-block' }}>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Superpower: </span>
-                      <span style={{ fontSize: '0.85rem', color: savedGardenerType.color, fontWeight: 600 }}>{savedGardenerType.strength}</span>
-                    </div>
-                  </div>
-                );
-              }
-              
-              // Otherwise show the quiz teaser
-              return (
-                <div onClick={() => setExpandedArea('quiz')} style={{
-                  ...insightsStyles.section,
-                  marginBottom: '2rem',
-                  background: 'linear-gradient(135deg, #F5EBD9 0%, #FBF7F0 100%)',
-                  border: '1px solid #E8DCC8',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '1rem',
-                  transition: 'transform 0.15s, box-shadow 0.15s',
-                }}
-                onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; }}
-                onMouseOut={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}>
-                  <div style={{ fontSize: '2.5rem' }}>🌻</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontWeight: 600, color: '#5D4E37', fontSize: '1rem', marginBottom: '0.25rem' }}>What kind of gardener are you?</div>
-                    <div style={{ fontSize: '0.85rem', color: '#8A7B62' }}>Take a 2-minute quiz to discover your unique tending style</div>
-                  </div>
-                  <div style={{ color: '#8A7B62', fontSize: '1.5rem' }}>→</div>
-                </div>
-              );
-            })()}
-            
-
-            {/* Your Life Map - Visual Knowledge Graph */}
+{/* Your Life Map - Visual Knowledge Graph */}
             <div style={insightsStyles.section}>
               <h3 style={insightsStyles.sectionTitle}>
                 <span>✨</span>
@@ -10702,45 +10439,100 @@ Respond in this exact JSON format only:
                                   
                                   {/* 3. Life Area Prompt */}
                                   <div style={{ marginTop: '0.75rem' }}>
-                                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                      {hasLifeMapInfo ? '✓ ' : ''}{questions[0]?.q || 'TELL ME MORE'}
-                                    </div>
-                                    {hasLifeMapInfo ? (
-                                      <div style={{ padding: '0.5rem 0.75rem', backgroundColor: `${area.color}10`, borderRadius: '8px', fontSize: '0.85rem' }}>
-                                        {Object.entries(structured).filter(([_, v]) => v).slice(0, 1).map(([key, value]) => (
-                                          <div key={key} style={{ color: 'var(--text)' }}>{value}</div>
-                                        ))}
-                                        {notes && !Object.values(structured).some(v => v) && (
-                                          <div style={{ color: 'var(--text)' }}>{notes}</div>
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <div>
-                                        <input type="text" 
-                                          value={tempFormData.prompt || ''}
-                                          onChange={(e) => setTempFormData(prev => ({...prev, prompt: e.target.value}))}
-                                          placeholder={questions[0]?.placeholder || "Share your thoughts..."}
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && tempFormData.prompt?.trim()) {
-                                              setUserProfile(prev => ({
-                                                ...prev,
-                                                tendPreferences: {
-                                                  ...prev?.tendPreferences,
-                                                  structuredInfo: { 
-                                                    ...prev?.tendPreferences?.structuredInfo, 
-                                                    [areaKey]: { ...structured, [questions[0]?.key || 'response']: tempFormData.prompt }
+                                    {/* Current prompt question - show from questions array or use tempFormData.currentPromptIdx */}
+                                    {(() => {
+                                      const promptIdx = tempFormData[`promptIdx_${areaKey}`] || 0;
+                                      const currentQuestion = questions[promptIdx] || questions[0];
+                                      const answeredKeys = Object.keys(structured).filter(k => structured[k]);
+                                      const hasAnsweredThisPrompt = currentQuestion && structured[currentQuestion.key];
+                                      
+                                      return (
+                                        <>
+                                          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                            {hasLifeMapInfo ? '✓ ' : ''}{currentQuestion?.q || 'TELL ME MORE'}
+                                          </div>
+                                          
+                                          {/* Show answered prompts */}
+                                          {answeredKeys.length > 0 && (
+                                            <div style={{ marginBottom: '0.5rem' }}>
+                                              {answeredKeys.map(key => (
+                                                <div key={key} style={{ padding: '0.5rem 0.75rem', backgroundColor: `${area.color}10`, borderRadius: '8px', fontSize: '0.85rem', marginBottom: '0.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                  <span style={{ color: 'var(--text)' }}>{structured[key]}</span>
+                                                  <button 
+                                                    onClick={() => {
+                                                      const newStructured = { ...structured };
+                                                      delete newStructured[key];
+                                                      setUserProfile(prev => ({
+                                                        ...prev,
+                                                        tendPreferences: {
+                                                          ...prev?.tendPreferences,
+                                                          structuredInfo: { ...prev?.tendPreferences?.structuredInfo, [areaKey]: newStructured }
+                                                        }
+                                                      }));
+                                                    }}
+                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.75rem' }}
+                                                  >×</button>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                          
+                                          {/* Input for current prompt if not answered */}
+                                          {!hasAnsweredThisPrompt && currentQuestion && (
+                                            <div>
+                                              <input type="text" 
+                                                value={tempFormData.prompt || ''}
+                                                onChange={(e) => setTempFormData(prev => ({...prev, prompt: e.target.value}))}
+                                                placeholder={currentQuestion.placeholder || "Share your thoughts..."}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Enter' && tempFormData.prompt?.trim()) {
+                                                    setUserProfile(prev => ({
+                                                      ...prev,
+                                                      tendPreferences: {
+                                                        ...prev?.tendPreferences,
+                                                        structuredInfo: { 
+                                                          ...prev?.tendPreferences?.structuredInfo, 
+                                                          [areaKey]: { ...structured, [currentQuestion.key]: tempFormData.prompt }
+                                                        }
+                                                      }
+                                                    }));
+                                                    setTempFormData(prev => ({...prev, prompt: ''}));
+                                                    if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
                                                   }
-                                                }
-                                              }));
-                                              setTempFormData(prev => ({...prev, prompt: ''}));
-                                              if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
-                                            }
-                                          }}
-                                          style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', boxSizing: 'border-box' }}
-                                        />
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>
-                                      </div>
-                                    )}
+                                                }}
+                                                style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                              />
+                                              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>
+                                            </div>
+                                          )}
+                                          
+                                          {/* Try another prompt button */}
+                                          {questions.length > 1 && (
+                                            <button
+                                              onClick={() => {
+                                                const nextIdx = (promptIdx + 1) % questions.length;
+                                                setTempFormData(prev => ({...prev, [`promptIdx_${areaKey}`]: nextIdx, prompt: ''}));
+                                              }}
+                                              style={{ 
+                                                marginTop: '0.5rem',
+                                                padding: '0.4rem 0.75rem', 
+                                                border: '1px dashed var(--border)', 
+                                                borderRadius: '6px', 
+                                                backgroundColor: 'transparent', 
+                                                color: 'var(--text-muted)', 
+                                                fontSize: '0.75rem', 
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.35rem'
+                                              }}
+                                            >
+                                              <span>🔄</span> Try a different prompt
+                                            </button>
+                                          )}
+                                        </>
+                                      );
+                                    })()}
                                   </div>
                                   
                                 </div>
@@ -10797,7 +10589,269 @@ Respond in this exact JSON format only:
               })()}
             </div>
             
-            {/* Overview Stats */}
+                        {/* Gardener Type Section */}
+            {(() => {
+              const savedGardenerType = userProfile?.tendPreferences?.gardenerType;
+              const quizStep = tempFormData.quizStep || 0;
+              const quizAnswers = tempFormData.quizAnswers || {};
+              const isGenerating = tempFormData.isGenerating || false;
+              const generatedResult = tempFormData.generatedResult || null;
+              
+              // If taking the quiz, show it here
+              if (expandedArea === 'quiz') {
+                const quizQuestions = [
+                  { q: "It's Saturday morning. What sounds most appealing?", options: [
+                    { text: "A quiet cup of coffee and a good book", id: 'a' },
+                    { text: "Brunch with friends — the more the merrier", id: 'b' },
+                    { text: "Finally tackling that project I've been putting off", id: 'c' },
+                    { text: "No plans — I'll see where the day takes me", id: 'd' },
+                  ]},
+                  { q: "A friend is going through a hard time. You:", options: [
+                    { text: "Listen deeply and help them process their feelings", id: 'a' },
+                    { text: "Rally the troops and organize support", id: 'b' },
+                    { text: "Research solutions and make a practical plan", id: 'c' },
+                    { text: "Surprise them with something to lift their spirits", id: 'd' },
+                  ]},
+                  { q: "Your ideal vacation involves:", options: [
+                    { text: "A peaceful retreat with time to reflect", id: 'a' },
+                    { text: "Exploring a new city with people I love", id: 'b' },
+                    { text: "A well-planned itinerary hitting all the highlights", id: 'c' },
+                    { text: "Booking a flight and figuring out the rest later", id: 'd' },
+                  ]},
+                  { q: "When you're stressed, you tend to:", options: [
+                    { text: "Need alone time to think things through", id: 'a' },
+                    { text: "Talk it out with someone I trust", id: 'b' },
+                    { text: "Make lists and break things into manageable steps", id: 'c' },
+                    { text: "Do something completely different to reset", id: 'd' },
+                  ]},
+                  { q: "The best part of achieving a goal is:", options: [
+                    { text: "The growth and self-discovery along the way", id: 'a' },
+                    { text: "Celebrating with the people who supported me", id: 'b' },
+                    { text: "The satisfaction of crossing it off my list", id: 'c' },
+                    { text: "The freedom to move on to the next adventure", id: 'd' },
+                  ]},
+                  { q: "Your ideal place to feel grounded is:", options: [
+                    { text: "A quiet forest, surrounded by trees", id: 'a' },
+                    { text: "A cozy café or gathering spot with good energy", id: 'b' },
+                    { text: "A tidy home office or workshop", id: 'c' },
+                    { text: "Somewhere new — a beach, desert, or open road", id: 'd' },
+                  ]},
+                  { q: "Your energy comes from:", options: [
+                    { text: "Meaningful one-on-one conversations", id: 'a' },
+                    { text: "Being around people and social gatherings", id: 'b' },
+                    { text: "Making visible progress on things that matter", id: 'c' },
+                    { text: "New experiences and breaking routine", id: 'd' },
+                  ]},
+                  { q: "When making a big decision, you:", options: [
+                    { text: "Trust your gut and inner wisdom", id: 'a' },
+                    { text: "Ask for input from people you trust", id: 'b' },
+                    { text: "Weigh pros and cons systematically", id: 'c' },
+                    { text: "Go with what excites you most", id: 'd' },
+                  ]},
+                  { q: "You'd most like to be remembered for:", options: [
+                    { text: "Your wisdom and thoughtfulness", id: 'a' },
+                    { text: "Your warmth and the relationships you built", id: 'b' },
+                    { text: "Your reliability and what you accomplished", id: 'c' },
+                    { text: "Your adventurous spirit and zest for life", id: 'd' },
+                  ]},
+                  { q: "In a garden, you'd be drawn to:", options: [
+                    { text: "A quiet corner with a bench for thinking", id: 'a' },
+                    { text: "A gathering space where people can connect", id: 'b' },
+                    { text: "Neat rows of thriving, well-tended plants", id: 'c' },
+                    { text: "A wild, overgrown corner full of surprises", id: 'd' },
+                  ]},
+                ];
+                
+                const generateGardenerType = async (answers) => {
+                  setTempFormData(prev => ({ ...prev, isGenerating: true }));
+                  const answerSummary = quizQuestions.map((q, i) => {
+                    const selectedOption = q.options.find(o => o.id === answers[i]);
+                    return `Q: ${q.q}\nA: ${selectedOption?.text || 'No answer'}`;
+                  }).join('\n\n');
+                  
+                  const prefs = userProfile?.tendPreferences || {};
+                  const lifeMapContext = [];
+                  VLQ_ORDER.forEach(domain => {
+                    const structured = prefs.structuredInfo?.[domain] || {};
+                    const notes = prefs.lifeAreaNotes?.[domain];
+                    const filledValues = Object.values(structured).filter(v => v);
+                    if (filledValues.length > 0 || notes) {
+                      lifeMapContext.push(`${VLQ_DOMAINS[domain]?.name}: ${[...filledValues, notes].filter(Boolean).join(', ')}`);
+                    }
+                  });
+                  
+                  try {
+                    const response = await fetch('https://api.anthropic.com/v1/messages', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+                      body: JSON.stringify({
+                        model: 'claude-sonnet-4-20250514',
+                        max_tokens: 800,
+                        system: `You are creating a unique, personalized "gardener archetype" for someone based on their personality quiz answers. This is for a wellness app called Tend.
+
+Create a ONE-OF-A-KIND gardener type that feels deeply personal and insightful. Be creative, warm, and specific. The name should be evocative and unique (not generic like "The Caring Gardener" — think more like "The Midnight Bloom Keeper" or "The Storm-Dancing Cultivator").
+
+The description should be 4-5 sentences that feel like they were written specifically for this person. Reference patterns you notice in their answers. Make them feel truly seen and understood.
+
+Respond in this exact JSON format only:
+{
+  "name": "The [Unique Evocative Name]",
+  "emoji": "[single plant/nature emoji]",
+  "description": "[4-5 sentences personally written for this person about their patterns, strengths, and approach to life.]",
+  "strength": "[Their superpower in 4-6 words]",
+  "color": "[hex color matching the vibe]"
+}`,
+                        messages: [{ role: 'user', content: `Based on these quiz answers, create a unique gardener archetype:\n\n${answerSummary}${lifeMapContext.length > 0 ? `\n\nAdditional context:\n${lifeMapContext.join('\n')}` : ''}` }]
+                      })
+                    });
+                    const data = await response.json();
+                    const text = data.content?.[0]?.text;
+                    const jsonMatch = text.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                      const result = JSON.parse(jsonMatch[0]);
+                      setTempFormData(prev => ({ ...prev, isGenerating: false, generatedResult: result }));
+                    } else throw new Error('Parse failed');
+                  } catch (error) {
+                    console.error('Error generating gardener type:', error);
+                    setTempFormData(prev => ({ ...prev, isGenerating: false, generatedResult: {
+                      name: "The Gentle Cultivator", emoji: "🌱",
+                      description: "You have a unique way of nurturing growth in yourself and others. Your approach to life is thoughtful and intentional, always seeking the deeper meaning beneath the surface. You understand that the most beautiful gardens aren't rushed — they unfold in their own time. There's a quiet strength in how you tend to the things that matter most.",
+                      strength: "Nurturing potential into bloom", color: "#85B79D"
+                    }}));
+                  }
+                };
+                
+                const currentQ = quizQuestions[quizStep];
+                const progress = (quizStep / quizQuestions.length) * 100;
+                
+                return (
+                  <div style={{ ...insightsStyles.section, marginBottom: '2rem', border: '2px solid var(--accent)' }}>
+                    {!generatedResult && !isGenerating && (
+                      <div style={{ height: '4px', backgroundColor: '#EDE8DD', marginBottom: '1rem', borderRadius: '2px' }}>
+                        <div style={{ height: '100%', width: `${progress}%`, backgroundColor: 'var(--accent)', transition: 'width 0.3s', borderRadius: '2px' }} />
+                      </div>
+                    )}
+                    
+                    {!generatedResult && (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <span style={{ fontSize: '1.5rem' }}>🌱</span>
+                          <div>
+                            <div style={{ fontWeight: 600, fontSize: '1rem' }}>{isGenerating ? 'Discovering your type...' : 'What kind of gardener are you?'}</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{isGenerating ? 'This takes a moment' : `Question ${quizStep + 1} of ${quizQuestions.length}`}</div>
+                          </div>
+                        </div>
+                        {!isGenerating && <button onClick={() => { setExpandedArea(null); setTempFormData({}); }} style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: 'var(--text-muted)', cursor: 'pointer' }}>×</button>}
+                      </div>
+                    )}
+                    {generatedResult && (
+                      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '0.5rem' }}>
+                        <button onClick={() => { setExpandedArea(null); setTempFormData({}); }} style={{ background: 'none', border: 'none', fontSize: '1.5rem', color: 'var(--text-muted)', cursor: 'pointer' }}>×</button>
+                      </div>
+                    )}
+                    
+                    {isGenerating ? (
+                      <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'pulse 1.5s ease-in-out infinite' }}>🌱</div>
+                        <div style={{ fontWeight: 500 }}>Growing your unique gardener profile...</div>
+                        <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Analyzing your answers to create something just for you</div>
+                        <style>{`@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); opacity: 0.8; } }`}</style>
+                      </div>
+                    ) : generatedResult ? (
+                      <div>
+                        <div style={{ padding: '1.75rem', backgroundColor: `${generatedResult.color}12`, borderRadius: '16px', marginBottom: '1.25rem', border: `1px solid ${generatedResult.color}25` }}>
+                          <div style={{ fontSize: '4rem', textAlign: 'center', marginBottom: '0.75rem' }}>{generatedResult.emoji}</div>
+                          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: generatedResult.color, textAlign: 'center', marginBottom: '0.35rem', fontFamily: "'Fraunces', serif" }}>{generatedResult.name}</div>
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '1.25rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Your Gardener Type</div>
+                          <div style={{ fontSize: '0.95rem', lineHeight: 1.7, textAlign: 'center', marginBottom: '1.25rem' }}>{generatedResult.description}</div>
+                          <div style={{ padding: '0.75rem', backgroundColor: 'white', borderRadius: '8px', textAlign: 'center' }}>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Your superpower</div>
+                            <div style={{ fontSize: '0.95rem', color: generatedResult.color, fontWeight: 600 }}>{generatedResult.strength}</div>
+                          </div>
+                        </div>
+                        <button onClick={() => { setUserProfile(prev => ({ ...prev, tendPreferences: { ...prev?.tendPreferences, gardenerType: { ...generatedResult, answers: quizAnswers, completedAt: new Date().toISOString() } } })); setTempFormData({}); setExpandedArea(null); if (onQuizComplete) onQuizComplete(generatedResult); }}
+                          style={{ width: '100%', padding: '1rem', border: 'none', borderRadius: '12px', backgroundColor: generatedResult.color, color: 'white', fontSize: '1rem', cursor: 'pointer', fontWeight: 600 }}>
+                          Save my gardener type
+                        </button>
+                        <button onClick={() => setTempFormData({ quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null })}
+                          style={{ width: '100%', padding: '0.75rem', border: 'none', backgroundColor: 'transparent', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer', marginTop: '0.75rem' }}>
+                          Retake quiz
+                        </button>
+                      </div>
+                    ) : (
+                      <div>
+                        <div style={{ fontSize: '0.95rem', marginBottom: '1rem', fontWeight: 500, lineHeight: 1.4 }}>{currentQ?.q}</div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                          {currentQ?.options.map((option, i) => (
+                            <button key={i} onClick={() => {
+                              const newAnswers = { ...quizAnswers, [quizStep]: option.id };
+                              if (quizStep < quizQuestions.length - 1) setTempFormData({ quizStep: quizStep + 1, quizAnswers: newAnswers });
+                              else { setTempFormData({ quizStep, quizAnswers: newAnswers }); generateGardenerType(newAnswers); }
+                            }}
+                            style={{ padding: '0.85rem 1rem', border: '1px solid var(--border)', borderRadius: '10px', backgroundColor: 'var(--bg-elevated)', fontSize: '0.85rem', cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s' }}
+                            onMouseOver={(e) => { e.currentTarget.style.backgroundColor = 'var(--accent-light)'; e.currentTarget.style.borderColor = 'var(--accent)'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.backgroundColor = 'var(--bg-elevated)'; e.currentTarget.style.borderColor = 'var(--border)'; }}>
+                              {option.text}
+                            </button>
+                          ))}
+                        </div>
+                        {quizStep > 0 && <button onClick={() => setTempFormData({ ...tempFormData, quizStep: quizStep - 1 })} style={{ marginTop: '1rem', padding: '0.5rem', border: 'none', backgroundColor: 'transparent', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer' }}>← Back</button>}
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              
+              // If they have a saved gardener type, show it
+              if (savedGardenerType) {
+                return (
+                  <div style={{ ...insightsStyles.section, marginBottom: '2rem', background: `linear-gradient(135deg, ${savedGardenerType.color}08 0%, ${savedGardenerType.color}15 100%)`, border: `1px solid ${savedGardenerType.color}30` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                      <div style={{ fontSize: '3rem' }}>{savedGardenerType.emoji}</div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>Your Gardener Type</div>
+                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: savedGardenerType.color, fontFamily: "'Fraunces', serif" }}>{savedGardenerType.name}</div>
+                      </div>
+                      <button onClick={() => { setExpandedArea('quiz'); setTempFormData({ quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null }); }}
+                        style={{ padding: '0.5rem 1rem', border: `1px solid ${savedGardenerType.color}40`, borderRadius: '8px', backgroundColor: 'transparent', color: savedGardenerType.color, fontSize: '0.8rem', cursor: 'pointer' }}>
+                        Retake
+                      </button>
+                    </div>
+                    <div style={{ marginTop: '1rem', fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text)' }}>{savedGardenerType.description}</div>
+                    <div style={{ marginTop: '1rem', padding: '0.6rem 1rem', backgroundColor: 'white', borderRadius: '8px', display: 'inline-block' }}>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Superpower: </span>
+                      <span style={{ fontSize: '0.85rem', color: savedGardenerType.color, fontWeight: 600 }}>{savedGardenerType.strength}</span>
+                    </div>
+                  </div>
+                );
+              }
+              
+              // Otherwise show the quiz teaser
+              return (
+                <div onClick={() => setExpandedArea('quiz')} style={{
+                  ...insightsStyles.section,
+                  marginBottom: '2rem',
+                  background: 'linear-gradient(135deg, #F5EBD9 0%, #FBF7F0 100%)',
+                  border: '1px solid #E8DCC8',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '1rem',
+                  transition: 'transform 0.15s, box-shadow 0.15s',
+                }}
+                onMouseOver={(e) => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}>
+                  <div style={{ fontSize: '2.5rem' }}>🌻</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, color: '#5D4E37', fontSize: '1rem', marginBottom: '0.25rem' }}>What kind of gardener are you?</div>
+                    <div style={{ fontSize: '0.85rem', color: '#8A7B62' }}>Take a 2-minute quiz to discover your unique tending style</div>
+                  </div>
+                  <div style={{ color: '#8A7B62', fontSize: '1.5rem' }}>→</div>
+                </div>
+              );
+            })()}
+            
+{/* Overview Stats */}
             <div style={insightsStyles.section}>
               <h3 style={insightsStyles.sectionTitle}>
                 <span>📊</span>
