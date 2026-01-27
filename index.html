@@ -10723,7 +10723,14 @@ Respond in this exact JSON format only:
                           const fontSize = 15 * node.scale;
                           return (
                             <g key={`cat-${i}`} style={{ cursor: 'pointer' }}
-                              onClick={() => setExpandedArea(expandedArea === node.domain ? null : node.domain)}>
+                              onClick={() => {
+                                setExpandedArea(expandedArea === node.domain ? null : node.domain);
+                                if (expandedArea !== node.domain) {
+                                  setTimeout(() => {
+                                    document.getElementById(`life-area-${node.domain}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                  }, 100);
+                                }
+                              }}>
                               <circle cx={node.x} cy={node.y} r={r}
                                 fill={node.hasContent ? node.color : '#FDFBF7'}
                                 stroke={node.color} strokeWidth={node.hasContent ? "0" : "1.5"}
@@ -10836,7 +10843,7 @@ Respond in this exact JSON format only:
                           const questions = discoveryQs[areaKey] || [];
                           
                           return (
-                            <div key={areaKey} style={{
+                            <div key={areaKey} id={`life-area-${areaKey}`} style={{
                               backgroundColor: 'var(--bg-elevated)',
                               borderRadius: '12px',
                               borderLeft: `4px solid ${area.color}`,
