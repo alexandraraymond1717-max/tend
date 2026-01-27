@@ -2733,7 +2733,7 @@ Respond with ONLY the task text, nothing else.`,
 
 Based on your values assessment, ${focusAreaNames.length > 0 ? `you want to focus on growing in: <strong>${focusAreaNames.join('</strong>, <strong>')}</strong>` : 'there are areas where you want to grow'}.
 
-Let's build out your <strong>Life Map</strong> — for each focus area, we'll add some personal context, set a goal, and create a supporting habit.
+Let's build out your <strong>Life Map</strong> — for each focus area, we'll set a goal, add a weekly habit, and answer a prompt.
 
 Let's start with <strong>${firstAreaName}</strong>. I've opened it for you on the left.
 
@@ -3294,12 +3294,12 @@ FOCUS AREAS: ${focusAreaNames.join(', ')}
 
 CURRENTLY WORKING ON: ${currentAreaName} (${currentArea})
 Progress for ${currentAreaName}:
-- Prompt answered: ${currentAreaProgress.hasPrompt ? '✓ done' : '○ NEEDED'}
-- Goal set: ${currentAreaProgress.hasGoal ? '✓ done' : '○ NEEDED'}  
+- Goal set: ${currentAreaProgress.hasGoal ? '✓ done' : '○ NEEDED'}
 - Weekly habit: ${currentAreaProgress.hasHabit ? '✓ done' : '○ NEEDED'}
+- Prompt answered: ${currentAreaProgress.hasPrompt ? '✓ done' : '○ NEEDED'}
 
 OVERALL PROGRESS:
-${focusAreaProgress.map(p => `${p.name}: ${p.complete ? '✓ complete' : `${p.hasPrompt ? '✓' : '○'} prompt | ${p.hasGoal ? '✓' : '○'} goal | ${p.hasHabit ? '✓' : '○'} habit`}`).join('\n')}
+${focusAreaProgress.map(p => `${p.name}: ${p.complete ? '✓ complete' : `${p.hasGoal ? '✓' : '○'} goal | ${p.hasHabit ? '✓' : '○'} habit | ${p.hasPrompt ? '✓' : '○'} prompt`}`).join('\n')}
 
 ${allFocusAreasComplete ? '🎉 ALL FOCUS AREAS COMPLETE!' : ''}
 
@@ -4055,7 +4055,7 @@ I'm here to help with any planning.`
 
 Based on your values assessment, ${focusAreaNames.length > 0 ? `you want to focus on growing in: <strong>${focusAreaNames.join('</strong>, <strong>')}</strong>` : 'there are areas where you want to grow'}.
 
-Let's build out your <strong>Life Map</strong> — for each focus area, we'll add some personal context, set a goal, and create a supporting habit.
+Let's build out your <strong>Life Map</strong> — for each focus area, we'll set a goal, add a weekly habit, and answer a prompt.
 
 Let's start with <strong>${firstAreaName}</strong>. I've opened it for you on the left.
 
@@ -10604,65 +10604,22 @@ Respond in this exact JSON format only:
                                       marginTop: '0.75rem',
                                       fontSize: '0.75rem'
                                     }}>
-                                      <span style={{ color: hasLifeMapInfo ? 'var(--accent)' : 'var(--text-muted)' }}>
-                                        {hasLifeMapInfo ? '✓' : '○'} Context
-                                      </span>
                                       <span style={{ color: areaGoals.length > 0 ? 'var(--accent)' : 'var(--text-muted)' }}>
                                         {areaGoals.length > 0 ? '✓' : '○'} Goal
                                       </span>
                                       <span style={{ color: areaHabits.length > 0 ? 'var(--accent)' : 'var(--text-muted)' }}>
                                         {areaHabits.length > 0 ? '✓' : '○'} Habit
                                       </span>
+                                      <span style={{ color: hasLifeMapInfo ? 'var(--accent)' : 'var(--text-muted)' }}>
+                                        {hasLifeMapInfo ? '✓' : '○'} Prompt
+                                      </span>
                                     </div>
                                   )}
                                   
-                                  {/* 1. Context Prompt - just one question */}
+                                  {/* 1. Goal */}
                                   <div style={{ marginTop: '0.75rem' }}>
                                     <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                      {hasLifeMapInfo ? '✓ CONTEXT' : 'ADD CONTEXT'}
-                                    </div>
-                                    {hasLifeMapInfo ? (
-                                      <div style={{ padding: '0.5rem 0.75rem', backgroundColor: `${area.color}10`, borderRadius: '8px', fontSize: '0.85rem' }}>
-                                        {Object.entries(structured).filter(([_, v]) => v).slice(0, 1).map(([key, value]) => (
-                                          <div key={key} style={{ color: 'var(--text)' }}>{value}</div>
-                                        ))}
-                                        {notes && !Object.values(structured).some(v => v) && (
-                                          <div style={{ color: 'var(--text)' }}>{notes}</div>
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <div>
-                                        <input type="text" 
-                                          value={tempFormData.context || ''}
-                                          onChange={(e) => setTempFormData(prev => ({...prev, context: e.target.value}))}
-                                          placeholder={questions[0]?.placeholder || "What matters most to you here?"}
-                                          onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && tempFormData.context?.trim()) {
-                                              setUserProfile(prev => ({
-                                                ...prev,
-                                                tendPreferences: {
-                                                  ...prev?.tendPreferences,
-                                                  structuredInfo: { 
-                                                    ...prev?.tendPreferences?.structuredInfo, 
-                                                    [areaKey]: { ...structured, [questions[0]?.key || 'context']: tempFormData.context }
-                                                  }
-                                                }
-                                              }));
-                                              setTempFormData(prev => ({...prev, context: ''}));
-                                              if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
-                                            }
-                                          }}
-                                          style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', boxSizing: 'border-box' }}
-                                        />
-                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>
-                                      </div>
-                                    )}
-                                  </div>
-                                  
-                                  {/* 2. Goal */}
-                                  <div style={{ marginTop: '0.75rem' }}>
-                                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                      {areaGoals.length > 0 ? '✓ GOAL' : 'SET A GOAL'}
+                                      {areaGoals.length > 0 ? '✓ GOAL' : 'ADD A GOAL'}
                                     </div>
                                     {areaGoals.map(goal => (
                                       <div key={goal.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', backgroundColor: `${area.color}10`, borderRadius: '8px', marginBottom: '0.5rem' }}>
@@ -10672,7 +10629,7 @@ Respond in this exact JSON format only:
                                       </div>
                                     ))}
                                     {areaGoals.length === 0 && (
-                                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                      <div>
                                         <input type="text" 
                                           value={tempFormData.newGoal || ''}
                                           onChange={(e) => setTempFormData(prev => ({...prev, newGoal: e.target.value}))}
@@ -10684,17 +10641,17 @@ Respond in this exact JSON format only:
                                               if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
                                             }
                                           }}
-                                          style={{ flex: 1, padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem' }}
+                                          style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', boxSizing: 'border-box' }}
                                         />
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>
                                       </div>
                                     )}
-                                    {areaGoals.length === 0 && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>}
                                   </div>
                                   
-                                  {/* 3. Weekly Habit */}
+                                  {/* 2. Weekly Habit */}
                                   <div style={{ marginTop: '0.75rem' }}>
                                     <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                      {areaHabits.length > 0 ? '✓ WEEKLY HABIT' : 'ADD A HABIT'}
+                                      {areaHabits.length > 0 ? '✓ WEEKLY HABIT' : 'ADD A WEEKLY HABIT'}
                                     </div>
                                     {areaHabits.map(habit => (
                                       <div key={habit.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0.75rem', backgroundColor: `${area.color}10`, borderRadius: '8px', marginBottom: '0.5rem' }}>
@@ -10730,6 +10687,49 @@ Respond in this exact JSON format only:
                                       </div>
                                     )}
                                     {areaHabits.length === 0 && <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>}
+                                  </div>
+                                  
+                                  {/* 3. Life Area Prompt */}
+                                  <div style={{ marginTop: '0.75rem' }}>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                      {hasLifeMapInfo ? '✓ ' : ''}{questions[0]?.q || 'TELL ME MORE'}
+                                    </div>
+                                    {hasLifeMapInfo ? (
+                                      <div style={{ padding: '0.5rem 0.75rem', backgroundColor: `${area.color}10`, borderRadius: '8px', fontSize: '0.85rem' }}>
+                                        {Object.entries(structured).filter(([_, v]) => v).slice(0, 1).map(([key, value]) => (
+                                          <div key={key} style={{ color: 'var(--text)' }}>{value}</div>
+                                        ))}
+                                        {notes && !Object.values(structured).some(v => v) && (
+                                          <div style={{ color: 'var(--text)' }}>{notes}</div>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div>
+                                        <input type="text" 
+                                          value={tempFormData.prompt || ''}
+                                          onChange={(e) => setTempFormData(prev => ({...prev, prompt: e.target.value}))}
+                                          placeholder={questions[0]?.placeholder || "Share your thoughts..."}
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && tempFormData.prompt?.trim()) {
+                                              setUserProfile(prev => ({
+                                                ...prev,
+                                                tendPreferences: {
+                                                  ...prev?.tendPreferences,
+                                                  structuredInfo: { 
+                                                    ...prev?.tendPreferences?.structuredInfo, 
+                                                    [areaKey]: { ...structured, [questions[0]?.key || 'response']: tempFormData.prompt }
+                                                  }
+                                                }
+                                              }));
+                                              setTempFormData(prev => ({...prev, prompt: ''}));
+                                              if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
+                                            }
+                                          }}
+                                          style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                        />
+                                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>
+                                      </div>
+                                    )}
                                   </div>
                                   
                                 </div>
