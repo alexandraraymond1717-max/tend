@@ -10888,7 +10888,7 @@ Respond in this exact JSON format only:
                                       {areaGoals.map(goal => (
                                         <div key={goal.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.4rem 0' }}>
                                           <span style={{ color: 'var(--accent)', fontSize: '0.85rem' }}>🎯</span>
-                                          <span style={{ flex: 1, fontSize: '0.85rem', textDecoration: goal.completed ? 'line-through' : 'none', color: goal.completed ? 'var(--text-muted)' : 'var(--text)' }}>{goal.title}</span>
+                                          <span style={{ flex: 1, fontSize: '0.85rem', textDecoration: goal.completed ? 'line-through' : 'none', color: goal.completed ? 'var(--text-muted)' : 'var(--text)' }}>{goal.text}</span>
                                           {goal.completed && <span style={{ fontSize: '0.65rem', color: 'var(--accent)', backgroundColor: 'var(--accent-light)', padding: '0.1rem 0.3rem', borderRadius: '4px' }}>✓</span>}
                                         </div>
                                       ))}
