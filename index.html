@@ -1674,11 +1674,9 @@ Respond with ONLY the task text, nothing else.`,
       const [seasonIntentions, setSeasonIntentions] = useState({
         winter: '', spring: '', summer: '', fall: ''
       });
-      const [yearTheme, setYearTheme] = useState('');
       
-      // Onboarding system (1-7 steps, null = completed)
-      // 1: Goals, 2: Weekly Habits, 3: Events (optional), 4: Gardener Quiz (optional), 
-      // 5: Life Map, 6: Compass Word, 7: Daily Tend
+      // Onboarding system (1-3 steps)
+      // 1: Life Map (prompts + goals + habits per focus area), 2: Quiz (optional), 3: First Tend
       const [onboardingStep, setOnboardingStep] = useState(1);
       const [onboardingCompleted, setOnboardingCompleted] = useState(false);
       
@@ -1807,81 +1805,6 @@ Respond with ONLY the task text, nothing else.`,
         };
       };
 
-      // Generate compass word using AI based on full profile
-      const generateCompassWord = async () => {
-        if (!apiKey) return 'intention';
-        
-        const focusAreas = getFocusAreas();
-        const prefs = userProfile?.tendPreferences || {};
-        const gardenerType = prefs.gardenerType;
-        
-        // Gather all life map info
-        const lifeMapSummary = VLQ_ORDER.map(area => {
-          const structured = prefs.structuredInfo?.[area] || {};
-          const notes = prefs.lifeAreaNotes?.[area];
-          const areaGoals = goals.filter(g => g.lifeArea === area);
-          const areaHabits = weeklyHabits.filter(h => h.lifeArea === area);
-          const scores = vlqScores[area] || {};
-          
-          if (!Object.values(structured).some(v => v) && !notes && areaGoals.length === 0 && areaHabits.length === 0) return null;
-          
-          return `${VLQ_DOMAINS[area]?.name} (importance: ${scores.importance || 5}, living: ${scores.consistency || 5}):
-            ${Object.values(structured).filter(v => v).join(', ')}
-            ${notes ? `Notes: ${notes}` : ''}
-            ${areaGoals.length > 0 ? `Goals: ${areaGoals.map(g => g.text).join(', ')}` : ''}
-            ${areaHabits.length > 0 ? `Habits: ${areaHabits.map(h => h.text).join(', ')}` : ''}`;
-        }).filter(Boolean).join('\n');
-        
-        try {
-          const response = await fetch('https://api.anthropic.com/v1/messages', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
-            body: JSON.stringify({
-              model: 'claude-sonnet-4-20250514',
-              max_tokens: 100,
-              messages: [{ role: 'user', content: `Based on this person's life profile, suggest ONE powerful compass word for their year. The word should capture their deeper aspirations, not just name a category.
-
-Focus areas (biggest gaps between importance and living): ${focusAreas.map(a => VLQ_DOMAINS[a]?.name).join(', ')}
-
-${gardenerType ? `Their gardener type: ${gardenerType.type} - ${gardenerType.description}` : ''}
-
-Life Map:
-${lifeMapSummary}
-
-Respond with ONLY the single word, nothing else. Make it evocative and meaningful - words like "Flourish", "Rooted", "Brave", "Whole", "Expand", "Savor" - not generic category names.` }]
-            })
-          });
-          
-          const data = await response.json();
-          const word = data.content?.[0]?.text?.trim() || 'intention';
-          return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-        } catch (e) {
-          console.error('Error generating compass word:', e);
-          return 'intention';
-        }
-      };
-
-      // Suggest a compass word based on user data (fallback)
-      const getSuggestedCompassWord = () => {
-        const focusAreas = getFocusAreas();
-        const topFocus = focusAreas[0];
-        
-        const wordSuggestions = {
-          'family': 'connection',
-          'partner': 'love',
-          'friendships': 'community',
-          'career': 'growth',
-          'education': 'learning',
-          'recreation': 'joy',
-          'spirituality': 'presence',
-          'community': 'service',
-          'health': 'vitality',
-          'mentalHealth': 'balance',
-        };
-        
-        return wordSuggestions[topFocus] || 'intention';
-      };
-
       // Auth state listener
       useEffect(() => {
         const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
@@ -1911,7 +1834,6 @@ Respond with ONLY the single word, nothing else. Make it evocative and meaningfu
             const data = doc.data();
             if (data.vlqScores) setVlqScores(data.vlqScores);
             if (data.vlqCompleted) setVlqCompleted(data.vlqCompleted);
-            if (data.yearTheme) setYearTheme(data.yearTheme);
             if (data.events) setEvents(data.events);
             if (data.goals) setGoals(data.goals);
             if (data.notes) setNotes(data.notes);
@@ -2071,8 +1993,8 @@ Respond with ONLY the single word, nothing else. Make it evocative and meaningfu
             // Load onboarding state
             if (data.onboardingStep !== undefined) setOnboardingStep(data.onboardingStep);
             if (data.onboardingCompleted !== undefined) setOnboardingCompleted(data.onboardingCompleted);
-            // For existing users who already have compass word but no onboarding tracking, mark complete
-            if (data.yearTheme && data.onboardingCompleted === undefined) {
+            // For existing users who completed onboarding in old system, mark complete
+            if (data.onboardingCompleted === undefined && data.vlqCompleted && (data.goals?.length > 0 || data.weeklyHabits?.length > 0)) {
               setOnboardingCompleted(true);
               setOnboardingStep(null);
             }
@@ -2101,7 +2023,6 @@ Respond with ONLY the single word, nothing else. Make it evocative and meaningfu
             });
             setVlqCompleted(false);
             setVlqStep(-1);
-            setYearTheme('');
             setEvents([]);
             setGoals([]);
             setRevealed(false);
@@ -2458,7 +2379,6 @@ Respond with ONLY the single word, nothing else. Make it evocative and meaningfu
             await db.collection('users').doc(user.uid).set({
               vlqScores,
               vlqCompleted,
-              yearTheme,
               events,
               goals,
               notes,
@@ -2510,7 +2430,7 @@ Respond with ONLY the single word, nothing else. Make it evocative and meaningfu
             pendingSaveRef.current = null;
           }
         }, 100);
-      }, [user, vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, onboardingStep, onboardingCompleted, savedConversations, userProfile, messages, exchangeCount, currentConversationType, chatHistory, currentChatId]);
+      }, [user, vlqScores, vlqCompleted, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, onboardingStep, onboardingCompleted, savedConversations, userProfile, messages, exchangeCount, currentConversationType, chatHistory, currentChatId]);
 
       // Flush pending saves when page unloads
       useEffect(() => {
@@ -2533,15 +2453,8 @@ Respond with ONLY the single word, nothing else. Make it evocative and meaningfu
         if (onboardingStep === 3 && todaysTendies.some(t => t.completed)) {
           setOnboardingCompleted(true);
           setOnboardingStep(null);
-          
-          // Auto-generate compass word if not set
-          if (!yearTheme && apiKey) {
-            generateCompassWord().then(word => {
-              if (word) setYearTheme(word);
-            });
-          }
         }
-      }, [vlqCompleted, onboardingCompleted, onboardingStep, goals, weeklyHabits, userProfile, yearTheme, todaysTendies]);
+      }, [vlqCompleted, onboardingCompleted, onboardingStep, goals, weeklyHabits, userProfile, todaysTendies]);
 
       // Onboarding: Auto-navigate to relevant view when step changes
       useEffect(() => {
@@ -2636,7 +2549,7 @@ Respond with ONLY the single word, nothing else. Make it evocative and meaningfu
         if (user && dataLoaded) {
           saveUserData();
         }
-      }, [vlqScores, vlqCompleted, yearTheme, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, user, dataLoaded, messages, exchangeCount, currentConversationType, userProfile, savedConversations]);
+      }, [vlqScores, vlqCompleted, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, user, dataLoaded, messages, exchangeCount, currentConversationType, userProfile, savedConversations]);
 
       // Logout function
       const handleLogout = async () => {
@@ -2657,7 +2570,6 @@ Respond with ONLY the single word, nothing else. Make it evocative and meaningfu
           });
           setVlqCompleted(false);
           setVlqStep(-1);
-          setYearTheme('');
           setEvents([]);
           setGoals([]);
           setNotes('');
@@ -2736,7 +2648,6 @@ Respond with ONLY the single word, nothing else. Make it evocative and meaningfu
           });
           setVlqCompleted(false);
           setVlqStep(-1);
-          setYearTheme('');
           setEvents([]);
           setGoals([]);
           setNotes('');
@@ -2841,47 +2752,11 @@ Head to Daily Tend and complete your first one to finish onboarding!`;
               }
             } else {
               // Onboarding complete - show returning user message
-              if (yearTheme) {
-                const themeConnections = {
-                  'growth': 'nurturing your growth',
-                  'balance': 'finding your balance',
-                  'presence': 'cultivating presence',
-                  'intention': 'living with intention',
-                  'connection': 'deepening your connections',
-                  'foundation': 'building your foundation',
-                  'clarity': 'finding clarity',
-                  'peace': 'cultivating peace',
-                  'freedom': 'creating freedom',
-                  'joy': 'inviting more joy',
-                  'courage': 'practicing courage',
-                  'simplicity': 'embracing simplicity',
-                  'authenticity': 'living authentically',
-                  'resilience': 'building resilience',
-                  'creativity': 'nurturing your creativity',
-                };
-                
-                const themePhrase = themeConnections[yearTheme.toLowerCase()] || `living into <em>${yearTheme}</em>`;
-                
-                openingMessage = `Hey! Your compass word is <em>${yearTheme}</em>. 🌱
-
-Where would you like to go today?
-
-<strong>🌱 Generate a daily tend</strong> — a small action for today
-<strong>🎯 Check your goals</strong> — see your progress
-<strong>📓 Journal</strong> — reflect on your day
-
-Or just chat — I'm here.
+              openingMessage = `Hey! 🌱 What would you like to explore today?
 
 [BUTTON: Generate a daily tend | tendy]
 [BUTTON: Check my goals | goals]
 [BUTTON: Journal | journal]`;
-              } else {
-                openingMessage = `Hey! 🌱 What would you like to explore today?
-
-[BUTTON: Generate a daily tend | tendy]
-[BUTTON: Set some goals | goals]
-[BUTTON: Journal | journal]`;
-              }
             }
 
           // Set greeting as the first message of new chat
@@ -2897,7 +2772,7 @@ Or just chat — I'm here.
           
           return () => clearTimeout(timer);
         }
-      }, [vlqCompleted, sessionGreeted, onboardingCompleted, onboardingStep, yearTheme, messages.length]);
+      }, [vlqCompleted, sessionGreeted, onboardingCompleted, onboardingStep, messages.length]);
 
       // Track view/tab for system prompt context (no auto-messages)
 
@@ -3027,42 +2902,16 @@ Or just chat — I'm here.
 
         if (currentPhase === PHASES.EXPLORE) {
           if (exchangeNum === 1) {
-            // Try to extract a theme word from their response
-            const words = userMessage.split(/\s+/).filter(w => w.length > 2 && w.length < 15);
-            const potentialTheme = words.find(w => 
-              /^[a-zA-Z]+$/.test(w) && 
-              !['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something'].includes(w.toLowerCase())
-            );
-            
-            if (potentialTheme && words.length <= 5) {
-              // They likely gave a single word or short phrase
-              setYearTheme(potentialTheme.toLowerCase());
-              return `<em>${potentialTheme.charAt(0).toUpperCase() + potentialTheme.slice(1).toLowerCase()}</em> — I love that.
-
-What does ${potentialTheme.toLowerCase()} mean to you? What would it look like if this year actually embodied that word?`;
-            }
-            
             const hasFeeling = ['feel', 'feeling', 'want to be', 'less', 'more'].some(w => lower.includes(w));
             if (hasFeeling) {
               return `That's about <em>how</em> you want to feel — which is often more important than what you achieve.
 
-If you had to distill that into one word, what would it be? And what's getting in the way of that right now?`;
+What's getting in the way of that right now?`;
             }
-            return `Tell me more. If you could capture that in a single word — a theme for the year — what might it be?`;
+            return `Tell me more. What would it look like if this year actually embodied that?`;
           }
           
           if (exchangeNum === 2) {
-            // Check if they gave a theme word this time
-            const words = userMessage.split(/\s+/).filter(w => w.length > 2 && w.length < 15);
-            const potentialTheme = words.find(w => 
-              /^[a-zA-Z]+$/.test(w) && 
-              !['the', 'and', 'but', 'for', 'that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something'].includes(w.toLowerCase())
-            );
-            
-            if (potentialTheme && !yearTheme) {
-              setYearTheme(potentialTheme.toLowerCase());
-            }
-            
             return `I'm starting to see what matters to you.
 
 If nothing changed this year, how would that feel?`;
@@ -3461,9 +3310,7 @@ WHEN ALL FOCUS AREAS COMPLETE:
 "Wonderful! You've built out your Life Map. Ready to discover your gardener type?
 
 [BUTTON: Take the Quiz | next step]
-[BUTTON: Skip to my first Tend | skip quiz]"
-
-CRITICAL: Do NOT mention or suggest a compass word yet.`;
+[BUTTON: Skip to my first Tend | skip quiz]"`;
           }
           
           // Step 2: Gardener Quiz (optional)
@@ -3482,9 +3329,7 @@ If they want to take it:
 When user completes quiz OR wants to skip:
 "Ready to try your first Daily Tend?
 
-[BUTTON: Yes, let's go! | next step]"
-
-CRITICAL: Do NOT mention compass word.`;
+[BUTTON: Yes, let's go! | next step]"`;
           }
           
           // Step 3: First Tend
@@ -3526,7 +3371,6 @@ Current context:
 - Current view: ${centerView}
 - Current sidebar tab: ${activeTab}
 - Current season: ${currentSeason}
-- Their year theme: ${yearTheme || 'not set yet'}
 - Their values: ${values.length > 0 ? values.join(', ') : 'not identified yet'}
 - Life areas (from VLQ): ${lifeAreasContext}
 - Their goals: ${goals.length > 0 ? goals.map(g => `${g.text}${g.lifeArea ? ` (${VLQ_DOMAINS[g.lifeArea]?.name || g.lifeArea})` : ''}`).join(', ') : 'none yet'}
@@ -3539,20 +3383,6 @@ ${getMisalignments()}
 ${getOnboardingContext()}
 
 The user has already completed the VLQ (Valued Living Questionnaire) assessment. You know their values - use this knowledge to personalize your guidance.
-
-COMPASS WORD (THEME):
-${yearTheme ? `Their compass word is "${yearTheme}". Reference it naturally when relevant — help them see how their actions connect to this guiding word.` : 
-`They don't have a compass word yet. Their compass word will be auto-generated based on their profile when they complete onboarding. If they want to set one now, use [YEAR_THEME: word] when they choose a word.`}
-
-SETTING THE YEAR THEME:
-${`When the user accepts a theme word, include this marker at the END:
-[YEAR_THEME: word]
-
-Examples:
-- User says "yes, I love that" → end with [YEAR_THEME: foundation]
-- User says "my word is growth" → end with [YEAR_THEME: growth]
-
-Do NOT include if you're just suggesting and waiting for response.`}
 
 EXTRACTING HABITS, EVENTS, GOALS, AND INTENTIONS:
 When the user commits to something specific, include the appropriate marker at the END (hidden from user):
@@ -3583,7 +3413,7 @@ Only include markers when user has clearly committed, not for vague ideas.
 
 CURRENT VIEW: ${centerView.toUpperCase()}
 ${centerView === 'year' ? `
-You're on the YEAR view. ${yearTheme ? `Their theme word is "${yearTheme}". If this is a returning user, offer the three paths (Seasons, Events, Rhythms) and ask what they want to explore. Help them see how their year could unfold around this theme.` : `Focus on discovering their theme word through conversation. Don't ask directly - explore their VLQ results and what they want from the year, then suggest a word.`}
+You're on the YEAR view. Help them see the big picture of their year. Offer the three paths (Seasons, Events, Rhythms) and ask what they want to explore.
 ` : ''}${centerView === 'seasons' ? `
 You're on the SEASONS view. Help them think about what each season could feel like and hold for them. Ask about:
 - What's already planned for each season?
@@ -3744,25 +3574,6 @@ When user says "what can I do?" or seems lost, offer options warmly:
       // Handle navigation from chat buttons and NAVIGATE tags
       const handleChatNavigation = (action) => {
         const actionLower = action.toLowerCase().trim();
-        
-        // Handle "set compass X" pattern
-        if (actionLower.startsWith('set compass ')) {
-          const word = action.substring(12).trim();
-          setYearTheme(word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
-          return;
-        }
-        
-        // Handle "suggest compass" - user wants to suggest their own word
-        if (actionLower === 'suggest compass') {
-          const assistantMsg = {
-            role: 'assistant',
-            content: `What word feels right to you? Type a single word that could guide your year — like "growth", "balance", "courage", or "joy".`,
-            timestamp: new Date().toISOString()
-          };
-          setMessages(prev => [...prev, assistantMsg]);
-          setTimeout(() => scrollChatToBottom(), 100);
-          return;
-        }
         
         // Handle "next step" - advance to next onboarding step
         if (actionLower === 'next step' || actionLower.startsWith('skip ')) {
@@ -3964,20 +3775,6 @@ How did your tends go? What would you like to explore next?
           setEvents(prev => [...prev, ...newEvents]);
         }
 
-        // Note: Year theme is now primarily set by Claude using [YEAR_THEME: word] marker
-        // This is a minimal fallback for very explicit user statements
-        if (!yearTheme) {
-          const explicitThemeMatch = userMessage.match(/(?:my word|my theme)(?:\s+for\s+(?:the\s+year|\d{4}))?\s+is\s+([a-z]{4,15})(?:\s|$|[.,!?])/i);
-          if (explicitThemeMatch && explicitThemeMatch[1]) {
-            const word = explicitThemeMatch[1].toLowerCase();
-            const commonWords = ['that', 'this', 'with', 'would', 'could', 'think', 'want', 'like', 'year', 'maybe', 'something'];
-            if (!commonWords.includes(word)) {
-              setYearTheme(word);
-              console.log('Year theme set from explicit statement (fallback):', word);
-            }
-          }
-        }
-
         // Progress phases based on exchange count
         if (phase === PHASES.EXPLORE && exchangeCount >= 2) {
           setPhase(PHASES.GROUND);
@@ -3998,30 +3795,6 @@ How did your tends go? What would you like to explore next?
           pendingWaitingForSatisfaction,
           pendingIsLastResponse
         });
-        
-        // Parse for year theme marker from Claude's response
-        const themeMatch = response.match(/\[YEAR_THEME:\s*([a-zA-Z]{4,15})\]/);
-        if (themeMatch && themeMatch[1]) {
-          const newTheme = themeMatch[1].toLowerCase();
-          setYearTheme(newTheme);
-          console.log('Year theme set by Claude:', newTheme);
-          
-          // Add a follow-up "what's next" message after a brief delay
-          setTimeout(() => {
-            setMessages(prev => [...prev, {
-              role: 'assistant',
-              content: `Your compass is set! ✨ <em>${newTheme}</em> will guide you this year.
-
-Where would you like to go from here?
-
-[BUTTON: Generate a daily tend | tendy]
-[BUTTON: Let's talk about goals | goals]
-[BUTTON: Show me the Life Map | life map]
-[BUTTON: Take the gardener quiz | quiz]
-[BUTTON: Go to journal | journal]`
-            }]);
-          }, 800);
-        }
         
         // Parse for weekly habits: [WEEKLY_HABIT: habit text | frequency] or [WEEKLY_HABIT: habit text | frequency | lifeArea]
         const weeklyHabitMatches = response.matchAll(/\[WEEKLY_HABIT:\s*([^|]+)\s*\|\s*(\d+)(?:\s*\|\s*([a-zA-Z]+))?\]/g);
@@ -4274,37 +4047,6 @@ I've opened the Life Areas panel where your goals will appear. What's something 
             <circle cx="40" cy="70" r="4" fill="none" stroke="var(--accent)" strokeWidth="2"/>
           </svg>
           
-          {yearTheme && (
-            <div style={{
-              padding: '1rem 1.5rem',
-              backgroundColor: 'var(--accent-light)',
-              border: '2px solid var(--accent)',
-              borderRadius: '12px',
-              marginBottom: '1.5rem',
-              textAlign: 'center',
-              maxWidth: '320px',
-              width: '100%',
-            }}>
-              <div style={{
-                fontSize: '0.7rem',
-                textTransform: 'uppercase',
-                letterSpacing: '0.1em',
-                color: 'var(--text-muted)',
-                marginBottom: '0.25rem',
-              }}>
-                Your Word for {new Date().getFullYear()}
-              </div>
-              <div style={{
-                fontFamily: "'Fraunces', serif",
-                fontSize: '1.75rem',
-                color: 'var(--accent)',
-                fontWeight: 500,
-              }}>
-                {yearTheme}
-              </div>
-            </div>
-          )}
-          
           <h2 style={{
             fontFamily: "'Fraunces', serif",
             fontSize: '1.5rem',
@@ -4312,7 +4054,7 @@ I've opened the Life Areas panel where your goals will appear. What's something 
             marginBottom: '0.5rem',
             fontWeight: 400,
           }}>
-            {yearTheme ? `Welcome back` : 'Welcome'}
+            Welcome
           </h2>
           <p style={{
             color: 'var(--text-muted)',
@@ -4462,7 +4204,7 @@ I've opened the Life Areas panel where your goals will appear. What's something 
         return (
           <>
             <JournalView 
-              yearTheme={yearTheme}
+              
               vlqScores={vlqScores}
               journalEntries={journalEntries}
               setJournalEntries={setJournalEntries}
@@ -4543,7 +4285,7 @@ I've opened the Life Areas panel where your goals will appear. What's something 
                   <InsightsView
                     trends={calculateTrends()}
                     vlqScores={vlqScores}
-                    yearTheme={yearTheme}
+                    
                     flexPoints={flexPoints}
                     userProfile={userProfile}
                     setUserProfile={setUserProfile}
@@ -4647,7 +4389,7 @@ Ready to discover your gardener type?
             <InsightsView
               trends={calculateTrends()}
               vlqScores={vlqScores}
-              yearTheme={yearTheme}
+              
               flexPoints={flexPoints}
               userProfile={userProfile}
               setUserProfile={setUserProfile}
@@ -4730,29 +4472,7 @@ Ready to discover your gardener type?
               </svg>
               <h1 style={styles.logoText}>tend</h1>
             </div>
-            {yearTheme ? (
-              <p style={{
-                ...styles.tagline,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '0.5rem',
-              }}>
-                <span style={{opacity: 0.7}}>a space for designing your life with intention</span>
-                <span style={{
-                  padding: '0.25rem 0.75rem',
-                  backgroundColor: 'var(--accent-light)',
-                  border: '1px solid var(--accent)',
-                  borderRadius: '6px',
-                  color: 'var(--accent)',
-                  fontSize: '0.8rem',
-                  fontWeight: 500,
-                }}>
-                  {new Date().getFullYear()}: {yearTheme}
-                </span>
-              </p>
-            ) : (
-              <p style={styles.tagline}>a space for designing your life with intention</p>
-            )}
+            <p style={styles.tagline}>a space for designing your life with intention</p>
             <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
               <button 
                 style={styles.settingsButton} 
@@ -4817,8 +4537,6 @@ Ready to discover your gardener type?
                   events={events}
                   revealed={revealed}
                   onAddEvent={() => setShowEventModal(true)}
-                  yearTheme={yearTheme}
-                  setYearTheme={setYearTheme}
                 />
               )}
               {centerView === CENTER_VIEWS.CALENDAR && (
@@ -5097,7 +4815,7 @@ Ready to discover your gardener type?
 
     // ============ JOURNAL VIEW (TABBED) ============
     function JournalView({ 
-      yearTheme, 
+      
       vlqScores, 
       journalEntries, 
       setJournalEntries,
@@ -5428,7 +5146,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
             )}
 
             <DailyJournalTab 
-              yearTheme={yearTheme}
+              
               vlqScores={vlqScores}
               journalEntries={journalEntries}
               setJournalEntries={setJournalEntries}
@@ -5440,7 +5158,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
       );
     }
     // ============ DAILY JOURNAL TAB ============
-    function DailyJournalTab({ yearTheme, vlqScores, journalEntries, setJournalEntries, todaysTendies, tendyHistory }) {
+    function DailyJournalTab({ vlqScores, journalEntries, setJournalEntries, todaysTendies, tendyHistory }) {
       const today = new Date();
       const dateKey = today.toISOString().split('T')[0];
       const dateString = today.toLocaleDateString('en-US', { 
@@ -5914,7 +5632,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
     }
 
     // ============ YEAR CIRCLE VIEW ============
-    function YearCircleView({ events, revealed, onAddEvent, yearTheme, setYearTheme }) {
+    function YearCircleView({ events, revealed, onAddEvent }) {
       const size = 400;
       const center = size / 2;
       const outerRadius = 175;
@@ -5961,23 +5679,10 @@ This has been your year of growth and intention. What are you most proud of? Wha
 
             <circle cx={center} cy={center} r={innerRadius} fill="var(--bg-card)" stroke="var(--border)" strokeWidth="1" />
 
-            <text x={center} y={center - 12} textAnchor="middle" dominantBaseline="middle" fill="var(--text)"
+            <text x={center} y={center} textAnchor="middle" dominantBaseline="middle" fill="var(--text)"
               style={{ fontFamily: "'Fraunces', serif", fontSize: '1.75rem' }}>
               2026
             </text>
-
-            {/* Theme word - only show if set */}
-            {yearTheme && (
-              <text x={center} y={center + 18} textAnchor="middle" dominantBaseline="middle" 
-                fill="var(--accent)"
-                style={{ fontFamily: "'Fraunces', serif", fontSize: '0.95rem', fontStyle: 'italic', cursor: 'pointer' }}
-                onClick={() => {
-                  const newTheme = prompt('Edit your theme word:', yearTheme);
-                  if (newTheme !== null) setYearTheme(newTheme.toLowerCase());
-                }}>
-                {yearTheme}
-              </text>
-            )}
 
             {MONTHS.map((month, idx) => {
               const pos = getMonthPosition(idx);
@@ -10017,7 +9722,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       },
     };
 
-    function InsightsView({ trends, vlqScores, yearTheme, flexPoints, userProfile, setUserProfile, goals = [], setGoals, weeklyHabits = [], setWeeklyHabits, onReassessVLQ, onAddGoal, onBack, apiKey, embedded = false, autoExpandSection = null, onQuizComplete = null, onLifeMapAnswer = null }) {
+    function InsightsView({ trends, vlqScores, flexPoints, userProfile, setUserProfile, goals = [], setGoals, weeklyHabits = [], setWeeklyHabits, onReassessVLQ, onAddGoal, onBack, apiKey, embedded = false, autoExpandSection = null, onQuizComplete = null, onLifeMapAnswer = null }) {
       const [expandedArea, setExpandedArea] = useState(autoExpandSection);
       const [editingArea, setEditingArea] = useState(null);
       const [tempFormData, setTempFormData] = useState(autoExpandSection === 'quiz' ? { quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null } : {});
@@ -10143,9 +9848,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   ←
                 </button>
                 <h2 style={insightsStyles.title}>Your Insights</h2>
-              </div>
-              <div style={{fontSize: '0.9rem', color: 'var(--text-muted)'}}>
-                {yearTheme && `${new Date().getFullYear()}: ${yearTheme}`}
               </div>
             </div>
           )}
