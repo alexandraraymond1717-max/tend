@@ -9891,12 +9891,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       
       const insightsStyles = {
         container: {
-          minHeight: embedded ? 'auto' : '100vh',
+          minHeight: embedded ? '100%' : '100vh',
           backgroundColor: 'var(--bg-main)',
           display: 'flex',
           flexDirection: 'column',
           height: embedded ? '100%' : 'auto',
-          overflow: embedded ? 'auto' : 'visible',
+          overflow: embedded ? 'visible' : 'visible',
+          flex: embedded ? 1 : 'auto',
+          width: '100%',
         },
         header: {
           padding: '1rem 2rem',
@@ -11086,7 +11088,7 @@ Respond in this exact JSON format only:
       goalText: { flex: 1, fontSize: '0.875rem', color: 'var(--text)' },
       goalDelete: { background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '1rem', opacity: 0.5 },
 
-      centerPanel: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 1.25rem', backgroundColor: 'var(--bg-main)', gap: '1.5rem', overflow: 'auto', height: '100%', minHeight: 0 },
+      centerPanel: { display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '1.5rem 1.25rem', backgroundColor: 'var(--bg-main)', gap: '1.5rem', overflow: 'auto', height: '100%', minHeight: 0, flex: 1 },
       viewSwitcher: { display: 'flex', gap: '2px', backgroundColor: 'var(--bg-card)', padding: '4px', borderRadius: '12px', border: '1px solid var(--border)' },
       viewButton: { padding: '0.5rem 1rem', backgroundColor: 'transparent', border: 'none', borderRadius: '10px', color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 500, cursor: 'pointer', transition: 'all 0.2s ease' },
       viewButtonActive: { backgroundColor: 'var(--accent)', color: 'white' },
@@ -11188,6 +11190,7 @@ Respond in this exact JSON format only:
       resizeHandle: { position: 'absolute', left: 0, top: 0, bottom: 0, width: '6px', cursor: 'ew-resize', backgroundColor: 'transparent', zIndex: 10, transition: 'background-color 0.2s' },
       chatMessages: { flex: 1, padding: '1.25rem', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.875rem', minHeight: 0 },
       chatInputArea: { padding: '1rem 1.25rem 1.25rem', borderTop: '1px solid var(--border)' },
+      chatInputForm: { padding: '1rem 1.25rem 1.25rem', borderTop: '1px solid var(--border)', display: 'flex', gap: '0.625rem', alignItems: 'center' },
       skipButton: { width: '100%', padding: '0.5rem', marginBottom: '0.75rem', backgroundColor: 'transparent', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer' },
       inputRow: { display: 'flex', gap: '0.625rem', alignItems: 'flex-end' },
       chatInput: { flex: 1, padding: '0.75rem 1rem', backgroundColor: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: '12px', color: 'var(--text)', fontSize: '0.875rem', fontFamily: "'DM Sans', sans-serif", resize: 'none' },
