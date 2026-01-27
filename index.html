@@ -10802,7 +10802,7 @@ Respond in this exact JSON format only:
                           
                           const areaData = { areaKey, importance, consistency, gap, areaGoals, areaHabits, hasLifeMapInfo, notes, structured };
                           
-                          if (importance >= 6 && gap >= 2) {
+                          if (gap >= 3 || (importance >= 6 && gap >= 2)) {
                             focusAreas.push(areaData);
                           } else if (importance >= 6 && consistency >= 6) {
                             strengths.push(areaData);
