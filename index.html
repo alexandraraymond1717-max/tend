@@ -10727,7 +10727,7 @@ Respond in this exact JSON format only:
                                 setExpandedArea(expandedArea === node.domain ? null : node.domain);
                                 if (expandedArea !== node.domain) {
                                   setTimeout(() => {
-                                    document.getElementById(`life-area-${node.domain}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                    document.getElementById(`life-area-${node.domain}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
                                   }, 100);
                                 }
                               }}>
