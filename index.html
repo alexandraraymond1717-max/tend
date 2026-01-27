@@ -9850,6 +9850,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       const [tempFormData, setTempFormData] = useState(autoExpandSection === 'quiz' ? { quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null } : {});
       const [tempNotes, setTempNotes] = useState('');
       const [lastScrolledArea, setLastScrolledArea] = useState(null);
+      const [hoveredNode, setHoveredNode] = useState(null); // { domain, facts, x, y }
       
       // Auto-expand and scroll to focusedArea whenever it changes (including initial set)
       React.useEffect(() => {
@@ -10182,8 +10183,15 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                         {categoryNodes.map((node, i) => {
                           const r = node.baseRadius * node.scale;
                           const fontSize = 15 * node.scale;
+                          const nodeFacts = allFacts.filter(f => f.domain === node.domain);
                           return (
                             <g key={`cat-${i}`} style={{ cursor: 'pointer' }}
+                              onMouseEnter={() => {
+                                if (nodeFacts.length > 0) {
+                                  setHoveredNode({ domain: node.domain, facts: nodeFacts, x: node.x, y: node.y, name: VLQ_DOMAINS[node.domain]?.name });
+                                }
+                              }}
+                              onMouseLeave={() => setHoveredNode(null)}
                               onClick={() => {
                                 handleExpandArea(node.domain);
                                 if (expandedArea !== node.domain) {
@@ -10218,6 +10226,32 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                           {allFacts.length} {allFacts.length === 1 ? 'fact' : 'facts'}
                         </text>
                       </svg>
+                      
+                      {/* Hover tooltip for facts */}
+                      {hoveredNode && hoveredNode.facts.length > 0 && (
+                        <div style={{
+                          position: 'absolute',
+                          left: '50%',
+                          bottom: '1rem',
+                          transform: 'translateX(-50%)',
+                          backgroundColor: 'white',
+                          border: '1px solid var(--border)',
+                          borderRadius: '10px',
+                          padding: '0.75rem 1rem',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                          maxWidth: '280px',
+                          zIndex: 100,
+                        }}>
+                          <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
+                            {hoveredNode.name}
+                          </div>
+                          {hoveredNode.facts.map((fact, idx) => (
+                            <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--text)', padding: '0.2rem 0', borderBottom: idx < hoveredNode.facts.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                              {fact.text}
+                            </div>
+                          ))}
+                        </div>
+                      )}
                       
                       {/* Empty state text - positioned below SVG */}
                       {allFacts.length === 0 && (
@@ -10454,28 +10488,10 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                             {hasLifeMapInfo ? '✓ ' : ''}{currentQuestion?.q || 'TELL ME MORE'}
                                           </div>
                                           
-                                          {/* Show answered prompts */}
-                                          {answeredKeys.length > 0 && (
-                                            <div style={{ marginBottom: '0.5rem' }}>
-                                              {answeredKeys.map(key => (
-                                                <div key={key} style={{ padding: '0.5rem 0.75rem', backgroundColor: `${area.color}10`, borderRadius: '8px', fontSize: '0.85rem', marginBottom: '0.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                                  <span style={{ color: 'var(--text)' }}>{structured[key]}</span>
-                                                  <button 
-                                                    onClick={() => {
-                                                      const newStructured = { ...structured };
-                                                      delete newStructured[key];
-                                                      setUserProfile(prev => ({
-                                                        ...prev,
-                                                        tendPreferences: {
-                                                          ...prev?.tendPreferences,
-                                                          structuredInfo: { ...prev?.tendPreferences?.structuredInfo, [areaKey]: newStructured }
-                                                        }
-                                                      }));
-                                                    }}
-                                                    style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.75rem' }}
-                                                  >×</button>
-                                                </div>
-                                              ))}
+                                          {/* Prompt answered - show checkmark only */}
+                                          {hasLifeMapInfo && (
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>
+                                              ✓ Answered — visible in your Life Map
                                             </div>
                                           )}
                                           
