@@ -984,18 +984,17 @@ Respond with ONLY the task text, nothing else.`,
     const MONTH_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
     const PHASES = { EXPLORE: 'explore', GROUND: 'ground', REVEAL: 'reveal', PLAN: 'plan' };
-    const CENTER_VIEWS = { YEAR: 'year', SEASONS: 'seasons', MONTHLY: 'monthly', WEEKLY: 'weekly', DAILY: 'daily' };
+    const CENTER_VIEWS = { YEAR: 'year', CALENDAR: 'calendar', WEEKLY: 'weekly', DAILY: 'daily', INSIGHTS: 'insights', TENDY: 'tendy', JOURNAL: 'journal' };
     
     // Onboarding steps configuration
     const ONBOARDING_STEPS = {
       0: { id: 'vlq', label: 'Values', icon: '💚', required: true },
       1: { id: 'goals', label: 'Goals', icon: '🎯', required: true },
       2: { id: 'habits', label: 'Habits', icon: '🔄', required: true },
-      3: { id: 'events', label: 'Events', icon: '📅', required: false },
-      4: { id: 'quiz', label: 'Quiz', icon: '🌸', required: false },
-      5: { id: 'lifemap', label: 'Life Map', icon: '🗺️', required: true },
-      6: { id: 'compass', label: 'Compass', icon: '🧭', required: true },
-      7: { id: 'tend', label: 'First Tend', icon: '🌱', required: true },
+      3: { id: 'quiz', label: 'Quiz', icon: '🌸', required: false },
+      4: { id: 'lifemap', label: 'Life Map', icon: '🗺️', required: true },
+      5: { id: 'compass', label: 'Compass', icon: '🧭', required: true },
+      6: { id: 'tend', label: 'First Tend', icon: '🌱', required: true },
     };
 
     // ============ MAIN APP ============
@@ -1727,7 +1726,7 @@ Respond with ONLY the task text, nothing else.`,
       const chatContainerRef = useRef(null);
 
       const [revealed, setRevealed] = useState(false);
-      const [activeTab, setActiveTab] = useState('events');
+      const [activeTab, setActiveTab] = useState('lifeareas');
       const [sidebarExpanded, setSidebarExpanded] = useState(false);
       const [sidebarWidth, setSidebarWidth] = useState(240);
       const [isResizingSidebar, setIsResizingSidebar] = useState(false);
@@ -1778,16 +1777,14 @@ Respond with ONLY the task text, nothing else.`,
               if (!weeklyHabits.some(h => h.lifeArea === area)) return false;
             }
             return true;
-          case 3: // Events - optional, complete only if they added events
-            return events.length > 0;
-          case 4: // Gardener Quiz - optional, complete only if they took it
+          case 3: // Gardener Quiz - optional, complete only if they took it
             return !!userProfile?.tendPreferences?.gardenerType;
-          case 5: // Life Map - at least 1 prompt answered
+          case 4: // Life Map - at least 1 prompt answered
             const prefs = userProfile?.tendPreferences || {};
             return !!(prefs.lifeAreaNotes && Object.values(prefs.lifeAreaNotes).some(v => v && v.trim()));
-          case 6: // Compass Word - has yearTheme
+          case 5: // Compass Word - has yearTheme
             return !!yearTheme;
-          case 7: // Daily Tend - has completed a tend (not just generated)
+          case 6: // Daily Tend - has completed a tend (not just generated)
             return todaysTendies.some(t => t.completed);
           default:
             return false;
@@ -1811,14 +1808,13 @@ Respond with ONLY the task text, nothing else.`,
             focusAreasCovered: focusAreas.filter(a => weeklyHabits.some(h => h.lifeArea === a)).length,
             focusAreasRequired: focusAreas.length
           },
-          3: { current: events.length, required: 0 },
-          4: { current: userProfile?.tendPreferences?.gardenerType ? 1 : 0, required: 0 },
-          5: { 
+          3: { current: userProfile?.tendPreferences?.gardenerType ? 1 : 0, required: 0 },
+          4: { 
             current: Object.values(userProfile?.tendPreferences?.lifeAreaNotes || {}).filter(v => v && v.trim()).length,
             required: 1 
           },
-          6: { current: yearTheme ? 1 : 0, required: 1 },
-          7: { current: todaysTendies.some(t => t.completed) ? 1 : 0, required: 1 },
+          5: { current: yearTheme ? 1 : 0, required: 1 },
+          6: { current: todaysTendies.some(t => t.completed) ? 1 : 0, required: 1 },
         };
       };
 
@@ -2494,8 +2490,8 @@ Respond with ONLY the task text, nothing else.`,
         // We don't auto-advance because user should consciously move forward
         // But we update the progress bar which shows completion
         
-        // Special case: When daily tend is completed (step 7), mark onboarding complete
-        if (onboardingStep === 7 && todaysTendies.some(t => t.completed)) {
+        // Special case: When daily tend is completed (step 6), mark onboarding complete
+        if (onboardingStep === 6 && todaysTendies.some(t => t.completed)) {
           setOnboardingCompleted(true);
           setOnboardingStep(null);
         }
@@ -2517,21 +2513,16 @@ Respond with ONLY the task text, nothing else.`,
             setCenterView(CENTER_VIEWS.WEEKLY);
             setAppMode(null);
             break;
-          case 3: // Events - open Events sidebar
-            setActiveTab('events');
-            setSidebarExpanded(true);
-            setAppMode(null);
-            break;
-          case 4: // Quiz - go to Insights
+          case 3: // Quiz - go to Insights
             setAppMode('insights');
             break;
-          case 5: // Life Map - go to Insights
+          case 4: // Life Map - go to Insights
             setAppMode('insights');
             break;
-          case 6: // Compass Word - main chat
+          case 5: // Compass Word - main chat
             setAppMode(null);
             break;
-          case 7: // Daily Tend - go to Tendy
+          case 6: // Daily Tend - go to Tendy
             setAppMode('tendy');
             break;
         }
@@ -2804,18 +2795,7 @@ You'll need <strong>at least 3 habits</strong>, with at least one supporting eac
 I've switched to the Weekly view where you can track your habits. What's one thing you'd like to do regularly?`;
                   break;
                   
-                case 3: // Events (optional)
-                  openingMessage = `Let's map out your year! 📅
-
-Do you have any big events, trips, or milestones coming up? Adding them helps me understand the rhythm of your year and suggest timely tends.
-
-I've opened the Events panel — you can add events there or tell me about them here. This step is optional.
-
-[BUTTON: I've added some events | next step]
-[BUTTON: Skip this step | skip to quiz]`;
-                  break;
-                  
-                case 4: // Gardener Quiz (optional)
+                case 3: // Gardener Quiz (optional)
                   openingMessage = `Let's discover your tending style! 🌸
 
 The Gardener Quiz is a quick, fun way for me to understand how you approach growth and self-care. Your style helps me personalize your tends.
@@ -2825,13 +2805,13 @@ Take the quiz on the left — it's optional but fun!
 [BUTTON: Skip this step | skip to lifemap]`;
                   break;
                   
-                case 5: // Life Map
+                case 4: // Life Map
                   openingMessage = `Let's build your Life Map! 🗺️
 
 Click on any life area icon on the left to share details about your life. The more I know, the better I can personalize your experience!`;
                   break;
                   
-                case 6: // Compass Word
+                case 5: // Compass Word
                   const suggestedWord = getSuggestedCompassWord();
                   openingMessage = `Almost there! 🧭
 
@@ -2847,7 +2827,7 @@ This word can guide your decisions and intentions throughout the year. Does it f
 [BUTTON: I have a different word in mind | suggest compass]`;
                   break;
                   
-                case 7: // Daily Tend
+                case 6: // Daily Tend
                   openingMessage = `You're all set up! 🌱
 
 Your compass word is <strong>${yearTheme}</strong>, and you have goals, habits, and a Life Map to guide your journey.
@@ -3134,54 +3114,6 @@ What's missing?`;
         if (currentPhase === PHASES.REVEAL || currentPhase === PHASES.PLAN) {
           setPhase(PHASES.PLAN);
 
-          // Sidebar tabs - Events
-          if (activeTab === 'events') {
-            if (lower.includes('trip') || lower.includes('travel') || lower.includes('vacation') || lower.includes('visit')) {
-              return `A trip! Let's plan it.
-
-Tell me:
-• <em>Where</em> are you thinking?
-• <em>When</em> — which month?
-• <em>Who's going</em> — solo, partner, friends, family?
-
-Once you add it, I can help with activities, stays, and logistics.`;
-            }
-
-            if (lower.includes('birthday') || lower.includes('anniversary') || lower.includes('celebration')) {
-              return `Celebrations deserve planning too.
-
-What would make this one special? Think about:
-• The <em>experience</em> you want to create
-• Who needs to be involved
-• What you want to remember about it
-
-Add it to your events and we can flesh out the details.`;
-            }
-
-            if (lower.includes('deadline') || lower.includes('work') || lower.includes('project') || lower.includes('launch')) {
-              return `Work events anchor the year too.
-
-For this deadline or project:
-• What needs to happen <em>before</em> it?
-• Do you need to protect time leading up to it?
-• What would make it feel successful, not just done?`;
-            }
-
-            const eventCount = events.length;
-            if (eventCount > 0) {
-              return `You have ${eventCount} event${eventCount > 1 ? 's' : ''} planned. Want to add another, or dive deeper into one of these?
-
-I can help with:
-• Activity ideas for any trip
-• Logistics and planning
-• Making sure you're not over-scheduling`;
-            }
-
-            return `What's on the horizon? Trips, celebrations, deadlines, milestones?
-
-Even tentative plans are worth capturing — they help you see the shape of your year.`;
-          }
-
           // Sidebar tabs - Notes
           if (activeTab === 'notes') {
             return `This is your space to think out loud.
@@ -3243,75 +3175,9 @@ Goals work best when they're:
 
 Don't overthink it — you can always refine. Start with what comes to mind.`;
           }
-          
-          // Seasons view - help with season intentions
-          if (centerView === CENTER_VIEWS.SEASONS) {
-            const seasonWords = {
-              winter: ['cozy', 'rest', 'reflect', 'hibernate', 'slow', 'quiet', 'warm'],
-              spring: ['renew', 'fresh', 'start', 'bloom', 'energy', 'clean', 'grow'],
-              summer: ['adventure', 'explore', 'freedom', 'play', 'travel', 'sun', 'joy'],
-              fall: ['harvest', 'gather', 'prepare', 'focus', 'transition', 'gratitude', 'settle']
-            };
-            
-            const currentSeasonName = (() => {
-              const month = new Date().getMonth();
-              if ([11, 0, 1].includes(month)) return 'winter';
-              if ([2, 3, 4].includes(month)) return 'spring';
-              if ([5, 6, 7].includes(month)) return 'summer';
-              return 'fall';
-            })();
 
-            if (lower.includes('winter') || lower.includes('cold') || lower.includes('december') || lower.includes('january') || lower.includes('february')) {
-              return `Winter is a time for slowing down.
-
-Some intentions to consider:
-• <em>"Rest without guilt"</em>
-• <em>"Protect my mornings"</em>  
-• <em>"Less doing, more being"</em>
-
-What would make your winter feel nourishing rather than just something to get through?`;
-            }
-            
-            if (lower.includes('spring') || lower.includes('march') || lower.includes('april') || lower.includes('may')) {
-              return `Spring is about emergence and new energy.
-
-Some intentions to consider:
-• <em>"Start one thing I've been putting off"</em>
-• <em>"Clear what's not serving me"</em>
-• <em>"Say yes to something new"</em>
-
-What wants to bloom in your life this spring?`;
-            }
-
-            if (lower.includes('summer') || lower.includes('june') || lower.includes('july') || lower.includes('august')) {
-              return `Summer holds space for expansion and joy.
-
-Some intentions to consider:
-• <em>"Prioritize experiences over tasks"</em>
-• <em>"Protect time for spontaneity"</em>
-• <em>"Be present in the long days"</em>
-
-What would a summer well-lived look like for you?`;
-            }
-
-            if (lower.includes('fall') || lower.includes('autumn') || lower.includes('september') || lower.includes('october') || lower.includes('november')) {
-              return `Fall is a season of gathering and grounding.
-
-Some intentions to consider:
-• <em>"Harvest what I've built"</em>
-• <em>"Simplify before winter"</em>
-• <em>"Celebrate progress, not just goals"</em>
-
-What do you want to carry into the darker months?`;
-            }
-
-            return `Think about what each season needs from you — and what you need from it.
-
-You're in <em>${currentSeasonName}</em> right now. How's it going? What would help this season feel more aligned with what you want?`;
-          }
-
-          // Monthly view - help with specific month planning
-          if (centerView === CENTER_VIEWS.MONTHLY) {
+          // Calendar view - help with specific month planning
+          if (centerView === CENTER_VIEWS.CALENDAR) {
             const monthName = MONTH_FULL[selectedMonth];
             
             if (lower.includes('plan') || lower.includes('suggest') || lower.includes('ideas') || lower.includes('what should')) {
@@ -3547,7 +3413,7 @@ Click on the event in the sidebar to add details.`;
             
             return `
 
-=== ONBOARDING MODE: GOALS (Step 1 of 7) ===
+=== ONBOARDING MODE: GOALS (Step 1 of 6) ===
 The user is setting up Tend for the first time. Help them set meaningful goals.
 
 REQUIREMENTS:
@@ -3593,7 +3459,7 @@ family, partner, friendships, career, education, recreation, spirituality, commu
 CRITICAL RULES:
 - Be concise — don't repeat the same information twice
 - The [GOAL: ...] marker is HIDDEN from the user — don't write it as visible text
-- NEVER mention compass word — that's step 6
+- NEVER mention compass word — that's step 5
 - After goals complete, NEXT step is HABITS (step 2)`;
           }
           
@@ -3605,7 +3471,7 @@ CRITICAL RULES:
             
             return `
 
-=== ONBOARDING MODE: HABITS (Step 2 of 7) ===
+=== ONBOARDING MODE: HABITS (Step 2 of 6) ===
 Help the user establish habits that support their goals.
 
 USER'S GOALS: ${goalsList}
@@ -3647,39 +3513,15 @@ EXAMPLES:
 CRITICAL RULES:
 - NEVER ask about "daily habits vs weekly habits" — all habits are weekly with frequency 1-7
 - The [WEEKLY_HABIT: ...] marker is HIDDEN from the user
-- NEVER mention compass word — that's step 6
-- After habits complete, NEXT step is EVENTS (step 3)`;
+- NEVER mention compass word — that's step 5
+- After habits complete, NEXT step is QUIZ (step 3)`;
           }
           
-          // Step 3: Events (optional)
+          // Step 3: Gardener Quiz (optional)
           if (onboardingStep === 3) {
             return `
 
-=== ONBOARDING MODE: EVENTS (Step 3 of 7) ===
-Help the user add any upcoming events, trips, or milestones. This step is OPTIONAL.
-
-The user can:
-- Tell you about events and you add them with [EVENT: title | month | type]
-- Add events directly in the Events panel
-- Skip this step entirely
-
-When user adds at least one event OR wants to skip:
-"Got it! Ready to move on?
-
-[BUTTON: Continue to Quiz | next step]
-[BUTTON: Skip ahead | next step]"
-
-EVENT TYPES: travel, work, social, health, milestone, other
-MONTHS: 0-11 (January=0, December=11)
-
-CRITICAL: Do NOT discuss compass word — that's step 6.`;
-          }
-          
-          // Step 4: Gardener Quiz (optional)
-          if (onboardingStep === 4) {
-            return `
-
-=== ONBOARDING MODE: GARDENER QUIZ (Step 4 of 7) ===
+=== ONBOARDING MODE: GARDENER QUIZ (Step 3 of 6) ===
 Encourage the user to take the Gardener Quiz in Insights. This step is OPTIONAL.
 
 The quiz is in the Insights tab. You can:
@@ -3692,14 +3534,14 @@ When user completes quiz OR wants to skip:
 [BUTTON: Continue to Life Map | next step]
 [BUTTON: Skip ahead | next step]"
 
-CRITICAL: Do NOT discuss compass word — that's step 6.`;
+CRITICAL: Do NOT discuss compass word — that's step 5.`;
           }
           
-          // Step 5: Life Map
-          if (onboardingStep === 5) {
+          // Step 4: Life Map
+          if (onboardingStep === 4) {
             return `
 
-=== ONBOARDING MODE: LIFE MAP (Step 5 of 7) ===
+=== ONBOARDING MODE: LIFE MAP (Step 4 of 6) ===
 Help the user share context about their life through Life Map prompts in Insights.
 
 This step requires at least one Life Map response. Encourage them to share what's happening in their life.
@@ -3712,12 +3554,12 @@ When user has answered at least one prompt:
 CRITICAL: Do NOT discuss or suggest compass word yet — that's the NEXT step.`;
           }
           
-          // Step 6: Compass Word
-          if (onboardingStep === 6) {
+          // Step 5: Compass Word
+          if (onboardingStep === 5) {
             const suggestedWord = getSuggestedCompassWord();
             return `
 
-=== ONBOARDING MODE: COMPASS WORD (Step 6 of 7) ===
+=== ONBOARDING MODE: COMPASS WORD (Step 5 of 6) ===
 Help the user choose their compass word for the year.
 
 Suggest: "${suggestedWord}" based on their values and goals.
@@ -3731,14 +3573,14 @@ Present it like:
 If they want a different word, ask them to share it. When they do, use:
 [YEAR_THEME: theirword]
 
-Then advance to step 7.`;
+Then advance to step 6.`;
           }
           
-          // Step 7: Daily Tend
-          if (onboardingStep === 7) {
+          // Step 6: Daily Tend
+          if (onboardingStep === 6) {
             return `
 
-=== ONBOARDING MODE: DAILY TEND (Step 7 of 7) ===
+=== ONBOARDING MODE: DAILY TEND (Step 6 of 6) ===
 The user just needs to complete one daily tend to finish onboarding!
 
 Their compass word is: ${yearTheme}
@@ -3754,10 +3596,10 @@ Once they complete a tend, onboarding is done! Celebrate with them.`;
           // Default fallback
           return `
 
-=== ONBOARDING MODE: Step ${onboardingStep} of 7 ===
+=== ONBOARDING MODE: Step ${onboardingStep} of 6 ===
 Guide the user through their onboarding journey. Be encouraging and help them make progress.
 
-${onboardingStep < 6 ? `CRITICAL: Do NOT discuss or suggest a compass word. That happens at step 6, after the Life Map.` : ''}`;
+${onboardingStep < 5 ? `CRITICAL: Do NOT discuss or suggest a compass word. That happens at step 5, after the Life Map.` : ''}`;
         };
 
         return `You are Tend, a thoughtful AI companion for intentional living and life design. You help people design their year with intention — not just survive, but live intentionally and mindfully.
@@ -3790,8 +3632,8 @@ The user has already completed the VLQ (Valued Living Questionnaire) assessment.
 
 COMPASS WORD (THEME):
 ${yearTheme ? `Their compass word is "${yearTheme}". Reference it naturally when relevant — help them see how their actions connect to this guiding word.` : 
-(!onboardingCompleted && onboardingStep && onboardingStep < 6) ? 
-`They don't have a compass word yet. IMPORTANT: DO NOT discuss, mention, or suggest compass words right now. The user is in onboarding step ${onboardingStep} of 7. Compass word selection happens at step 6, AFTER the Life Map. Stay focused on the current step only.` :
+(!onboardingCompleted && onboardingStep && onboardingStep < 5) ? 
+`They don't have a compass word yet. IMPORTANT: DO NOT discuss, mention, or suggest compass words right now. The user is in onboarding step ${onboardingStep} of 6. Compass word selection happens at step 5, AFTER the Life Map. Stay focused on the current step only.` :
 `They don't have a compass word yet. If they choose to chat with you about their values:
 1. Explore their VLQ results naturally — ask about growth areas, what's been getting in the way, what they want more of
 2. After 3-5 exchanges, suggest a compass word: "Based on what you've shared, your compass word might be *[word]*..."
@@ -3799,7 +3641,7 @@ ${yearTheme ? `Their compass word is "${yearTheme}". Reference it naturally when
 4. Don't force it — if they want to do other things first, that's fine`}
 
 SETTING THE YEAR THEME:
-${(!onboardingCompleted && onboardingStep && onboardingStep < 6) ? `DO NOT set a year theme during onboarding steps 1-5. This happens at step 6.` : `When the user accepts a theme word, include this marker at the END:
+${(!onboardingCompleted && onboardingStep && onboardingStep < 5) ? `DO NOT set a year theme during onboarding steps 1-4. This happens at step 5.` : `When the user accepts a theme word, include this marker at the END:
 [YEAR_THEME: word]
 
 Examples:
@@ -4024,14 +3866,14 @@ When user says "what can I do?" or seems lost, offer options warmly:
         
         // Handle "next step" - advance to next onboarding step
         if (actionLower === 'next step' || actionLower.startsWith('skip to ')) {
-          if (!onboardingCompleted && onboardingStep && onboardingStep < 7) {
+          if (!onboardingCompleted && onboardingStep && onboardingStep < 6) {
             let nextStep;
             
             // Handle skip actions
             if (actionLower === 'skip to quiz') {
-              nextStep = 4;
+              nextStep = 3;
             } else if (actionLower === 'skip to lifemap') {
-              nextStep = 5;
+              nextStep = 4;
             } else {
               nextStep = onboardingStep + 1;
             }
@@ -4051,27 +3893,19 @@ Now let's build <strong>habits</strong> that will help you reach them. You'll ne
 
 What's one thing you'd like to do regularly?`;
                 break;
-              case 3: // Events
-                greeting = `Let's map out your year! 📅
-
-Do you have any big events, trips, or milestones coming up? Tell me about them or add them in the Events panel. This step is optional.
-
-[BUTTON: I've added some events | next step]
-[BUTTON: Skip this step | skip to quiz]`;
-                break;
-              case 4: // Quiz
+              case 3: // Quiz
                 greeting = `Let's discover your tending style! 🌸
 
 Take the Gardener Quiz on the left — it helps me understand how you approach growth. This is optional.
 
 [BUTTON: Skip this step | skip to lifemap]`;
                 break;
-              case 5: // Life Map
+              case 4: // Life Map
                 greeting = `Let's build your Life Map! 🗺️
 
 Click on any life area icon on the left to add some details about your life. The more you share, the better I can help!`;
                 break;
-              case 6: // Compass Word
+              case 5: // Compass Word
                 const suggestedWord = getSuggestedCompassWord();
                 greeting = `Almost there! 🧭
 
@@ -4086,7 +3920,7 @@ Does it feel right?
 [BUTTON: Yes, that's perfect! | set compass ${suggestedWord}]
 [BUTTON: I have a different word in mind | suggest compass]`;
                 break;
-              case 7: // Daily Tend
+              case 6: // Daily Tend
                 greeting = `You're all set up! 🌱
 
 Your compass word is <strong>${yearTheme}</strong>. Head to the Tendy tab and mark one tend complete to finish!`;
@@ -4116,10 +3950,10 @@ Your compass word is <strong>${yearTheme}</strong>. Head to the Tendy tab and ma
           'goals': () => { setActiveTab('lifeareas'); setSidebarExpanded(true); setShowGoalModal(true); },
           'habits': () => { setCenterView(CENTER_VIEWS.WEEKLY); },
           'weekly habits': () => { setCenterView(CENTER_VIEWS.WEEKLY); },
-          'events': () => { setActiveTab('events'); setSidebarExpanded(true); },
           'lifeareas': () => { setActiveTab('lifeareas'); setSidebarExpanded(true); },
           'life areas': () => { setActiveTab('lifeareas'); setSidebarExpanded(true); },
           'notes': () => { setActiveTab('lifeareas'); setSidebarExpanded(true); },
+          'calendar': () => { setCenterView(CENTER_VIEWS.CALENDAR); setSidebarExpanded(false); },
           'plan': () => setAppMode('plan'),
           'design': () => setAppMode('plan'),
           'plan & design': () => setAppMode('plan'),
@@ -4796,8 +4630,8 @@ I've opened the Life Areas panel where your goals will appear. What's something 
 
       // Insights mode - during onboarding keep chat visible, otherwise full screen
       if (appMode === 'insights') {
-        // During onboarding steps 4-5, show insights with chat panel
-        if (!onboardingCompleted && (onboardingStep === 4 || onboardingStep === 5)) {
+        // During onboarding steps 3-4 (quiz and life map), show insights with chat panel
+        if (!onboardingCompleted && (onboardingStep === 3 || onboardingStep === 4)) {
           return (
             <div style={styles.container}>
               <header style={styles.header}>
@@ -4845,7 +4679,7 @@ I've opened the Life Areas panel where your goals will appear. What's something 
                     onBack={() => setAppMode(null)}
                     apiKey={apiKey}
                     embedded={true}
-                    autoExpandSection={onboardingStep === 4 ? 'quiz' : null}
+                    autoExpandSection={onboardingStep === 3 ? 'quiz' : null}
                     onQuizComplete={(result) => {
                       // Add message to chat prompting next step
                       const msg = {
@@ -5103,7 +4937,6 @@ Ready to choose your compass word?
             }}>
               <div style={styles.sidebarNav}>
                 {[
-                  { id: 'events', icon: '📅', label: 'Events' },
                   { id: 'lifeareas', icon: '🌱', label: 'Life Areas' }
                 ].map(item => (
                   <button
@@ -5146,9 +4979,10 @@ Ready to choose your compass word?
               <div style={styles.viewSwitcher}>
                 {[
                   { id: CENTER_VIEWS.YEAR, label: 'Home' },
-                  { id: CENTER_VIEWS.SEASONS, label: 'Seasons' },
-                  { id: CENTER_VIEWS.MONTHLY, label: 'Monthly' },
-                  { id: CENTER_VIEWS.WEEKLY, label: 'Weekly' },
+                  { id: CENTER_VIEWS.CALENDAR, label: 'Calendar' },
+                  { id: CENTER_VIEWS.INSIGHTS, label: 'Insights' },
+                  { id: CENTER_VIEWS.TENDY, label: 'Daily Tend' },
+                  { id: CENTER_VIEWS.JOURNAL, label: 'Journal' },
                 ].map(view => (
                   <button
                     key={view.id}
@@ -5157,8 +4991,17 @@ Ready to choose your compass word?
                       ...(centerView === view.id && !sidebarExpanded && styles.viewButtonActive)
                     }}
                     onClick={() => {
-                      setCenterView(view.id);
-                      setSidebarExpanded(false); // Close sidebar when switching to a view
+                      // For insights, tendy, journal - use appMode instead
+                      if (view.id === CENTER_VIEWS.INSIGHTS) {
+                        setAppMode('insights');
+                      } else if (view.id === CENTER_VIEWS.TENDY) {
+                        setAppMode('tendy');
+                      } else if (view.id === CENTER_VIEWS.JOURNAL) {
+                        setAppMode('journal');
+                      } else {
+                        setCenterView(view.id);
+                        setSidebarExpanded(false);
+                      }
                     }}
                   >
                     {view.label}
@@ -5194,7 +5037,6 @@ Ready to choose your compass word?
                       alignItems: 'center',
                       gap: '0.5rem'
                     }}>
-                      {activeTab === 'events' && '📅 Events'}
                       {activeTab === 'lifeareas' && '🌱 Life Areas & Goals'}
                     </h2>
                     <button
@@ -5210,19 +5052,6 @@ Ready to choose your compass word?
                     >×</button>
                   </div>
                   
-                  {activeTab === 'events' && (
-                    <EventsTab
-                      events={events}
-                      setEvents={setEvents}
-                      expandedEvent={expandedEvent}
-                      setExpandedEvent={setExpandedEvent}
-                      onUpdateDetails={handleUpdateEventDetails}
-                      onDelete={(id) => setEvents(events.filter(e => e.id !== id))}
-                      onAdd={() => setShowEventModal(true)}
-                      revealed={revealed}
-                      apiKey={apiKey}
-                    />
-                  )}
                   {activeTab === 'lifeareas' && (
                     <LifeAreasTab 
                       vlqScores={vlqScores}
@@ -5246,14 +5075,7 @@ Ready to choose your compass word?
                       setYearTheme={setYearTheme}
                     />
                   )}
-                  {centerView === CENTER_VIEWS.SEASONS && (
-                    <SeasonsView 
-                      seasonIntentions={seasonIntentions}
-                      setSeasonIntentions={setSeasonIntentions}
-                      revealed={revealed}
-                    />
-                  )}
-                  {centerView === CENTER_VIEWS.MONTHLY && (
+                  {centerView === CENTER_VIEWS.CALENDAR && (
                     <MonthlyView 
                       events={events}
                       selectedMonth={selectedMonth}
@@ -9668,11 +9490,10 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
         { num: 0, id: 'vlq', label: 'Values', icon: '💚' },
         { num: 1, id: 'goals', label: 'Goals', icon: '🎯' },
         { num: 2, id: 'habits', label: 'Habits', icon: '🔄' },
-        { num: 3, id: 'events', label: 'Events', icon: '📅', optional: true },
-        { num: 4, id: 'quiz', label: 'Quiz', icon: '🌸', optional: true },
-        { num: 5, id: 'lifemap', label: 'Life Map', icon: '🗺️' },
-        { num: 6, id: 'compass', label: 'Compass', icon: '🧭' },
-        { num: 7, id: 'tend', label: 'First Tend', icon: '🌱' },
+        { num: 3, id: 'quiz', label: 'Quiz', icon: '🌸', optional: true },
+        { num: 4, id: 'lifemap', label: 'Life Map', icon: '🗺️' },
+        { num: 5, id: 'compass', label: 'Compass', icon: '🧭' },
+        { num: 6, id: 'tend', label: 'First Tend', icon: '🌱' },
       ];
 
       const progress = getProgress();
@@ -9791,11 +9612,10 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   {progress[2].focusAreasRequired > 0 && ` · ${progress[2].focusAreasCovered}/${progress[2].focusAreasRequired} focus areas covered`}
                 </span>
               )}
-              {currentStep === 3 && <span>{progress[3].current} events added (optional)</span>}
-              {currentStep === 4 && <span>{progress[4].current === 1 ? 'Quiz completed!' : 'Take the quiz (optional)'}</span>}
-              {currentStep === 5 && <span>{progress[5].current}/{progress[5].required} prompts answered</span>}
-              {currentStep === 6 && <span>{progress[6].current === 1 ? 'Compass word set!' : 'Choose your compass word'}</span>}
-              {currentStep === 7 && <span>{progress[7].current === 1 ? 'First tend completed!' : 'Complete your first daily tend'}</span>}
+              {currentStep === 3 && <span>{progress[3].current === 1 ? 'Quiz completed!' : 'Take the quiz (optional)'}</span>}
+              {currentStep === 4 && <span>{progress[4].current}/{progress[4].required} prompts answered</span>}
+              {currentStep === 5 && <span>{progress[5].current === 1 ? 'Compass word set!' : 'Choose your compass word'}</span>}
+              {currentStep === 6 && <span>{progress[6].current === 1 ? 'First tend completed!' : 'Complete your first daily tend'}</span>}
             </div>
           )}
         </div>
