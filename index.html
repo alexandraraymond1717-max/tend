@@ -3611,7 +3611,18 @@ Examples:
 For SEASON INTENTIONS: [SEASON: season | intention]
 Example: [SEASON: winter | rest and reflection]
 
-Only include markers when user has clearly committed, not for vague ideas.
+For PERSONAL DETAILS (to personalize future daily tends): [LIFE_MAP: lifeArea | key | value]
+Use this when users share personal details that would help personalize their experience — names of people, pets, places, preferences, specifics about their life. This info gets saved to their Life Map and makes future daily tends more personal.
+Examples:
+- User mentions "my dog Max" → [LIFE_MAP: health | pet | dog named Max]
+- User says "my partner Sarah loves hiking" → [LIFE_MAP: partner | partner name | Sarah] [LIFE_MAP: recreation | shared activities | hiking with partner]
+- User mentions "I work from home" → [LIFE_MAP: career | work situation | remote/work from home]
+- User says "my mom lives in Portland" → [LIFE_MAP: family | mom location | Portland]
+- User mentions "I love morning runs by the lake" → [LIFE_MAP: health | exercise preference | morning runs by the lake]
+
+Extract personal details naturally as they come up in conversation. Don't ask interrogation-style questions just to fill out the Life Map — let it emerge organically.
+
+Only include markers when user has clearly committed or shared (not for vague ideas).
 
 CURRENT VIEW: ${centerView.toUpperCase()}
 ${centerView === 'year' ? `
@@ -4130,6 +4141,41 @@ How did your tends go? What would you like to explore next?
           }
         }
         
+        // Parse for LIFE_MAP info: [LIFE_MAP: lifeArea | key | value]
+        // This extracts personal info from chat and saves it to structuredInfo for daily tend personalization
+        const lifeMapMatches = response.matchAll(/\[LIFE_MAP:\s*([a-zA-Z]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/g);
+        for (const match of lifeMapMatches) {
+          const lifeArea = match[1].trim().toLowerCase();
+          const key = match[2].trim();
+          const value = match[3].trim();
+          
+          if (lifeArea && key && value && VLQ_ORDER.includes(lifeArea)) {
+            console.log('Life Map info extracted from chat:', lifeArea, '-', key, ':', value);
+            setUserProfile(prev => {
+              const prefs = prev?.tendPreferences || {};
+              const existingInfo = prefs.structuredInfo?.[lifeArea] || {};
+              
+              // Append to existing value if key exists, otherwise create new
+              const existingValue = existingInfo[key];
+              const newValue = existingValue ? `${existingValue}, ${value}` : value;
+              
+              return {
+                ...prev,
+                tendPreferences: {
+                  ...prefs,
+                  structuredInfo: {
+                    ...prefs.structuredInfo,
+                    [lifeArea]: {
+                      ...existingInfo,
+                      [key]: newValue
+                    }
+                  }
+                }
+              };
+            });
+          }
+        }
+        
         // Remove all markers from displayed response (buttons handled by ChatMessage)
         response = response
           .replace(/\[YEAR_THEME:\s*[a-zA-Z]{4,15}\]/g, '')
@@ -4140,6 +4186,7 @@ How did your tends go? What would you like to explore next?
           .replace(/\[SEASON:\s*[^\]]+\]/g, '')
           .replace(/\[NAVIGATE:\s*[^\]]+\]/g, '')
           .replace(/\[FOCUS_AREA:\s*[^\]]+\]/g, '')
+          .replace(/\[LIFE_MAP:\s*[^\]]+\]/g, '')
           .trim();
         
         setMessages(prev => [...prev, { 
