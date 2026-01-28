@@ -2459,6 +2459,73 @@ Respond with ONLY the task text, nothing else.`,
         }
       }, [vlqCompleted, onboardingCompleted, onboardingStep, goals, weeklyHabits, userProfile, todaysTendies]);
 
+      // Track last completed area to detect new completions
+      const [lastCompletedAreas, setLastCompletedAreas] = useState([]);
+      
+      // Monitor focus area completion during step 1 onboarding
+      useEffect(() => {
+        if (!vlqCompleted || onboardingCompleted || onboardingStep !== 1 || !currentOnboardingArea) return;
+        
+        const focusAreas = getFocusAreas();
+        const prefs = userProfile?.tendPreferences || {};
+        
+        const getAreaProgress = (areaKey) => {
+          const hasPrompt = prefs.structuredInfo?.[areaKey] && Object.values(prefs.structuredInfo[areaKey]).some(v => v) || prefs.lifeAreaNotes?.[areaKey];
+          const hasGoal = goals.some(g => g.lifeArea === areaKey);
+          const areaGoalIds = goals.filter(g => g.lifeArea === areaKey).map(g => g.id);
+          const hasLinkedHabit = weeklyHabits.some(h => h.lifeArea === areaKey && areaGoalIds.includes(h.goalId));
+          return { hasPrompt, hasGoal, hasLinkedHabit, complete: hasPrompt && hasGoal && hasLinkedHabit };
+        };
+        
+        const completedAreas = focusAreas.filter(a => getAreaProgress(a).complete);
+        const newlyCompleted = completedAreas.filter(a => !lastCompletedAreas.includes(a));
+        
+        if (newlyCompleted.length > 0 && newlyCompleted.includes(currentOnboardingArea)) {
+          // Current area just became complete
+          const allComplete = focusAreas.every(a => getAreaProgress(a).complete);
+          
+          if (allComplete) {
+            // All focus areas complete!
+            const msg = {
+              role: 'assistant',
+              content: `Wonderful! You've built out your Life Map for all your focus areas. 🗺️
+
+Would you like to:
+
+[BUTTON: Explore other life areas | stay]
+[BUTTON: Take the Gardener Quiz | next step]
+[BUTTON: Skip to my first Tend | skip quiz]`,
+              timestamp: new Date().toISOString()
+            };
+            setMessages(prev => [...prev, msg]);
+            setTimeout(() => scrollChatToBottom(), 100);
+          } else {
+            // Find next incomplete area
+            const currentIdx = focusAreas.indexOf(currentOnboardingArea);
+            const nextIncomplete = focusAreas.slice(currentIdx + 1).find(a => !getAreaProgress(a).complete) 
+              || focusAreas.find(a => !getAreaProgress(a).complete);
+            
+            if (nextIncomplete) {
+              setCurrentOnboardingArea(nextIncomplete);
+              const areaName = VLQ_DOMAINS[nextIncomplete]?.name || nextIncomplete;
+              const msg = {
+                role: 'assistant',
+                content: `Great work on ${VLQ_DOMAINS[currentOnboardingArea]?.name}! ✓
+
+Let's move on to <strong>${areaName}</strong>. I've opened it for you.
+
+Add a goal, link a habit to it, and answer a prompt to complete this area.`,
+                timestamp: new Date().toISOString()
+              };
+              setMessages(prev => [...prev, msg]);
+              setTimeout(() => scrollChatToBottom(), 100);
+            }
+          }
+        }
+        
+        setLastCompletedAreas(completedAreas);
+      }, [vlqCompleted, onboardingCompleted, onboardingStep, currentOnboardingArea, goals, weeklyHabits, userProfile]);
+
       // Onboarding: Auto-navigate to relevant view when step changes
       useEffect(() => {
         if (!vlqCompleted || onboardingCompleted || onboardingStep === null || onboardingStep === undefined) return;
@@ -4384,58 +4451,8 @@ Ready to try your first Daily Tend?
                       setTimeout(() => scrollChatToBottom(), 100);
                     }}
                     onLifeMapAnswer={() => {
-                      // Check if current area is complete, then prompt for next
-                      if (onboardingStep === 1 && currentOnboardingArea) {
-                        const focusAreas = getFocusAreas();
-                        const prefs = userProfile?.tendPreferences || {};
-                        
-                        const getAreaProgress = (areaKey) => {
-                          const hasPrompt = prefs.structuredInfo?.[areaKey] && Object.values(prefs.structuredInfo[areaKey]).some(v => v) || prefs.lifeAreaNotes?.[areaKey];
-                          const hasGoal = goals.some(g => g.lifeArea === areaKey);
-                          const hasHabit = weeklyHabits.some(h => h.lifeArea === areaKey);
-                          return { hasPrompt, hasGoal, hasHabit, complete: hasPrompt && hasGoal && hasHabit };
-                        };
-                        
-                        const currentProgress = getAreaProgress(currentOnboardingArea);
-                        
-                        // If current area just became complete
-                        if (currentProgress.complete) {
-                          const currentIdx = focusAreas.indexOf(currentOnboardingArea);
-                          const nextIncomplete = focusAreas.slice(currentIdx + 1).find(a => !getAreaProgress(a).complete);
-                          
-                          if (nextIncomplete) {
-                            // Move to next area
-                            setCurrentOnboardingArea(nextIncomplete);
-                            const areaName = VLQ_DOMAINS[nextIncomplete]?.name || nextIncomplete;
-                            const msg = {
-                              role: 'assistant',
-                              content: `Great work on ${VLQ_DOMAINS[currentOnboardingArea]?.name}! ✓
-
-Let's move on to <strong>${areaName}</strong>. I've opened it for you.
-
-What matters most to you in this area? You can fill in the prompts directly, or tell me about it and I'll help you set a goal and habit.`,
-                              timestamp: new Date().toISOString()
-                            };
-                            setMessages(prev => [...prev, msg]);
-                            setTimeout(() => scrollChatToBottom(), 100);
-                          } else {
-                            // All focus areas complete!
-                            const msg = {
-                              role: 'assistant',
-                              content: `Wonderful! You've built out your Life Map for all your focus areas. 🗺️
-
-Would you like to:
-
-[BUTTON: Explore other life areas | stay]
-[BUTTON: Take the Gardener Quiz | next step]
-[BUTTON: Skip to my first Tend | skip quiz]`,
-                              timestamp: new Date().toISOString()
-                            };
-                            setMessages(prev => [...prev, msg]);
-                            setTimeout(() => scrollChatToBottom(), 100);
-                          }
-                        }
-                      }
+                      // The useEffect monitors completion and sends messages
+                      // This callback just triggers re-renders
                     }}
                   />
                 </div>
@@ -10767,27 +10784,31 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                 <div style={{ padding: '0 1rem 1rem 1rem', borderTop: '1px solid var(--border)' }}>
                                   
                                   {/* Progress indicator during onboarding */}
-                                  {!onboardingCompleted && onboardingStep === 1 && (
-                                    <div style={{ 
-                                      display: 'flex', 
-                                      gap: '1rem', 
-                                      padding: '0.75rem', 
-                                      backgroundColor: 'var(--bg-card)', 
-                                      borderRadius: '8px', 
-                                      marginTop: '0.75rem',
-                                      fontSize: '0.75rem'
-                                    }}>
-                                      <span style={{ color: areaGoals.length > 0 ? 'var(--accent)' : 'var(--text-muted)' }}>
-                                        {areaGoals.length > 0 ? '✓' : '○'} Goal
-                                      </span>
-                                      <span style={{ color: areaHabits.length > 0 ? 'var(--accent)' : 'var(--text-muted)' }}>
-                                        {areaHabits.length > 0 ? '✓' : '○'} Habit
-                                      </span>
-                                      <span style={{ color: hasLifeMapInfo ? 'var(--accent)' : 'var(--text-muted)' }}>
-                                        {hasLifeMapInfo ? '✓' : '○'} Prompt
-                                      </span>
-                                    </div>
-                                  )}
+                                  {!onboardingCompleted && onboardingStep === 1 && (() => {
+                                    const areaGoalIds = areaGoals.map(g => g.id);
+                                    const hasLinkedHabit = areaHabits.some(h => areaGoalIds.includes(h.goalId));
+                                    return (
+                                      <div style={{ 
+                                        display: 'flex', 
+                                        gap: '1rem', 
+                                        padding: '0.75rem', 
+                                        backgroundColor: 'var(--bg-card)', 
+                                        borderRadius: '8px', 
+                                        marginTop: '0.75rem',
+                                        fontSize: '0.75rem'
+                                      }}>
+                                        <span style={{ color: areaGoals.length > 0 ? 'var(--accent)' : 'var(--text-muted)' }}>
+                                          {areaGoals.length > 0 ? '✓' : '○'} Goal
+                                        </span>
+                                        <span style={{ color: hasLinkedHabit ? 'var(--accent)' : 'var(--text-muted)' }}>
+                                          {hasLinkedHabit ? '✓' : '○'} Linked Habit
+                                        </span>
+                                        <span style={{ color: hasLifeMapInfo ? 'var(--accent)' : 'var(--text-muted)' }}>
+                                          {hasLifeMapInfo ? '✓' : '○'} Prompt
+                                        </span>
+                                      </div>
+                                    );
+                                  })()}
                                   
                                   {/* 1. Goal */}
                                   <div style={{ marginTop: '0.75rem' }}>
