@@ -9893,6 +9893,16 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             }
           }, 300);
         }
+        
+        // Handle quiz auto-scroll
+        if (autoExpandSection === 'quiz') {
+          setTimeout(() => {
+            const quizElement = document.getElementById('gardener-quiz-section');
+            if (quizElement) {
+              quizElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, 300);
+        }
       }, [autoExpandSection]);
       
       // Notify parent when expanded area changes
@@ -11041,12 +11051,18 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             </div>
             
                         {/* Gardener Type Section */}
+            <div id="gardener-quiz-section">
             {(() => {
               const savedGardenerType = userProfile?.tendPreferences?.gardenerType;
               const quizStep = tempFormData.quizStep || 0;
               const quizAnswers = tempFormData.quizAnswers || {};
               const isGenerating = tempFormData.isGenerating || false;
               const generatedResult = tempFormData.generatedResult || null;
+              
+              // Auto-open quiz when autoExpandSection is 'quiz'
+              if (autoExpandSection === 'quiz' && !savedGardenerType && expandedArea !== 'quiz') {
+                setTimeout(() => setExpandedArea('quiz'), 100);
+              }
               
               // If taking the quiz, show it here
               if (expandedArea === 'quiz') {
@@ -11301,6 +11317,7 @@ Respond in this exact JSON format only:
                 </div>
               );
             })()}
+            </div>
             
 {/* Overview Stats */}
             <div style={insightsStyles.section}>
