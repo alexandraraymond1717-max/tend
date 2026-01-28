@@ -3658,7 +3658,6 @@ Current context:
 - Their goals: ${goals.length > 0 ? goals.map(g => `${g.text}${g.lifeArea ? ` (${VLQ_DOMAINS[g.lifeArea]?.name || g.lifeArea})` : ''}`).join(', ') : 'none yet'}
 - Their events: ${events.length > 0 ? events.map(e => `${MONTHS[e.month]}: ${e.title}`).join(', ') : 'none yet'}
 - Weekly habits: ${weeklyHabits.length > 0 ? weeklyHabits.map(h => `${h.text} (${h.frequency}x/week)${h.lifeArea ? ` [${VLQ_DOMAINS[h.lifeArea]?.name || h.lifeArea}]` : ''}`).join(', ') : 'none yet'}
-- Daily habits: ${dailyHabits.length > 0 ? dailyHabits.map(h => h.text).join(', ') : 'none yet'}
 - Phase: ${phase} (explore = getting to know them, ground = understanding commitments, reveal = unlocking the app, plan = ongoing planning)
 - Conversation length: ${messages.length} messages so far
 ${getMisalignments()}
@@ -3673,20 +3672,16 @@ For GOALS: [GOAL: goal text | lifeArea]
 Example: [GOAL: Run a 5K | health]
 Life areas: family, partner, friendships, career, education, recreation, spirituality, community, health, mentalHealth
 
-For WEEKLY habits (use for ANY recurring habit): [WEEKLY_HABIT: habit text | frequency | lifeArea]
+For HABITS: [WEEKLY_HABIT: habit text | frequency | lifeArea]
 - frequency is 1-7 (times per week)
 - "every day" or "daily" = frequency 7
 - "3 times a week" = frequency 3
 - ALWAYS use a separate marker for EACH habit
 Examples:
 [WEEKLY_HABIT: go to gym | 7 | health]
+[WEEKLY_HABIT: morning meditation | 7 | mentalHealth]
 [WEEKLY_HABIT: call mom | 1 | family]
 [WEEKLY_HABIT: date night | 1 | partner]
-
-For DAILY habits (simple checklist, no frequency): [DAILY_HABIT: habit text]
-- Use ONLY for tiny habits like "morning meditation" or "drink water"
-- Most habits should use WEEKLY_HABIT instead
-Example: [DAILY_HABIT: morning meditation]
 
 IMPORTANT: When user mentions multiple habits, output MULTIPLE markers:
 User: "I want to go to the gym daily and walk 10k steps"
@@ -4162,16 +4157,22 @@ How did your tends go? What would you like to explore next?
           }
         }
         
-        // Parse for daily habits: [DAILY_HABIT: habit text]
+        // Parse for legacy daily habits - convert to weekly habits with frequency 7
         const dailyHabitMatches = response.matchAll(/\[DAILY_HABIT:\s*([^\]]+)\]/g);
         for (const match of dailyHabitMatches) {
           const habitText = match[1].trim();
           if (habitText) {
-            setDailyHabits(prev => {
+            setWeeklyHabits(prev => {
               // Don't add duplicates
               if (prev.some(h => h.text.toLowerCase() === habitText.toLowerCase())) return prev;
-              console.log('Daily habit added by Claude:', habitText);
-              return [...prev, { id: generateId(), text: habitText }];
+              console.log('Daily habit converted to weekly (7x):', habitText);
+              return [...prev, { 
+                id: generateId(), 
+                text: habitText,
+                frequency: 7,
+                lifeArea: 'mentalHealth', // Default for habits like meditation
+                color: VLQ_DOMAINS['mentalHealth']?.color || '#B8A9C9'
+              }];
             });
           }
         }
