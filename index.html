@@ -11081,7 +11081,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                           onKeyDown={(e) => {
                                             if (e.key === 'Enter' && tempFormData.newHabit?.trim()) {
                                               const freq = parseInt(tempFormData.habitFreq) || 3;
-                                              const linkedGoalId = tempFormData.linkedGoal || null;
+                                              // Auto-link to first goal if user didn't select one
+                                              const linkedGoalId = tempFormData.linkedGoal || (areaGoals.length > 0 ? areaGoals[0].id : null);
                                               setWeeklyHabits(prev => [...prev, { 
                                                 id: Date.now().toString(), 
                                                 text: tempFormData.newHabit.trim(), 
@@ -11105,17 +11106,23 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                         </select>
                                       </div>
                                       
-                                      {/* Link to goal dropdown - only show if there are goals */}
+                                      {/* Link to goal dropdown - show during onboarding or if there are goals */}
                                       {areaGoals.length > 0 && (
                                         <select 
-                                          value={tempFormData.linkedGoal || ''}
+                                          value={tempFormData.linkedGoal || (areaGoals.length === 1 ? areaGoals[0].id : '')}
                                           onChange={(e) => setTempFormData(prev => ({...prev, linkedGoal: e.target.value}))}
                                           style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text-muted)', fontSize: '0.8rem' }}
                                         >
-                                          <option value="">Link to a goal (optional)</option>
-                                          {areaGoals.map(g => (
-                                            <option key={g.id} value={g.id}>🎯 {g.text}</option>
-                                          ))}
+                                          {areaGoals.length === 1 ? (
+                                            <option value={areaGoals[0].id}>🎯 {areaGoals[0].text}</option>
+                                          ) : (
+                                            <>
+                                              <option value="">Link to a goal</option>
+                                              {areaGoals.map(g => (
+                                                <option key={g.id} value={g.id}>🎯 {g.text}</option>
+                                              ))}
+                                            </>
+                                          )}
                                         </select>
                                       )}
                                     </div>
