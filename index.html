@@ -3492,6 +3492,72 @@ Their journey is just beginning — they have goals, habits, and a Life Map to g
 Guide the user through their onboarding journey. Be encouraging and help them make progress.`;
         };
 
+        // Build personalization context from user profile
+        const getPersonalizationContext = () => {
+          const prefs = userProfile?.tendPreferences || {};
+          const parts = [];
+          
+          // Gardener type and tending style
+          if (prefs.gardenerType) {
+            parts.push(`\n=== USER'S PERSONALITY (from Gardener Quiz) ===`);
+            parts.push(`Gardener type: "${prefs.gardenerType.name}" - ${prefs.gardenerType.description}`);
+            parts.push(`Superpower: ${prefs.gardenerType.strength}`);
+            
+            // Tending style preferences
+            if (prefs.gardenerType.tendingStyle) {
+              const style = prefs.gardenerType.tendingStyle;
+              parts.push(`\nCommunication preferences based on their personality:`);
+              if (style.checkInTone) parts.push(`- Chat tone: ${style.checkInTone} (adjust your warmth/directness accordingly)`);
+              if (style.celebrationStyle) parts.push(`- When they accomplish something: ${style.celebrationStyle}`);
+              if (style.habitApproach) parts.push(`- Habit approach: ${style.habitApproach}`);
+              if (style.struggleSupport) parts.push(`- When they're struggling: ${style.struggleSupport}`);
+              if (style.goalStyle) parts.push(`- Goal-setting style: ${style.goalStyle}`);
+            }
+            
+            // Raw traits for additional context
+            if (prefs.gardenerType.traits) {
+              const t = prefs.gardenerType.traits;
+              if (t.energy) parts.push(`- Recharges by: ${t.energy === 'solo' ? 'alone time' : t.energy === 'intimate' ? 'one-on-one connection' : t.energy === 'social' ? 'being around others' : 'physical activity'}`);
+              if (t.timeOfDay) parts.push(`- Best time of day: ${t.timeOfDay}`);
+              if (t.setback) parts.push(`- When they miss a goal: tends to be ${t.setback}`);
+            }
+          }
+          
+          // Life Map context - what they've shared about each area
+          if (prefs.structuredInfo && Object.keys(prefs.structuredInfo).length > 0) {
+            const filledAreas = VLQ_ORDER.filter(domain => {
+              const info = prefs.structuredInfo[domain];
+              return info && Object.values(info).some(v => v);
+            });
+            
+            if (filledAreas.length > 0) {
+              parts.push(`\n=== LIFE MAP DETAILS (what they've shared) ===`);
+              filledAreas.forEach(domain => {
+                const info = prefs.structuredInfo[domain];
+                const domainName = VLQ_DOMAINS[domain]?.name;
+                const details = Object.entries(info)
+                  .filter(([_, v]) => v)
+                  .map(([k, v]) => `${k}: ${v}`)
+                  .join('; ');
+                parts.push(`${domainName}: ${details}`);
+              });
+            }
+          }
+          
+          // Life area notes
+          if (prefs.lifeAreaNotes) {
+            const notedAreas = Object.entries(prefs.lifeAreaNotes).filter(([_, note]) => note);
+            if (notedAreas.length > 0) {
+              parts.push(`\n=== ADDITIONAL NOTES ===`);
+              notedAreas.forEach(([area, note]) => {
+                parts.push(`${VLQ_DOMAINS[area]?.name || area}: ${note}`);
+              });
+            }
+          }
+          
+          return parts.length > 0 ? parts.join('\n') : '';
+        };
+
         return `You are Tend, a thoughtful AI companion for intentional living and life design. You help people design their year with intention — not just survive, but live intentionally and mindfully.
 
 Your personality:
@@ -3500,6 +3566,7 @@ Your personality:
 - You're concise — 2-4 sentences is often enough, occasionally more for important moments
 - You use gentle emphasis with *italics* for key words (use asterisks for italics)
 - You avoid bullet points in conversation — speak naturally
+${getPersonalizationContext()}
 
 Current context:
 - The user is designing their 2026
@@ -4446,11 +4513,19 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                   <OnboardingProgressBar 
                     currentStep={onboardingStep}
                     onStepClick={(step) => {
-                      setOnboardingStep(step);
-                      setSessionGreeted(false);
+                      if (step === 0) {
+                        // Go back to VLQ reassessment
+                        setVlqStep(-1);
+                        setVlqCompleted(false);
+                        setAppMode(null);
+                      } else {
+                        setOnboardingStep(step);
+                        setSessionGreeted(false);
+                      }
                     }}
                     isStepComplete={isStepComplete}
                     getProgress={getOnboardingProgress}
+                    vlqCompleted={vlqCompleted}
                   />
                   <InsightsView
                     trends={calculateTrends()}
@@ -4690,11 +4765,19 @@ Ready to try your first Daily Tend?
                 <OnboardingProgressBar 
                   currentStep={onboardingStep}
                   onStepClick={(step) => {
-                    setOnboardingStep(step);
-                    setSessionGreeted(false); // Trigger new greeting
+                    if (step === 0) {
+                      // Go back to VLQ reassessment
+                      setVlqStep(-1);
+                      setVlqCompleted(false);
+                      setAppMode(null);
+                    } else {
+                      setOnboardingStep(step);
+                      setSessionGreeted(false); // Trigger new greeting
+                    }
                   }}
                   isStepComplete={isStepComplete}
                   getProgress={getOnboardingProgress}
+                  vlqCompleted={vlqCompleted}
                 />
               )}
               
@@ -9072,8 +9155,9 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
     }
 
     // Onboarding Progress Bar Component
-    function OnboardingProgressBar({ currentStep, onStepClick, isStepComplete, getProgress }) {
+    function OnboardingProgressBar({ currentStep, onStepClick, isStepComplete, getProgress, vlqCompleted }) {
       const steps = [
+        { num: 0, id: 'vlq', label: 'Values', icon: '💚', alwaysComplete: true },
         { num: 1, id: 'lifemap', label: 'Life Map', icon: '🗺️' },
         { num: 2, id: 'quiz', label: 'Quiz', icon: '🌸', optional: true },
         { num: 3, id: 'tend', label: 'First Tend', icon: '🌱' },
@@ -9088,7 +9172,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           borderRadius: '12px',
           padding: '0.75rem 1rem 0.5rem',
           width: '100%',
-          maxWidth: '400px',
+          maxWidth: '480px',
         }}>
           <div style={{
             display: 'flex',
@@ -9098,9 +9182,9 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           }}>
             {steps.map((step, idx) => {
               const isActive = currentStep === step.num;
-              const isComplete = isStepComplete(step.num);
+              const isComplete = step.alwaysComplete ? vlqCompleted : isStepComplete(step.num);
               const isPast = step.num < currentStep;
-              const isClickable = step.num <= currentStep || isComplete;
+              const isClickable = step.alwaysComplete || step.num <= currentStep || isComplete;
               const stepProgress = progress[step.num];
               
               return (
@@ -9620,14 +9704,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 </div>
                 
                 <div style={dashStyles.section}>
-                  <h3 style={dashStyles.sectionTitle}>🌱 How Tend Actually Uses Your Data</h3>
+                  <h3 style={dashStyles.sectionTitle}>🌱 How Tend Uses Your Data</h3>
                   <div style={{fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.6}}>
-                    <p style={{marginBottom: '0.75rem'}}><strong>VLQ Scores</strong> → Determines which life area appears in daily tends (higher importance + bigger gap = more likely). Also used in chat to identify focus areas.</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Life Map (structuredInfo)</strong> → Personalizes daily tend text (e.g., "Call Mom" instead of "Call a family member")</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Goals & Habits</strong> → Used to personalize daily tends for each life area AND in chat context to track commitments</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Gardener Type</strong> → Name and description included when generating fresh AI daily tends</p>
-                    <p style={{marginBottom: '0.75rem', color: 'var(--text-muted)'}}><strong>tendingStyle</strong> → <em>Stored but NOT YET USED</em> — will eventually affect chat tone, reminders, and celebration style</p>
-                    <p style={{color: 'var(--text-muted)'}}><strong>Journal & Chats</strong> → <em>NOT YET USED</em> — will eventually help Tend understand patterns</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>VLQ Scores</strong> → Determines which life area appears in daily tends + used in chat to personalize guidance around your focus areas</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>Life Map (structuredInfo)</strong> → Personalizes daily tends AND chat conversations with specific details about your life</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>Goals & Habits</strong> → Used in daily tends AND chat to reference your commitments and track progress</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>Gardener Type</strong> → Sets Tend's communication style in chat (warm/direct/curious/chill) based on your personality</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>tendingStyle</strong> → Tells Tend how to celebrate your wins, support you during setbacks, and time suggestions to your preferences</p>
+                    <p style={{color: 'var(--text-muted)'}}><strong>Journal & Chats</strong> → <em>NOT YET USED</em> — will eventually help Tend understand patterns over time</p>
                   </div>
                 </div>
               </>
