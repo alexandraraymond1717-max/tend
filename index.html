@@ -11069,74 +11069,105 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               // If taking the quiz, show it here
               if (expandedArea === 'quiz') {
                 const quizQuestions = [
-                  { q: "It's Saturday morning. What sounds most appealing?", options: [
-                    { text: "A quiet cup of coffee and a good book", id: 'a' },
-                    { text: "Brunch with friends — the more the merrier", id: 'b' },
-                    { text: "Finally tackling that project I've been putting off", id: 'c' },
-                    { text: "No plans — I'll see where the day takes me", id: 'd' },
+                  // Q1: Energy source (introvert/extrovert) - affects how Tend suggests activities
+                  { q: "After a long week, what actually recharges you?", trait: 'energy', options: [
+                    { text: "Solo time — a bath, a book, blissful silence", id: 'a', value: 'solo' },
+                    { text: "Quality time with my favorite person or two", id: 'b', value: 'intimate' },
+                    { text: "Getting out — dinner, a party, being around people", id: 'c', value: 'social' },
+                    { text: "Doing something active or creative with my hands", id: 'd', value: 'active' },
                   ]},
-                  { q: "A friend is going through a hard time. You:", options: [
-                    { text: "Listen deeply and help them process their feelings", id: 'a' },
-                    { text: "Rally the troops and organize support", id: 'b' },
-                    { text: "Research solutions and make a practical plan", id: 'c' },
-                    { text: "Surprise them with something to lift their spirits", id: 'd' },
+                  // Q2: Time preference - affects when Tend suggests habits/check-ins
+                  { q: "When do you feel most like yourself?", trait: 'timeOfDay', options: [
+                    { text: "Early morning, before the world wakes up", id: 'a', value: 'earlyMorning' },
+                    { text: "Mid-morning, coffee in hand, ready to go", id: 'b', value: 'morning' },
+                    { text: "Afternoon or evening, once I've warmed up", id: 'c', value: 'afternoon' },
+                    { text: "Late night, when it's quiet and I can think", id: 'd', value: 'night' },
                   ]},
-                  { q: "Your ideal vacation involves:", options: [
-                    { text: "A peaceful retreat with time to reflect", id: 'a' },
-                    { text: "Exploring a new city with people I love", id: 'b' },
-                    { text: "A well-planned itinerary hitting all the highlights", id: 'c' },
-                    { text: "Booking a flight and figuring out the rest later", id: 'd' },
+                  // Q3: Motivation style - affects how Tend frames goals and celebrates
+                  { q: "What makes you actually want to stick with something?", trait: 'motivation', options: [
+                    { text: "Seeing progress, even tiny wins along the way", id: 'a', value: 'progress' },
+                    { text: "Knowing someone else is counting on me", id: 'b', value: 'accountability' },
+                    { text: "A clear deadline or target to hit", id: 'c', value: 'deadline' },
+                    { text: "Genuinely enjoying the process itself", id: 'd', value: 'intrinsic' },
                   ]},
-                  { q: "When you're stressed, you tend to:", options: [
-                    { text: "Need alone time to think things through", id: 'a' },
-                    { text: "Talk it out with someone I trust", id: 'b' },
-                    { text: "Make lists and break things into manageable steps", id: 'c' },
-                    { text: "Do something completely different to reset", id: 'd' },
+                  // Q4: Pace preference - affects habit frequency and goal chunking
+                  { q: "How do you prefer to tackle big things?", trait: 'pace', options: [
+                    { text: "Slow and steady — small steps, every day", id: 'a', value: 'steady' },
+                    { text: "Focused bursts with breaks in between", id: 'b', value: 'bursts' },
+                    { text: "All at once when I'm feeling inspired", id: 'c', value: 'intense' },
+                    { text: "Flexibly — depends on my energy that day", id: 'd', value: 'flexible' },
                   ]},
-                  { q: "The best part of achieving a goal is:", options: [
-                    { text: "The growth and self-discovery along the way", id: 'a' },
-                    { text: "Celebrating with the people who supported me", id: 'b' },
-                    { text: "The satisfaction of crossing it off my list", id: 'c' },
-                    { text: "The freedom to move on to the next adventure", id: 'd' },
+                  // Q5: Structure preference - affects how rigid/flexible Tend is
+                  { q: "Your ideal daily routine is:", trait: 'structure', options: [
+                    { text: "Predictable — I thrive with consistency", id: 'a', value: 'structured' },
+                    { text: "Loosely planned with room to adjust", id: 'b', value: 'semi' },
+                    { text: "Different every day — variety keeps me engaged", id: 'c', value: 'varied' },
+                    { text: "What routine? I go where the day takes me", id: 'd', value: 'spontaneous' },
                   ]},
-                  { q: "Your ideal place to feel grounded is:", options: [
-                    { text: "A quiet forest, surrounded by trees", id: 'a' },
-                    { text: "A cozy café or gathering spot with good energy", id: 'b' },
-                    { text: "A tidy home office or workshop", id: 'c' },
-                    { text: "Somewhere new — a beach, desert, or open road", id: 'd' },
+                  // Q6: Stress response - affects how Tend supports during hard times
+                  { q: "When life gets overwhelming, you need:", trait: 'stressResponse', options: [
+                    { text: "Space to process on my own first", id: 'a', value: 'space' },
+                    { text: "Someone to talk it through with", id: 'b', value: 'talk' },
+                    { text: "A clear action plan to feel in control", id: 'c', value: 'action' },
+                    { text: "A break — something fun to reset my brain", id: 'd', value: 'distraction' },
                   ]},
-                  { q: "Your energy comes from:", options: [
-                    { text: "Meaningful one-on-one conversations", id: 'a' },
-                    { text: "Being around people and social gatherings", id: 'b' },
-                    { text: "Making visible progress on things that matter", id: 'c' },
-                    { text: "New experiences and breaking routine", id: 'd' },
+                  // Q7: Feedback style - affects Tend's tone and celebration style
+                  { q: "When you accomplish something, you want people to:", trait: 'feedback', options: [
+                    { text: "Notice and celebrate with me!", id: 'a', value: 'celebrate' },
+                    { text: "Acknowledge it simply, no big fuss", id: 'b', value: 'acknowledge' },
+                    { text: "Ask what I learned or what's next", id: 'c', value: 'growth' },
+                    { text: "Honestly? I celebrate internally, that's enough", id: 'd', value: 'internal' },
                   ]},
-                  { q: "When making a big decision, you:", options: [
-                    { text: "Trust your gut and inner wisdom", id: 'a' },
-                    { text: "Ask for input from people you trust", id: 'b' },
-                    { text: "Weigh pros and cons systematically", id: 'c' },
-                    { text: "Go with what excites you most", id: 'd' },
+                  // Q8: Communication preference - affects Tend's chat style
+                  { q: "The vibe you want from a supportive friend:", trait: 'communication', options: [
+                    { text: "Warm and encouraging — be my cheerleader", id: 'a', value: 'warm' },
+                    { text: "Honest and direct — tell it like it is", id: 'b', value: 'direct' },
+                    { text: "Curious and thoughtful — ask good questions", id: 'c', value: 'curious' },
+                    { text: "Chill and low-pressure — no judgment ever", id: 'd', value: 'chill' },
                   ]},
-                  { q: "You'd most like to be remembered for:", options: [
-                    { text: "Your wisdom and thoughtfulness", id: 'a' },
-                    { text: "Your warmth and the relationships you built", id: 'b' },
-                    { text: "Your reliability and what you accomplished", id: 'c' },
-                    { text: "Your adventurous spirit and zest for life", id: 'd' },
+                  // Q9: Challenge preference - affects goal difficulty suggestions
+                  { q: "When setting goals, you tend to:", trait: 'challenge', options: [
+                    { text: "Start small — I'd rather succeed than overcommit", id: 'a', value: 'conservative' },
+                    { text: "Aim high — I'm motivated by ambitious targets", id: 'b', value: 'ambitious' },
+                    { text: "Set a range — minimum and stretch goals", id: 'c', value: 'range' },
+                    { text: "Avoid specific goals — they stress me out", id: 'd', value: 'avoidant' },
                   ]},
-                  { q: "In a garden, you'd be drawn to:", options: [
-                    { text: "A quiet corner with a bench for thinking", id: 'a' },
-                    { text: "A gathering space where people can connect", id: 'b' },
-                    { text: "Neat rows of thriving, well-tended plants", id: 'c' },
-                    { text: "A wild, overgrown corner full of surprises", id: 'd' },
+                  // Q10: Growth mindset - affects how Tend handles setbacks
+                  { q: "When you miss a goal or break a streak:", trait: 'setback', options: [
+                    { text: "I'm hard on myself, but I get back up", id: 'a', value: 'selfCritical' },
+                    { text: "I shrug it off — tomorrow's a new day", id: 'b', value: 'resilient' },
+                    { text: "I analyze what went wrong and adjust", id: 'c', value: 'analytical' },
+                    { text: "I often give up and start something new", id: 'd', value: 'restarter' },
                   ]},
                 ];
                 
                 const generateGardenerType = async (answers) => {
                   setTempFormData(prev => ({ ...prev, isGenerating: true }));
-                  const answerSummary = quizQuestions.map((q, i) => {
+                  
+                  // Extract trait values from answers
+                  const traits = {};
+                  const answerDetails = quizQuestions.map((q, i) => {
                     const selectedOption = q.options.find(o => o.id === answers[i]);
+                    if (q.trait && selectedOption?.value) {
+                      traits[q.trait] = selectedOption.value;
+                    }
                     return `Q: ${q.q}\nA: ${selectedOption?.text || 'No answer'}`;
-                  }).join('\n\n');
+                  });
+                  const answerSummary = answerDetails.join('\n\n');
+                  
+                  // Build trait summary for the AI
+                  const traitSummary = `
+PERSONALITY TRAITS IDENTIFIED:
+- Energy: ${traits.energy || 'unknown'} (how they recharge)
+- Best time of day: ${traits.timeOfDay || 'unknown'}
+- Motivation style: ${traits.motivation || 'unknown'}
+- Pace preference: ${traits.pace || 'unknown'}
+- Structure need: ${traits.structure || 'unknown'}
+- Stress response: ${traits.stressResponse || 'unknown'}
+- Feedback preference: ${traits.feedback || 'unknown'}
+- Communication style wanted: ${traits.communication || 'unknown'}
+- Goal-setting approach: ${traits.challenge || 'unknown'}
+- Setback response: ${traits.setback || 'unknown'}`;
                   
                   const prefs = userProfile?.tendPreferences || {};
                   const lifeMapContext = [];
@@ -11155,22 +11186,32 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
                       body: JSON.stringify({
                         model: 'claude-sonnet-4-20250514',
-                        max_tokens: 800,
+                        max_tokens: 1000,
                         system: `You are creating a unique, personalized "gardener archetype" for someone based on their personality quiz answers. This is for a wellness app called Tend.
 
 Create a ONE-OF-A-KIND gardener type that feels deeply personal and insightful. Be creative, warm, and specific. The name should be evocative and unique (not generic like "The Caring Gardener" — think more like "The Midnight Bloom Keeper" or "The Storm-Dancing Cultivator").
 
 The description should be 4-5 sentences that feel like they were written specifically for this person. Reference patterns you notice in their answers. Make them feel truly seen and understood.
 
+IMPORTANT: Include a "tendingStyle" object that will help the app personalize their experience based on their traits.
+
 Respond in this exact JSON format only:
 {
   "name": "The [Unique Evocative Name]",
   "emoji": "[single plant/nature emoji]",
-  "description": "[4-5 sentences personally written for this person about their patterns, strengths, and approach to life.]",
+  "description": "[4-5 sentences personally written for this person]",
   "strength": "[Their superpower in 4-6 words]",
-  "color": "[hex color matching the vibe]"
+  "color": "[hex color matching the vibe]",
+  "tendingStyle": {
+    "checkInTone": "[warm/direct/curious/chill]",
+    "celebrationStyle": "[big/simple/growth-focused/internal]",
+    "reminderTiming": "[morning/afternoon/evening/flexible]",
+    "habitApproach": "[steady-small/focused-bursts/flexible]",
+    "struggleSupport": "[give-space/talk-through/action-plan/distraction]",
+    "goalStyle": "[conservative/ambitious/range-based/process-focused]"
+  }
 }`,
-                        messages: [{ role: 'user', content: `Based on these quiz answers, create a unique gardener archetype:\n\n${answerSummary}${lifeMapContext.length > 0 ? `\n\nAdditional context:\n${lifeMapContext.join('\n')}` : ''}` }]
+                        messages: [{ role: 'user', content: `Based on these quiz answers, create a unique gardener archetype:\n\n${answerSummary}\n\n${traitSummary}${lifeMapContext.length > 0 ? `\n\nLife context:\n${lifeMapContext.join('\n')}` : ''}` }]
                       })
                     });
                     const data = await response.json();
@@ -11178,6 +11219,8 @@ Respond in this exact JSON format only:
                     const jsonMatch = text.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
                       const result = JSON.parse(jsonMatch[0]);
+                      // Add the raw traits to the result for direct access
+                      result.traits = traits;
                       setTempFormData(prev => ({ ...prev, isGenerating: false, generatedResult: result }));
                     } else throw new Error('Parse failed');
                   } catch (error) {
@@ -11185,7 +11228,16 @@ Respond in this exact JSON format only:
                     setTempFormData(prev => ({ ...prev, isGenerating: false, generatedResult: {
                       name: "The Gentle Cultivator", emoji: "🌱",
                       description: "You have a unique way of nurturing growth in yourself and others. Your approach to life is thoughtful and intentional, always seeking the deeper meaning beneath the surface. You understand that the most beautiful gardens aren't rushed — they unfold in their own time. There's a quiet strength in how you tend to the things that matter most.",
-                      strength: "Nurturing potential into bloom", color: "#85B79D"
+                      strength: "Nurturing potential into bloom", color: "#85B79D",
+                      traits: traits,
+                      tendingStyle: {
+                        checkInTone: traits.communication || 'warm',
+                        celebrationStyle: traits.feedback === 'celebrate' ? 'big' : 'simple',
+                        reminderTiming: traits.timeOfDay === 'earlyMorning' || traits.timeOfDay === 'morning' ? 'morning' : 'evening',
+                        habitApproach: traits.pace === 'steady' ? 'steady-small' : 'flexible',
+                        struggleSupport: traits.stressResponse || 'talk-through',
+                        goalStyle: traits.challenge || 'conservative'
+                      }
                     }}));
                   }
                 };
