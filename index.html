@@ -9577,13 +9577,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 </div>
                 
                 <div style={dashStyles.section}>
-                  <h3 style={dashStyles.sectionTitle}>🌱 How Tend Uses Your Data</h3>
+                  <h3 style={dashStyles.sectionTitle}>🌱 How Tend Actually Uses Your Data</h3>
                   <div style={{fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.6}}>
-                    <p style={{marginBottom: '0.75rem'}}><strong>VLQ Scores</strong> → Identifies your focus areas (high importance, lower consistency) and strengths</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Life Map</strong> → Provides context about each life area for personalized daily tends and conversations</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Gardener Quiz</strong> → Sets your <em>tendingStyle</em> which affects chat tone, reminder timing, celebration style, and how Tend supports you during setbacks</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Goals & Habits</strong> → Shapes daily tends and tracks your progress over time</p>
-                    <p><strong>Journal & Chats</strong> → (Coming soon) Will help Tend understand patterns and provide deeper insights</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>VLQ Scores</strong> → Used in chat context to identify your focus areas and guide conversations</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>Life Map (structuredInfo)</strong> → Used to personalize daily tends (e.g., "Call Mom" instead of "Call a family member")</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>Gardener Type</strong> → Name and description included when generating fresh daily tends</p>
+                    <p style={{marginBottom: '0.75rem', color: 'var(--text-muted)'}}><strong>tendingStyle</strong> → <em>Stored but NOT YET USED</em> — will eventually affect chat tone, reminders, and celebration style</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>Goals & Habits</strong> → Used in chat context to track your commitments and suggest activities</p>
+                    <p style={{color: 'var(--text-muted)'}}><strong>Journal & Chats</strong> → <em>NOT YET USED</em> — will eventually help Tend understand patterns</p>
                   </div>
                 </div>
               </>
@@ -9758,6 +9759,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             {/* Raw Data Tab */}
             {activeTab === 'raw' && (
               <>
+                <div style={dashStyles.section}>
+                  <h3 style={dashStyles.sectionTitle}>📋 VLQ Data</h3>
+                  <div style={{marginBottom: '0.5rem', fontSize: '0.8rem', color: 'var(--text-muted)'}}>
+                    vlqCompleted: <strong style={{color: vlqCompleted ? '#8FD4A0' : '#E8A090'}}>{String(vlqCompleted)}</strong>
+                  </div>
+                  <pre style={dashStyles.code}>{JSON.stringify(vlqScores, null, 2)}</pre>
+                </div>
+                
                 <div style={dashStyles.section}>
                   <h3 style={dashStyles.sectionTitle}>🔧 Full userProfile.tendPreferences</h3>
                   <pre style={dashStyles.code}>{JSON.stringify(prefs, null, 2)}</pre>
