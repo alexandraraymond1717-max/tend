@@ -10300,44 +10300,55 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                           borderRadius: '10px',
                           padding: '0.75rem 1rem',
                           boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                          maxWidth: '300px',
+                          maxWidth: '320px',
                           zIndex: 100,
                         }}>
                           <div style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.4rem', textTransform: 'uppercase' }}>
                             {hoveredNode.name}
                           </div>
                           
-                          {/* Goals */}
+                          {/* Goals with linked habits */}
                           {hoveredNode.goals?.length > 0 && (
                             <div style={{ marginBottom: '0.4rem' }}>
-                              <div style={{ fontSize: '0.65rem', color: 'var(--accent)', fontWeight: 600, marginBottom: '0.2rem' }}>🎯 Goals</div>
-                              {hoveredNode.goals.map((goal, idx) => (
-                                <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--text)', paddingLeft: '0.5rem' }}>
-                                  • {goal.text}
-                                </div>
-                              ))}
+                              {hoveredNode.goals.map((goal, idx) => {
+                                const linkedHabits = hoveredNode.habits?.filter(h => h.goalId === goal.id) || [];
+                                return (
+                                  <div key={idx} style={{ marginBottom: '0.3rem' }}>
+                                    <div style={{ fontSize: '0.8rem', color: 'var(--text)' }}>
+                                      🎯 {goal.text}
+                                    </div>
+                                    {linkedHabits.map((habit, hi) => (
+                                      <div key={hi} style={{ fontSize: '0.75rem', color: 'var(--text-muted)', paddingLeft: '1rem', marginTop: '0.15rem' }}>
+                                        ↳ 🔄 {habit.text} ({habit.frequency}x/wk)
+                                      </div>
+                                    ))}
+                                  </div>
+                                );
+                              })}
                             </div>
                           )}
                           
-                          {/* Habits */}
-                          {hoveredNode.habits?.length > 0 && (
-                            <div style={{ marginBottom: '0.4rem' }}>
-                              <div style={{ fontSize: '0.65rem', color: 'var(--accent)', fontWeight: 600, marginBottom: '0.2rem' }}>🔄 Habits</div>
-                              {hoveredNode.habits.map((habit, idx) => (
-                                <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--text)', paddingLeft: '0.5rem' }}>
-                                  • {habit.text} ({habit.frequency}x/wk)
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                          {/* Unlinked Habits */}
+                          {(() => {
+                            const unlinkedHabits = hoveredNode.habits?.filter(h => !h.goalId) || [];
+                            if (unlinkedHabits.length === 0) return null;
+                            return (
+                              <div style={{ marginBottom: '0.4rem' }}>
+                                {unlinkedHabits.map((habit, idx) => (
+                                  <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--text)' }}>
+                                    🔄 {habit.text} ({habit.frequency}x/wk)
+                                  </div>
+                                ))}
+                              </div>
+                            );
+                          })()}
                           
                           {/* Prompt answers */}
                           {hoveredNode.facts?.length > 0 && (
                             <div>
-                              <div style={{ fontSize: '0.65rem', color: 'var(--accent)', fontWeight: 600, marginBottom: '0.2rem' }}>💬 About you</div>
                               {hoveredNode.facts.map((fact, idx) => (
-                                <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--text)', paddingLeft: '0.5rem' }}>
-                                  • {fact.text}
+                                <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--text)', fontStyle: 'italic' }}>
+                                  "{fact.text}"
                                 </div>
                               ))}
                             </div>
@@ -10495,22 +10506,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                   {/* 1. Goal */}
                                   <div style={{ marginTop: '0.75rem' }}>
                                     <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                      {areaGoals.length > 0 ? `✓ ${areaGoals.length} GOAL${areaGoals.length > 1 ? 'S' : ''} SET` : 'ADD A GOAL'}
+                                      ADD A GOAL
                                     </div>
                                     
-                                    {/* Show confirmation when goals exist */}
-                                    {areaGoals.length > 0 && (
-                                      <div style={{ fontSize: '0.8rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>
-                                        ✓ Visible in your Life Map
-                                      </div>
-                                    )}
-                                    
-                                    {/* Always show input to add more goals */}
                                     <div>
                                       <input type="text" 
                                         value={tempFormData.newGoal || ''}
                                         onChange={(e) => setTempFormData(prev => ({...prev, newGoal: e.target.value}))}
-                                        placeholder={areaGoals.length > 0 ? "Add another goal..." : "What do you want to accomplish?"}
+                                        placeholder="What do you want to accomplish?"
                                         onKeyDown={(e) => {
                                           if (e.key === 'Enter' && tempFormData.newGoal?.trim()) {
                                             setGoals(prev => [...prev, { id: Date.now().toString(), text: tempFormData.newGoal.trim(), lifeArea: areaKey, completed: false }]);
@@ -10527,39 +10530,55 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                   {/* 2. Weekly Habit */}
                                   <div style={{ marginTop: '0.75rem' }}>
                                     <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                      {areaHabits.length > 0 ? `✓ ${areaHabits.length} HABIT${areaHabits.length > 1 ? 'S' : ''} SET` : 'ADD A WEEKLY HABIT'}
+                                      ADD A WEEKLY HABIT
                                     </div>
                                     
-                                    {/* Show confirmation when habits exist */}
-                                    {areaHabits.length > 0 && (
-                                      <div style={{ fontSize: '0.8rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>
-                                        ✓ Visible in your Life Map
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                                      <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                        <input type="text" 
+                                          value={tempFormData.newHabit || ''}
+                                          onChange={(e) => setTempFormData(prev => ({...prev, newHabit: e.target.value}))}
+                                          placeholder="What will you do regularly?"
+                                          onKeyDown={(e) => {
+                                            if (e.key === 'Enter' && tempFormData.newHabit?.trim()) {
+                                              const freq = parseInt(tempFormData.habitFreq) || 3;
+                                              const linkedGoalId = tempFormData.linkedGoal || null;
+                                              setWeeklyHabits(prev => [...prev, { 
+                                                id: Date.now().toString(), 
+                                                text: tempFormData.newHabit.trim(), 
+                                                lifeArea: areaKey, 
+                                                frequency: freq, 
+                                                color: area.color,
+                                                goalId: linkedGoalId
+                                              }]);
+                                              setTempFormData(prev => ({...prev, newHabit: '', habitFreq: '', linkedGoal: ''}));
+                                              if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
+                                            }
+                                          }}
+                                          style={{ flex: 1, padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem' }}
+                                        />
+                                        <select 
+                                          value={tempFormData.habitFreq || '3'}
+                                          onChange={(e) => setTempFormData(prev => ({...prev, habitFreq: e.target.value}))}
+                                          style={{ padding: '0.6rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem' }}
+                                        >
+                                          {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}x/wk</option>)}
+                                        </select>
                                       </div>
-                                    )}
-                                    
-                                    {/* Always show input to add more habits */}
-                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                                      <input type="text" 
-                                        value={tempFormData.newHabit || ''}
-                                        onChange={(e) => setTempFormData(prev => ({...prev, newHabit: e.target.value}))}
-                                        placeholder={areaHabits.length > 0 ? "Add another habit..." : "What will you do regularly?"}
-                                        onKeyDown={(e) => {
-                                          if (e.key === 'Enter' && tempFormData.newHabit?.trim()) {
-                                            const freq = parseInt(tempFormData.habitFreq) || 3;
-                                            setWeeklyHabits(prev => [...prev, { id: Date.now().toString(), text: tempFormData.newHabit.trim(), lifeArea: areaKey, frequency: freq, color: area.color }]);
-                                            setTempFormData(prev => ({...prev, newHabit: '', habitFreq: ''}));
-                                            if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
-                                          }
-                                        }}
-                                        style={{ flex: 1, padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem' }}
-                                      />
-                                      <select 
-                                        value={tempFormData.habitFreq || '3'}
-                                        onChange={(e) => setTempFormData(prev => ({...prev, habitFreq: e.target.value}))}
-                                        style={{ padding: '0.6rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem' }}
-                                      >
-                                        {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}x/wk</option>)}
-                                      </select>
+                                      
+                                      {/* Link to goal dropdown - only show if there are goals */}
+                                      {areaGoals.length > 0 && (
+                                        <select 
+                                          value={tempFormData.linkedGoal || ''}
+                                          onChange={(e) => setTempFormData(prev => ({...prev, linkedGoal: e.target.value}))}
+                                          style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text-muted)', fontSize: '0.8rem' }}
+                                        >
+                                          <option value="">Link to a goal (optional)</option>
+                                          {areaGoals.map(g => (
+                                            <option key={g.id} value={g.id}>🎯 {g.text}</option>
+                                          ))}
+                                        </select>
+                                      )}
                                     </div>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>
                                   </div>
@@ -10576,44 +10595,35 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                       return (
                                         <>
                                           <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                            {hasLifeMapInfo ? '✓ ' : ''}{currentQuestion?.q || 'TELL ME MORE'}
+                                            {currentQuestion?.q || 'TELL ME MORE'}
                                           </div>
                                           
-                                          {/* Prompt answered - show checkmark only */}
-                                          {hasLifeMapInfo && (
-                                            <div style={{ fontSize: '0.8rem', color: 'var(--accent)', marginBottom: '0.5rem' }}>
-                                              ✓ Answered — visible in your Life Map
-                                            </div>
-                                          )}
-                                          
-                                          {/* Input for current prompt if not answered */}
-                                          {!hasAnsweredThisPrompt && currentQuestion && (
-                                            <div>
-                                              <input type="text" 
-                                                value={tempFormData.prompt || ''}
-                                                onChange={(e) => setTempFormData(prev => ({...prev, prompt: e.target.value}))}
-                                                placeholder={currentQuestion.placeholder || "Share your thoughts..."}
-                                                onKeyDown={(e) => {
-                                                  if (e.key === 'Enter' && tempFormData.prompt?.trim()) {
-                                                    setUserProfile(prev => ({
-                                                      ...prev,
-                                                      tendPreferences: {
-                                                        ...prev?.tendPreferences,
-                                                        structuredInfo: { 
-                                                          ...prev?.tendPreferences?.structuredInfo, 
-                                                          [areaKey]: { ...structured, [currentQuestion.key]: tempFormData.prompt }
-                                                        }
+                                          {/* Input for current prompt */}
+                                          <div>
+                                            <input type="text" 
+                                              value={tempFormData.prompt || ''}
+                                              onChange={(e) => setTempFormData(prev => ({...prev, prompt: e.target.value}))}
+                                              placeholder={currentQuestion?.placeholder || "Share your thoughts..."}
+                                              onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && tempFormData.prompt?.trim()) {
+                                                  setUserProfile(prev => ({
+                                                    ...prev,
+                                                    tendPreferences: {
+                                                      ...prev?.tendPreferences,
+                                                      structuredInfo: { 
+                                                        ...prev?.tendPreferences?.structuredInfo, 
+                                                        [areaKey]: { ...structured, [currentQuestion.key]: tempFormData.prompt }
                                                       }
-                                                    }));
-                                                    setTempFormData(prev => ({...prev, prompt: ''}));
-                                                    if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
-                                                  }
-                                                }}
-                                                style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', boxSizing: 'border-box' }}
-                                              />
-                                              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>
-                                            </div>
-                                          )}
+                                                    }
+                                                  }));
+                                                  setTempFormData(prev => ({...prev, prompt: ''}));
+                                                  if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
+                                                }
+                                              }}
+                                              style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                            />
+                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>
+                                          </div>
                                           
                                           {/* Try another prompt button */}
                                           {questions.length > 1 && (
