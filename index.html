@@ -4011,7 +4011,8 @@ How did your tends go? What would you like to explore next?
         }
       };
 
-      const handleSendMessage = async () => {
+      const handleSendMessage = async (e) => {
+        if (e) e.preventDefault();
         if (!inputValue.trim()) return;
         
         const userMessage = inputValue.trim();
@@ -4024,11 +4025,12 @@ How did your tends go? What would you like to explore next?
         setIsTyping(true);
         setExchangeCount(prev => prev + 1);
 
-        // Handle life areas mode - parse numbers
-        let pendingLifeAreaUpdate = null;
-        let pendingNextAreaIndex = currentLifeAreaIndex;
-        let pendingWaitingForSatisfaction = waitingForSatisfaction;
-        let pendingIsLastResponse = false;
+        try {
+          // Handle life areas mode - parse numbers
+          let pendingLifeAreaUpdate = null;
+          let pendingNextAreaIndex = currentLifeAreaIndex;
+          let pendingWaitingForSatisfaction = waitingForSatisfaction;
+          let pendingIsLastResponse = false;
         
         if (lifeAreasMode) {
           const numbers = userMessage.match(/\b([1-9]|10)\b/g);
@@ -4289,6 +4291,15 @@ How did your tends go? What would you like to explore next?
           setLifeAreasCompleted(true);
           setLifeAreasMode(false);
           setIsLastLifeAreaResponse(false);
+        }
+        } catch (error) {
+          console.error('Error in handleSendMessage:', error);
+          setIsTyping(false);
+          setMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: "Sorry, something went wrong. Please try again.",
+            timestamp: new Date().toISOString()
+          }]);
         }
       };
 
