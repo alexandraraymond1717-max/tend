@@ -1812,12 +1812,13 @@ Respond with ONLY the task text, nothing else.`,
         const prefs = userProfile?.tendPreferences || {};
         
         switch(step) {
-          case 1: // Life Map - prompt + goal + habit per focus area
+          case 1: // Life Map - prompt + goal + linked habit per focus area
             for (const area of focusAreas) {
               const hasPrompt = prefs.structuredInfo?.[area] && Object.values(prefs.structuredInfo[area]).some(v => v) || prefs.lifeAreaNotes?.[area];
               const hasGoal = goals.some(g => g.lifeArea === area);
-              const hasHabit = weeklyHabits.some(h => h.lifeArea === area);
-              if (!hasPrompt || !hasGoal || !hasHabit) return false;
+              const areaGoalIds = goals.filter(g => g.lifeArea === area).map(g => g.id);
+              const hasLinkedHabit = weeklyHabits.some(h => h.lifeArea === area && areaGoalIds.includes(h.goalId));
+              if (!hasPrompt || !hasGoal || !hasLinkedHabit) return false;
             }
             return true;
           case 2: // Gardener Quiz - optional, complete only if they took it
@@ -1838,8 +1839,9 @@ Respond with ONLY the task text, nothing else.`,
         const focusAreaProgress = focusAreas.map(area => {
           const hasPrompt = prefs.structuredInfo?.[area] && Object.values(prefs.structuredInfo[area]).some(v => v) || prefs.lifeAreaNotes?.[area];
           const hasGoal = goals.some(g => g.lifeArea === area);
-          const hasHabit = weeklyHabits.some(h => h.lifeArea === area);
-          return { area, hasPrompt, hasGoal, hasHabit, complete: hasPrompt && hasGoal && hasHabit };
+          const areaGoalIds = goals.filter(g => g.lifeArea === area).map(g => g.id);
+          const hasLinkedHabit = weeklyHabits.some(h => h.lifeArea === area && areaGoalIds.includes(h.goalId));
+          return { area, hasPrompt, hasGoal, hasLinkedHabit, complete: hasPrompt && hasGoal && hasLinkedHabit };
         });
         
         const completeFocusAreas = focusAreaProgress.filter(p => p.complete).length;
@@ -3398,8 +3400,9 @@ Click on the event in the sidebar to add details.`;
           const getAreaProgress = (areaKey) => {
             const hasPrompt = prefs.structuredInfo?.[areaKey] && Object.values(prefs.structuredInfo[areaKey]).some(v => v) || prefs.lifeAreaNotes?.[areaKey];
             const hasGoal = goals.some(g => g.lifeArea === areaKey);
-            const hasHabit = weeklyHabits.some(h => h.lifeArea === areaKey);
-            return { hasPrompt, hasGoal, hasHabit, complete: hasPrompt && hasGoal && hasHabit };
+            const areaGoalIds = goals.filter(g => g.lifeArea === areaKey).map(g => g.id);
+            const hasLinkedHabit = weeklyHabits.some(h => h.lifeArea === areaKey && areaGoalIds.includes(h.goalId));
+            return { hasPrompt, hasGoal, hasLinkedHabit, complete: hasPrompt && hasGoal && hasLinkedHabit };
           };
           
           const focusAreaProgress = focusAreas.map(a => ({ area: a, name: VLQ_DOMAINS[a]?.name, ...getAreaProgress(a) }));
@@ -3423,11 +3426,11 @@ FOCUS AREAS: ${focusAreaNames.join(', ')}
 CURRENTLY WORKING ON: ${currentAreaName} (${currentArea})
 Progress for ${currentAreaName}:
 - Goal set: ${currentAreaProgress.hasGoal ? '✓ done' : '○ NEEDED'}
-- Weekly habit: ${currentAreaProgress.hasHabit ? '✓ done' : '○ NEEDED'}
+- Linked habit: ${currentAreaProgress.hasLinkedHabit ? '✓ done' : '○ NEEDED'} (habit must be linked to a goal!)
 - Prompt answered: ${currentAreaProgress.hasPrompt ? '✓ done' : '○ NEEDED'}
 
 OVERALL PROGRESS:
-${focusAreaProgress.map(p => `${p.name}: ${p.complete ? '✓ complete' : `${p.hasGoal ? '✓' : '○'} goal | ${p.hasHabit ? '✓' : '○'} habit | ${p.hasPrompt ? '✓' : '○'} prompt`}`).join('\n')}
+${focusAreaProgress.map(p => `${p.name}: ${p.complete ? '✓ complete' : `${p.hasGoal ? '✓' : '○'} goal | ${p.hasLinkedHabit ? '✓' : '○'} linked habit | ${p.hasPrompt ? '✓' : '○'} prompt`}`).join('\n')}
 
 ${allFocusAreasComplete ? '🎉 ALL FOCUS AREAS COMPLETE!' : ''}
 
@@ -3650,21 +3653,24 @@ For GOALS: [GOAL: goal text | lifeArea]
 Example: [GOAL: Run a 5K | health]
 Life areas: family, partner, friendships, career, education, recreation, spirituality, community, health, mentalHealth
 
-For HABITS: [WEEKLY_HABIT: habit text | frequency | lifeArea]
+For HABITS: [WEEKLY_HABIT: habit text | frequency | lifeArea | goalText]
 - frequency is 1-7 (times per week)
 - "every day" or "daily" = frequency 7
 - "3 times a week" = frequency 3
+- goalText is the text of the goal this habit supports (required for onboarding!)
 - ALWAYS use a separate marker for EACH habit
 Examples:
-[WEEKLY_HABIT: go to gym | 7 | health]
-[WEEKLY_HABIT: morning meditation | 7 | mentalHealth]
-[WEEKLY_HABIT: call mom | 1 | family]
-[WEEKLY_HABIT: date night | 1 | partner]
+[WEEKLY_HABIT: go to gym | 7 | health | Get fit and lose 10 pounds]
+[WEEKLY_HABIT: morning meditation | 7 | mentalHealth | Reduce stress and anxiety]
+[WEEKLY_HABIT: call mom | 1 | family | Stay closer with family]
+[WEEKLY_HABIT: date night | 1 | partner | Strengthen our relationship]
 
 IMPORTANT: When user mentions multiple habits, output MULTIPLE markers:
 User: "I want to go to the gym daily and walk 10k steps"
-→ [WEEKLY_HABIT: go to gym | 7 | health]
-→ [WEEKLY_HABIT: walk 10k steps | 7 | health]
+→ [WEEKLY_HABIT: go to gym | 7 | health | Get fit and lose 10 pounds]
+→ [WEEKLY_HABIT: walk 10k steps | 7 | health | Get fit and lose 10 pounds]
+
+IMPORTANT: Always link habits to a goal. If the user hasn't set a goal for this area yet, help them identify one first, then add the habit linked to it.
 
 For EVENTS: [EVENT: descriptive title | month | life_area | event_type]
 - Title should be SPECIFIC (never generic like "event")
@@ -3719,7 +3725,7 @@ If they mention specific events, habits, or plans, acknowledge those and help th
 If they seem stuck, offer a gentle prompt or example.
 If you notice a misalignment between their VLQ values (high importance areas) and their actual plans, gently bring it up.
 
-Remember: You can add things to their plan automatically using markers. When they say "I want to exercise 3 times a week", add [WEEKLY_HABIT: exercise | 3 | health]. When they say "I want to go to the gym every day and walk 10k steps", add BOTH [WEEKLY_HABIT: go to gym | 7 | health] AND [WEEKLY_HABIT: walk 10k steps | 7 | health]. When they commit to "a trip to Hawaii in June", add [EVENT: Hawaii trip | 5 | fun | trip]. Always use SPECIFIC, DESCRIPTIVE titles. This makes the conversation feel magical — they talk, and things appear in their plan.
+Remember: You can add things to their plan automatically using markers. When they commit to a goal, use [GOAL: goal text | lifeArea]. When they want a habit that supports a goal, use [WEEKLY_HABIT: habit text | frequency | lifeArea | goalText]. For example: "I want to get fit" → [GOAL: Get fit and healthy | health], then "I'll go to the gym 3 times a week" → [WEEKLY_HABIT: go to gym | 3 | health | Get fit and healthy]. The habit must reference the goal text to be linked! When they commit to "a trip to Hawaii in June", add [EVENT: Hawaii trip | 5 | fun | trip]. This makes the conversation feel magical — they talk, and things appear in their plan.
 
 Keep responses focused and conversational. You're not a productivity app — you're helping them live with more intention.
 
@@ -4093,43 +4099,87 @@ How did your tends go? What would you like to explore next?
           pendingIsLastResponse
         });
         
-        // Parse for weekly habits: [WEEKLY_HABIT: habit text | frequency] or [WEEKLY_HABIT: habit text | frequency | lifeArea]
-        const weeklyHabitMatches = response.matchAll(/\[WEEKLY_HABIT:\s*([^|]+)\s*\|\s*(\d+)(?:\s*\|\s*([a-zA-Z]+))?\]/g);
+        // First, parse goals and collect them so we can link habits
+        const goalMatches = [...response.matchAll(/\[GOAL:\s*([^|]+)\s*\|\s*([a-zA-Z]+)\]/g)];
+        const newGoals = [];
+        for (const match of goalMatches) {
+          const goalText = match[1].trim();
+          const lifeArea = match[2].trim();
+          if (goalText && lifeArea) {
+            // Check if this goal already exists
+            const exists = goals.some(g => g.text.toLowerCase() === goalText.toLowerCase());
+            if (!exists) {
+              const newGoal = { 
+                id: generateId(), 
+                text: goalText, 
+                lifeArea: lifeArea,
+                completed: false
+              };
+              newGoals.push(newGoal);
+              console.log('Goal added by Claude:', goalText, `[${lifeArea}]`);
+            }
+          }
+        }
+        
+        // Add all new goals to state
+        if (newGoals.length > 0) {
+          setGoals(prev => [...prev, ...newGoals]);
+        }
+        
+        // Now parse habits with the new format: [WEEKLY_HABIT: habit text | frequency | lifeArea | goalText]
+        const weeklyHabitMatches = response.matchAll(/\[WEEKLY_HABIT:\s*([^|]+)\s*\|\s*(\d+)\s*\|\s*([a-zA-Z]+)(?:\s*\|\s*([^\]]+))?\]/g);
         for (const match of weeklyHabitMatches) {
           const habitText = match[1].trim();
           const frequency = parseInt(match[2]);
           const lifeArea = match[3]?.trim() || '';
+          const goalText = match[4]?.trim() || '';
+          
           if (habitText && frequency >= 1 && frequency <= 7) {
+            // Find the goal to link to - check both existing goals and newly added goals
+            let linkedGoalId = null;
+            if (goalText) {
+              // First check newly added goals from this response
+              const matchingNewGoal = newGoals.find(g => 
+                g.text.toLowerCase() === goalText.toLowerCase() || 
+                g.text.toLowerCase().includes(goalText.toLowerCase()) ||
+                goalText.toLowerCase().includes(g.text.toLowerCase())
+              );
+              if (matchingNewGoal) {
+                linkedGoalId = matchingNewGoal.id;
+              } else {
+                // Check existing goals
+                const matchingExistingGoal = goals.find(g => 
+                  g.lifeArea === lifeArea && (
+                    g.text.toLowerCase() === goalText.toLowerCase() || 
+                    g.text.toLowerCase().includes(goalText.toLowerCase()) ||
+                    goalText.toLowerCase().includes(g.text.toLowerCase())
+                  )
+                );
+                if (matchingExistingGoal) {
+                  linkedGoalId = matchingExistingGoal.id;
+                }
+              }
+              
+              // If still no match, try to find any goal in this life area
+              if (!linkedGoalId) {
+                const anyGoalInArea = newGoals.find(g => g.lifeArea === lifeArea) || goals.find(g => g.lifeArea === lifeArea);
+                if (anyGoalInArea) {
+                  linkedGoalId = anyGoalInArea.id;
+                }
+              }
+            }
+            
             setWeeklyHabits(prev => {
               // Don't add duplicates
               if (prev.some(h => h.text.toLowerCase() === habitText.toLowerCase())) return prev;
-              console.log('Weekly habit added by Claude:', habitText, frequency + 'x/week', lifeArea ? `[${lifeArea}]` : '');
+              console.log('Weekly habit added by Claude:', habitText, frequency + 'x/week', lifeArea ? `[${lifeArea}]` : '', linkedGoalId ? `linked to goal ${linkedGoalId}` : 'no goal link');
               return [...prev, { 
                 id: generateId(), 
                 text: habitText, 
                 frequency,
                 lifeArea: lifeArea || undefined,
+                goalId: linkedGoalId || undefined,
                 color: lifeArea && VLQ_DOMAINS[lifeArea]?.color ? VLQ_DOMAINS[lifeArea].color : ['#7EB3E0', '#8FD4A0', '#F9D07A', '#E8A090', '#B8A9C9'][prev.length % 5]
-              }];
-            });
-          }
-        }
-        
-        // Parse for goals: [GOAL: goal text | lifeArea]
-        const goalMatches = response.matchAll(/\[GOAL:\s*([^|]+)\s*\|\s*([a-zA-Z]+)\]/g);
-        for (const match of goalMatches) {
-          const goalText = match[1].trim();
-          const lifeArea = match[2].trim();
-          if (goalText && lifeArea) {
-            setGoals(prev => {
-              // Don't add duplicates
-              if (prev.some(g => g.text.toLowerCase() === goalText.toLowerCase())) return prev;
-              console.log('Goal added by Claude:', goalText, `[${lifeArea}]`);
-              return [...prev, { 
-                id: generateId(), 
-                text: goalText, 
-                lifeArea: lifeArea,
-                completed: false
               }];
             });
           }
