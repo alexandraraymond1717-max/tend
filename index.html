@@ -1732,7 +1732,6 @@ Respond with ONLY the task text, nothing else.`,
       const [currentOnboardingArea, setCurrentOnboardingArea] = useState(null); // Which life area is being focused on
       
       const [weeklyHabits, setWeeklyHabits] = useState([]);
-      const [dailyHabits, setDailyHabits] = useState([]);
       const [habitCompletions, setHabitCompletions] = useState({}); // { '2026-01-20': { daily: [id1, id2], weekly: [id3] } }
       
       // Tendy system state
@@ -1932,27 +1931,7 @@ Respond with ONLY the task text, nothing else.`,
                 setWeeklyHabits(data.weeklyHabits);
               }
             }
-            if (data.dailyHabits) {
-              const seen = new Set();
-              const hasDuplicates = data.dailyHabits.some(h => {
-                if (seen.has(h.id)) return true;
-                seen.add(h.id);
-                return false;
-              });
-              if (hasDuplicates) {
-                // Regenerate all IDs if duplicates found
-                const fixed = data.dailyHabits.map((h, i) => ({
-                  ...h,
-                  id: `${Date.now()}-daily-${i}-${Math.random().toString(36).substr(2, 9)}`
-                }));
-                setDailyHabits(fixed);
-                setHabitCompletions({}); // Clear completions since IDs changed
-                console.log('Fixed duplicate daily habit IDs');
-              } else {
-                setDailyHabits(data.dailyHabits);
-              }
-            }
-            if (data.habitCompletions && !data.weeklyHabits?.some((h, i, arr) => arr.findIndex(x => x.id === h.id) !== i) && !data.dailyHabits?.some((h, i, arr) => arr.findIndex(x => x.id === h.id) !== i)) {
+            if (data.habitCompletions && !data.weeklyHabits?.some((h, i, arr) => arr.findIndex(x => x.id === h.id) !== i)) {
               setHabitCompletions(data.habitCompletions);
             }
             // Check if todaysTendies are actually from today (using LOCAL date, not UTC)
@@ -2461,7 +2440,6 @@ Respond with ONLY the task text, nothing else.`,
               yearlyReflections,
               seasonIntentions,
               weeklyHabits,
-              dailyHabits,
               habitCompletions,
               todaysTendies,
               tendyHistory,
@@ -2505,7 +2483,7 @@ Respond with ONLY the task text, nothing else.`,
             pendingSaveRef.current = null;
           }
         }, 100);
-      }, [user, vlqScores, vlqCompleted, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, onboardingStep, onboardingCompleted, currentOnboardingArea, savedConversations, userProfile, messages, exchangeCount, currentConversationType, chatHistory, currentChatId]);
+      }, [user, vlqScores, vlqCompleted, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, onboardingStep, onboardingCompleted, currentOnboardingArea, savedConversations, userProfile, messages, exchangeCount, currentConversationType, chatHistory, currentChatId]);
 
       // Flush pending saves when page unloads
       useEffect(() => {
@@ -2691,7 +2669,7 @@ Type directly into the input fields on the left, or chat with me here about what
         if (user && dataLoaded) {
           saveUserData();
         }
-      }, [vlqScores, vlqCompleted, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, dailyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, user, dataLoaded, messages, exchangeCount, currentConversationType, userProfile, savedConversations]);
+      }, [vlqScores, vlqCompleted, events, goals, notes, journalEntries, monthlyReviews, yearlyReflections, seasonIntentions, weeklyHabits, habitCompletions, todaysTendies, tendyHistory, tendyPoints, tendyStreak, flexPoints, flexPointsTracking, weeklyCustomTendy, revealed, phase, user, dataLoaded, messages, exchangeCount, currentConversationType, userProfile, savedConversations]);
 
       // Logout function
       const handleLogout = async () => {
@@ -4157,26 +4135,6 @@ How did your tends go? What would you like to explore next?
           }
         }
         
-        // Parse for legacy daily habits - convert to weekly habits with frequency 7
-        const dailyHabitMatches = response.matchAll(/\[DAILY_HABIT:\s*([^\]]+)\]/g);
-        for (const match of dailyHabitMatches) {
-          const habitText = match[1].trim();
-          if (habitText) {
-            setWeeklyHabits(prev => {
-              // Don't add duplicates
-              if (prev.some(h => h.text.toLowerCase() === habitText.toLowerCase())) return prev;
-              console.log('Daily habit converted to weekly (7x):', habitText);
-              return [...prev, { 
-                id: generateId(), 
-                text: habitText,
-                frequency: 7,
-                lifeArea: 'mentalHealth', // Default for habits like meditation
-                color: VLQ_DOMAINS['mentalHealth']?.color || '#B8A9C9'
-              }];
-            });
-          }
-        }
-        
         // Parse for events: [EVENT: title | month | life_area | event_type]
         // event_type is optional for backward compatibility
         const eventMatches = response.matchAll(/\[EVENT:\s*([^|]+)\s*\|\s*(\d+)\s*\|\s*([a-z]+)(?:\s*\|\s*([a-z]+))?\]/g);
@@ -4278,7 +4236,6 @@ How did your tends go? What would you like to explore next?
           .replace(/\[YEAR_THEME:\s*[a-zA-Z]{4,15}\]/g, '')
           .replace(/\[GOAL:\s*[^\]]+\]/g, '')
           .replace(/\[WEEKLY_HABIT:\s*[^\]]+\]/g, '')
-          .replace(/\[DAILY_HABIT:\s*[^\]]+\]/g, '')
           .replace(/\[EVENT:\s*[^\]]+\]/g, '')
           .replace(/\[SEASON:\s*[^\]]+\]/g, '')
           .replace(/\[NAVIGATE:\s*[^\]]+\]/g, '')
@@ -4798,7 +4755,6 @@ Ready to try your first Daily Tend?
                   vlqScores={vlqScores}
                   vlqCompleted={vlqCompleted}
                   weeklyHabits={weeklyHabits}
-                  dailyHabits={dailyHabits}
                   habitCompletions={habitCompletions}
                   chatHistory={chatHistory}
                   onboardingStep={onboardingStep}
@@ -4982,7 +4938,6 @@ Ready to try your first Daily Tend?
                   revealed={revealed}
                   onAddEvent={() => setShowEventModal(true)}
                   weeklyHabits={weeklyHabits}
-                  dailyHabits={dailyHabits}
                   habitCompletions={habitCompletions}
                   setHabitCompletions={setHabitCompletions}
                 />
@@ -5244,7 +5199,6 @@ Ready to try your first Daily Tend?
               vlqScores={vlqScores}
               vlqCompleted={vlqCompleted}
               weeklyHabits={weeklyHabits}
-              dailyHabits={dailyHabits}
               habitCompletions={habitCompletions}
               chatHistory={chatHistory}
               onboardingStep={onboardingStep}
@@ -6263,7 +6217,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
     }
 
     // ============ MONTHLY VIEW ============
-    function MonthlyView({ events, selectedMonth, setSelectedMonth, revealed, onAddEvent, weeklyHabits, dailyHabits, habitCompletions, setHabitCompletions }) {
+    function MonthlyView({ events, selectedMonth, setSelectedMonth, revealed, onAddEvent, weeklyHabits, habitCompletions, setHabitCompletions }) {
       const year = 2026;
       const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
       const firstDayOfMonth = new Date(year, selectedMonth, 1).getDay();
@@ -6282,7 +6236,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
       const seasonColor = getSeasonColor(selectedMonth);
       
       // Count total habits for display
-      const totalHabits = (weeklyHabits?.length || 0) + (dailyHabits?.length || 0);
+      const totalHabits = weeklyHabits?.length || 0;
       
       // Get date string for a given day
       const getDateKey = (day) => {
@@ -6292,28 +6246,25 @@ This has been your year of growth and intention. What are you most proud of? Wha
       };
       
       // Check if a habit is completed for a given date
-      const isHabitCompleted = (dateKey, habitId, type) => {
+      const isHabitCompleted = (dateKey, habitId) => {
         const dayData = habitCompletions?.[dateKey];
         if (!dayData) return false;
-        return type === 'daily' 
-          ? dayData.daily?.includes(habitId)
-          : dayData.weekly?.includes(habitId);
+        return dayData.weekly?.includes(habitId);
       };
       
       // Toggle habit completion
-      const toggleHabit = (dateKey, habitId, type) => {
+      const toggleHabit = (dateKey, habitId) => {
         setHabitCompletions(prev => {
-          const dayData = prev[dateKey] || { daily: [], weekly: [] };
-          const list = type === 'daily' ? [...(dayData.daily || [])] : [...(dayData.weekly || [])];
+          const dayData = prev[dateKey] || { weekly: [] };
+          const list = [...(dayData.weekly || [])];
           
           if (list.includes(habitId)) {
             // Remove it
-            const newList = list.filter(id => id !== habitId);
             return {
               ...prev,
               [dateKey]: {
                 ...dayData,
-                [type]: newList
+                weekly: list.filter(id => id !== habitId)
               }
             };
           } else {
@@ -6322,7 +6273,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
               ...prev,
               [dateKey]: {
                 ...dayData,
-                [type]: [...list, habitId]
+                weekly: [...list, habitId]
               }
             };
           }
@@ -6334,7 +6285,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
         const dateKey = getDateKey(day);
         const dayData = habitCompletions?.[dateKey];
         if (!dayData) return 0;
-        return (dayData.daily?.length || 0) + (dayData.weekly?.length || 0);
+        return dayData.weekly?.length || 0;
       };
 
       // Day Detail Modal
@@ -6398,62 +6349,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
                 >×</button>
               </div>
               
-              {/* Daily Habits */}
-              {dailyHabits && dailyHabits.length > 0 && (
-                <div style={{ marginBottom: '1.25rem' }}>
-                  <h4 style={{
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    color: 'var(--text-muted)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.05em',
-                    marginBottom: '0.75rem'
-                  }}>Daily</h4>
-                  {dailyHabits.map(habit => {
-                    const completed = isHabitCompleted(dateKey, habit.id, 'daily');
-                    return (
-                      <div 
-                        key={habit.id} 
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '0.75rem',
-                          padding: '0.6rem 0',
-                          borderBottom: '1px solid var(--border)',
-                          cursor: 'pointer'
-                        }}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleHabit(dateKey, habit.id, 'daily');
-                        }}
-                      >
-                        <div style={{
-                          width: '20px',
-                          height: '20px',
-                          borderRadius: '4px',
-                          border: completed ? 'none' : '2px solid var(--border)',
-                          backgroundColor: completed ? (habit.color || '#8FD4A0') : 'transparent',
-                          flexShrink: 0,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          transition: 'all 0.2s ease'
-                        }}>
-                          {completed && <span style={{ color: 'white', fontSize: '0.75rem', fontWeight: 'bold' }}>✓</span>}
-                        </div>
-                        <span style={{ 
-                          fontSize: '0.9rem', 
-                          color: completed ? 'var(--text-muted)' : 'var(--text)',
-                          textDecoration: completed ? 'line-through' : 'none',
-                          transition: 'all 0.2s ease'
-                        }}>{habit.text}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-              
-              {/* Weekly Habits */}
+              {/* Habits */}
               {weeklyHabits && weeklyHabits.length > 0 && (
                 <div style={{ marginBottom: '1.25rem' }}>
                   <h4 style={{
@@ -6463,9 +6359,9 @@ This has been your year of growth and intention. What are you most proud of? Wha
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
                     marginBottom: '0.75rem'
-                  }}>Weekly</h4>
+                  }}>Habits</h4>
                   {weeklyHabits.map(habit => {
-                    const completed = isHabitCompleted(dateKey, habit.id, 'weekly');
+                    const completed = isHabitCompleted(dateKey, habit.id);
                     return (
                       <div 
                         key={habit.id} 
@@ -6479,7 +6375,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
-                          toggleHabit(dateKey, habit.id, 'weekly');
+                          toggleHabit(dateKey, habit.id);
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
@@ -6604,16 +6500,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
                             }}>{completionCount}/{totalHabits}</div>
                           ) : (
                             <>
-                              {dailyHabits && dailyHabits.slice(0, 2).map((h, idx) => (
-                                <div key={idx} style={{
-                                  width: '4px',
-                                  height: '4px',
-                                  borderRadius: '50%',
-                                  backgroundColor: h.color || '#8FD4A0',
-                                  opacity: 0.4
-                                }}></div>
-                              ))}
-                              {weeklyHabits && weeklyHabits.slice(0, 2).map((h, idx) => (
+                              {weeklyHabits && weeklyHabits.slice(0, 3).map((h, idx) => (
                                 <div key={idx} style={{
                                   width: '4px',
                                   height: '4px',
@@ -8140,76 +8027,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       );
     }
 
-    // ============ DAILY VIEW ============
-    function DailyView({ dailyHabits, setDailyHabits, revealed }) {
-      const [newHabit, setNewHabit] = useState('');
-
-      const addHabit = () => {
-        if (!newHabit.trim()) return;
-        setDailyHabits([...dailyHabits, {
-          id: generateId(),
-          text: newHabit,
-          color: ['#7EB3E0', '#8FD4A0', '#F9D07A', '#E8A090', '#B8A9C9'][dailyHabits.length % 5]
-        }]);
-        setNewHabit('');
-      };
-
-      return (
-        <div style={styles.dailyContainer}>
-          <div style={styles.dailyHeader}>
-            <h2 style={styles.dailyTitle}>Daily Intentions</h2>
-            <p style={styles.dailySubtitle}>Small things that add up to a life well-lived</p>
-          </div>
-
-          {dailyHabits.length > 0 ? (
-            <div style={styles.dailyList}>
-              {dailyHabits.map(habit => (
-                <div key={habit.id} style={{
-                  ...styles.dailyHabitCard,
-                  padding: '1rem 1.25rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between'
-                }}>
-                  <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
-                    <div style={{...styles.dailyHabitAccent, backgroundColor: habit.color, position: 'static', width: '4px', height: '24px', borderRadius: '2px'}}></div>
-                    <span style={styles.dailyHabitText}>{habit.text}</span>
-                  </div>
-                  <button 
-                    style={styles.dailyHabitDelete}
-                    onClick={() => setDailyHabits(dailyHabits.filter(h => h.id !== habit.id))}
-                  >×</button>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div style={styles.dailyEmpty}>
-              <p style={styles.dailyEmptyText}>What small daily practices would change your life?</p>
-              <p style={styles.dailyEmptyExamples}>
-                <em>10k steps · Morning pages · 8 glasses of water · Gratitude · Phone-free meals</em>
-              </p>
-            </div>
-          )}
-
-          {revealed ? (
-            <div style={styles.addDailySection}>
-              <input
-                type="text"
-                value={newHabit}
-                onChange={(e) => setNewHabit(e.target.value)}
-                placeholder="Walk 10k steps, drink water, journal..."
-                style={styles.addDailyInput}
-                onKeyDown={(e) => e.key === 'Enter' && addHabit()}
-              />
-              <button onClick={addHabit} style={styles.addDailyButton}>+ Add Daily Habit</button>
-            </div>
-          ) : (
-            <p style={styles.lockedText}>Complete the conversation to add daily habits</p>
-          )}
-        </div>
-      );
-    }
-
     // ============ EVENTS TAB ============
     function EventsTab({ events, setEvents, expandedEvent, setExpandedEvent, onUpdateDetails, onDelete, onAdd, revealed, apiKey }) {
       const [planningEvent, setPlanningEvent] = useState(null);
@@ -9702,7 +9519,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       vlqScores,
       vlqCompleted,
       weeklyHabits,
-      dailyHabits,
       habitCompletions,
       chatHistory,
       onboardingStep,
