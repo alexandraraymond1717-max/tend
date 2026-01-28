@@ -2514,7 +2514,7 @@ Would you like to:
 
 Let's move on to <strong>${areaName}</strong>. I've opened it for you.
 
-Add a goal, link a habit to it, and answer a prompt to complete this area.`,
+Type directly into the input fields on the left, or chat with me here about what matters to you in this area.`,
                 timestamp: new Date().toISOString()
               };
               setMessages(prev => [...prev, msg]);
@@ -2802,11 +2802,9 @@ Add a goal, link a habit to it, and answer a prompt to complete this area.`,
 
 Based on your values assessment, ${focusAreaNames.length > 0 ? `you want to focus on growing in: <strong>${focusAreaNames.join('</strong>, <strong>')}</strong>` : 'there are areas where you want to grow'}.
 
-Let's build out your <strong>Life Map</strong> — for each focus area, we'll set a goal, add a weekly habit, and answer a prompt.
+Let's build out your <strong>Life Map</strong> — for each focus area, we'll set a goal, add a weekly habit linked to that goal, and answer a prompt.
 
-Let's start with <strong>${firstAreaName}</strong>. I've opened it for you on the left.
-
-What's most important to you in this area of your life? You can fill in the prompts directly, or just tell me about it.`;
+I've opened <strong>${firstAreaName}</strong> for you on the left. You can type directly into the input fields there, or just chat with me here about what matters to you and I'll help you fill it in.`;
                   break;
                   
                 case 2: // Quiz (optional)
@@ -4135,11 +4133,9 @@ I'm here to help with any planning.`
 
 Based on your values assessment, ${focusAreaNames.length > 0 ? `you want to focus on growing in: <strong>${focusAreaNames.join('</strong>, <strong>')}</strong>` : 'there are areas where you want to grow'}.
 
-Let's build out your <strong>Life Map</strong> — for each focus area, we'll set a goal, add a weekly habit, and answer a prompt.
+Let's build out your <strong>Life Map</strong> — for each focus area, we'll set a goal, add a weekly habit linked to that goal, and answer a prompt.
 
-Let's start with <strong>${firstAreaName}</strong>. I've opened it for you on the left.
-
-What's most important to you in this area of your life? You can fill in the prompts directly, or just tell me about it.`;
+I've opened <strong>${firstAreaName}</strong> for you on the left. You can type directly into the input fields there, or just chat with me here about what matters to you and I'll help you fill it in.`;
         
         setMessages([{
           role: 'assistant',
