@@ -4514,6 +4514,27 @@ Ready to try your first Daily Tend?
                   onOpenAdmin={() => setShowAdminDashboard(true)}
                 />
               )}
+              {showAdminDashboard && (
+                <AdminDashboard
+                  user={user}
+                  savedConversations={savedConversations}
+                  trends={calculateTrends()}
+                  userProfile={userProfile}
+                  journalEntries={journalEntries}
+                  goals={goals}
+                  events={events}
+                  todaysTendies={todaysTendies}
+                  vlqScores={vlqScores}
+                  vlqCompleted={vlqCompleted}
+                  weeklyHabits={weeklyHabits}
+                  dailyHabits={dailyHabits}
+                  habitCompletions={habitCompletions}
+                  chatHistory={chatHistory}
+                  onboardingStep={onboardingStep}
+                  onboardingCompleted={onboardingCompleted}
+                  onClose={() => setShowAdminDashboard(false)}
+                />
+              )}
             </div>
           );
         }
