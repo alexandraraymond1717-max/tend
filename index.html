@@ -9284,11 +9284,16 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       
       const { cleanContent, buttons } = parseContent(message.content);
       
+      // Collapse multiple line breaks into single breaks for cleaner display
+      const formattedContent = cleanContent
+        .replace(/\n{3,}/g, '\n\n')  // Max 2 line breaks (one blank line)
+        .replace(/\n/g, '<br/>');
+      
       return (
         <div style={{...styles.chatMessage, justifyContent: isAssistant ? 'flex-start' : 'flex-end'}} className="fade-in">
           {isAssistant && <div style={styles.chatAvatar}><span style={styles.chatAvatarText}>T</span></div>}
           <div style={{...styles.chatBubble, ...(isAssistant ? styles.chatBubbleAssistant : styles.chatBubbleUser)}}>
-            <div dangerouslySetInnerHTML={{ __html: cleanContent.replace(/\n/g, '<br/>') }} />
+            <div dangerouslySetInnerHTML={{ __html: formattedContent }} />
             {buttons.length > 0 && (
               <div style={{ marginTop: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                 {buttons.map((btn, i) => (
