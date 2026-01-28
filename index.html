@@ -586,7 +586,7 @@ User context: ${contextParts.join('. ')}`,
     }
 
     // Generate a completely fresh AI tend
-    async function generateFreshAITend(domain, difficulty, type, userProfile, apiKey) {
+    async function generateFreshAITend(domain, difficulty, type, userProfile, apiKey, goals = [], weeklyHabits = []) {
       const prefs = userProfile?.tendPreferences || {};
       const domainInfo = VLQ_DOMAINS[domain];
       const timeLabel = difficulty === 1 ? '5 minutes' : '30 minutes';
@@ -598,6 +598,18 @@ User context: ${contextParts.join('. ')}`,
       if (prefs.gardenerType) {
         contextParts.push(`User's gardener type: "${prefs.gardenerType.name}" - ${prefs.gardenerType.description}`);
         contextParts.push(`Their superpower: ${prefs.gardenerType.strength}`);
+      }
+      
+      // Add goals for this life area
+      const domainGoals = goals.filter(g => g.lifeArea === domain && !g.completed);
+      if (domainGoals.length > 0) {
+        contextParts.push(`Their goals for ${domainInfo.name}: ${domainGoals.map(g => g.text).join(', ')}`);
+      }
+      
+      // Add habits for this life area
+      const domainHabits = weeklyHabits.filter(h => h.lifeArea === domain);
+      if (domainHabits.length > 0) {
+        contextParts.push(`Their habits for ${domainInfo.name}: ${domainHabits.map(h => `${h.text} (${h.frequency}x/week)`).join(', ')}`);
       }
       
       if (prefs.resources?.length) contextParts.push(`User has: ${prefs.resources.join(', ')}`);
@@ -634,6 +646,7 @@ Requirements:
 - Specific and actionable, not vague
 - Completable in exactly ${timeLabel}
 - Personal to this user based on their context
+- If they have goals or habits in this area, make the task support those
 - Match their personality style if gardener type is provided
 - Warm and encouraging, not preachy
 - Under 15 words
@@ -883,7 +896,7 @@ Respond with ONLY the task text, nothing else.`,
 
     // Async version that personalizes or generates fresh AI tends
     // Uses PER-DOMAIN readiness, not global score
-    async function generatePersonalizedTendies(vlqScores, tendyHistory, previousShownDomain, userProfile, apiKey) {
+    async function generatePersonalizedTendies(vlqScores, tendyHistory, previousShownDomain, userProfile, apiKey, goals = [], weeklyHabits = []) {
       // First generate base tendies from pool
       const baseTendies = generateDailyTendies(vlqScores, tendyHistory, previousShownDomain);
       
@@ -898,15 +911,22 @@ Respond with ONLY the task text, nothing else.`,
       // Calculate readiness for THIS SPECIFIC domain
       const domainReadiness = calculateDomainReadiness(todaysDomain, userProfile);
       
+      // Check if user has goals/habits for this domain (boosts personalization)
+      const domainGoals = goals.filter(g => g.lifeArea === todaysDomain && !g.completed);
+      const domainHabits = weeklyHabits.filter(h => h.lifeArea === todaysDomain);
+      const hasGoalsOrHabits = domainGoals.length > 0 || domainHabits.length > 0;
+      
       console.log(`Tend personalization for ${domainReadiness.domainName}:`, {
         score: `${domainReadiness.score}/${domainReadiness.maxScore}`,
         level: domainReadiness.level,
         aiRatio: `${(domainReadiness.aiRatio * 100).toFixed(0)}%`,
-        capabilities: domainReadiness.capabilities.map(c => c.label)
+        capabilities: domainReadiness.capabilities.map(c => c.label),
+        goalsForDomain: domainGoals.length,
+        habitsForDomain: domainHabits.length
       });
       
-      // If no context for this domain at all, just return pool templates as-is
-      if (!domainReadiness.canPersonalize) {
+      // If no context for this domain at all AND no goals/habits, just return pool templates as-is
+      if (!domainReadiness.canPersonalize && !hasGoalsOrHabits) {
         console.log(`No ${domainReadiness.domainName} context - using pool templates only`);
         return baseTendies.map(t => ({
           ...t,
@@ -918,15 +938,17 @@ Respond with ONLY the task text, nothing else.`,
       const enhancedTendies = await Promise.all(baseTendies.map(async (tendy) => {
         const roll = Math.random();
         
-        // Only try AI generation if domain has enough context
-        if (domainReadiness.canGenerateAI && roll < domainReadiness.aiRatio) {
+        // Only try AI generation if domain has enough context OR has goals/habits
+        if ((domainReadiness.canGenerateAI || hasGoalsOrHabits) && roll < domainReadiness.aiRatio) {
           console.log(`Rolling AI generation for ${tendy.difficulty === 1 ? '5min' : '30min'} (roll: ${roll.toFixed(2)} < ${domainReadiness.aiRatio})`);
           const freshText = await generateFreshAITend(
             tendy.domain, 
             tendy.difficulty, 
             tendy.type, 
             userProfile, 
-            apiKey
+            apiKey,
+            goals,
+            weeklyHabits
           );
           
           if (freshText) {
@@ -1629,16 +1651,16 @@ Respond with ONLY the task text, nothing else.`,
 
       const [phase, setPhase] = useState(PHASES.EXPLORE);
       const [vlqScores, setVlqScores] = useState({
-        family: { importance: null, consistency: null },
-        partner: { importance: null, consistency: null },
-        friendships: { importance: null, consistency: null },
-        career: { importance: null, consistency: null },
-        education: { importance: null, consistency: null },
-        recreation: { importance: null, consistency: null },
-        spirituality: { importance: null, consistency: null },
-        community: { importance: null, consistency: null },
-        health: { importance: null, consistency: null },
-        mentalHealth: { importance: null, consistency: null },
+        family: { importance: 5, consistency: 5 },
+        partner: { importance: 5, consistency: 5 },
+        friendships: { importance: 5, consistency: 5 },
+        career: { importance: 5, consistency: 5 },
+        education: { importance: 5, consistency: 5 },
+        recreation: { importance: 5, consistency: 5 },
+        spirituality: { importance: 5, consistency: 5 },
+        community: { importance: 5, consistency: 5 },
+        health: { importance: 5, consistency: 5 },
+        mentalHealth: { importance: 5, consistency: 5 },
       });
       const [vlqCompleted, setVlqCompleted] = useState(false);
       const [vlqStep, setVlqStep] = useState(-1); // -1 for intro, 0-9 for domains, 10 for summary
@@ -1833,7 +1855,26 @@ Respond with ONLY the task text, nothing else.`,
           const doc = await db.collection('users').doc(userId).get();
           if (doc.exists) {
             const data = doc.data();
-            if (data.vlqScores) setVlqScores(data.vlqScores);
+            // Fix null VLQ scores (migration for users who didn't move sliders)
+            if (data.vlqScores) {
+              const migratedScores = {};
+              let needsMigration = false;
+              Object.entries(data.vlqScores).forEach(([domain, scores]) => {
+                migratedScores[domain] = {
+                  importance: scores?.importance ?? 5,
+                  consistency: scores?.consistency ?? 5
+                };
+                if (scores?.importance === null || scores?.consistency === null) {
+                  needsMigration = true;
+                }
+              });
+              setVlqScores(migratedScores);
+              // Save migrated scores back to Firestore
+              if (needsMigration && data.vlqCompleted) {
+                console.log('Migrating null VLQ scores to default value of 5');
+                db.collection('users').doc(userId).update({ vlqScores: migratedScores });
+              }
+            }
             if (data.vlqCompleted) setVlqCompleted(data.vlqCompleted);
             if (data.events) setEvents(data.events);
             if (data.goals) setGoals(data.goals);
@@ -1936,7 +1977,9 @@ Respond with ONLY the task text, nothing else.`,
                   data.tendyHistory || [], 
                   previousDomain, 
                   data.userProfile, 
-                  storedApiKey
+                  storedApiKey,
+                  data.goals || [],
+                  data.weeklyHabits || []
                 ).then(newTendies => {
                   setTodaysTendies(newTendies);
                 }).catch(err => {
@@ -6471,7 +6514,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
           
           if (apiKey && userProfile) {
             // Use async personalized generation
-            generatePersonalizedTendies(vlqScores, tendyHistory, previousDomain, userProfile, apiKey)
+            generatePersonalizedTendies(vlqScores, tendyHistory, previousDomain, userProfile, apiKey, goals, weeklyHabits)
               .then(newTendies => setTodaysTendies(newTendies))
               .catch(err => {
                 console.error('Personalization failed:', err);
@@ -9579,11 +9622,11 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 <div style={dashStyles.section}>
                   <h3 style={dashStyles.sectionTitle}>🌱 How Tend Actually Uses Your Data</h3>
                   <div style={{fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.6}}>
-                    <p style={{marginBottom: '0.75rem'}}><strong>VLQ Scores</strong> → Used in chat context to identify your focus areas and guide conversations</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Life Map (structuredInfo)</strong> → Used to personalize daily tends (e.g., "Call Mom" instead of "Call a family member")</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Gardener Type</strong> → Name and description included when generating fresh daily tends</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>VLQ Scores</strong> → Determines which life area appears in daily tends (higher importance + bigger gap = more likely). Also used in chat to identify focus areas.</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>Life Map (structuredInfo)</strong> → Personalizes daily tend text (e.g., "Call Mom" instead of "Call a family member")</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>Goals & Habits</strong> → Used to personalize daily tends for each life area AND in chat context to track commitments</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>Gardener Type</strong> → Name and description included when generating fresh AI daily tends</p>
                     <p style={{marginBottom: '0.75rem', color: 'var(--text-muted)'}}><strong>tendingStyle</strong> → <em>Stored but NOT YET USED</em> — will eventually affect chat tone, reminders, and celebration style</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Goals & Habits</strong> → Used in chat context to track your commitments and suggest activities</p>
                     <p style={{color: 'var(--text-muted)'}}><strong>Journal & Chats</strong> → <em>NOT YET USED</em> — will eventually help Tend understand patterns</p>
                   </div>
                 </div>
