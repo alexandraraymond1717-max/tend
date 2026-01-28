@@ -586,7 +586,7 @@ User context: ${contextParts.join('. ')}`,
     }
 
     // Generate a completely fresh AI tend
-    async function generateFreshAITend(domain, difficulty, type, userProfile, apiKey, goals = [], weeklyHabits = []) {
+    async function generateFreshAITend(domain, difficulty, type, userProfile, apiKey, goals = [], weeklyHabits = [], journalEntries = {}) {
       const prefs = userProfile?.tendPreferences || {};
       const domainInfo = VLQ_DOMAINS[domain];
       const timeLabel = difficulty === 1 ? '5 minutes' : '30 minutes';
@@ -610,6 +610,29 @@ User context: ${contextParts.join('. ')}`,
       const domainHabits = weeklyHabits.filter(h => h.lifeArea === domain);
       if (domainHabits.length > 0) {
         contextParts.push(`Their habits for ${domainInfo.name}: ${domainHabits.map(h => `${h.text} (${h.frequency}x/week)`).join(', ')}`);
+      }
+      
+      // Add recent journal context for mood-awareness
+      const recentEntries = Object.entries(journalEntries)
+        .filter(([_, entry]) => entry.gratitude || entry.reflection)
+        .sort((a, b) => b[0].localeCompare(a[0]))
+        .slice(0, 3);
+      
+      if (recentEntries.length > 0) {
+        const journalText = recentEntries.map(([_, e]) => `${e.gratitude || ''} ${e.reflection || ''}`).join(' ').toLowerCase();
+        
+        // Mood detection
+        if (/stressed|overwhelmed|anxious|tired|exhausted|frustrated|difficult|struggling/i.test(journalText)) {
+          contextParts.push(`Recent journal entries suggest they may be stressed or overwhelmed - suggest something gentle and restorative`);
+        } else if (/excited|motivated|energized|proud|accomplished|great|amazing/i.test(journalText)) {
+          contextParts.push(`Recent journal entries suggest positive energy - can suggest something more ambitious`);
+        }
+        
+        // Recent gratitude/reflection context
+        const latestEntry = recentEntries[0]?.[1];
+        if (latestEntry?.gratitude) {
+          contextParts.push(`Recently grateful for: ${latestEntry.gratitude.substring(0, 80)}`);
+        }
       }
       
       if (prefs.resources?.length) contextParts.push(`User has: ${prefs.resources.join(', ')}`);
@@ -896,7 +919,7 @@ Respond with ONLY the task text, nothing else.`,
 
     // Async version that personalizes or generates fresh AI tends
     // Uses PER-DOMAIN readiness, not global score
-    async function generatePersonalizedTendies(vlqScores, tendyHistory, previousShownDomain, userProfile, apiKey, goals = [], weeklyHabits = []) {
+    async function generatePersonalizedTendies(vlqScores, tendyHistory, previousShownDomain, userProfile, apiKey, goals = [], weeklyHabits = [], journalEntries = {}) {
       // First generate base tendies from pool
       const baseTendies = generateDailyTendies(vlqScores, tendyHistory, previousShownDomain);
       
@@ -916,13 +939,17 @@ Respond with ONLY the task text, nothing else.`,
       const domainHabits = weeklyHabits.filter(h => h.lifeArea === todaysDomain);
       const hasGoalsOrHabits = domainGoals.length > 0 || domainHabits.length > 0;
       
+      // Check if we have recent journal context
+      const hasJournalContext = Object.keys(journalEntries).length > 0;
+      
       console.log(`Tend personalization for ${domainReadiness.domainName}:`, {
         score: `${domainReadiness.score}/${domainReadiness.maxScore}`,
         level: domainReadiness.level,
         aiRatio: `${(domainReadiness.aiRatio * 100).toFixed(0)}%`,
         capabilities: domainReadiness.capabilities.map(c => c.label),
         goalsForDomain: domainGoals.length,
-        habitsForDomain: domainHabits.length
+        habitsForDomain: domainHabits.length,
+        hasJournalContext
       });
       
       // If no context for this domain at all AND no goals/habits, just return pool templates as-is
@@ -948,7 +975,8 @@ Respond with ONLY the task text, nothing else.`,
             userProfile, 
             apiKey,
             goals,
-            weeklyHabits
+            weeklyHabits,
+            journalEntries
           );
           
           if (freshText) {
@@ -1979,7 +2007,8 @@ Respond with ONLY the task text, nothing else.`,
                   data.userProfile, 
                   storedApiKey,
                   data.goals || [],
-                  data.weeklyHabits || []
+                  data.weeklyHabits || [],
+                  data.journalEntries || {}
                 ).then(newTendies => {
                   setTodaysTendies(newTendies);
                 }).catch(err => {
@@ -3554,6 +3583,57 @@ Guide the user through their onboarding journey. Be encouraging and help them ma
               });
             }
           }
+          
+          // Recent journal entries for context
+          const getRecentJournalContext = () => {
+            const entries = Object.entries(journalEntries || {})
+              .filter(([_, entry]) => entry.gratitude || entry.reflection)
+              .sort((a, b) => b[0].localeCompare(a[0])) // Most recent first
+              .slice(0, 5); // Last 5 entries
+            
+            if (entries.length === 0) return '';
+            
+            const journalParts = [`\n=== RECENT JOURNAL ENTRIES ===`];
+            
+            // Analyze mood/themes across entries
+            let stressIndicators = 0;
+            let positiveIndicators = 0;
+            const themes = [];
+            
+            entries.forEach(([date, entry]) => {
+              const text = `${entry.gratitude || ''} ${entry.reflection || ''}`.toLowerCase();
+              
+              // Simple mood analysis
+              if (/stressed|overwhelmed|anxious|tired|exhausted|frustrated|difficult|hard|struggling/i.test(text)) {
+                stressIndicators++;
+              }
+              if (/grateful|happy|excited|proud|accomplished|good|great|amazing|peaceful|calm/i.test(text)) {
+                positiveIndicators++;
+              }
+              
+              // Format entry summary
+              const dateObj = new Date(date);
+              const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+              
+              if (entry.gratitude) {
+                journalParts.push(`${dayLabel} - Grateful for: ${entry.gratitude.substring(0, 100)}${entry.gratitude.length > 100 ? '...' : ''}`);
+              }
+              if (entry.reflection) {
+                journalParts.push(`${dayLabel} - Reflection: ${entry.reflection.substring(0, 100)}${entry.reflection.length > 100 ? '...' : ''}`);
+              }
+            });
+            
+            // Add mood summary
+            if (stressIndicators > positiveIndicators && stressIndicators >= 2) {
+              journalParts.push(`\n⚠️ Recent entries suggest they may be feeling stressed or overwhelmed. Be extra supportive and gentle.`);
+            } else if (positiveIndicators > stressIndicators && positiveIndicators >= 2) {
+              journalParts.push(`\n✨ Recent entries suggest they're in a positive headspace. Match their energy!`);
+            }
+            
+            return journalParts.join('\n');
+          };
+          
+          parts.push(getRecentJournalContext());
           
           return parts.length > 0 ? parts.join('\n') : '';
         };
@@ -6644,7 +6724,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
           
           if (apiKey && userProfile) {
             // Use async personalized generation
-            generatePersonalizedTendies(vlqScores, tendyHistory, previousDomain, userProfile, apiKey, goals, weeklyHabits)
+            generatePersonalizedTendies(vlqScores, tendyHistory, previousDomain, userProfile, apiKey, goals, weeklyHabits, journalEntries)
               .then(newTendies => setTodaysTendies(newTendies))
               .catch(err => {
                 console.error('Personalization failed:', err);
@@ -6694,57 +6774,61 @@ This has been your year of growth and intention. What are you most proud of? Wha
         try {
           const tendPreferences = userProfile?.tendPreferences || {};
           
+          // Get recent journal context
+          const recentJournalEntries = Object.entries(journalEntries || {})
+            .filter(([_, entry]) => entry.gratitude || entry.reflection)
+            .sort((a, b) => b[0].localeCompare(a[0]))
+            .slice(0, 3);
+          
+          const journalContext = recentJournalEntries.length > 0
+            ? `\n\nRecent journal entries:\n${recentJournalEntries.map(([date, entry]) => {
+                const parts = [];
+                if (entry.gratitude) parts.push(`Gratitude: ${entry.gratitude}`);
+                if (entry.reflection) parts.push(`Reflection: ${entry.reflection}`);
+                return `${date}: ${parts.join(' | ')}`;
+              }).join('\n')}`
+            : '';
+          
+          // Get Life Map context for this domain
+          const domainInfo = tendPreferences.structuredInfo?.[selectedTendy.domain] || {};
+          const domainNotes = tendPreferences.lifeAreaNotes?.[selectedTendy.domain] || '';
+          const lifeMapContext = Object.entries(domainInfo).filter(([_, v]) => v).length > 0 || domainNotes
+            ? `\n\nWhat you know about their ${selectedTendy.domainName}:\n${Object.entries(domainInfo).filter(([_, v]) => v).map(([k, v]) => `- ${k}: ${v}`).join('\n')}${domainNotes ? `\n- Notes: ${domainNotes}` : ''}`
+            : '';
+          
           const systemPrompt = `You are Tend, a helpful assistant for a daily wellness app. The user has selected a daily tend (task) and wants to chat about it.
 
 Current tend: "${selectedTendy.text}"
-Life area: ${selectedTendy.domainName}
+Life area: ${selectedTendy.domainName} (key: ${selectedTendy.domain})
 Type: ${selectedTendy.type || 'action'}
 Difficulty: ${selectedTendy.difficulty === 1 ? '5 minutes' : '30 minutes'}
-
-User's existing preferences (if any): ${JSON.stringify(tendPreferences)}
+${lifeMapContext}${journalContext}
 
 Your job is to:
 1. Help them with this tend - clarify, motivate, or adapt it to their situation
 2. Learn about their context, resources, and preferences to improve future tends
-3. If they share relevant info (like "I have a gym", "I work from home", "I don't have a partner"), acknowledge it and let them know you'll remember it
+3. If they share relevant personal details, extract them so future tends can be more personalized
 
-When you learn something useful, include it at the END of your response in this exact format:
-[LEARN: category | info]
+EXTRACTING INFO FOR PERSONALIZATION:
+When you learn something useful, include markers at the END of your response:
 
-Categories:
-- resources: things they have (gym, meditation app, etc.)
-- context: life situation (works from home, has kids, etc.)
-- preferences: what they like/dislike about tends
-- lifeAreaNotes.AREA: specific notes about a life area
+For specific details (names, places, preferences): [LIFE_MAP: lifeArea | key | value]
+Examples:
+- "My dog Max" → [LIFE_MAP: health | pet | dog named Max]
+- "I go to Planet Fitness" → [LIFE_MAP: health | gym | Planet Fitness]
+- "My partner Sarah" → [LIFE_MAP: partner | partner name | Sarah]
+- "I work from home" → [LIFE_MAP: career | work situation | remote]
 
-Life areas (use the right one!):
-- family: parents, siblings, kids, extended family (blood relatives)
-- partner: romantic partner/spouse (just the two of them)
-- friendships: friends, social circle
-- career: work, job, professional life
-- education: learning, courses, skills
-- recreation: hobbies, fun activities
-- spirituality: faith, meaning, inner peace
-- community: volunteering, neighborhood, causes
-- health: physical health, exercise, nutrition
-- mentalHealth: emotional wellbeing, stress, boundaries
+For general notes/context: [LEARN: category | info]
+Categories: resources, context, preferences, lifeAreaNotes.AREA
+Examples:
+- [LEARN: resources | has gym membership]
+- [LEARN: context | works_from_home]
+- [LEARN: lifeAreaNotes.health | prefers morning workouts]
 
-ONLY use multiple areas when the fact genuinely spans both. Most facts are single-area.
+Life areas: family, partner, friendships, career, education, recreation, spirituality, community, health, mentalHealth
 
-Multi-area examples (use sparingly):
-[LEARN: lifeAreaNotes.partner,recreation | we love hiking together on weekends]
-[LEARN: lifeAreaNotes.career,education | taking courses to get promoted]
-[LEARN: lifeAreaNotes.family,community | volunteers at kids' school]
-
-Single-area examples (most common):
-[LEARN: lifeAreaNotes.partner | we cook dinner together every Sunday]
-[LEARN: lifeAreaNotes.family | not close with extended family]
-[LEARN: lifeAreaNotes.health | goes to the gym 3x per week]
-[LEARN: resources | has gym membership]
-[LEARN: context | works from home]
-[LEARN: preferences | prefers outdoor activities]
-
-Keep responses concise and supportive. Don't mention the LEARN tags will be processed - just naturally acknowledge you'll remember.`;
+Don't mention these markers to the user - just naturally acknowledge you'll remember. Keep responses concise and supportive.`;
 
           const response = await fetch('https://api.anthropic.com/v1/messages', {
             method: 'POST',
@@ -6827,8 +6911,45 @@ Keep responses concise and supportive. Don't mention the LEARN tags will be proc
             console.log('Updated tend preferences:', newPreferences);
           }
           
-          // Remove LEARN tags from displayed message
-          assistantMessage = assistantMessage.replace(/\[LEARN:[^\]]+\]/g, '').trim();
+          // Also process LIFE_MAP markers (same as main chat) for structured info
+          const lifeMapMatches = assistantMessage.matchAll(/\[LIFE_MAP:\s*([a-zA-Z]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/g);
+          for (const match of lifeMapMatches) {
+            const lifeArea = match[1].trim().toLowerCase();
+            const key = match[2].trim();
+            const value = match[3].trim();
+            
+            if (lifeArea && key && value && VLQ_ORDER.includes(lifeArea)) {
+              console.log('Life Map info extracted from tend chat:', lifeArea, '-', key, ':', value);
+              setUserProfile(prev => {
+                const prefs = prev?.tendPreferences || {};
+                const existingInfo = prefs.structuredInfo?.[lifeArea] || {};
+                
+                // Append to existing value if key exists, otherwise create new
+                const existingValue = existingInfo[key];
+                const newValue = existingValue ? `${existingValue}, ${value}` : value;
+                
+                return {
+                  ...prev,
+                  tendPreferences: {
+                    ...prefs,
+                    structuredInfo: {
+                      ...prefs.structuredInfo,
+                      [lifeArea]: {
+                        ...existingInfo,
+                        [key]: newValue
+                      }
+                    }
+                  }
+                };
+              });
+            }
+          }
+          
+          // Remove LEARN and LIFE_MAP tags from displayed message
+          assistantMessage = assistantMessage
+            .replace(/\[LEARN:[^\]]+\]/g, '')
+            .replace(/\[LIFE_MAP:[^\]]+\]/g, '')
+            .trim();
           
           setTendChatMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
         } catch (error) {
@@ -9755,10 +9876,11 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   <div style={{fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.6}}>
                     <p style={{marginBottom: '0.75rem'}}><strong>VLQ Scores</strong> → Determines which life area appears in daily tends + used in chat to personalize guidance around your focus areas</p>
                     <p style={{marginBottom: '0.75rem'}}><strong>Life Map (structuredInfo)</strong> → Personalizes daily tends AND chat conversations with specific details about your life</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Chat Conversations</strong> → Personal details you share (names, preferences, etc.) are automatically extracted to your Life Map to personalize future daily tends</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>Chat Conversations</strong> → Personal details you share are automatically extracted to your Life Map to personalize future daily tends</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>Tend Chats</strong> → Info shared when chatting about a daily tend is extracted to your Life Map for future personalization</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>Journal Entries</strong> → Recent entries are used in chat context AND daily tend generation for mood-aware suggestions (if you're stressed, Tend suggests gentler activities)</p>
                     <p style={{marginBottom: '0.75rem'}}><strong>Goals & Habits</strong> → Used in daily tends AND chat to reference your commitments and track progress</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Gardener Quiz</strong> → Generates your gardener type + tending style, which sets Tend's communication tone (warm/direct/curious/chill), celebration style, and how it supports you during setbacks</p>
-                    <p style={{color: 'var(--text-muted)'}}><strong>Journal Entries</strong> → <em>NOT YET USED</em> — will eventually help Tend understand patterns over time</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>Gardener Quiz</strong> → Generates your gardener type + tending style, which sets Tend's communication tone, celebration style, and how it supports you during setbacks</p>
                   </div>
                 </div>
               </>
