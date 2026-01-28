@@ -11340,19 +11340,25 @@ PERSONALITY TRAITS IDENTIFIED:
                       body: JSON.stringify({
                         model: 'claude-sonnet-4-20250514',
                         max_tokens: 1000,
-                        system: `You are creating a unique, personalized "gardener archetype" for someone based on their personality quiz answers. This is for a wellness app called Tend.
+                        system: `You are creating a personalized "gardener archetype" for someone based on their personality quiz answers. This is for a wellness app called Tend.
 
-Create a ONE-OF-A-KIND gardener type that feels deeply personal and insightful. Be creative, warm, and specific. The name should be evocative and unique (not generic like "The Caring Gardener" — think more like "The Midnight Bloom Keeper" or "The Storm-Dancing Cultivator").
+Create a gardener type that feels personal and insightful, but GROUNDED and practical — not whimsical, spiritual, or hippie-dippie. 
 
-The description should be 4-5 sentences that feel like they were written specifically for this person. Reference patterns you notice in their answers. Make them feel truly seen and understood.
+NAME GUIDELINES:
+- Keep it simple and relatable, like: "The Steady Builder", "The Morning Starter", "The Deep Diver", "The Flexible Planner", "The Quiet Achiever"
+- Avoid flowery/poetic names like "The Midnight Bloom Keeper" or "The Storm-Dancing Cultivator" — those feel cheesy
+- The name should reflect HOW they approach growth, not sound like a fantasy character
+- Format: "The [Adjective] [Noun]" where both words are plain English
+
+The description should be 3-4 sentences that feel like they were written specifically for this person. Be warm but not over-the-top. Reference patterns you notice in their answers. Make them feel understood, not mystical.
 
 IMPORTANT: Include a "tendingStyle" object that will help the app personalize their experience based on their traits.
 
 Respond in this exact JSON format only:
 {
-  "name": "The [Unique Evocative Name]",
+  "name": "The [Simple Descriptive Name]",
   "emoji": "[single plant/nature emoji]",
-  "description": "[4-5 sentences personally written for this person]",
+  "description": "[3-4 sentences, warm but grounded]",
   "strength": "[Their superpower in 4-6 words]",
   "color": "[hex color matching the vibe]",
   "tendingStyle": {
