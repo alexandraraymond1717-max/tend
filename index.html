@@ -9704,7 +9704,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               <button style={dashStyles.tab(activeTab === 'overview')} onClick={() => setActiveTab('overview')}>📊 Overview</button>
               <button style={dashStyles.tab(activeTab === 'vlq')} onClick={() => setActiveTab('vlq')}>📋 VLQ Scores</button>
               <button style={dashStyles.tab(activeTab === 'lifemap')} onClick={() => setActiveTab('lifemap')}>🗺️ Life Map</button>
-              <button style={dashStyles.tab(activeTab === 'quiz')} onClick={() => setActiveTab('quiz')}>🌻 Quiz & Style</button>
+              <button style={dashStyles.tab(activeTab === 'quiz')} onClick={() => setActiveTab('quiz')}>🌻 Gardener Quiz</button>
               <button style={dashStyles.tab(activeTab === 'goals')} onClick={() => setActiveTab('goals')}>🎯 Goals & Habits</button>
               <button style={dashStyles.tab(activeTab === 'raw')} onClick={() => setActiveTab('raw')}>🔧 Raw Data</button>
             </div>
@@ -9757,8 +9757,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     <p style={{marginBottom: '0.75rem'}}><strong>Life Map (structuredInfo)</strong> → Personalizes daily tends AND chat conversations with specific details about your life</p>
                     <p style={{marginBottom: '0.75rem'}}><strong>Chat Conversations</strong> → Personal details you share (names, preferences, etc.) are automatically extracted to your Life Map to personalize future daily tends</p>
                     <p style={{marginBottom: '0.75rem'}}><strong>Goals & Habits</strong> → Used in daily tends AND chat to reference your commitments and track progress</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Gardener Type</strong> → Sets Tend's communication style in chat (warm/direct/curious/chill) based on your personality</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>tendingStyle</strong> → Tells Tend how to celebrate your wins, support you during setbacks, and time suggestions to your preferences</p>
+                    <p style={{marginBottom: '0.75rem'}}><strong>Gardener Quiz</strong> → Generates your gardener type + tending style, which sets Tend's communication tone (warm/direct/curious/chill), celebration style, and how it supports you during setbacks</p>
                     <p style={{color: 'var(--text-muted)'}}><strong>Journal Entries</strong> → <em>NOT YET USED</em> — will eventually help Tend understand patterns over time</p>
                   </div>
                 </div>
@@ -9831,11 +9830,15 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               </div>
             )}
             
-            {/* Quiz & Style Tab */}
+            {/* Gardener Quiz Tab */}
             {activeTab === 'quiz' && (
               <>
+                <div style={{padding: '0.75rem', backgroundColor: 'var(--bg-elevated)', borderRadius: '8px', marginBottom: '1rem', fontSize: '0.8rem', color: 'var(--text-muted)', lineHeight: 1.5}}>
+                  Everything on this tab comes from the <strong style={{color: 'var(--text)'}}>Gardener Quiz</strong>. The quiz captures your personality traits and generates your gardener type + tending style preferences that personalize how Tend communicates with you.
+                </div>
+                
                 <div style={dashStyles.section}>
-                  <h3 style={dashStyles.sectionTitle}>🌻 Gardener Type</h3>
+                  <h3 style={dashStyles.sectionTitle}>🌻 Your Gardener Type</h3>
                   {prefs.gardenerType ? (
                     <div style={{padding: '1rem', backgroundColor: `${prefs.gardenerType.color}15`, borderRadius: '10px', border: `1px solid ${prefs.gardenerType.color}30`}}>
                       <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem'}}>
@@ -9854,7 +9857,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 
                 {prefs.gardenerType?.tendingStyle && (
                   <div style={dashStyles.section}>
-                    <h3 style={dashStyles.sectionTitle}>⚙️ Tending Style (for personalization)</h3>
+                    <h3 style={dashStyles.sectionTitle}>⚙️ Your Tending Style <span style={{fontSize: '0.75rem', fontWeight: 400, color: 'var(--text-muted)'}}>(from quiz)</span></h3>
+                    <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem'}}>These preferences tell Tend how to communicate with you:</p>
                     <div style={dashStyles.grid}>
                       {Object.entries(prefs.gardenerType.tendingStyle).map(([key, value]) => (
                         <div key={key} style={dashStyles.stat}>
@@ -9868,7 +9872,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 
                 {prefs.gardenerType?.traits && (
                   <div style={dashStyles.section}>
-                    <h3 style={dashStyles.sectionTitle}>🧬 Raw Traits (from quiz answers)</h3>
+                    <h3 style={dashStyles.sectionTitle}>🧬 Your Quiz Answers <span style={{fontSize: '0.75rem', fontWeight: 400, color: 'var(--text-muted)'}}>(raw traits)</span></h3>
+                    <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem'}}>The personality traits captured from your quiz responses:</p>
                     <div style={dashStyles.grid}>
                       {Object.entries(prefs.gardenerType.traits).map(([key, value]) => (
                         <div key={key} style={dashStyles.stat}>
