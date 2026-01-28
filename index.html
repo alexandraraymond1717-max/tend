@@ -10441,7 +10441,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       )}
                     </div>
                     
-                    {/* Life Area Cards - Grouped by category */}
+                    {/* Life Area Cards - Grouped by category - Hidden when quiz is open */}
+                    {expandedArea !== 'quiz' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
                       {/* Action buttons */}
                       <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem' }}>
@@ -11049,6 +11050,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 );
               })()}
             </div>
+            )}
             
                         {/* Gardener Type Section */}
             <div id="gardener-quiz-section">
