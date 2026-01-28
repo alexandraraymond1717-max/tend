@@ -9850,7 +9850,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       const [tempFormData, setTempFormData] = useState(autoExpandSection === 'quiz' ? { quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null } : {});
       const [tempNotes, setTempNotes] = useState('');
       const [lastScrolledArea, setLastScrolledArea] = useState(null);
-      const [hoveredNode, setHoveredNode] = useState(null); // { domain, facts, x, y }
+      const [hoveredNode, setHoveredNode] = useState(null); // { domain, goals, habits, x, y }
+      const [hoveredLine, setHoveredLine] = useState(null); // { question, answer, x, y }
       
       // Auto-expand and scroll to focusedArea whenever it changes (including initial set)
       React.useEffect(() => {
@@ -10044,10 +10045,24 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   }
                 });
                 
-                // Collect all facts (prompt answers) from profile
+                // Collect all facts (prompt answers) from profile with question info
                 const allFacts = [];
                 const domainFactCounts = {};
                 VLQ_ORDER.forEach(d => domainFactCounts[d] = 0);
+                
+                // Discovery questions lookup
+                const discoveryQsLookup = {
+                  family: { closeTo: "Who are you closest to?", tradition: "What's a tradition you cherish?", values: "What family values matter most?", time: "How do you spend time together?" },
+                  partner: { name: "What's their name?", together: "What do you love doing together?", goals: "What are you building together?", appreciate: "What do you appreciate about them?" },
+                  friendships: { crew: "Who's in your inner circle?", hangout: "How do you like to connect?", support: "How do friends support you?", new: "How do you make new friends?" },
+                  career: { role: "What do you do?", focus: "What's energizing you right now?", growth: "Where do you want to grow?", purpose: "What gives your work meaning?" },
+                  education: { learning: "What are you learning?", curious: "What makes you curious?", skills: "What skills do you want to develop?", resources: "How do you like to learn?" },
+                  recreation: { fun: "What's fun for you?", loseTrack: "What makes you lose track of time?", try: "What do you want to try?", recharge: "How does play recharge you?" },
+                  spirituality: { peace: "What brings you peace?", believe: "What do you believe in?", practice: "Do you have a spiritual practice?", meaning: "What gives life meaning?" },
+                  community: { belong: "Where do you feel you belong?", give: "How do you like to give back?", causes: "What causes matter to you?", connect: "How do you connect to community?" },
+                  health: { move: "How do you like to move?", fuel: "What makes your body feel good?", sleep: "How's your sleep?", energy: "What gives you energy?" },
+                  mentalHealth: { recharge: "How do you recharge?", boundaries: "What boundaries matter to you?", support: "What supports your mental health?", stress: "How do you handle stress?" },
+                };
                 
                 // Check for multi-domain facts (stored as comma-separated domains)
                 const multiDomainFacts = prefs.multiDomainFacts || [];
@@ -10056,16 +10071,18 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   const color = VLQ_DOMAINS[domain]?.color || '#888';
                   const structured = prefs.structuredInfo?.[domain] || {};
                   const notes = prefs.lifeAreaNotes?.[domain];
+                  const domainQs = discoveryQsLookup[domain] || {};
                   
                   Object.entries(structured).forEach(([key, value]) => {
                     if (value) {
-                      allFacts.push({ domain, domains: [domain], text: value, color, type: 'structured' });
+                      const question = domainQs[key] || key;
+                      allFacts.push({ domain, domains: [domain], text: value, question, key, color, type: 'structured' });
                       domainFactCounts[domain]++;
                     }
                   });
                   
                   if (notes) {
-                    allFacts.push({ domain, domains: [domain], text: notes, color, type: 'notes' });
+                    allFacts.push({ domain, domains: [domain], text: notes, question: 'Notes', key: 'notes', color, type: 'notes' });
                     domainFactCounts[domain]++;
                   }
                 });
@@ -10193,21 +10210,43 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                         })}
                         
                         {/* Lines from center to icons for each prompt answer */}
-                        {promptLines.map((line, i) => (
-                          <g key={`prompt-line-${i}`}>
-                            <line 
-                              x1={centerX + line.offsetX} 
-                              y1={centerY + line.offsetY} 
-                              x2={line.node.x} 
-                              y2={line.node.y}
-                              stroke={line.fact.color} 
-                              strokeWidth="2" 
-                              opacity="0.4"
-                              strokeLinecap="round"
-                            />
-                            <title>{line.fact.text}</title>
-                          </g>
-                        ))}
+                        {promptLines.map((line, i) => {
+                          const midX = (centerX + line.offsetX + line.node.x) / 2;
+                          const midY = (centerY + line.offsetY + line.node.y) / 2;
+                          return (
+                            <g key={`prompt-line-${i}`}
+                              style={{ cursor: 'pointer' }}
+                              onMouseEnter={() => setHoveredLine({ 
+                                question: line.fact.question, 
+                                answer: line.fact.text,
+                                x: midX,
+                                y: midY,
+                                color: line.fact.color
+                              })}
+                              onMouseLeave={() => setHoveredLine(null)}
+                            >
+                              <line 
+                                x1={centerX + line.offsetX} 
+                                y1={centerY + line.offsetY} 
+                                x2={line.node.x} 
+                                y2={line.node.y}
+                                stroke={line.fact.color} 
+                                strokeWidth="2.5" 
+                                opacity="0.5"
+                                strokeLinecap="round"
+                              />
+                              {/* Invisible wider line for easier hovering */}
+                              <line 
+                                x1={centerX + line.offsetX} 
+                                y1={centerY + line.offsetY} 
+                                x2={line.node.x} 
+                                y2={line.node.y}
+                                stroke="transparent" 
+                                strokeWidth="12" 
+                              />
+                            </g>
+                          );
+                        })}
                         
                         {/* Category icons (outer ellipse) - size grows with goals */}
                         {categoryNodes.map((node, i) => {
@@ -10288,8 +10327,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                         </text>
                       </svg>
                       
-                      {/* Hover tooltip for facts, goals, and habits */}
-                      {hoveredNode && (hoveredNode.facts?.length > 0 || hoveredNode.goals?.length > 0 || hoveredNode.habits?.length > 0) && (
+                      {/* Hover tooltip for goals and habits only */}
+                      {hoveredNode && (hoveredNode.goals?.length > 0 || hoveredNode.habits?.length > 0) && (
                         <div style={{
                           position: 'absolute',
                           left: '50%',
@@ -10333,7 +10372,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                             const unlinkedHabits = hoveredNode.habits?.filter(h => !h.goalId) || [];
                             if (unlinkedHabits.length === 0) return null;
                             return (
-                              <div style={{ marginBottom: '0.4rem' }}>
+                              <div>
                                 {unlinkedHabits.map((habit, idx) => (
                                   <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--text)' }}>
                                     🔄 {habit.text} ({habit.frequency}x/wk)
@@ -10342,17 +10381,30 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                               </div>
                             );
                           })()}
-                          
-                          {/* Prompt answers */}
-                          {hoveredNode.facts?.length > 0 && (
-                            <div>
-                              {hoveredNode.facts.map((fact, idx) => (
-                                <div key={idx} style={{ fontSize: '0.8rem', color: 'var(--text)', fontStyle: 'italic' }}>
-                                  "{fact.text}"
-                                </div>
-                              ))}
-                            </div>
-                          )}
+                        </div>
+                      )}
+                      
+                      {/* Hover tooltip for prompt lines - shows question and answer */}
+                      {hoveredLine && (
+                        <div style={{
+                          position: 'absolute',
+                          left: '50%',
+                          bottom: '1rem',
+                          transform: 'translateX(-50%)',
+                          backgroundColor: 'white',
+                          border: `2px solid ${hoveredLine.color}`,
+                          borderRadius: '10px',
+                          padding: '0.75rem 1rem',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                          maxWidth: '300px',
+                          zIndex: 101,
+                        }}>
+                          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.3rem' }}>
+                            {hoveredLine.question}
+                          </div>
+                          <div style={{ fontSize: '0.9rem', color: 'var(--text)' }}>
+                            "{hoveredLine.answer}"
+                          </div>
                         </div>
                       )}
                       
@@ -10427,16 +10479,66 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                           const isExpanded = expandedArea === areaKey;
                           
                           const discoveryQs = {
-                            family: [{ key: 'closeTo', q: "Who are you closest to?", placeholder: "Names, relationships..." }, { key: 'tradition', q: "What's a tradition you cherish?", placeholder: "Weekly calls, holiday rituals..." }],
-                            partner: [{ key: 'name', q: "What's their name?", placeholder: "Your person..." }, { key: 'together', q: "What do you love doing together?", placeholder: "Cooking, hiking, lazy Sundays..." }],
-                            friendships: [{ key: 'crew', q: "Who's in your inner circle?", placeholder: "Best friends, your people..." }, { key: 'hangout', q: "How do you like to connect?", placeholder: "Calls, dinners, adventures..." }],
-                            career: [{ key: 'role', q: "What do you do?", placeholder: "Your work, your craft..." }, { key: 'focus', q: "What's energizing you right now?", placeholder: "Projects, goals, challenges..." }],
-                            education: [{ key: 'learning', q: "What are you learning?", placeholder: "Skills, subjects, interests..." }, { key: 'curious', q: "What makes you curious?", placeholder: "Topics you'd love to explore..." }],
-                            recreation: [{ key: 'fun', q: "What's fun for you?", placeholder: "Hobbies, guilty pleasures..." }, { key: 'loseTrack', q: "What makes you lose track of time?", placeholder: "That thing you could do for hours..." }],
-                            spirituality: [{ key: 'peace', q: "What brings you peace?", placeholder: "Meditation, nature, music..." }, { key: 'believe', q: "What do you believe in?", placeholder: "Values, faith, philosophy..." }],
-                            community: [{ key: 'belong', q: "Where do you feel you belong?", placeholder: "Groups, places, causes..." }, { key: 'give', q: "How do you like to give back?", placeholder: "Volunteering, helping..." }],
-                            health: [{ key: 'move', q: "How do you like to move?", placeholder: "Workouts, sports, dancing..." }, { key: 'fuel', q: "What makes your body feel good?", placeholder: "Foods, habits, routines..." }],
-                            mentalHealth: [{ key: 'recharge', q: "How do you recharge?", placeholder: "Rest, solitude, activities..." }, { key: 'boundaries', q: "What boundaries matter to you?", placeholder: "Time, energy, space..." }],
+                            family: [
+                              { key: 'closeTo', q: "Who are you closest to?", placeholder: "Names, relationships..." },
+                              { key: 'tradition', q: "What's a tradition you cherish?", placeholder: "Weekly calls, holiday rituals..." },
+                              { key: 'values', q: "What family values matter most?", placeholder: "Loyalty, openness, togetherness..." },
+                              { key: 'time', q: "How do you spend time together?", placeholder: "Dinners, trips, game nights..." }
+                            ],
+                            partner: [
+                              { key: 'name', q: "What's their name?", placeholder: "Your person..." },
+                              { key: 'together', q: "What do you love doing together?", placeholder: "Cooking, hiking, lazy Sundays..." },
+                              { key: 'goals', q: "What are you building together?", placeholder: "A home, a family, adventures..." },
+                              { key: 'appreciate', q: "What do you appreciate about them?", placeholder: "Their humor, kindness, support..." }
+                            ],
+                            friendships: [
+                              { key: 'crew', q: "Who's in your inner circle?", placeholder: "Best friends, your people..." },
+                              { key: 'hangout', q: "How do you like to connect?", placeholder: "Calls, dinners, adventures..." },
+                              { key: 'support', q: "How do friends support you?", placeholder: "Listening, advice, fun..." },
+                              { key: 'new', q: "How do you make new friends?", placeholder: "Through work, hobbies, mutual friends..." }
+                            ],
+                            career: [
+                              { key: 'role', q: "What do you do?", placeholder: "Your work, your craft..." },
+                              { key: 'focus', q: "What's energizing you right now?", placeholder: "Projects, goals, challenges..." },
+                              { key: 'growth', q: "Where do you want to grow?", placeholder: "Skills, leadership, impact..." },
+                              { key: 'purpose', q: "What gives your work meaning?", placeholder: "Helping others, creating, solving..." }
+                            ],
+                            education: [
+                              { key: 'learning', q: "What are you learning?", placeholder: "Skills, subjects, interests..." },
+                              { key: 'curious', q: "What makes you curious?", placeholder: "Topics you'd love to explore..." },
+                              { key: 'skills', q: "What skills do you want to develop?", placeholder: "Technical, creative, interpersonal..." },
+                              { key: 'resources', q: "How do you like to learn?", placeholder: "Books, courses, hands-on..." }
+                            ],
+                            recreation: [
+                              { key: 'fun', q: "What's fun for you?", placeholder: "Hobbies, guilty pleasures..." },
+                              { key: 'loseTrack', q: "What makes you lose track of time?", placeholder: "That thing you could do for hours..." },
+                              { key: 'try', q: "What do you want to try?", placeholder: "New hobbies, experiences..." },
+                              { key: 'recharge', q: "How does play recharge you?", placeholder: "Energy, creativity, joy..." }
+                            ],
+                            spirituality: [
+                              { key: 'peace', q: "What brings you peace?", placeholder: "Meditation, nature, music..." },
+                              { key: 'believe', q: "What do you believe in?", placeholder: "Values, faith, philosophy..." },
+                              { key: 'practice', q: "Do you have a spiritual practice?", placeholder: "Prayer, meditation, reflection..." },
+                              { key: 'meaning', q: "What gives life meaning?", placeholder: "Connection, growth, purpose..." }
+                            ],
+                            community: [
+                              { key: 'belong', q: "Where do you feel you belong?", placeholder: "Groups, places, causes..." },
+                              { key: 'give', q: "How do you like to give back?", placeholder: "Volunteering, helping..." },
+                              { key: 'causes', q: "What causes matter to you?", placeholder: "Environment, education, justice..." },
+                              { key: 'connect', q: "How do you connect to community?", placeholder: "Events, organizations, neighbors..." }
+                            ],
+                            health: [
+                              { key: 'move', q: "How do you like to move?", placeholder: "Workouts, sports, dancing..." },
+                              { key: 'fuel', q: "What makes your body feel good?", placeholder: "Foods, habits, routines..." },
+                              { key: 'sleep', q: "How's your sleep?", placeholder: "Routine, quality, challenges..." },
+                              { key: 'energy', q: "What gives you energy?", placeholder: "Activities, foods, rest..." }
+                            ],
+                            mentalHealth: [
+                              { key: 'recharge', q: "How do you recharge?", placeholder: "Rest, solitude, activities..." },
+                              { key: 'boundaries', q: "What boundaries matter to you?", placeholder: "Time, energy, space..." },
+                              { key: 'support', q: "What supports your mental health?", placeholder: "Therapy, journaling, friends..." },
+                              { key: 'stress', q: "How do you handle stress?", placeholder: "Exercise, talking, nature..." }
+                            ],
                           };
                           const questions = discoveryQs[areaKey] || [];
                           
