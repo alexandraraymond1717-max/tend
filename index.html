@@ -11419,26 +11419,28 @@ PERSONALITY TRAITS IDENTIFIED:
                       body: JSON.stringify({
                         model: 'claude-sonnet-4-20250514',
                         max_tokens: 1000,
-                        system: `You are creating a personalized "gardener archetype" for someone based on their personality quiz answers. This is for a wellness app called Tend.
+                        system: `You are creating a personalized "gardener type" for someone based on their personality quiz answers. This is for a wellness app called Tend where life = garden.
 
-Create a gardener type that feels personal and insightful, but GROUNDED and practical — not whimsical, spiritual, or hippie-dippie. 
+Create a gardener type that uses ACTUAL GARDENING WORDS. The name must be gardening-themed!
 
-NAME GUIDELINES:
-- Keep it simple and relatable, like: "The Steady Builder", "The Morning Starter", "The Deep Diver", "The Flexible Planner", "The Quiet Achiever"
-- Avoid flowery/poetic names like "The Midnight Bloom Keeper" or "The Storm-Dancing Cultivator" — those feel cheesy
-- The name should reflect HOW they approach growth, not sound like a fantasy character
-- Format: "The [Adjective] [Noun]" where both words are plain English
+NAME GUIDELINES - MUST use gardening terminology:
+- Good examples: "The Patient Gardener", "The Dawn Planter", "The Steady Cultivator", "The Careful Pruner", "The Wild Gardener", "The Container Gardener", "The Greenhouse Tender", "The Seed Starter", "The Root Tender", "The Season Planner"
+- BAD examples (not gardening-related): "The Flexible Flow Finder", "The Deep Diver", "The Morning Starter", "The Quiet Achiever"
+- The noun MUST be a gardening word: Gardener, Planter, Cultivator, Pruner, Tender, Grower, Harvester, Sower, Weeder, etc.
+- Format: "The [Adjective] [Gardening Noun]"
 
-The description should be 3-4 sentences that feel like they were written specifically for this person. Be warm but not over-the-top. Reference patterns you notice in their answers. Make them feel understood, not mystical.
+TONE: Grounded and practical, NOT whimsical or spiritual. No "bloom keeper" or "storm dancer" nonsense.
 
-IMPORTANT: Include a "tendingStyle" object that will help the app personalize their experience based on their traits.
+The description should be 3-4 sentences that use gardening metaphors naturally. Reference patterns from their answers. Make them feel understood.
+
+IMPORTANT: Include a "tendingStyle" object that will help the app personalize their experience.
 
 Respond in this exact JSON format only:
 {
-  "name": "The [Simple Descriptive Name]",
-  "emoji": "[single plant/nature emoji]",
-  "description": "[3-4 sentences, warm but grounded]",
-  "strength": "[Their superpower in 4-6 words]",
+  "name": "The [Adjective] [Gardening Noun]",
+  "emoji": "[single plant/garden emoji]",
+  "description": "[3-4 sentences using gardening metaphors, warm but grounded]",
+  "strength": "[Their superpower in 4-6 words, gardening-themed]",
   "color": "[hex color matching the vibe]",
   "tendingStyle": {
     "checkInTone": "[warm/direct/curious/chill]",
@@ -11464,9 +11466,9 @@ Respond in this exact JSON format only:
                   } catch (error) {
                     console.error('Error generating gardener type:', error);
                     setTempFormData(prev => ({ ...prev, isGenerating: false, generatedResult: {
-                      name: "The Gentle Cultivator", emoji: "🌱",
-                      description: "You have a unique way of nurturing growth in yourself and others. Your approach to life is thoughtful and intentional, always seeking the deeper meaning beneath the surface. You understand that the most beautiful gardens aren't rushed — they unfold in their own time. There's a quiet strength in how you tend to the things that matter most.",
-                      strength: "Nurturing potential into bloom", color: "#85B79D",
+                      name: "The Steady Gardener", emoji: "🌱",
+                      description: "You tend your garden with patience and care, understanding that growth happens in its own time. You're not one to rush the seasons or force a bloom before it's ready. Your approach is thoughtful — you plant seeds knowing some will flourish and others will teach you something. There's wisdom in how you nurture what matters most.",
+                      strength: "Nurturing growth with patience", color: "#85B79D",
                       traits: traits,
                       tendingStyle: {
                         checkInTone: traits.communication || 'warm',
