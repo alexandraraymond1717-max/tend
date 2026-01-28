@@ -10050,18 +10050,18 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 const domainFactCounts = {};
                 VLQ_ORDER.forEach(d => domainFactCounts[d] = 0);
                 
-                // Discovery questions lookup
+                // Discovery questions lookup for displaying in tooltip
                 const discoveryQsLookup = {
-                  family: { closeTo: "Who are you closest to?", tradition: "What's a tradition you cherish?", values: "What family values matter most?", time: "How do you spend time together?" },
-                  partner: { name: "What's their name?", together: "What do you love doing together?", goals: "What are you building together?", appreciate: "What do you appreciate about them?" },
-                  friendships: { crew: "Who's in your inner circle?", hangout: "How do you like to connect?", support: "How do friends support you?", new: "How do you make new friends?" },
-                  career: { role: "What do you do?", focus: "What's energizing you right now?", growth: "Where do you want to grow?", purpose: "What gives your work meaning?" },
-                  education: { learning: "What are you learning?", curious: "What makes you curious?", skills: "What skills do you want to develop?", resources: "How do you like to learn?" },
-                  recreation: { fun: "What's fun for you?", loseTrack: "What makes you lose track of time?", try: "What do you want to try?", recharge: "How does play recharge you?" },
-                  spirituality: { peace: "What brings you peace?", believe: "What do you believe in?", practice: "Do you have a spiritual practice?", meaning: "What gives life meaning?" },
-                  community: { belong: "Where do you feel you belong?", give: "How do you like to give back?", causes: "What causes matter to you?", connect: "How do you connect to community?" },
-                  health: { move: "How do you like to move?", fuel: "What makes your body feel good?", sleep: "How's your sleep?", energy: "What gives you energy?" },
-                  mentalHealth: { recharge: "How do you recharge?", boundaries: "What boundaries matter to you?", support: "What supports your mental health?", stress: "How do you handle stress?" },
+                  family: { closeTo: "Who are you closest to?", tradition: "What's a tradition you cherish?", values: "What family values matter most?", time: "How do you spend time together?", grateful: "What are you grateful for about your family?", improve: "What would you like to improve?", history: "What family history shapes you?", support: "How does your family support you?", challenge: "What's challenging right now?", celebrate: "How do you celebrate together?", communicate: "How do you stay connected?", boundaries: "What boundaries matter with family?", roles: "What role do you play in your family?", future: "What do you hope for your family's future?", learn: "What have you learned from family?", miss: "What do you miss about family?", proud: "What makes you proud of your family?", conflict: "How do you handle family conflict?", memories: "What's a favorite family memory?", wish: "What do you wish family knew about you?" },
+                  partner: { name: "What's their name?", together: "What do you love doing together?", goals: "What are you building together?", appreciate: "What do you appreciate about them?", met: "How did you meet?", love: "What made you fall in love?", challenge: "What do you work on together?", dream: "What's a shared dream?", support: "How do they support you?", language: "What's their love language?", laugh: "What makes you both laugh?", grow: "How have you grown together?", date: "What's your ideal date?", strength: "What's your relationship's strength?", ritual: "Do you have any rituals together?", navigate: "How do you navigate disagreements?", admire: "What do you admire about them?", team: "How do you work as a team?", future: "What excites you about your future together?", grateful: "What are you most grateful for?" },
+                  friendships: { crew: "Who's in your inner circle?", hangout: "How do you like to connect?", support: "How do friends support you?", new: "How do you make new friends?", long: "Who's your longest friendship?", miss: "Which friends do you miss?", give: "What do you bring to friendships?", need: "What do you need from friends?", maintain: "How do you maintain friendships?", challenge: "What's challenging about friendships now?", group: "Do you have a friend group?", one: "Describe a friendship that shaped you", conflict: "How do you handle conflict with friends?", celebrate: "How do you celebrate friends?", boundaries: "What boundaries matter in friendships?", grow: "How have your friendships evolved?", want: "What kind of friends do you want more of?", hard: "Have you had a hard friendship ending?", fun: "What's the most fun with friends?", grateful: "What are you grateful for in your friendships?" },
+                  career: { role: "What do you do?", focus: "What's energizing you right now?", growth: "Where do you want to grow?", purpose: "What gives your work meaning?", proud: "What are you most proud of professionally?", dream: "What's your dream role or project?", challenge: "What's your biggest work challenge?", balance: "How's your work-life balance?", team: "Who do you work with?", learn: "What are you learning at work?", environment: "What work environment suits you?", values: "What values matter in your work?", stress: "What stresses you about work?", success: "How do you define career success?", mentor: "Who has mentored you?", risk: "What career risk would you take?", five: "Where do you see yourself in 5 years?", strength: "What's your professional superpower?", change: "What would you change about your work?", passion: "What work would you do for free?" },
+                  education: { learning: "What are you learning?", curious: "What makes you curious?", skills: "What skills do you want to develop?", resources: "How do you like to learn?", goal: "What's a learning goal?", obstacle: "What stops you from learning more?", teacher: "Who has taught you the most?", proud: "What have you taught yourself?", formal: "Any formal education plans?", topic: "What topic could you talk about for hours?", mistake: "What have you learned from mistakes?", child: "What did you love learning as a child?", share: "What knowledge do you want to share?", book: "What book changed your thinking?", skill: "What skill do you wish you had?", practice: "How do you practice what you learn?", community: "Do you learn with others?", stuck: "What do you do when stuck on something?", surprise: "What surprised you while learning something?", next: "What's next on your learning list?" },
+                  recreation: { fun: "What's fun for you?", loseTrack: "What makes you lose track of time?", try: "What do you want to try?", recharge: "How does play recharge you?", childhood: "What did you love doing as a kid?", weekend: "What's your ideal weekend?", solo: "What do you enjoy doing alone?", social: "What do you enjoy with others?", creative: "Do you have a creative outlet?", active: "What active hobbies do you enjoy?", relax: "How do you truly relax?", bucket: "What's on your bucket list?", dropped: "Any hobbies you've dropped?", season: "What's your favorite seasonal activity?", money: "If money was no object, what would you do for fun?", guilty: "What's a guilty pleasure?", share: "What hobby do you want to share with others?", obstacle: "What stops you from having more fun?", plan: "Do you plan fun or let it happen?", joy: "What brings you pure joy?" },
+                  spirituality: { peace: "What brings you peace?", believe: "What do you believe in?", practice: "Do you have a spiritual practice?", meaning: "What gives life meaning?", wonder: "What fills you with wonder?", tradition: "Any spiritual traditions you follow?", question: "What big questions do you ponder?", connect: "How do you connect to something bigger?", values: "What values guide your life?", growth: "How has your spirituality evolved?", ritual: "Do you have any personal rituals?", nature: "How does nature affect you spiritually?", community: "Do you have a spiritual community?", challenge: "What challenges your beliefs?", comfort: "What comforts you in hard times?", gratitude: "What are you grateful for?", death: "How do you think about mortality?", sacred: "What do you consider sacred?", teacher: "Who or what has been a spiritual teacher?", hope: "What gives you hope?" },
+                  community: { belong: "Where do you feel you belong?", give: "How do you like to give back?", causes: "What causes matter to you?", connect: "How do you connect to community?", role: "What role do you play in your community?", local: "How engaged are you locally?", online: "Any online communities you're part of?", impact: "What impact do you want to make?", time: "How much time do you give to community?", money: "What causes do you support financially?", skill: "What skills could you offer?", barrier: "What stops you from being more involved?", inspired: "Who inspires you in community work?", change: "What would you change in your community?", tradition: "Any community traditions you love?", new: "What communities would you like to join?", receive: "What have you received from community?", voice: "How do you use your voice?", bridge: "Do you bridge different communities?", legacy: "What community legacy do you want to leave?" },
+                  health: { move: "How do you like to move?", fuel: "What makes your body feel good?", sleep: "How's your sleep?", energy: "What gives you energy?", goal: "What's a health goal?", challenge: "What's your biggest health challenge?", routine: "Describe your morning routine", habit: "What healthy habit are you building?", break: "What unhealthy habit do you want to break?", body: "How's your relationship with your body?", checkup: "How do you stay on top of health?", stress: "How does stress affect your health?", water: "How's your hydration?", food: "What's your relationship with food?", rest: "How do you rest and recover?", nature: "Do you spend time outdoors?", support: "Who supports your health journey?", age: "How do you think about aging?", best: "When do you feel your best physically?", invest: "How do you invest in your health?" },
+                  mentalHealth: { recharge: "How do you recharge?", boundaries: "What boundaries matter to you?", support: "What supports your mental health?", stress: "How do you handle stress?", anxious: "What makes you anxious?", calm: "What calms you down?", mood: "How do you track your mood?", therapy: "Have you tried therapy?", medication: "Any thoughts on medication?", trigger: "What triggers difficult emotions?", cope: "What are your go-to coping strategies?", talk: "Who can you talk to about hard things?", self: "How's your self-talk?", down: "What do you do when you're feeling down?", growth: "How has your mental health journey evolved?", stigma: "How do you feel about mental health stigma?", routine: "Do you have mental health routines?", warning: "What are your warning signs?", joy: "What brings you genuine joy?", proud: "What mental health progress are you proud of?" },
                 };
                 
                 // Check for multi-domain facts (stored as comma-separated domains)
@@ -10072,10 +10072,12 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   const structured = prefs.structuredInfo?.[domain] || {};
                   const notes = prefs.lifeAreaNotes?.[domain];
                   const domainQs = discoveryQsLookup[domain] || {};
+                  const storedQuestions = prefs.promptQuestions?.[domain] || {};
                   
                   Object.entries(structured).forEach(([key, value]) => {
                     if (value) {
-                      const question = domainQs[key] || key;
+                      // Check stored questions first (for AI-generated), then lookup, then use key
+                      const question = storedQuestions[key] || domainQs[key] || key;
                       allFacts.push({ domain, domains: [domain], text: value, question, key, color, type: 'structured' });
                       domainFactCounts[domain]++;
                     }
@@ -10483,62 +10485,244 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                               { key: 'closeTo', q: "Who are you closest to?", placeholder: "Names, relationships..." },
                               { key: 'tradition', q: "What's a tradition you cherish?", placeholder: "Weekly calls, holiday rituals..." },
                               { key: 'values', q: "What family values matter most?", placeholder: "Loyalty, openness, togetherness..." },
-                              { key: 'time', q: "How do you spend time together?", placeholder: "Dinners, trips, game nights..." }
+                              { key: 'time', q: "How do you spend time together?", placeholder: "Dinners, trips, game nights..." },
+                              { key: 'grateful', q: "What are you grateful for about your family?", placeholder: "Support, memories, love..." },
+                              { key: 'improve', q: "What would you like to improve?", placeholder: "Communication, quality time..." },
+                              { key: 'history', q: "What family history shapes you?", placeholder: "Stories, heritage, lessons..." },
+                              { key: 'support', q: "How does your family support you?", placeholder: "Encouragement, advice, presence..." },
+                              { key: 'challenge', q: "What's challenging right now?", placeholder: "Distance, disagreements, busy schedules..." },
+                              { key: 'celebrate', q: "How do you celebrate together?", placeholder: "Holidays, milestones, everyday moments..." },
+                              { key: 'communicate', q: "How do you stay connected?", placeholder: "Calls, texts, visits..." },
+                              { key: 'boundaries', q: "What boundaries matter with family?", placeholder: "Privacy, time, topics..." },
+                              { key: 'roles', q: "What role do you play in your family?", placeholder: "Peacemaker, planner, listener..." },
+                              { key: 'future', q: "What do you hope for your family's future?", placeholder: "Closeness, health, adventures..." },
+                              { key: 'learn', q: "What have you learned from family?", placeholder: "Values, skills, perspectives..." },
+                              { key: 'miss', q: "What do you miss about family?", placeholder: "People, places, moments..." },
+                              { key: 'proud', q: "What makes you proud of your family?", placeholder: "Achievements, resilience, love..." },
+                              { key: 'conflict', q: "How do you handle family conflict?", placeholder: "Talk it out, give space, mediate..." },
+                              { key: 'memories', q: "What's a favorite family memory?", placeholder: "Trips, gatherings, simple moments..." },
+                              { key: 'wish', q: "What do you wish family knew about you?", placeholder: "Dreams, struggles, needs..." }
                             ],
                             partner: [
                               { key: 'name', q: "What's their name?", placeholder: "Your person..." },
                               { key: 'together', q: "What do you love doing together?", placeholder: "Cooking, hiking, lazy Sundays..." },
                               { key: 'goals', q: "What are you building together?", placeholder: "A home, a family, adventures..." },
-                              { key: 'appreciate', q: "What do you appreciate about them?", placeholder: "Their humor, kindness, support..." }
+                              { key: 'appreciate', q: "What do you appreciate about them?", placeholder: "Their humor, kindness, support..." },
+                              { key: 'met', q: "How did you meet?", placeholder: "The story of you two..." },
+                              { key: 'love', q: "What made you fall in love?", placeholder: "Qualities, moments, feelings..." },
+                              { key: 'challenge', q: "What do you work on together?", placeholder: "Communication, balance, growth..." },
+                              { key: 'dream', q: "What's a shared dream?", placeholder: "Travel, home, experiences..." },
+                              { key: 'support', q: "How do they support you?", placeholder: "Encouragement, listening, helping..." },
+                              { key: 'language', q: "What's their love language?", placeholder: "Words, acts, time, touch, gifts..." },
+                              { key: 'laugh', q: "What makes you both laugh?", placeholder: "Inside jokes, shows, memories..." },
+                              { key: 'grow', q: "How have you grown together?", placeholder: "Challenges overcome, lessons learned..." },
+                              { key: 'date', q: "What's your ideal date?", placeholder: "Dinner, adventure, cozy night..." },
+                              { key: 'strength', q: "What's your relationship's strength?", placeholder: "Trust, communication, fun..." },
+                              { key: 'ritual', q: "Do you have any rituals together?", placeholder: "Morning coffee, weekly dates..." },
+                              { key: 'navigate', q: "How do you navigate disagreements?", placeholder: "Talk, space, compromise..." },
+                              { key: 'admire', q: "What do you admire about them?", placeholder: "Work ethic, kindness, passion..." },
+                              { key: 'team', q: "How do you work as a team?", placeholder: "Divide tasks, decisions, support..." },
+                              { key: 'future', q: "What excites you about your future together?", placeholder: "Plans, possibilities, growth..." },
+                              { key: 'grateful', q: "What are you most grateful for?", placeholder: "Their presence, love, partnership..." }
                             ],
                             friendships: [
                               { key: 'crew', q: "Who's in your inner circle?", placeholder: "Best friends, your people..." },
                               { key: 'hangout', q: "How do you like to connect?", placeholder: "Calls, dinners, adventures..." },
                               { key: 'support', q: "How do friends support you?", placeholder: "Listening, advice, fun..." },
-                              { key: 'new', q: "How do you make new friends?", placeholder: "Through work, hobbies, mutual friends..." }
+                              { key: 'new', q: "How do you make new friends?", placeholder: "Through work, hobbies, mutual friends..." },
+                              { key: 'long', q: "Who's your longest friendship?", placeholder: "Childhood friend, college buddy..." },
+                              { key: 'miss', q: "Which friends do you miss?", placeholder: "People who moved, drifted..." },
+                              { key: 'give', q: "What do you bring to friendships?", placeholder: "Loyalty, humor, advice..." },
+                              { key: 'need', q: "What do you need from friends?", placeholder: "Honesty, fun, support..." },
+                              { key: 'maintain', q: "How do you maintain friendships?", placeholder: "Regular calls, meetups, texts..." },
+                              { key: 'challenge', q: "What's challenging about friendships now?", placeholder: "Time, distance, life stages..." },
+                              { key: 'group', q: "Do you have a friend group?", placeholder: "How you met, what you do..." },
+                              { key: 'one', q: "Describe a friendship that shaped you", placeholder: "What they taught you..." },
+                              { key: 'conflict', q: "How do you handle conflict with friends?", placeholder: "Address it, let it go, space..." },
+                              { key: 'celebrate', q: "How do you celebrate friends?", placeholder: "Birthdays, wins, just because..." },
+                              { key: 'boundaries', q: "What boundaries matter in friendships?", placeholder: "Time, energy, topics..." },
+                              { key: 'grow', q: "How have your friendships evolved?", placeholder: "Deeper, different, new..." },
+                              { key: 'want', q: "What kind of friends do you want more of?", placeholder: "Adventurous, deep, local..." },
+                              { key: 'hard', q: "Have you had a hard friendship ending?", placeholder: "What happened, what you learned..." },
+                              { key: 'fun', q: "What's the most fun with friends?", placeholder: "Activities, conversations, trips..." },
+                              { key: 'grateful', q: "What are you grateful for in your friendships?", placeholder: "Specific people, qualities, moments..." }
                             ],
                             career: [
                               { key: 'role', q: "What do you do?", placeholder: "Your work, your craft..." },
                               { key: 'focus', q: "What's energizing you right now?", placeholder: "Projects, goals, challenges..." },
                               { key: 'growth', q: "Where do you want to grow?", placeholder: "Skills, leadership, impact..." },
-                              { key: 'purpose', q: "What gives your work meaning?", placeholder: "Helping others, creating, solving..." }
+                              { key: 'purpose', q: "What gives your work meaning?", placeholder: "Helping others, creating, solving..." },
+                              { key: 'proud', q: "What are you most proud of professionally?", placeholder: "Achievements, growth, impact..." },
+                              { key: 'dream', q: "What's your dream role or project?", placeholder: "Position, company, creation..." },
+                              { key: 'challenge', q: "What's your biggest work challenge?", placeholder: "Time, skills, politics..." },
+                              { key: 'balance', q: "How's your work-life balance?", placeholder: "Boundaries, struggles, wins..." },
+                              { key: 'team', q: "Who do you work with?", placeholder: "Team, mentors, collaborators..." },
+                              { key: 'learn', q: "What are you learning at work?", placeholder: "Skills, lessons, insights..." },
+                              { key: 'environment', q: "What work environment suits you?", placeholder: "Remote, office, hybrid..." },
+                              { key: 'values', q: "What values matter in your work?", placeholder: "Integrity, creativity, impact..." },
+                              { key: 'stress', q: "What stresses you about work?", placeholder: "Deadlines, politics, uncertainty..." },
+                              { key: 'success', q: "How do you define career success?", placeholder: "Money, impact, freedom, growth..." },
+                              { key: 'mentor', q: "Who has mentored you?", placeholder: "People who shaped your career..." },
+                              { key: 'risk', q: "What career risk would you take?", placeholder: "New field, startup, own business..." },
+                              { key: 'five', q: "Where do you see yourself in 5 years?", placeholder: "Role, company, achievements..." },
+                              { key: 'strength', q: "What's your professional superpower?", placeholder: "Skill, trait, approach..." },
+                              { key: 'change', q: "What would you change about your work?", placeholder: "Role, company, industry..." },
+                              { key: 'passion', q: "What work would you do for free?", placeholder: "If money wasn't a factor..." }
                             ],
                             education: [
                               { key: 'learning', q: "What are you learning?", placeholder: "Skills, subjects, interests..." },
                               { key: 'curious', q: "What makes you curious?", placeholder: "Topics you'd love to explore..." },
                               { key: 'skills', q: "What skills do you want to develop?", placeholder: "Technical, creative, interpersonal..." },
-                              { key: 'resources', q: "How do you like to learn?", placeholder: "Books, courses, hands-on..." }
+                              { key: 'resources', q: "How do you like to learn?", placeholder: "Books, courses, hands-on..." },
+                              { key: 'goal', q: "What's a learning goal?", placeholder: "Language, instrument, degree..." },
+                              { key: 'obstacle', q: "What stops you from learning more?", placeholder: "Time, money, motivation..." },
+                              { key: 'teacher', q: "Who has taught you the most?", placeholder: "Teachers, mentors, experiences..." },
+                              { key: 'proud', q: "What have you taught yourself?", placeholder: "Skills learned independently..." },
+                              { key: 'formal', q: "Any formal education plans?", placeholder: "Degrees, certifications, courses..." },
+                              { key: 'topic', q: "What topic could you talk about for hours?", placeholder: "Your areas of expertise or passion..." },
+                              { key: 'mistake', q: "What have you learned from mistakes?", placeholder: "Lessons from failures..." },
+                              { key: 'child', q: "What did you love learning as a child?", placeholder: "Early interests and passions..." },
+                              { key: 'share', q: "What knowledge do you want to share?", placeholder: "Teaching, mentoring, creating..." },
+                              { key: 'book', q: "What book changed your thinking?", placeholder: "Impactful reads..." },
+                              { key: 'skill', q: "What skill do you wish you had?", placeholder: "Something you'd love to do..." },
+                              { key: 'practice', q: "How do you practice what you learn?", placeholder: "Application, projects, repetition..." },
+                              { key: 'community', q: "Do you learn with others?", placeholder: "Groups, classes, study buddies..." },
+                              { key: 'stuck', q: "What do you do when stuck on something?", placeholder: "Research, ask, take a break..." },
+                              { key: 'surprise', q: "What surprised you while learning something?", placeholder: "Unexpected discoveries..." },
+                              { key: 'next', q: "What's next on your learning list?", placeholder: "Upcoming topics or skills..." }
                             ],
                             recreation: [
                               { key: 'fun', q: "What's fun for you?", placeholder: "Hobbies, guilty pleasures..." },
                               { key: 'loseTrack', q: "What makes you lose track of time?", placeholder: "That thing you could do for hours..." },
                               { key: 'try', q: "What do you want to try?", placeholder: "New hobbies, experiences..." },
-                              { key: 'recharge', q: "How does play recharge you?", placeholder: "Energy, creativity, joy..." }
+                              { key: 'recharge', q: "How does play recharge you?", placeholder: "Energy, creativity, joy..." },
+                              { key: 'childhood', q: "What did you love doing as a kid?", placeholder: "Games, activities, adventures..." },
+                              { key: 'weekend', q: "What's your ideal weekend?", placeholder: "Activities, pace, company..." },
+                              { key: 'solo', q: "What do you enjoy doing alone?", placeholder: "Solo hobbies and activities..." },
+                              { key: 'social', q: "What do you enjoy with others?", placeholder: "Group activities, games..." },
+                              { key: 'creative', q: "Do you have a creative outlet?", placeholder: "Art, music, writing, crafts..." },
+                              { key: 'active', q: "What active hobbies do you enjoy?", placeholder: "Sports, hiking, dancing..." },
+                              { key: 'relax', q: "How do you truly relax?", placeholder: "Activities that calm you..." },
+                              { key: 'bucket', q: "What's on your bucket list?", placeholder: "Experiences you want to have..." },
+                              { key: 'dropped', q: "Any hobbies you've dropped?", placeholder: "Things you used to do..." },
+                              { key: 'season', q: "What's your favorite seasonal activity?", placeholder: "Summer, winter, fall, spring fun..." },
+                              { key: 'money', q: "If money was no object, what would you do for fun?", placeholder: "Dream activities..." },
+                              { key: 'guilty', q: "What's a guilty pleasure?", placeholder: "Things you enjoy but maybe shouldn't..." },
+                              { key: 'share', q: "What hobby do you want to share with others?", placeholder: "Teaching, doing together..." },
+                              { key: 'obstacle', q: "What stops you from having more fun?", placeholder: "Time, money, energy..." },
+                              { key: 'plan', q: "Do you plan fun or let it happen?", placeholder: "Your approach to recreation..." },
+                              { key: 'joy', q: "What brings you pure joy?", placeholder: "Simple pleasures..." }
                             ],
                             spirituality: [
                               { key: 'peace', q: "What brings you peace?", placeholder: "Meditation, nature, music..." },
                               { key: 'believe', q: "What do you believe in?", placeholder: "Values, faith, philosophy..." },
                               { key: 'practice', q: "Do you have a spiritual practice?", placeholder: "Prayer, meditation, reflection..." },
-                              { key: 'meaning', q: "What gives life meaning?", placeholder: "Connection, growth, purpose..." }
+                              { key: 'meaning', q: "What gives life meaning?", placeholder: "Connection, growth, purpose..." },
+                              { key: 'wonder', q: "What fills you with wonder?", placeholder: "Nature, art, universe..." },
+                              { key: 'tradition', q: "Any spiritual traditions you follow?", placeholder: "Religious, cultural, personal..." },
+                              { key: 'question', q: "What big questions do you ponder?", placeholder: "Life, death, purpose, existence..." },
+                              { key: 'connect', q: "How do you connect to something bigger?", placeholder: "Nature, community, faith..." },
+                              { key: 'values', q: "What values guide your life?", placeholder: "Core principles..." },
+                              { key: 'growth', q: "How has your spirituality evolved?", placeholder: "Changes over time..." },
+                              { key: 'ritual', q: "Do you have any personal rituals?", placeholder: "Morning routine, gratitude, reflection..." },
+                              { key: 'nature', q: "How does nature affect you spiritually?", placeholder: "Connection, peace, awe..." },
+                              { key: 'community', q: "Do you have a spiritual community?", placeholder: "Church, sangha, group..." },
+                              { key: 'challenge', q: "What challenges your beliefs?", placeholder: "Doubts, questions, experiences..." },
+                              { key: 'comfort', q: "What comforts you in hard times?", placeholder: "Beliefs, practices, people..." },
+                              { key: 'gratitude', q: "What are you grateful for?", placeholder: "Blessings, gifts, moments..." },
+                              { key: 'death', q: "How do you think about mortality?", placeholder: "Beliefs, fears, acceptance..." },
+                              { key: 'sacred', q: "What do you consider sacred?", placeholder: "People, places, practices..." },
+                              { key: 'teacher', q: "Who or what has been a spiritual teacher?", placeholder: "People, books, experiences..." },
+                              { key: 'hope', q: "What gives you hope?", placeholder: "Beliefs, observations, faith..." }
                             ],
                             community: [
                               { key: 'belong', q: "Where do you feel you belong?", placeholder: "Groups, places, causes..." },
                               { key: 'give', q: "How do you like to give back?", placeholder: "Volunteering, helping..." },
                               { key: 'causes', q: "What causes matter to you?", placeholder: "Environment, education, justice..." },
-                              { key: 'connect', q: "How do you connect to community?", placeholder: "Events, organizations, neighbors..." }
+                              { key: 'connect', q: "How do you connect to community?", placeholder: "Events, organizations, neighbors..." },
+                              { key: 'role', q: "What role do you play in your community?", placeholder: "Leader, helper, participant..." },
+                              { key: 'local', q: "How engaged are you locally?", placeholder: "Neighborhood, city involvement..." },
+                              { key: 'online', q: "Any online communities you're part of?", placeholder: "Forums, groups, networks..." },
+                              { key: 'impact', q: "What impact do you want to make?", placeholder: "Change you want to create..." },
+                              { key: 'time', q: "How much time do you give to community?", placeholder: "Hours, frequency, commitment..." },
+                              { key: 'money', q: "What causes do you support financially?", placeholder: "Donations, memberships..." },
+                              { key: 'skill', q: "What skills could you offer?", placeholder: "Expertise you could share..." },
+                              { key: 'barrier', q: "What stops you from being more involved?", placeholder: "Time, energy, access..." },
+                              { key: 'inspired', q: "Who inspires you in community work?", placeholder: "Leaders, activists, helpers..." },
+                              { key: 'change', q: "What would you change in your community?", placeholder: "Issues you'd address..." },
+                              { key: 'tradition', q: "Any community traditions you love?", placeholder: "Events, gatherings, customs..." },
+                              { key: 'new', q: "What communities would you like to join?", placeholder: "Groups you're curious about..." },
+                              { key: 'receive', q: "What have you received from community?", placeholder: "Support, belonging, growth..." },
+                              { key: 'voice', q: "How do you use your voice?", placeholder: "Advocacy, voting, speaking up..." },
+                              { key: 'bridge', q: "Do you bridge different communities?", placeholder: "Connecting groups, translating..." },
+                              { key: 'legacy', q: "What community legacy do you want to leave?", placeholder: "Long-term impact..." }
                             ],
                             health: [
                               { key: 'move', q: "How do you like to move?", placeholder: "Workouts, sports, dancing..." },
                               { key: 'fuel', q: "What makes your body feel good?", placeholder: "Foods, habits, routines..." },
                               { key: 'sleep', q: "How's your sleep?", placeholder: "Routine, quality, challenges..." },
-                              { key: 'energy', q: "What gives you energy?", placeholder: "Activities, foods, rest..." }
+                              { key: 'energy', q: "What gives you energy?", placeholder: "Activities, foods, rest..." },
+                              { key: 'goal', q: "What's a health goal?", placeholder: "Fitness, nutrition, wellness..." },
+                              { key: 'challenge', q: "What's your biggest health challenge?", placeholder: "Obstacles, conditions, habits..." },
+                              { key: 'routine', q: "Describe your morning routine", placeholder: "How you start your day..." },
+                              { key: 'habit', q: "What healthy habit are you building?", placeholder: "New practices..." },
+                              { key: 'break', q: "What unhealthy habit do you want to break?", placeholder: "Things to let go of..." },
+                              { key: 'body', q: "How's your relationship with your body?", placeholder: "Acceptance, struggles, growth..." },
+                              { key: 'checkup', q: "How do you stay on top of health?", placeholder: "Checkups, monitoring, awareness..." },
+                              { key: 'stress', q: "How does stress affect your health?", placeholder: "Physical symptoms, impact..." },
+                              { key: 'water', q: "How's your hydration?", placeholder: "Water intake, habits..." },
+                              { key: 'food', q: "What's your relationship with food?", placeholder: "Enjoyment, challenges, balance..." },
+                              { key: 'rest', q: "How do you rest and recover?", placeholder: "Recovery practices..." },
+                              { key: 'nature', q: "Do you spend time outdoors?", placeholder: "Fresh air, nature, sunlight..." },
+                              { key: 'support', q: "Who supports your health journey?", placeholder: "Doctors, trainers, partners..." },
+                              { key: 'age', q: "How do you think about aging?", placeholder: "Goals, concerns, acceptance..." },
+                              { key: 'best', q: "When do you feel your best physically?", placeholder: "Conditions, times, activities..." },
+                              { key: 'invest', q: "How do you invest in your health?", placeholder: "Time, money, attention..." }
                             ],
                             mentalHealth: [
                               { key: 'recharge', q: "How do you recharge?", placeholder: "Rest, solitude, activities..." },
                               { key: 'boundaries', q: "What boundaries matter to you?", placeholder: "Time, energy, space..." },
                               { key: 'support', q: "What supports your mental health?", placeholder: "Therapy, journaling, friends..." },
-                              { key: 'stress', q: "How do you handle stress?", placeholder: "Exercise, talking, nature..." }
+                              { key: 'stress', q: "How do you handle stress?", placeholder: "Exercise, talking, nature..." },
+                              { key: 'anxious', q: "What makes you anxious?", placeholder: "Triggers, situations, thoughts..." },
+                              { key: 'calm', q: "What calms you down?", placeholder: "Activities, people, practices..." },
+                              { key: 'mood', q: "How do you track your mood?", placeholder: "Journaling, apps, awareness..." },
+                              { key: 'therapy', q: "Have you tried therapy?", placeholder: "Experience, interest, thoughts..." },
+                              { key: 'medication', q: "Any thoughts on medication?", placeholder: "Experience, openness..." },
+                              { key: 'trigger', q: "What triggers difficult emotions?", placeholder: "Situations, people, thoughts..." },
+                              { key: 'cope', q: "What are your go-to coping strategies?", placeholder: "Healthy ways you manage..." },
+                              { key: 'talk', q: "Who can you talk to about hard things?", placeholder: "Safe people in your life..." },
+                              { key: 'self', q: "How's your self-talk?", placeholder: "Kind, critical, working on it..." },
+                              { key: 'down', q: "What do you do when you're feeling down?", placeholder: "Activities that help..." },
+                              { key: 'growth', q: "How has your mental health journey evolved?", placeholder: "Progress, setbacks, learning..." },
+                              { key: 'stigma', q: "How do you feel about mental health stigma?", placeholder: "Experiences, thoughts..." },
+                              { key: 'routine', q: "Do you have mental health routines?", placeholder: "Daily practices..." },
+                              { key: 'warning', q: "What are your warning signs?", placeholder: "Signals you're struggling..." },
+                              { key: 'joy', q: "What brings you genuine joy?", placeholder: "Simple pleasures..." },
+                              { key: 'proud', q: "What mental health progress are you proud of?", placeholder: "Growth and wins..." }
                             ],
+                          };
+                          
+                          // Function to generate AI prompt when all static prompts are answered
+                          const generateAIPrompt = async () => {
+                            if (!apiKey) return null;
+                            const areaName = area.name;
+                            const existingAnswers = Object.entries(structured).map(([k, v]) => v).filter(Boolean);
+                            try {
+                              const response = await fetch('https://api.anthropic.com/v1/messages', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+                                body: JSON.stringify({
+                                  model: 'claude-sonnet-4-20250514',
+                                  max_tokens: 150,
+                                  messages: [{ role: 'user', content: `Generate ONE unique, thoughtful question about someone's ${areaName} life area. They've already answered questions about: ${existingAnswers.join(', ')}. Ask something different and meaningful. Return ONLY the question text, nothing else. Keep it under 10 words.` }]
+                                })
+                              });
+                              const data = await response.json();
+                              return data.content?.[0]?.text?.trim();
+                            } catch (e) {
+                              return null;
+                            }
                           };
                           const questions = discoveryQs[areaKey] || [];
                           
@@ -10690,67 +10874,96 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                     {/* Current prompt question - show from questions array or use tempFormData.currentPromptIdx */}
                                     {(() => {
                                       const promptIdx = tempFormData[`promptIdx_${areaKey}`] || 0;
-                                      const currentQuestion = questions[promptIdx] || questions[0];
+                                      const aiPrompt = tempFormData[`aiPrompt_${areaKey}`];
+                                      const isGeneratingPrompt = tempFormData[`generatingPrompt_${areaKey}`];
+                                      
+                                      // Use AI prompt if we've cycled through all static ones, otherwise use static
+                                      const currentQuestion = aiPrompt 
+                                        ? { key: `ai_${Date.now()}`, q: aiPrompt, placeholder: "Your answer..." }
+                                        : (questions[promptIdx] || questions[0]);
+                                      
                                       const answeredKeys = Object.keys(structured).filter(k => structured[k]);
-                                      const hasAnsweredThisPrompt = currentQuestion && structured[currentQuestion.key];
                                       
                                       return (
                                         <>
                                           <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                            {currentQuestion?.q || 'TELL ME MORE'}
+                                            {isGeneratingPrompt ? 'Thinking of a question...' : (currentQuestion?.q || 'TELL ME MORE')}
                                           </div>
                                           
                                           {/* Input for current prompt */}
-                                          <div>
-                                            <input type="text" 
-                                              value={tempFormData.prompt || ''}
-                                              onChange={(e) => setTempFormData(prev => ({...prev, prompt: e.target.value}))}
-                                              placeholder={currentQuestion?.placeholder || "Share your thoughts..."}
-                                              onKeyDown={(e) => {
-                                                if (e.key === 'Enter' && tempFormData.prompt?.trim()) {
-                                                  setUserProfile(prev => ({
-                                                    ...prev,
-                                                    tendPreferences: {
-                                                      ...prev?.tendPreferences,
-                                                      structuredInfo: { 
-                                                        ...prev?.tendPreferences?.structuredInfo, 
-                                                        [areaKey]: { ...structured, [currentQuestion.key]: tempFormData.prompt }
+                                          {!isGeneratingPrompt && (
+                                            <div>
+                                              <input type="text" 
+                                                value={tempFormData.prompt || ''}
+                                                onChange={(e) => setTempFormData(prev => ({...prev, prompt: e.target.value}))}
+                                                placeholder={currentQuestion?.placeholder || "Share your thoughts..."}
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Enter' && tempFormData.prompt?.trim()) {
+                                                    const keyToUse = aiPrompt ? `ai_${Date.now()}` : currentQuestion.key;
+                                                    setUserProfile(prev => ({
+                                                      ...prev,
+                                                      tendPreferences: {
+                                                        ...prev?.tendPreferences,
+                                                        structuredInfo: { 
+                                                          ...prev?.tendPreferences?.structuredInfo, 
+                                                          [areaKey]: { ...structured, [keyToUse]: tempFormData.prompt }
+                                                        },
+                                                        // Also store the question text for AI prompts
+                                                        promptQuestions: {
+                                                          ...prev?.tendPreferences?.promptQuestions,
+                                                          [areaKey]: {
+                                                            ...prev?.tendPreferences?.promptQuestions?.[areaKey],
+                                                            [keyToUse]: currentQuestion.q
+                                                          }
+                                                        }
                                                       }
-                                                    }
-                                                  }));
-                                                  setTempFormData(prev => ({...prev, prompt: ''}));
-                                                  if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
-                                                }
-                                              }}
-                                              style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', boxSizing: 'border-box' }}
-                                            />
-                                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>
-                                          </div>
+                                                    }));
+                                                    setTempFormData(prev => ({...prev, prompt: '', [`aiPrompt_${areaKey}`]: null}));
+                                                    if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
+                                                  }
+                                                }}
+                                                style={{ width: '100%', padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem', boxSizing: 'border-box' }}
+                                              />
+                                              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>
+                                            </div>
+                                          )}
                                           
                                           {/* Try another prompt button */}
-                                          {questions.length > 1 && (
-                                            <button
-                                              onClick={() => {
-                                                const nextIdx = (promptIdx + 1) % questions.length;
-                                                setTempFormData(prev => ({...prev, [`promptIdx_${areaKey}`]: nextIdx, prompt: ''}));
-                                              }}
-                                              style={{ 
-                                                marginTop: '0.5rem',
-                                                padding: '0.4rem 0.75rem', 
-                                                border: '1px dashed var(--border)', 
-                                                borderRadius: '6px', 
-                                                backgroundColor: 'transparent', 
-                                                color: 'var(--text-muted)', 
-                                                fontSize: '0.75rem', 
-                                                cursor: 'pointer',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                gap: '0.35rem'
-                                              }}
-                                            >
-                                              <span>🔄</span> Try a different prompt
-                                            </button>
-                                          )}
+                                          <button
+                                            disabled={isGeneratingPrompt}
+                                            onClick={async () => {
+                                              const nextIdx = promptIdx + 1;
+                                              // If we've gone through all static prompts, generate AI one
+                                              if (nextIdx >= questions.length) {
+                                                setTempFormData(prev => ({...prev, [`generatingPrompt_${areaKey}`]: true, prompt: ''}));
+                                                const aiQ = await generateAIPrompt();
+                                                setTempFormData(prev => ({
+                                                  ...prev, 
+                                                  [`generatingPrompt_${areaKey}`]: false,
+                                                  [`aiPrompt_${areaKey}`]: aiQ || "What else would you like to share?",
+                                                  [`promptIdx_${areaKey}`]: nextIdx
+                                                }));
+                                              } else {
+                                                setTempFormData(prev => ({...prev, [`promptIdx_${areaKey}`]: nextIdx, [`aiPrompt_${areaKey}`]: null, prompt: ''}));
+                                              }
+                                            }}
+                                            style={{ 
+                                              marginTop: '0.5rem',
+                                              padding: '0.4rem 0.75rem', 
+                                              border: '1px dashed var(--border)', 
+                                              borderRadius: '6px', 
+                                              backgroundColor: 'transparent', 
+                                              color: 'var(--text-muted)', 
+                                              fontSize: '0.75rem', 
+                                              cursor: isGeneratingPrompt ? 'wait' : 'pointer',
+                                              display: 'flex',
+                                              alignItems: 'center',
+                                              gap: '0.35rem',
+                                              opacity: isGeneratingPrompt ? 0.5 : 1
+                                            }}
+                                          >
+                                            <span>{isGeneratingPrompt ? '⏳' : '🔄'}</span> {isGeneratingPrompt ? 'Generating...' : 'Try a different prompt'}
+                                          </button>
                                         </>
                                       );
                                     })()}
