@@ -632,26 +632,25 @@
     }
     
     // Get overall personalization summary
-    function getPersonalizationSummary(userProfile) {
-      const allReadiness = calculateAllDomainReadiness(userProfile);
+    function getPersonalizationSummary(userProfile, goals = [], weeklyHabits = [], journalEntries = {}) {
+      const allReadiness = calculateAllDomainReadiness(userProfile, goals, weeklyHabits, journalEntries);
       const domains = Object.values(allReadiness);
       
-      const richCount = domains.filter(d => d.level === 'Rich').length;
-      const goodCount = domains.filter(d => d.level === 'Good').length;
-      const someCount = domains.filter(d => d.level === 'Some').length;
-      const noneCount = domains.filter(d => d.level === 'None').length;
+      const aiReadyCount = domains.filter(d => d.tier === 'AI Ready').length;
+      const personalizableCount = domains.filter(d => d.tier === 'Personalizable').length;
+      const poolOnlyCount = domains.filter(d => d.tier === 'Pool Only').length;
       
-      const avgScore = domains.reduce((sum, d) => sum + d.score, 0) / domains.length;
+      const avgAiPct = domains.reduce((sum, d) => sum + d.aiPct, 0) / domains.length;
       
       return {
         allReadiness,
-        richCount,
-        goodCount,
-        someCount,
-        noneCount,
-        avgScore: Math.round(avgScore * 10) / 10,
+        aiReadyCount,
+        personalizableCount,
+        poolOnlyCount,
+        avgAiPct: Math.round(avgAiPct),
         totalDomains: domains.length,
-        personalizedDomains: domains.filter(d => d.canPersonalize).length
+        domainsWithAI: domains.filter(d => d.canGenerateAI).length,
+        domainsWithPersonalization: domains.filter(d => d.canPersonalize).length
       };
     }
 
@@ -1052,7 +1051,7 @@ Respond with ONLY the task text, nothing else.`,
             isPersonalized: false,
             isAIGenerated: false,
             isWeekend: isWeekend,
-            source: 'pool', // 'pool', 'pool-personalized', 'ai-generated'
+            source: 'pool', // 'pool', 'pool+personalized', 'ai'
           });
         }
       });
@@ -1079,19 +1078,19 @@ Respond with ONLY the task text, nothing else.`,
       
       console.log(`Tend personalization for ${domainReadiness.domainName}:`, {
         tier: domainReadiness.tier,
-        customPct: `${domainReadiness.customPct}%`,
-        personalizedPct: `${domainReadiness.personalizedPct}%`,
+        aiPct: `${domainReadiness.aiPct}%`,
         poolPct: `${domainReadiness.poolPct}%`,
-        dataPoints: domainReadiness.dataPoints.map(d => d.label),
-        capabilities: domainReadiness.capabilities
+        canGenerateAI: domainReadiness.canGenerateAI,
+        canPersonalize: domainReadiness.canPersonalize,
+        dataPoints: domainReadiness.dataPoints.map(d => d.label)
       });
       
-      // If no context for this domain at all, just return pool templates as-is
-      if (!domainReadiness.canPersonalize) {
+      // If no AI capability AND no personalization capability, just return pool templates as-is
+      if (!domainReadiness.canGenerateAI && !domainReadiness.canPersonalize) {
         console.log(`No ${domainReadiness.domainName} context - using pool templates only`);
         return baseTendies.map(t => ({
           ...t,
-          personalizationNote: `No ${domainReadiness.domainName.toLowerCase()} info yet - share details via tend chat!`
+          personalizationNote: `No ${domainReadiness.domainName.toLowerCase()} info yet - add goals or share details!`
         }));
       }
       
