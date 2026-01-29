@@ -6772,12 +6772,15 @@ This has been your year of growth and intention. What are you most proud of? Wha
           todaysTendies.every(t => t.domain === todaysTendies[0]?.domain);
         
         // Don't regenerate if: tendies are from today OR weekend tendies from Saturday are still valid
-        if (tendiesAreFromToday || weekendTendiesStillValid) {
-          if (!allSameDomain) {
-            // Need to regenerate due to domain mismatch
-          } else {
-            return; // Tendies are valid, don't regenerate
-          }
+        // AND they all have the same domain
+        if ((tendiesAreFromToday || weekendTendiesStillValid) && allSameDomain) {
+          return; // Tendies are valid, don't regenerate
+        }
+        
+        // Skip regeneration if a tend is already selected (prevent glitch on selection)
+        if (todaysTendies.some(t => t.selected || t.completed)) {
+          console.log('Tend already selected/completed, skipping regeneration');
+          return;
         }
         
         const previousDomain = todaysTendies[0]?.domain || null;
