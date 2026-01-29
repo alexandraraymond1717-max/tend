@@ -1432,7 +1432,7 @@ Respond with ONLY the task text, nothing else.`,
         const gaps = getGaps();
         const growthAreas = gaps.filter(g => g.gap >= 3);
         // Strengths: high importance AND consistency, but NOT already a growth area (gap < 3)
-        const strengths = gaps.filter(g => g.importance >= 7 && g.consistency >= 7 && g.gap < 3);
+        const strengths = gaps.filter(g => g.importance >= 6 && g.consistency >= 6 && g.gap < 3);
         const lowerPriority = gaps.filter(g => g.importance <= 5);
 
         return (
