@@ -4634,6 +4634,9 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
               flexPointsTracking={flexPointsTracking}
               setFlexPointsTracking={setFlexPointsTracking}
               goals={goals}
+              userProfile={userProfile}
+              setUserProfile={setUserProfile}
+              apiKey={apiKey}
               setAppMode={setAppMode}
               setMessages={setMessages}
               onSwitchMode={() => setAppMode('plan')}
@@ -5306,7 +5309,10 @@ Ready to try your first Daily Tend?
       onBack,
       setAppMode,
       setMessages,
-      goals
+      goals,
+      userProfile,
+      setUserProfile,
+      apiKey
     }) {
       const today = new Date();
       const currentMonth = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -5625,13 +5631,16 @@ This has been your year of growth and intention. What are you most proud of? Wha
               setJournalEntries={setJournalEntries}
               todaysTendies={todaysTendies}
               tendyHistory={tendyHistory}
+              userProfile={userProfile}
+              setUserProfile={setUserProfile}
+              apiKey={apiKey}
             />
           </div>
         </div>
       );
     }
     // ============ DAILY JOURNAL TAB ============
-    function DailyJournalTab({ vlqScores, journalEntries, setJournalEntries, todaysTendies, tendyHistory }) {
+    function DailyJournalTab({ vlqScores, journalEntries, setJournalEntries, todaysTendies, tendyHistory, userProfile, setUserProfile, apiKey }) {
       const today = new Date();
       const dateKey = today.toISOString().split('T')[0];
       const dateString = today.toLocaleDateString('en-US', { 
@@ -5639,6 +5648,13 @@ This has been your year of growth and intention. What are you most proud of? Wha
         month: 'long', 
         day: 'numeric' 
       });
+      
+      // Tend chat state
+      const [showTendChat, setShowTendChat] = useState(false);
+      const [tendChatMessages, setTendChatMessages] = useState([]);
+      const [tendChatInput, setTendChatInput] = useState('');
+      const [isTendChatTyping, setIsTendChatTyping] = useState(false);
+      const tendChatRef = useRef(null);
 
       // Load today's entry or create empty
       const todayEntry = journalEntries[dateKey] || { 
@@ -5663,6 +5679,128 @@ This has been your year of growth and intention. What are you most proud of? Wha
       // Get today's selected or completed tendy
       const selectedTendy = todaysTendies.find(t => t.selected || t.completed);
       const tendyCompleted = tendyHistory.find(t => t.date === dateKey && t.completed);
+      
+      // Get most recent tend if no tend selected today
+      const mostRecentTend = selectedTendy || tendyHistory.sort((a, b) => b.date.localeCompare(a.date))[0];
+      
+      // Scroll chat to bottom
+      useEffect(() => {
+        if (tendChatRef.current) {
+          tendChatRef.current.scrollTop = tendChatRef.current.scrollHeight;
+        }
+      }, [tendChatMessages]);
+      
+      // Send tend chat message
+      const sendTendChatMessage = async () => {
+        if (!tendChatInput.trim() || !apiKey) return;
+        
+        const userMessage = tendChatInput.trim();
+        setTendChatInput('');
+        setTendChatMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+        setIsTendChatTyping(true);
+        
+        const tendContext = mostRecentTend ? `
+Current/Recent Tend: "${mostRecentTend.text}"
+Life Area: ${mostRecentTend.domainName} ${mostRecentTend.domainIcon}
+Difficulty: ${mostRecentTend.minutes || mostRecentTend.points} minutes
+Status: ${mostRecentTend.completed ? 'Completed' : 'In progress'}
+Date: ${mostRecentTend.date}` : 'No tend selected yet';
+        
+        // Get journal context
+        const journalContext = todayEntry.gratitude || todayEntry.reflection ? `
+Today's journal:
+${todayEntry.gratitude ? `Gratitude: ${todayEntry.gratitude}` : ''}
+${todayEntry.reflection ? `Reflection: ${todayEntry.reflection}` : ''}` : '';
+
+        try {
+          const response = await fetch('https://api.anthropic.com/v1/messages', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'anthropic-version': '2023-06-01',
+              'anthropic-dangerous-direct-browser-access': 'true'
+            },
+            body: JSON.stringify({
+              model: 'claude-sonnet-4-20250514',
+              max_tokens: 500,
+              system: `You are a supportive wellness companion helping the user reflect on their daily tend (small wellness task).
+
+${tendContext}
+${journalContext}
+
+Your role:
+- Help them process how the tend went (or is going)
+- Celebrate their effort, not just completion
+- If they struggled, be compassionate and help them understand what got in the way
+- Connect the tend to their broader goals and life
+- Keep responses warm, concise (2-3 sentences usually), and conversational
+- If they share personal details about their life, you can note them with [LIFE_MAP: lifeArea | key | value] markers
+
+Don't be preachy or lecture them. Be a supportive friend.`,
+              messages: tendChatMessages.concat([{ role: 'user', content: userMessage }])
+            })
+          });
+          
+          const data = await response.json();
+          let assistantMessage = data.content?.[0]?.text || "I'm here to help you reflect on your tend.";
+          
+          // Parse LIFE_MAP markers
+          const lifeMapMatches = assistantMessage.matchAll(/\[LIFE_MAP:\s*([a-zA-Z]+)\s*\|\s*([^|]+)\s*\|\s*([^\]]+)\]/g);
+          for (const match of lifeMapMatches) {
+            const lifeArea = match[1].trim();
+            const key = match[2].trim();
+            const value = match[3].trim();
+            
+            if (VLQ_ORDER.includes(lifeArea)) {
+              setUserProfile(prev => {
+                const prefs = prev?.tendPreferences || {};
+                const existingInfo = prefs.structuredInfo?.[lifeArea] || {};
+                const existingValue = existingInfo[key] || '';
+                const newValue = existingValue ? `${existingValue}; ${value}` : value;
+                
+                return {
+                  ...prev,
+                  tendPreferences: {
+                    ...prefs,
+                    structuredInfo: {
+                      ...prefs.structuredInfo,
+                      [lifeArea]: {
+                        ...existingInfo,
+                        [key]: newValue
+                      }
+                    }
+                  }
+                };
+              });
+            }
+          }
+          
+          // Clean markers from displayed message
+          assistantMessage = assistantMessage.replace(/\[LIFE_MAP:\s*[^\]]+\]/g, '').trim();
+          
+          setTendChatMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+        } catch (error) {
+          console.error('Tend chat error:', error);
+          setTendChatMessages(prev => [...prev, { 
+            role: 'assistant', 
+            content: "Sorry, I had trouble responding. Feel free to try again!" 
+          }]);
+        }
+        
+        setIsTendChatTyping(false);
+      };
+      
+      // Open chat with initial greeting
+      const openTendChat = () => {
+        if (tendChatMessages.length === 0) {
+          const greeting = mostRecentTend 
+            ? `Hey! I see ${mostRecentTend.completed ? 'you completed' : "you're working on"} "${mostRecentTend.text}" — how's it going? I'm here to chat about it.`
+            : "Hey! I'm here to chat about your tends and how they're fitting into your life. What's on your mind?";
+          setTendChatMessages([{ role: 'assistant', content: greeting }]);
+        }
+        setShowTendChat(true);
+      };
 
       const tabStyles = {
         date: {
@@ -5719,12 +5857,172 @@ This has been your year of growth and intention. What are you most proud of? Wha
 
       return (
         <div>
+          {/* Tend Chat Modal */}
+          {showTendChat && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+            }}>
+              <div style={{
+                backgroundColor: 'var(--bg-card)',
+                borderRadius: '16px',
+                width: '90%',
+                maxWidth: '500px',
+                maxHeight: '80vh',
+                display: 'flex',
+                flexDirection: 'column',
+                overflow: 'hidden',
+              }}>
+                <div style={{
+                  padding: '1rem',
+                  borderBottom: '1px solid var(--border)',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}>
+                  <h3 style={{margin: 0, fontFamily: "'Fraunces', serif"}}>Chat About Your Tend</h3>
+                  <button
+                    onClick={() => setShowTendChat(false)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      fontSize: '1.5rem',
+                      cursor: 'pointer',
+                      color: 'var(--text-muted)',
+                    }}
+                  >×</button>
+                </div>
+                
+                <div 
+                  ref={tendChatRef}
+                  style={{
+                    flex: 1,
+                    overflowY: 'auto',
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.75rem',
+                  }}
+                >
+                  {tendChatMessages.map((msg, i) => (
+                    <div key={i} style={{
+                      alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                      backgroundColor: msg.role === 'user' ? 'var(--accent)' : 'var(--bg-main)',
+                      color: msg.role === 'user' ? 'white' : 'var(--text)',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '12px',
+                      maxWidth: '85%',
+                      fontSize: '0.9rem',
+                    }}>
+                      {msg.content}
+                    </div>
+                  ))}
+                  {isTendChatTyping && (
+                    <div style={{
+                      alignSelf: 'flex-start',
+                      backgroundColor: 'var(--bg-main)',
+                      padding: '0.75rem 1rem',
+                      borderRadius: '12px',
+                      fontSize: '0.9rem',
+                      color: 'var(--text-muted)',
+                    }}>
+                      <em>Thinking...</em>
+                    </div>
+                  )}
+                </div>
+                
+                <div style={{
+                  padding: '1rem',
+                  borderTop: '1px solid var(--border)',
+                  display: 'flex',
+                  gap: '0.5rem',
+                }}>
+                  <input
+                    type="text"
+                    value={tendChatInput}
+                    onChange={(e) => setTendChatInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendTendChatMessage()}
+                    placeholder="How did your tend go?"
+                    style={{
+                      flex: 1,
+                      padding: '0.75rem',
+                      borderRadius: '8px',
+                      border: '1px solid var(--border)',
+                      backgroundColor: 'var(--bg-main)',
+                      color: 'var(--text)',
+                      fontSize: '0.9rem',
+                    }}
+                  />
+                  <button
+                    onClick={sendTendChatMessage}
+                    disabled={!tendChatInput.trim() || isTendChatTyping}
+                    style={{
+                      padding: '0.75rem 1rem',
+                      borderRadius: '8px',
+                      border: 'none',
+                      backgroundColor: 'var(--accent)',
+                      color: 'white',
+                      cursor: tendChatInput.trim() && !isTendChatTyping ? 'pointer' : 'not-allowed',
+                      opacity: tendChatInput.trim() && !isTendChatTyping ? 1 : 0.5,
+                    }}
+                  >Send</button>
+                </div>
+              </div>
+            </div>
+          )}
+        
           <div style={tabStyles.date}>{dateString}</div>
+          
+          {/* Chat About Your Tend - Always visible */}
+          <div style={{
+            ...tabStyles.section,
+            padding: '1rem',
+            backgroundColor: 'var(--accent-light)',
+            borderRadius: '12px',
+            border: '1px solid var(--accent)',
+          }}>
+            <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+              <div>
+                <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>
+                  💬 Chat about your tend
+                </div>
+                <div style={{fontSize: '0.85rem', color: 'var(--text-muted)'}}>
+                  {mostRecentTend 
+                    ? `Reflect on "${mostRecentTend.text.substring(0, 40)}${mostRecentTend.text.length > 40 ? '...' : ''}"`
+                    : 'Talk through your wellness journey'
+                  }
+                </div>
+              </div>
+              <button
+                onClick={openTendChat}
+                style={{
+                  padding: '0.6rem 1rem',
+                  backgroundColor: 'var(--accent)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                  fontSize: '0.85rem',
+                }}
+              >
+                Start Chat
+              </button>
+            </div>
+          </div>
 
           {/* Tendy Reflection */}
           {selectedTendy && (
             <div style={tabStyles.section}>
-              <h3 style={tabStyles.sectionTitle}>Daily Tend Reflection</h3>
+              <h3 style={tabStyles.sectionTitle}>{selectedTendy.isWeekend ? 'Weekend' : 'Daily'} Tend Reflection</h3>
               <div style={tabStyles.tendyCard}>
                 <div style={{fontSize: '0.9rem', marginBottom: '0.75rem', color: 'var(--text)'}}>
                   {selectedTendy.text}
