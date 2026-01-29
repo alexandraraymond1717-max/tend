@@ -446,93 +446,92 @@
     };
     
     // Calculate personalization readiness for a specific life area
-    // SIMPLIFIED: Two decisions - (1) AI or Pool? (2) Can we personalize the pool template?
+    // AI can generate from ANY rich context - not just goals/habits
     function calculateDomainReadiness(domain, userProfile, goals = [], weeklyHabits = [], journalEntries = {}) {
       const prefs = userProfile?.tendPreferences || {};
       const fieldConfig = DOMAIN_PERSONALIZABLE_FIELDS[domain] || {};
       
-      // ========== GATHER ACTUAL DATA ==========
+      // ========== GATHER ALL CONTEXT ==========
       
-      // 1. Goals in this life area (MOST ACTIONABLE)
+      // 1. Goals in this life area (very actionable)
       const domainGoals = goals.filter(g => g.lifeArea === domain && !g.completed);
+      const hasGoals = domainGoals.length > 0;
       
-      // 2. Habits in this life area (ALSO HIGHLY ACTIONABLE)
+      // 2. Habits in this life area (very actionable)
       const domainHabits = weeklyHabits.filter(h => h.lifeArea === domain);
+      const hasHabits = domainHabits.length > 0;
       
       // 3. Structured info (names, places, specifics)
       const structuredInfo = prefs.structuredInfo?.[domain] || {};
       const filledFields = Object.entries(structuredInfo).filter(([_, v]) => v && v.trim());
       const hasNames = fieldConfig.nameField && structuredInfo[fieldConfig.nameField]?.trim();
+      const hasStructuredDetails = filledFields.length >= 1;
       
-      // 4. Life area notes (free-form details)
+      // 4. Life area notes (rich context for AI)
       const notes = prefs.lifeAreaNotes?.[domain] || '';
-      const hasDetailedNotes = notes.length > 30;
+      const hasNotes = notes.length > 20; // At least a sentence
+      const hasDetailedNotes = notes.length > 80; // A solid paragraph
       
-      // 5. Recent journal mentions (last 7 days)
+      // 5. Recent journal mentions (last 7 days - shows what's on their mind)
       const oneWeekAgo = new Date();
       oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-      const recentJournalMentions = Object.entries(journalEntries)
+      const recentJournals = Object.entries(journalEntries)
         .filter(([date, entry]) => {
           const entryDate = new Date(date);
           return entryDate >= oneWeekAgo && entry.lifeArea === domain;
-        }).length;
-      
-      // ========== DECISION 1: CAN WE GENERATE AI TENDS? ==========
-      // Requires: Goals or Habits (actionable things to base tends on)
-      
-      const hasGoals = domainGoals.length > 0;
-      const hasHabits = domainHabits.length > 0;
-      const canGenerateAI = hasGoals || hasHabits;
-      
-      // ========== DECISION 2: CAN WE PERSONALIZE POOL TEMPLATES? ==========
-      // Requires: Names, specific details, or detailed notes
-      
-      const hasSpecificDetails = filledFields.length >= 1;
-      const canPersonalize = hasNames || hasSpecificDetails || hasDetailedNotes;
+        });
+      const hasRecentJournal = recentJournals.length >= 1;
+      const hasMultipleJournals = recentJournals.length >= 3;
       
       // ========== CALCULATE AI PROBABILITY ==========
-      // Based on richness of actionable data
+      // AI can work with ANY rich context - goals/habits are just one source
       
       let aiPct = 0;
       
-      if (canGenerateAI) {
-        // Base: 40% if we have goals or habits
-        aiPct = 40;
-        
-        // +15% if we have both goals AND habits
-        if (hasGoals && hasHabits) aiPct += 15;
-        
-        // +10% if we also have personalizable details
-        if (canPersonalize) aiPct += 10;
-        
-        // +10% if we have detailed notes (more context for AI)
-        if (hasDetailedNotes) aiPct += 10;
-        
-        // +5% if recent journal activity (top of mind)
-        if (recentJournalMentions >= 2) aiPct += 5;
-        
-        // Cap at 80%
-        aiPct = Math.min(aiPct, 80);
-      }
+      // Goals are most actionable (+25%)
+      if (hasGoals) aiPct += 25;
+      
+      // Habits are very actionable (+20%)
+      if (hasHabits) aiPct += 20;
+      
+      // Detailed notes give AI lots to work with (+20% for detailed, +10% for basic)
+      if (hasDetailedNotes) aiPct += 20;
+      else if (hasNotes) aiPct += 10;
+      
+      // Names/specific details help personalize (+15%)
+      if (hasNames || hasStructuredDetails) aiPct += 15;
+      
+      // Recent journals show what's on their mind (+15% for multiple, +8% for one)
+      if (hasMultipleJournals) aiPct += 15;
+      else if (hasRecentJournal) aiPct += 8;
+      
+      // Cap at 85% - always some chance of pool variety
+      aiPct = Math.min(aiPct, 85);
       
       const poolPct = 100 - aiPct;
+      
+      // ========== DETERMINE CAPABILITIES ==========
+      
+      // Can generate AI if we have ANY meaningful context (20%+ means we have something)
+      const canGenerateAI = aiPct >= 20;
+      
+      // Can personalize pool templates if we have names/details/notes
+      const canPersonalize = hasNames || hasStructuredDetails || hasDetailedNotes || hasNotes;
       
       // ========== BUILD DISPLAY INFO ==========
       
       const dataPoints = [];
       const missing = [];
       
-      // What enables AI generation
       if (hasGoals) {
         dataPoints.push({
           type: 'goals',
           icon: '🎯',
-          label: `${domainGoals.length} active goal${domainGoals.length > 1 ? 's' : ''}`,
+          label: `${domainGoals.length} goal${domainGoals.length > 1 ? 's' : ''}`,
           detail: domainGoals[0].text.substring(0, 50) + (domainGoals[0].text.length > 50 ? '...' : ''),
-          impact: 'ai'
+          impact: 'ai',
+          boost: '+25%'
         });
-      } else {
-        missing.push({ type: 'goals', label: 'Set a goal', impact: 'Enables AI-generated tends' });
       }
       
       if (hasHabits) {
@@ -541,58 +540,72 @@
           icon: '🔄',
           label: `${domainHabits.length} habit${domainHabits.length > 1 ? 's' : ''}`,
           detail: domainHabits[0].text.substring(0, 50) + (domainHabits[0].text.length > 50 ? '...' : ''),
-          impact: 'ai'
+          impact: 'ai',
+          boost: '+20%'
         });
       }
       
-      // What enables personalization
+      if (hasNotes) {
+        dataPoints.push({
+          type: 'notes',
+          icon: '💬',
+          label: hasDetailedNotes ? 'Detailed notes' : 'Has notes',
+          detail: notes.substring(0, 50) + (notes.length > 50 ? '...' : ''),
+          impact: 'ai',
+          boost: hasDetailedNotes ? '+20%' : '+10%'
+        });
+      }
+      
       if (hasNames) {
         dataPoints.push({
           type: 'names',
           icon: '👤',
           label: 'Has names',
           detail: structuredInfo[fieldConfig.nameField].substring(0, 40),
-          impact: 'personalize'
+          impact: 'both',
+          boost: '+15%'
         });
-      } else if (fieldConfig.nameField && !canGenerateAI) {
-        missing.push({ type: 'names', label: 'Add names/people', impact: 'Enables personalized templates' });
-      }
-      
-      if (hasSpecificDetails) {
+      } else if (hasStructuredDetails) {
         dataPoints.push({
           type: 'details',
           icon: '📝',
           label: `${filledFields.length} detail${filledFields.length > 1 ? 's' : ''}`,
           detail: filledFields.slice(0, 2).map(([k, v]) => v).join(', ').substring(0, 50),
-          impact: 'personalize'
+          impact: 'both',
+          boost: '+15%'
         });
       }
       
-      if (hasDetailedNotes) {
-        dataPoints.push({
-          type: 'notes',
-          icon: '💬',
-          label: 'Has notes',
-          detail: notes.substring(0, 40) + '...',
-          impact: 'both'
-        });
-      }
-      
-      if (recentJournalMentions > 0) {
+      if (hasRecentJournal) {
         dataPoints.push({
           type: 'journal',
           icon: '📖',
-          label: `${recentJournalMentions} recent journal${recentJournalMentions > 1 ? 's' : ''}`,
+          label: `${recentJournals.length} recent journal${recentJournals.length > 1 ? 's' : ''}`,
           detail: 'In the last 7 days',
-          impact: 'boost'
+          impact: 'ai',
+          boost: hasMultipleJournals ? '+15%' : '+8%'
         });
+      }
+      
+      // What's missing - suggest the most impactful thing to add
+      if (aiPct < 50) {
+        if (!hasGoals) {
+          missing.push({ type: 'goals', label: 'Set a goal', impact: '+25% AI' });
+        } else if (!hasDetailedNotes && !hasNotes) {
+          missing.push({ type: 'notes', label: 'Add notes about this area', impact: '+10-20% AI' });
+        } else if (!hasHabits) {
+          missing.push({ type: 'habits', label: 'Add a habit', impact: '+20% AI' });
+        }
       }
       
       // Determine tier for display
       let tier, color;
-      if (canGenerateAI) {
+      if (aiPct >= 50) {
         tier = 'AI Ready';
         color = '#8FD4A0';
+      } else if (aiPct >= 20) {
+        tier = 'Some AI';
+        color = '#B8E0C8';
       } else if (canPersonalize) {
         tier = 'Personalizable';
         color = '#7EB3E0';
@@ -615,7 +628,7 @@
         // For backwards compatibility
         aiRatio: aiPct / 100,
         customPct: aiPct,
-        personalizedPct: 0, // No longer a separate probability
+        personalizedPct: 0,
         score: dataPoints.length,
         maxScore: 6,
         level: tier
@@ -637,6 +650,7 @@
       const domains = Object.values(allReadiness);
       
       const aiReadyCount = domains.filter(d => d.tier === 'AI Ready').length;
+      const someAICount = domains.filter(d => d.tier === 'Some AI').length;
       const personalizableCount = domains.filter(d => d.tier === 'Personalizable').length;
       const poolOnlyCount = domains.filter(d => d.tier === 'Pool Only').length;
       
@@ -645,6 +659,7 @@
       return {
         allReadiness,
         aiReadyCount,
+        someAICount,
         personalizableCount,
         poolOnlyCount,
         avgAiPct: Math.round(avgAiPct),
@@ -10141,38 +10156,37 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     </p>
                   </div>
                   
-                  {/* NEW: Simplified 2-Tier System */}
+                  {/* How Tends Get Generated */}
                   <div style={dashStyles.section}>
                     <h3 style={dashStyles.sectionTitle}>🤖 How Tends Get Generated (by Life Area)</h3>
                     
                     {/* Explanation */}
                     <div style={{padding: '1rem', backgroundColor: 'var(--bg-card)', borderRadius: '8px', marginBottom: '1rem'}}>
                       <p style={{fontSize: '0.85rem', color: 'var(--text)', marginBottom: '0.75rem', fontWeight: 500}}>
-                        Two-step process for each tend:
+                        The more we know about you, the better your tends:
                       </p>
                       <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem'}}>
                         <div style={{padding: '0.75rem', border: '1px solid var(--border)', borderRadius: '8px'}}>
-                          <div style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem'}}>Step 1: AI or Pool?</div>
-                          <div style={{display: 'flex', gap: '0.5rem', marginBottom: '0.5rem'}}>
-                            <span style={{padding: '0.2rem 0.5rem', backgroundColor: '#8FD4A0', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600}}>🤖 AI</span>
-                            <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Creates a unique tend from your goals/habits</span>
+                          <div style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem'}}>
+                            <span style={{padding: '0.2rem 0.5rem', backgroundColor: '#8FD4A0', borderRadius: '4px', marginRight: '0.5rem'}}>🤖 AI Generated</span>
                           </div>
-                          <div style={{display: 'flex', gap: '0.5rem'}}>
-                            <span style={{padding: '0.2rem 0.5rem', backgroundColor: '#E8E0D5', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 600}}>📋 Pool</span>
-                            <span style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Uses a template from our pool</span>
+                          <div style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem'}}>
+                            Creates unique tends based on everything we know — your goals, habits, notes, journal entries, and details.
                           </div>
-                          <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontStyle: 'italic'}}>
-                            AI requires: Goal or Habit in this life area
+                          <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>
+                            <strong>Boosts:</strong> Goals +25%, Habits +20%, Notes +10-20%, Details +15%, Journals +8-15%
                           </div>
                         </div>
                         <div style={{padding: '0.75rem', border: '1px solid var(--border)', borderRadius: '8px'}}>
-                          <div style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem'}}>Step 2: Personalize Pool Templates</div>
-                          <div style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem'}}>
-                            If using a pool template, we'll insert your specific details (names, places, etc.) when available.
+                          <div style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem'}}>
+                            <span style={{padding: '0.2rem 0.5rem', backgroundColor: '#E8E0D5', borderRadius: '4px', marginRight: '0.5rem'}}>📋 Pool Template</span>
+                            <span style={{padding: '0.2rem 0.5rem', backgroundColor: '#7EB3E0', borderRadius: '4px', fontSize: '0.7rem'}}>✨</span>
                           </div>
-                          <div style={{display: 'flex', gap: '0.5rem', alignItems: 'center'}}>
-                            <span style={{padding: '0.2rem 0.5rem', backgroundColor: '#7EB3E0', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600}}>✨</span>
-                            <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>= Has names/details to personalize with</span>
+                          <div style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.5rem'}}>
+                            Uses a template, then personalizes it with your names and details when available.
+                          </div>
+                          <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>
+                            ✨ = Can personalize (has names, details, or notes)
                           </div>
                         </div>
                       </div>
@@ -10239,26 +10253,27 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                             {/* Data points we have */}
                             {readiness.dataPoints.length > 0 ? (
                               <div style={{marginBottom: '0.5rem'}}>
-                                <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.25rem'}}>What we know:</div>
+                                <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.25rem'}}>What boosts AI %:</div>
                                 {readiness.dataPoints.map((dp, i) => (
                                   <div key={i} style={{
                                     fontSize: '0.75rem', 
                                     color: 'var(--text)', 
                                     display: 'flex', 
                                     gap: '0.25rem', 
-                                    alignItems: 'flex-start', 
+                                    alignItems: 'center', 
                                     marginBottom: '0.15rem',
                                     paddingLeft: '0.25rem',
-                                    borderLeft: dp.impact === 'ai' ? '2px solid #8FD4A0' : dp.impact === 'personalize' ? '2px solid #7EB3E0' : '2px solid var(--border)'
+                                    borderLeft: dp.impact === 'ai' || dp.impact === 'both' ? '2px solid #8FD4A0' : '2px solid #7EB3E0'
                                   }}>
                                     <span>{dp.icon}</span>
-                                    <span><strong>{dp.label}</strong> — {dp.detail}</span>
+                                    <span style={{flex: 1}}><strong>{dp.label}</strong></span>
+                                    {dp.boost && <span style={{fontSize: '0.65rem', color: '#8FD4A0', fontWeight: 600}}>{dp.boost}</span>}
                                   </div>
                                 ))}
                               </div>
                             ) : (
                               <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic'}}>
-                                No specific info yet
+                                No specific info yet — add notes, goals, or habits!
                               </div>
                             )}
                             
