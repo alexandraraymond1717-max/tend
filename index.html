@@ -1881,6 +1881,9 @@ Respond with ONLY the task text, nothing else.`,
           if (firebaseUser) {
             // Load user data from Firestore
             loadUserData(firebaseUser.uid);
+          } else {
+            // User logged out - reset state to prevent data leakage
+            setDataLoaded(false);
           }
         });
         return () => unsubscribe();
@@ -2075,7 +2078,8 @@ Respond with ONLY the task text, nothing else.`,
               setRevealed(true);
             }
           } else {
-            // New user - reset all state and initialize
+            // New user - reset ALL state to defaults
+            console.log('New user detected - resetting all state');
             setCurrentChatId(Date.now().toString());
             setUserProfile({ name: '', occupation: '', location: '', lifeStage: '', tendPreferences: {} });
             setMessages([]);
@@ -2096,10 +2100,30 @@ Respond with ONLY the task text, nothing else.`,
             setVlqStep(-1);
             setEvents([]);
             setGoals([]);
+            setNotes({});
+            setJournalEntries({});
+            setMonthlyReviews({});
+            setYearlyReflections({});
+            setSeasonIntentions({});
+            setWeeklyHabits([]);
+            setHabitCompletions({});
+            setTodaysTendies([]);
+            setTendyHistory([]);
+            setTendyPoints(0);
+            setTendyStreak(0);
+            setFlexPoints(0);
+            setFlexPointsTracking({});
+            setWeeklyCustomTendy(null);
+            setSavedConversations([]);
             setRevealed(false);
+            setPhase(PHASES.EXPLORE);
             setShowSettingsModal(false);
             setOnboardingStep(1);
             setOnboardingCompleted(false);
+            setCurrentOnboardingArea(null);
+            setSessionGreeted(false);
+            setExchangeCount(0);
+            setCurrentConversationType(null);
           }
           setDataLoaded(true);
         } catch (error) {
@@ -2693,7 +2717,7 @@ Type directly into the input fields on the left, or chat with me here about what
       const handleLogout = async () => {
         try {
           await auth.signOut();
-          // Reset all state
+          // Reset ALL state to defaults
           setVlqScores({
             family: { importance: null, consistency: null },
             partner: { importance: null, consistency: null },
@@ -2710,16 +2734,34 @@ Type directly into the input fields on the left, or chat with me here about what
           setVlqStep(-1);
           setEvents([]);
           setGoals([]);
-          setNotes('');
-          setSeasonIntentions({ winter: '', spring: '', summer: '', fall: '' });
+          setNotes({});
+          setJournalEntries({});
+          setMonthlyReviews({});
+          setYearlyReflections({});
+          setSeasonIntentions({});
           setWeeklyHabits([]);
-          setDailyHabits([]);
+          setHabitCompletions({});
+          setTodaysTendies([]);
+          setTendyHistory([]);
+          setTendyPoints(0);
+          setTendyStreak(0);
+          setFlexPoints(0);
+          setFlexPointsTracking({});
+          setWeeklyCustomTendy(null);
+          setSavedConversations([]);
           setRevealed(false);
           setPhase(PHASES.EXPLORE);
           setMessages([]);
           setChatHistory([]);
           setUserProfile({ name: '', occupation: '', location: '', lifeStage: '', tendPreferences: {} });
           setShowSettingsModal(false);
+          setOnboardingStep(1);
+          setOnboardingCompleted(false);
+          setCurrentOnboardingArea(null);
+          setSessionGreeted(false);
+          setExchangeCount(0);
+          setCurrentConversationType(null);
+          setCurrentChatId(null);
           setDataLoaded(false);
         } catch (error) {
           console.error('Error signing out:', error);
