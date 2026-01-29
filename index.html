@@ -699,20 +699,12 @@ Respond with ONLY the task text, nothing else.`,
     // Probability calculation for domain selection
     function calculateDomainProbabilities(vlqScores) {
       const epsilon = 0.01; // Minimum probability floor
-      const minImportance = 3; // Never select domains below this importance
       const weights = {};
       let totalWeight = 0;
 
       VLQ_ORDER.forEach(domain => {
         const scores = vlqScores[domain];
         const importance = scores?.importance || 5;
-        
-        // Skip domains below minimum importance threshold
-        if (importance < minImportance) {
-          weights[domain] = 0;
-          return;
-        }
-        
         const consistency = scores?.consistency || 5;
         const gap = Math.max(0, importance - consistency);
         
@@ -10025,7 +10017,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       <p style={{color: 'var(--text-muted)'}}>Complete VLQ to see probabilities</p>
                     )}
                     <p style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.75rem', fontStyle: 'italic'}}>
-                      Note: Domains with importance &lt; 3 have 0% chance. Yesterday's domain gets 0% (no repeats). Recent domains get 20% penalty per appearance in last 7 days.
+                      Note: Yesterday's domain gets 0% (no repeats). Recent domains get 20% penalty per appearance in last 7 days. Low importance = lower chance (but never 0%).
                     </p>
                   </div>
                   
