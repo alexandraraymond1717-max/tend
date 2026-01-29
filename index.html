@@ -6720,9 +6720,17 @@ This has been your year of growth and intention. What are you most proud of? Wha
       const hasApprovedCustom = weeklyCustomTendy?.status === 'approved' && 
                                 weeklyCustomTendy.weekOf === currentWeek &&
                                 customCompletionsRemaining > 0;
+      
+      // Ref to prevent regeneration loops
+      const isGeneratingTendies = useRef(false);
 
       // Check if we need to generate new tendies for today
       useEffect(() => {
+        // Skip if already generating
+        if (isGeneratingTendies.current) {
+          return;
+        }
+        
         // Skip if no VLQ scores yet
         if (!vlqScores || Object.keys(vlqScores).length === 0) {
           console.log('TendyView: No VLQ scores yet, skipping tend generation');
@@ -6786,20 +6794,28 @@ This has been your year of growth and intention. What are you most proud of? Wha
         const previousDomain = todaysTendies[0]?.domain || null;
         console.log('Generating new tendies - date mismatch, stale, old format, or domain issue. Previous domain:', previousDomain, isWeekend ? '(WEEKEND)' : '(weekday)');
         
+        // Set generating flag
+        isGeneratingTendies.current = true;
+        
         if (apiKey && userProfile) {
           // Use async personalized generation
           generatePersonalizedTendies(vlqScores, tendyHistory, previousDomain, userProfile, apiKey, goals, weeklyHabits, journalEntries)
-            .then(newTendies => setTodaysTendies(newTendies))
+            .then(newTendies => {
+              setTodaysTendies(newTendies);
+              isGeneratingTendies.current = false;
+            })
             .catch(err => {
               console.error('Personalization failed:', err);
               const newTendies = generateDailyTendies(vlqScores, tendyHistory, previousDomain);
               setTodaysTendies(newTendies);
+              isGeneratingTendies.current = false;
             });
         } else {
           const newTendies = generateDailyTendies(vlqScores, tendyHistory, previousDomain);
           setTodaysTendies(newTendies);
+          isGeneratingTendies.current = false;
         }
-      }, [today, vlqScores, todaysTendies.length, todaysTendies[0]?.date, todaysTendies[0]?.generatedAt]);
+      }, [today, vlqScores]);
 
       const selectedTendy = todaysTendies.find(t => t.selected);
       const completedToday = todaysTendies.find(t => t.completed);
