@@ -4867,6 +4867,7 @@ Ready to try your first Daily Tend?
                   goals={goals}
                   events={events}
                   todaysTendies={todaysTendies}
+                  tendyHistory={tendyHistory}
                   vlqScores={vlqScores}
                   vlqCompleted={vlqCompleted}
                   weeklyHabits={weeklyHabits}
@@ -5314,6 +5315,7 @@ Ready to try your first Daily Tend?
               goals={goals}
               events={events}
               todaysTendies={todaysTendies}
+              tendyHistory={tendyHistory}
               vlqScores={vlqScores}
               vlqCompleted={vlqCompleted}
               weeklyHabits={weeklyHabits}
@@ -9730,6 +9732,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       goals,
       events,
       todaysTendies,
+      tendyHistory,
       vlqScores,
       vlqCompleted,
       weeklyHabits,
@@ -9884,6 +9887,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             {/* Tabs */}
             <div style={dashStyles.tabs}>
               <button style={dashStyles.tab(activeTab === 'overview')} onClick={() => setActiveTab('overview')}>📊 Overview</button>
+              <button style={dashStyles.tab(activeTab === 'tendengine')} onClick={() => setActiveTab('tendengine')}>🎲 Tend Engine</button>
               <button style={dashStyles.tab(activeTab === 'vlq')} onClick={() => setActiveTab('vlq')}>📋 VLQ Scores</button>
               <button style={dashStyles.tab(activeTab === 'lifemap')} onClick={() => setActiveTab('lifemap')}>🗺️ Life Map</button>
               <button style={dashStyles.tab(activeTab === 'quiz')} onClick={() => setActiveTab('quiz')}>🌻 Gardener Quiz</button>
@@ -9946,6 +9950,281 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 </div>
               </>
             )}
+            
+            {/* Tend Engine Tab */}
+            {activeTab === 'tendengine' && (() => {
+              // Calculate probabilities
+              const baseProbabilities = vlqCompleted ? calculateDomainProbabilities(vlqScores) : {};
+              
+              // Get recent domain counts for penalty calculation
+              const today = getLocalDateString();
+              const recentDomainCounts = {};
+              VLQ_ORDER.forEach(d => recentDomainCounts[d] = 0);
+              
+              const tendyHistoryData = todaysTendies?.[0]?.date ? [] : []; // We'd need tendyHistory passed in
+              
+              // Calculate readiness for each domain
+              const allReadiness = calculateAllDomainReadiness(userProfile);
+              
+              // Get today's domain if tendies exist
+              const currentDomain = todaysTendies?.[0]?.domain;
+              
+              // Get templates for display
+              const templateDomain = currentDomain || 'health';
+              const domainTemplates = TENDY_TEMPLATES[templateDomain] || [];
+              
+              return (
+                <>
+                  {/* Domain Selection Probabilities */}
+                  <div style={dashStyles.section}>
+                    <h3 style={dashStyles.sectionTitle}>🎯 Life Area Selection Probabilities</h3>
+                    <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem'}}>
+                      Based on VLQ scores: importance × (1 + gap/5). Higher importance + bigger gap = higher chance of being selected.
+                    </p>
+                    {vlqCompleted ? (
+                      <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
+                        {VLQ_ORDER
+                          .map(domain => ({
+                            domain,
+                            prob: baseProbabilities[domain] || 0,
+                            importance: vlqScores[domain]?.importance || 5,
+                            consistency: vlqScores[domain]?.consistency || 5,
+                            gap: Math.max(0, (vlqScores[domain]?.importance || 5) - (vlqScores[domain]?.consistency || 5))
+                          }))
+                          .sort((a, b) => b.prob - a.prob)
+                          .map(({ domain, prob, importance, consistency, gap }) => (
+                            <div key={domain} style={{
+                              display: 'flex', 
+                              alignItems: 'center', 
+                              gap: '0.75rem',
+                              padding: '0.5rem 0.75rem',
+                              backgroundColor: domain === currentDomain ? 'var(--accent-light)' : 'var(--bg-card)',
+                              borderRadius: '8px',
+                              border: domain === currentDomain ? '2px solid var(--accent)' : '1px solid var(--border)'
+                            }}>
+                              <span style={{width: '24px'}}>{VLQ_DOMAINS[domain]?.icon}</span>
+                              <span style={{flex: 1, fontSize: '0.85rem', color: 'var(--text)'}}>{VLQ_DOMAINS[domain]?.name}</span>
+                              <span style={{fontSize: '0.75rem', color: 'var(--text-muted)', width: '80px'}}>
+                                {importance}|{consistency} (gap:{gap})
+                              </span>
+                              <div style={{width: '100px', height: '8px', backgroundColor: 'var(--border)', borderRadius: '4px', overflow: 'hidden'}}>
+                                <div style={{
+                                  width: `${prob * 100}%`,
+                                  height: '100%',
+                                  backgroundColor: prob > 0.15 ? '#8FD4A0' : prob > 0.08 ? '#F9D07A' : '#E8A090',
+                                  borderRadius: '4px'
+                                }}/>
+                              </div>
+                              <span style={{fontSize: '0.8rem', fontWeight: 600, width: '45px', textAlign: 'right', color: 'var(--accent)'}}>
+                                {(prob * 100).toFixed(1)}%
+                              </span>
+                            </div>
+                          ))}
+                      </div>
+                    ) : (
+                      <p style={{color: 'var(--text-muted)'}}>Complete VLQ to see probabilities</p>
+                    )}
+                    <p style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.75rem', fontStyle: 'italic'}}>
+                      Note: Domains with importance &lt; 3 have 0% chance. Yesterday's domain gets 0% (no repeats). Recent domains get 20% penalty per appearance in last 7 days.
+                    </p>
+                  </div>
+                  
+                  {/* Domain Readiness / AI Generation Probability */}
+                  <div style={dashStyles.section}>
+                    <h3 style={dashStyles.sectionTitle}>🤖 Personalization Readiness by Life Area</h3>
+                    <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem'}}>
+                      How likely each tend source is when a life area is selected. Based on info you've shared.
+                    </p>
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '0.75rem'}}>
+                      {VLQ_ORDER.map(domain => {
+                        const readiness = allReadiness[domain];
+                        const poolPct = readiness.aiRatio === 0 ? 100 : readiness.canPersonalize ? (1 - readiness.aiRatio) * 0.5 * 100 : (1 - readiness.aiRatio) * 100;
+                        const personalizedPct = readiness.canPersonalize && readiness.aiRatio < 1 ? (1 - readiness.aiRatio) * 0.5 * 100 : 0;
+                        const aiPct = readiness.aiRatio * 100;
+                        
+                        return (
+                          <div key={domain} style={{
+                            padding: '0.75rem',
+                            backgroundColor: domain === currentDomain ? 'var(--accent-light)' : 'var(--bg-card)',
+                            borderRadius: '8px',
+                            border: domain === currentDomain ? '2px solid var(--accent)' : '1px solid var(--border)'
+                          }}>
+                            <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem'}}>
+                              <span>{VLQ_DOMAINS[domain]?.icon}</span>
+                              <span style={{flex: 1, fontWeight: 500, fontSize: '0.9rem'}}>{VLQ_DOMAINS[domain]?.name}</span>
+                              <span style={{
+                                fontSize: '0.7rem',
+                                padding: '0.15rem 0.4rem',
+                                borderRadius: '4px',
+                                backgroundColor: readiness.color,
+                                color: '#000',
+                                fontWeight: 600
+                              }}>{readiness.level} ({readiness.score}/{readiness.maxScore})</span>
+                            </div>
+                            
+                            <div style={{display: 'flex', gap: '2px', height: '16px', borderRadius: '4px', overflow: 'hidden', marginBottom: '0.5rem'}}>
+                              {aiPct > 0 && (
+                                <div style={{width: `${aiPct}%`, backgroundColor: '#8FD4A0', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                  <span style={{fontSize: '0.6rem', fontWeight: 600}}>{aiPct.toFixed(0)}%</span>
+                                </div>
+                              )}
+                              {personalizedPct > 0 && (
+                                <div style={{width: `${personalizedPct}%`, backgroundColor: '#7EB3E0', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                  <span style={{fontSize: '0.6rem', fontWeight: 600}}>{personalizedPct.toFixed(0)}%</span>
+                                </div>
+                              )}
+                              {poolPct > 0 && (
+                                <div style={{width: `${poolPct}%`, backgroundColor: '#E8E0D5', display: 'flex', alignItems: 'center', justifyContent: 'center'}}>
+                                  <span style={{fontSize: '0.6rem', fontWeight: 600}}>{poolPct.toFixed(0)}%</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>
+                              {readiness.capabilities.length > 0 
+                                ? readiness.capabilities.map(c => c.label).join(', ')
+                                : 'No info shared yet'}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <div style={{display: 'flex', gap: '1rem', marginTop: '0.75rem', fontSize: '0.75rem'}}>
+                      <span><span style={{display: 'inline-block', width: '12px', height: '12px', backgroundColor: '#8FD4A0', borderRadius: '2px', marginRight: '4px'}}></span>AI Generated</span>
+                      <span><span style={{display: 'inline-block', width: '12px', height: '12px', backgroundColor: '#7EB3E0', borderRadius: '2px', marginRight: '4px'}}></span>Personalized Template</span>
+                      <span><span style={{display: 'inline-block', width: '12px', height: '12px', backgroundColor: '#E8E0D5', borderRadius: '2px', marginRight: '4px'}}></span>Pool Template</span>
+                    </div>
+                  </div>
+                  
+                  {/* Today's Tendies */}
+                  {todaysTendies?.length > 0 && (
+                    <div style={dashStyles.section}>
+                      <h3 style={dashStyles.sectionTitle}>📋 Today's Generated Tends</h3>
+                      <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
+                        {todaysTendies.map((tendy, idx) => (
+                          <div key={idx} style={{
+                            padding: '0.75rem',
+                            backgroundColor: tendy.selected ? 'var(--accent-light)' : 'var(--bg-card)',
+                            borderRadius: '8px',
+                            border: tendy.selected ? '2px solid var(--accent)' : '1px solid var(--border)'
+                          }}>
+                            <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem'}}>
+                              <span style={{
+                                fontSize: '0.7rem',
+                                padding: '0.15rem 0.4rem',
+                                borderRadius: '4px',
+                                backgroundColor: tendy.source === 'ai-generated' ? '#8FD4A0' : tendy.source === 'pool-personalized' ? '#7EB3E0' : '#E8E0D5',
+                                fontWeight: 600
+                              }}>{tendy.source || 'pool'}</span>
+                              <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>{tendy.minutes || tendy.points} min • {tendy.type}</span>
+                              {tendy.selected && <span style={{fontSize: '0.7rem', color: 'var(--accent)', fontWeight: 600}}>SELECTED</span>}
+                              {tendy.completed && <span style={{fontSize: '0.7rem', color: '#8FD4A0', fontWeight: 600}}>COMPLETED</span>}
+                            </div>
+                            <div style={{fontSize: '0.85rem', color: 'var(--text)'}}>{tendy.text}</div>
+                            {tendy.originalText && tendy.originalText !== tendy.text && (
+                              <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem', fontStyle: 'italic'}}>
+                                Original: {tendy.originalText}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Template Pool */}
+                  <div style={dashStyles.section}>
+                    <h3 style={dashStyles.sectionTitle}>📚 Template Pool: {VLQ_DOMAINS[templateDomain]?.name}</h3>
+                    <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem'}}>
+                      {domainTemplates.length} templates available. Grouped by difficulty and type.
+                    </p>
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1rem'}}>
+                      {[1, 3].map(diff => (
+                        <div key={diff}>
+                          <h4 style={{fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem', color: 'var(--text)'}}>
+                            Difficulty {diff} ({diff === 1 ? '5 min weekday' : '15/30/60 min'})
+                          </h4>
+                          {['action', 'reflective'].map(type => {
+                            const templates = domainTemplates.filter(t => t.difficulty === diff && t.type === type);
+                            return templates.length > 0 && (
+                              <div key={type} style={{marginBottom: '0.75rem'}}>
+                                <div style={{fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '0.25rem'}}>{type}</div>
+                                {templates.slice(0, 3).map((t, i) => (
+                                  <div key={i} style={{fontSize: '0.8rem', color: 'var(--text)', padding: '0.25rem 0', borderBottom: '1px solid var(--border)'}}>
+                                    {t.text}
+                                  </div>
+                                ))}
+                                {templates.length > 3 && (
+                                  <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', fontStyle: 'italic'}}>+{templates.length - 3} more</div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Gathered Context */}
+                  <div style={dashStyles.section}>
+                    <h3 style={dashStyles.sectionTitle}>🧠 Gathered Context (influences personalization)</h3>
+                    <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1rem'}}>
+                      {/* Life Area Notes */}
+                      <div>
+                        <h4 style={{fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem'}}>Life Area Notes</h4>
+                        {Object.entries(prefs.lifeAreaNotes || {}).filter(([_, v]) => v).length > 0 ? (
+                          Object.entries(prefs.lifeAreaNotes || {}).filter(([_, v]) => v).map(([area, note]) => (
+                            <div key={area} style={{fontSize: '0.8rem', marginBottom: '0.5rem', padding: '0.5rem', backgroundColor: 'var(--bg-card)', borderRadius: '6px'}}>
+                              <strong>{VLQ_DOMAINS[area]?.name}:</strong> {note.substring(0, 100)}{note.length > 100 ? '...' : ''}
+                            </div>
+                          ))
+                        ) : (
+                          <p style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>None yet</p>
+                        )}
+                      </div>
+                      
+                      {/* Preferences */}
+                      <div>
+                        <h4 style={{fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem'}}>Preferences</h4>
+                        {(prefs.preferences || []).length > 0 ? (
+                          (prefs.preferences || []).map((p, i) => (
+                            <div key={i} style={{fontSize: '0.8rem', marginBottom: '0.25rem'}}>• {p}</div>
+                          ))
+                        ) : (
+                          <p style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>None yet</p>
+                        )}
+                      </div>
+                      
+                      {/* Resources */}
+                      <div>
+                        <h4 style={{fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem'}}>Resources</h4>
+                        {(prefs.resources || []).length > 0 ? (
+                          (prefs.resources || []).map((r, i) => (
+                            <div key={i} style={{fontSize: '0.8rem', marginBottom: '0.25rem'}}>• {r}</div>
+                          ))
+                        ) : (
+                          <p style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>None yet</p>
+                        )}
+                      </div>
+                      
+                      {/* Context Items */}
+                      <div>
+                        <h4 style={{fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem'}}>Context Items</h4>
+                        {Object.entries(prefs.context || {}).filter(([_, v]) => v).length > 0 ? (
+                          Object.entries(prefs.context || {}).filter(([_, v]) => v).slice(0, 8).map(([key, val]) => (
+                            <div key={key} style={{fontSize: '0.8rem', marginBottom: '0.25rem'}}>
+                              <strong>{key.replace(/_/g, ' ')}:</strong> {val}
+                            </div>
+                          ))
+                        ) : (
+                          <p style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>None yet</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </>
+              );
+            })()}
             
             {/* VLQ Tab */}
             {activeTab === 'vlq' && (
