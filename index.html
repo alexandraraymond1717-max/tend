@@ -10081,13 +10081,21 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 <div style={dashStyles.section}>
                   <h3 style={dashStyles.sectionTitle}>🌱 How Tend Uses Your Data</h3>
                   <div style={{fontSize: '0.85rem', color: 'var(--text)', lineHeight: 1.6}}>
-                    <p style={{marginBottom: '0.75rem'}}><strong>VLQ Scores</strong> → Determines which life area appears in daily tends + used in chat to personalize guidance around your focus areas</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Life Map (structuredInfo)</strong> → Personalizes daily tends AND chat conversations with specific details about your life</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Chat Conversations</strong> → Personal details you share are automatically extracted to your Life Map to personalize future daily tends</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Tend Chats</strong> → Info shared when chatting about a daily tend is extracted to your Life Map for future personalization</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Journal Entries</strong> → Recent entries are used in chat context AND daily tend generation for mood-aware suggestions (if you're stressed, Tend suggests gentler activities)</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Goals & Habits</strong> → Used in daily tends AND chat to reference your commitments and track progress</p>
-                    <p style={{marginBottom: '0.75rem'}}><strong>Gardener Quiz</strong> → Generates your gardener type + tending style, which sets Tend's communication tone, celebration style, and how it supports you during setbacks</p>
+                    <p style={{marginBottom: '0.5rem', fontWeight: 500}}>For Daily Tends:</p>
+                    <p style={{marginBottom: '0.75rem', paddingLeft: '1rem', color: 'var(--text-muted)'}}>
+                      <strong>VLQ Scores</strong> → Picks which life area to focus on (higher importance + bigger gap = more likely)<br/>
+                      <strong>Goals</strong> (+25% AI) → AI creates tends based on what you're working toward<br/>
+                      <strong>Habits</strong> (+20% AI) → AI references your existing routines<br/>
+                      <strong>Notes</strong> (+10-20% AI) → AI uses your context to suggest things you wouldn't think of<br/>
+                      <strong>Profile Info & Names</strong> (+15% AI) → Personalizes templates with specific people/places<br/>
+                      <strong>Recent Journals</strong> (+8-15% AI) → AI knows what's on your mind this week
+                    </p>
+                    <p style={{marginBottom: '0.5rem', fontWeight: 500}}>For Chat:</p>
+                    <p style={{marginBottom: '0.75rem', paddingLeft: '1rem', color: 'var(--text-muted)'}}>
+                      <strong>All of the above</strong> → Chat knows your full context for personalized guidance<br/>
+                      <strong>Gardener Type</strong> → Sets communication tone and how Tend celebrates/supports you<br/>
+                      <strong>Chat History</strong> → Details you share are saved to personalize future tends
+                    </p>
                   </div>
                 </div>
               </>
