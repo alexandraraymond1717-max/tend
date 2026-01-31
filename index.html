@@ -5246,7 +5246,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
         // During onboarding steps 1-2 (life map and quiz), show insights WITHOUT chat panel
         if (!onboardingCompleted && (onboardingStep === 1 || onboardingStep === 2)) {
           return (
-            <div style={styles.container}>
+            <div style={{...styles.container, overflow: 'auto'}}>
               <header style={{...styles.header, justifyContent: 'space-between', alignItems: 'center', position: 'relative'}}>
                 <div style={{...styles.headerLeft, position: 'absolute', left: '1rem'}}>
                   <div style={styles.logo}>
@@ -5289,7 +5289,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                 </div>
               </header>
               
-              <main style={{...styles.main, gridTemplateColumns: '1fr', maxWidth: '800px', margin: '0 auto', padding: '0.5rem 1rem'}}>
+              <main style={{...styles.main, gridTemplateColumns: '1fr', maxWidth: '800px', margin: '0 auto', padding: '0.5rem 1rem', overflow: 'visible', height: 'auto'}}>
                 {/* Full width content - no chat panel during onboarding */}
                 <div style={{padding: '0'}}>
                   <InsightsView
@@ -11516,13 +11516,17 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 
                 return (
                   <div>
-                    {/* The Constellation */}
+                    {/* The Constellation - sticky when scrolling */}
                     <div style={{
+                      position: 'sticky',
+                      top: 0,
+                      zIndex: 50,
                       background: 'linear-gradient(180deg, #FDFBF7 0%, #F8F4EC 100%)',
                       borderRadius: '20px',
                       padding: '1.25rem 0.5rem',
                       marginBottom: '1rem',
                       border: '1px solid #EDE8DD',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
                     }}>
                       <svg width={width} height={height} style={{ display: 'block', margin: '0 auto' }}>
                         {/* Subtle decorative rings */}
@@ -13190,6 +13194,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
