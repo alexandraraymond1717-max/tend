@@ -5074,7 +5074,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
           }}>
             {/* Tendies - Featured option */}
             <button
-              onClick={() => setAppMode('tendy')}
+              onClick={() => { setAppMode('plan'); setCenterView(CENTER_VIEWS.TENDY); }}
               style={{
                 padding: '1.25rem 1.5rem',
                 backgroundColor: 'var(--accent-light)',
@@ -5107,7 +5107,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
             </button>
 
             <button
-              onClick={() => setAppMode('journal')}
+              onClick={() => { setAppMode('plan'); setCenterView(CENTER_VIEWS.JOURNAL); }}
               style={{
                 padding: '1.25rem 1.5rem',
                 backgroundColor: 'var(--bg-card)',
@@ -5121,14 +5121,14 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
               <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
                 <span style={{fontSize: '1.5rem'}}>📝</span>
                 <div>
-                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Journal Mode</div>
+                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Journal</div>
                   <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Reflect on your day</div>
                 </div>
               </div>
             </button>
 
             <button
-              onClick={() => setAppMode('insights')}
+              onClick={() => { setAppMode('plan'); setCenterView(CENTER_VIEWS.INSIGHTS); }}
               style={{
                 padding: '1.25rem 1.5rem',
                 backgroundColor: 'var(--bg-card)',
@@ -5182,7 +5182,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
             </button>
 
             <button
-              onClick={() => setAppMode('plan')}
+              onClick={() => { setAppMode('plan'); setCenterView(CENTER_VIEWS.CALENDAR); }}
               style={{
                 padding: '1.25rem 1.5rem',
                 backgroundColor: 'var(--bg-card)',
@@ -5196,8 +5196,8 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
               <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
                 <span style={{fontSize: '1.5rem'}}>🗓️</span>
                 <div>
-                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Plan & Design Mode</div>
-                  <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Shape your year</div>
+                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Calendar</div>
+                  <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>View your history and plan ahead</div>
                 </div>
               </div>
             </button>
@@ -5622,7 +5622,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                 {[
                   { id: CENTER_VIEWS.YEAR, label: 'Home' },
                   { id: CENTER_VIEWS.CALENDAR, label: 'Calendar' },
-                  { id: CENTER_VIEWS.INSIGHTS, label: 'Insights' },
+                  { id: CENTER_VIEWS.INSIGHTS, label: 'Life Map' },
                   { id: CENTER_VIEWS.TENDY, label: 'Daily Tend' },
                   { id: CENTER_VIEWS.JOURNAL, label: 'Journal' },
                 ].map(view => (
@@ -5632,18 +5632,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                       ...styles.viewButton, 
                       ...(centerView === view.id && styles.viewButtonActive)
                     }}
-                    onClick={() => {
-                      // For insights, tendy, journal - use appMode instead
-                      if (view.id === CENTER_VIEWS.INSIGHTS) {
-                        setAppMode('insights');
-                      } else if (view.id === CENTER_VIEWS.TENDY) {
-                        setAppMode('tendy');
-                      } else if (view.id === CENTER_VIEWS.JOURNAL) {
-                        setAppMode('journal');
-                      } else {
-                        setCenterView(view.id);
-                      }
-                    }}
+                    onClick={() => setCenterView(view.id)}
                   >
                     {view.label}
                   </button>
@@ -5669,6 +5658,76 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                   habitCompletions={habitCompletions}
                   setHabitCompletions={setHabitCompletions}
                 />
+              )}
+              {centerView === CENTER_VIEWS.INSIGHTS && (
+                <div style={{overflow: 'auto', maxHeight: 'calc(100vh - 140px)'}}>
+                  <InsightsView
+                    trends={calculateTrends()}
+                    vlqScores={vlqScores}
+                    flexPoints={flexPoints}
+                    userProfile={userProfile}
+                    setUserProfile={setUserProfile}
+                    goals={goals}
+                    setGoals={setGoals}
+                    weeklyHabits={weeklyHabits}
+                    setWeeklyHabits={setWeeklyHabits}
+                    onReassessVLQ={() => { setVlqStep(-1); setVlqCompleted(false); setAppMode(null); }}
+                    onAddGoal={() => setShowGoalModal(true)}
+                    onBack={() => setCenterView(CENTER_VIEWS.YEAR)}
+                    apiKey={apiKey}
+                    embedded={true}
+                  />
+                </div>
+              )}
+              {centerView === CENTER_VIEWS.TENDY && (
+                <div style={{overflow: 'auto', maxHeight: 'calc(100vh - 140px)'}}>
+                  <TendyView
+                    vlqScores={vlqScores}
+                    todaysTendies={todaysTendies}
+                    setTodaysTendies={setTodaysTendies}
+                    tendyHistory={tendyHistory}
+                    setTendyHistory={setTendyHistory}
+                    tendyPoints={tendyPoints}
+                    setTendyPoints={setTendyPoints}
+                    tendyStreak={tendyStreak}
+                    setTendyStreak={setTendyStreak}
+                    flexPoints={flexPoints}
+                    setFlexPoints={setFlexPoints}
+                    weeklyCustomTendy={weeklyCustomTendy}
+                    setWeeklyCustomTendy={setWeeklyCustomTendy}
+                    userProfile={userProfile}
+                    setUserProfile={setUserProfile}
+                    goals={goals}
+                    weeklyHabits={weeklyHabits}
+                    journalEntries={journalEntries}
+                    apiKey={apiKey}
+                    onBack={() => setCenterView(CENTER_VIEWS.YEAR)}
+                  />
+                </div>
+              )}
+              {centerView === CENTER_VIEWS.JOURNAL && (
+                <div style={{overflow: 'auto', maxHeight: 'calc(100vh - 140px)'}}>
+                  <JournalView 
+                    vlqScores={vlqScores}
+                    journalEntries={journalEntries}
+                    setJournalEntries={setJournalEntries}
+                    monthlyReviews={monthlyReviews}
+                    setMonthlyReviews={setMonthlyReviews}
+                    yearlyReflections={yearlyReflections}
+                    setYearlyReflections={setYearlyReflections}
+                    todaysTendies={todaysTendies}
+                    tendyHistory={tendyHistory}
+                    flexPoints={flexPoints}
+                    setFlexPoints={setFlexPoints}
+                    flexPointsTracking={flexPointsTracking}
+                    setFlexPointsTracking={setFlexPointsTracking}
+                    goals={goals}
+                    setAppMode={setAppMode}
+                    setMessages={setMessages}
+                    onSwitchMode={() => setCenterView(CENTER_VIEWS.YEAR)}
+                    onBack={() => setCenterView(CENTER_VIEWS.YEAR)}
+                  />
+                </div>
               )}
             </div>
 
@@ -13097,6 +13156,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
