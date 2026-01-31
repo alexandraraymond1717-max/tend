@@ -5356,31 +5356,28 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                   {/* Skip / Continue buttons */}
                   <div style={{ 
                     display: 'flex', 
-                    justifyContent: 'space-between', 
+                    justifyContent: onboardingStep === 2 ? 'space-between' : 'flex-end', 
                     marginTop: '1.5rem',
                     paddingTop: '1rem',
                     borderTop: '1px solid var(--border)'
                   }}>
-                    <button 
-                      onClick={() => {
-                        if (onboardingStep === 1) {
-                          setOnboardingStep(2);
-                        } else if (onboardingStep === 2) {
-                          setOnboardingStep(3);
-                        }
-                      }}
-                      style={{
-                        padding: '0.6rem 1.25rem',
-                        backgroundColor: 'transparent',
-                        border: '1px solid var(--border)',
-                        borderRadius: '8px',
-                        color: 'var(--text-muted)',
-                        fontSize: '0.85rem',
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Skip for now →
-                    </button>
+                    {/* Skip button - only for step 2 (Quiz) */}
+                    {onboardingStep === 2 && (
+                      <button 
+                        onClick={() => setOnboardingStep(3)}
+                        style={{
+                          padding: '0.6rem 1.25rem',
+                          backgroundColor: 'transparent',
+                          border: '1px solid var(--border)',
+                          borderRadius: '8px',
+                          color: 'var(--text-muted)',
+                          fontSize: '0.85rem',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Skip for now →
+                      </button>
+                    )}
                     <button 
                       onClick={() => {
                         if (onboardingStep === 1) {
