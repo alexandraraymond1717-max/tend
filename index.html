@@ -5258,61 +5258,51 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
           
           return (
             <div style={styles.container}>
-              <header style={styles.header}>
-                <div style={styles.headerLeft}>
-                  <div style={styles.logo}>
-                    <svg width="28" height="28" viewBox="0 0 80 80" fill="none">
-                      <path d="M40 70 L40 45" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round"/>
-                      <path d="M40 55 Q30 50 25 40 Q35 45 40 55" stroke="var(--accent)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-                      <path d="M40 45 Q50 38 55 28 Q45 35 40 45" stroke="var(--accent)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-                      <circle cx="40" cy="70" r="4" fill="none" stroke="var(--accent)" strokeWidth="2"/>
-                    </svg>
-                    <span style={styles.logoText}>tend</span>
+              <header style={{...styles.header, flexDirection: 'column', gap: '0.75rem', paddingBottom: '1rem'}}>
+                <div style={{display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center'}}>
+                  <div style={styles.headerLeft}>
+                    <div style={styles.logo}>
+                      <svg width="28" height="28" viewBox="0 0 80 80" fill="none">
+                        <path d="M40 70 L40 45" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round"/>
+                        <path d="M40 55 Q30 50 25 40 Q35 45 40 55" stroke="var(--accent)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                        <path d="M40 45 Q50 38 55 28 Q45 35 40 45" stroke="var(--accent)" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                        <circle cx="40" cy="70" r="4" fill="none" stroke="var(--accent)" strokeWidth="2"/>
+                      </svg>
+                      <span style={styles.logoText}>tend</span>
+                    </div>
+                  </div>
+                  <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                    <button 
+                      style={styles.settingsButton} 
+                      onClick={() => setShowSettingsModal(true)}
+                      title="Settings"
+                    >
+                      ⚙
+                    </button>
                   </div>
                 </div>
-                <p style={styles.tagline}>a space for designing your life with intention</p>
-                <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
-                  <button 
-                    style={styles.settingsButton} 
-                    onClick={() => setShowSettingsModal(true)}
-                    title="Settings"
-                  >
-                    ⚙
-                  </button>
-                </div>
+                {/* Progress bar in header */}
+                <OnboardingProgressBar 
+                  currentStep={onboardingStep}
+                  onStepClick={(step) => {
+                    if (step === 0) {
+                      setVlqStep(-1);
+                      setVlqCompleted(false);
+                      setAppMode(null);
+                    } else {
+                      setOnboardingStep(step);
+                      setSessionGreeted(false);
+                    }
+                  }}
+                  isStepComplete={isStepComplete}
+                  getProgress={getOnboardingProgress}
+                  vlqCompleted={vlqCompleted}
+                />
               </header>
               
               <main style={{...styles.main, gridTemplateColumns: '1fr', maxWidth: '800px', margin: '0 auto', padding: '1rem'}}>
                 {/* Full width content - no chat panel during onboarding */}
                 <div style={{padding: '1rem'}}>
-                  {/* Onboarding Progress Bar - STICKY */}
-                  <div style={{
-                    position: 'sticky',
-                    top: 0,
-                    zIndex: 100,
-                    backgroundColor: 'var(--bg-main)',
-                    paddingTop: '0.5rem',
-                    paddingBottom: '0.75rem',
-                    marginBottom: '0.5rem',
-                  }}>
-                    <OnboardingProgressBar 
-                      currentStep={onboardingStep}
-                      onStepClick={(step) => {
-                        if (step === 0) {
-                          // Go back to VLQ reassessment
-                          setVlqStep(-1);
-                          setVlqCompleted(false);
-                          setAppMode(null);
-                        } else {
-                          setOnboardingStep(step);
-                          setSessionGreeted(false);
-                        }
-                      }}
-                      isStepComplete={isStepComplete}
-                      getProgress={getOnboardingProgress}
-                      vlqCompleted={vlqCompleted}
-                    />
-                  </div>
                   
                   {/* Step explanation card */}
                   <div style={{
@@ -11557,7 +11547,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     {/* The Constellation - STICKY when scrolling through life areas */}
                     <div style={{
                       position: 'sticky',
-                      top: onboardingStep ? '80px' : '0',
+                      top: 0,
                       zIndex: 50,
                       background: 'linear-gradient(180deg, #FDFBF7 0%, #F8F4EC 100%)',
                       borderRadius: '20px',
@@ -13253,6 +13243,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
