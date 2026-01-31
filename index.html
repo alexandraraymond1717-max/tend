@@ -5657,6 +5657,9 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                   weeklyHabits={weeklyHabits}
                   habitCompletions={habitCompletions}
                   setHabitCompletions={setHabitCompletions}
+                  journalEntries={journalEntries}
+                  tendyHistory={tendyHistory}
+                  onNavigateToTend={() => setCenterView(CENTER_VIEWS.TENDY)}
                 />
               )}
               {centerView === CENTER_VIEWS.INSIGHTS && (
@@ -7084,7 +7087,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
     }
 
     // ============ MONTHLY VIEW ============
-    function MonthlyView({ events, selectedMonth, setSelectedMonth, revealed, onAddEvent, weeklyHabits, habitCompletions, setHabitCompletions }) {
+    function MonthlyView({ events, selectedMonth, setSelectedMonth, revealed, onAddEvent, weeklyHabits, habitCompletions, setHabitCompletions, journalEntries = {}, tendyHistory = [], onNavigateToTend }) {
       const year = 2026;
       const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
       const firstDayOfMonth = new Date(year, selectedMonth, 1).getDay();
@@ -7161,6 +7164,21 @@ This has been your year of growth and intention. What are you most proud of? Wha
         const fullDate = new Date(year, selectedMonth, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
         const dateKey = getDateKey(day);
         
+        // Get tend for this day
+        const dayTend = tendyHistory.find(t => t.date === dateKey);
+        
+        // Get journal entry for this day
+        const dayJournal = journalEntries[dateKey];
+        
+        // Check if this is today
+        const isToday = selectedMonth === currentMonth && day === today;
+        
+        // Check if date is in the future
+        const selectedDate = new Date(year, selectedMonth, day);
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
+        const isFuture = selectedDate > todayDate;
+        
         return (
           <div style={{
             position: 'fixed',
@@ -7216,6 +7234,168 @@ This has been your year of growth and intention. What are you most proud of? Wha
                 >×</button>
               </div>
               
+              {/* Daily Tend */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <h4 style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: '0.75rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <span>🌱</span> Daily Tend
+                </h4>
+                
+                {dayTend ? (
+                  <div style={{
+                    padding: '0.75rem',
+                    backgroundColor: dayTend.completed ? '#E8F5E9' : dayTend.skipped ? '#FFF3E0' : 'var(--bg-elevated)',
+                    borderRadius: '8px',
+                    border: `1px solid ${dayTend.completed ? '#A5D6A7' : dayTend.skipped ? '#FFCC80' : 'var(--border)'}`,
+                  }}>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.5rem' }}>
+                      {dayTend.text}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {dayTend.domainIcon} {dayTend.domainName}
+                      </span>
+                      <span style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 500,
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '10px',
+                        backgroundColor: dayTend.completed ? '#2E7D32' : dayTend.skipped ? '#E65100' : 'var(--text-muted)',
+                        color: 'white',
+                      }}>
+                        {dayTend.completed ? '✓ Completed' : dayTend.skipped ? 'Skipped' : 'Revealed'}
+                      </span>
+                    </div>
+                  </div>
+                ) : isFuture ? (
+                  <div style={{
+                    padding: '1rem',
+                    backgroundColor: 'var(--bg-elevated)',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.85rem',
+                  }}>
+                    Future date — tend not yet available
+                  </div>
+                ) : isToday ? (
+                  <div style={{
+                    padding: '1rem',
+                    backgroundColor: 'var(--accent-light)',
+                    border: '1px dashed var(--accent)',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                  }}>
+                    <div style={{ fontSize: '0.85rem', color: 'var(--text)', marginBottom: '0.5rem' }}>
+                      No tend revealed yet today
+                    </div>
+                    {onNavigateToTend && (
+                      <button 
+                        onClick={() => { onClose(); onNavigateToTend(); }}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          backgroundColor: 'var(--accent)',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '6px',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Go to Daily Tend →
+                      </button>
+                    )}
+                  </div>
+                ) : (
+                  <div style={{
+                    padding: '1rem',
+                    backgroundColor: 'var(--bg-elevated)',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.85rem',
+                  }}>
+                    No tend recorded for this day
+                  </div>
+                )}
+              </div>
+              
+              {/* Journal Entry */}
+              <div style={{ marginBottom: '1.25rem' }}>
+                <h4 style={{
+                  fontSize: '0.75rem',
+                  fontWeight: 600,
+                  color: 'var(--text-muted)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  marginBottom: '0.75rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem'
+                }}>
+                  <span>📝</span> Journal
+                </h4>
+                
+                {dayJournal && dayJournal.tendReflection ? (
+                  <div style={{
+                    padding: '0.75rem',
+                    backgroundColor: 'var(--bg-elevated)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--border)',
+                  }}>
+                    <div style={{ 
+                      fontSize: '0.85rem', 
+                      color: 'var(--text)', 
+                      lineHeight: 1.5,
+                      whiteSpace: 'pre-wrap'
+                    }}>
+                      {dayJournal.tendReflection}
+                    </div>
+                    {dayJournal.savedAt && (
+                      <div style={{ 
+                        fontSize: '0.7rem', 
+                        color: 'var(--text-muted)', 
+                        marginTop: '0.5rem',
+                        textAlign: 'right'
+                      }}>
+                        Saved {new Date(dayJournal.savedAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                      </div>
+                    )}
+                  </div>
+                ) : isFuture ? (
+                  <div style={{
+                    padding: '1rem',
+                    backgroundColor: 'var(--bg-elevated)',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.85rem',
+                  }}>
+                    Future date
+                  </div>
+                ) : (
+                  <div style={{
+                    padding: '1rem',
+                    backgroundColor: 'var(--bg-elevated)',
+                    borderRadius: '8px',
+                    textAlign: 'center',
+                    color: 'var(--text-muted)',
+                    fontSize: '0.85rem',
+                  }}>
+                    No journal entry for this day
+                  </div>
+                )}
+              </div>
+              
               {/* Habits */}
               {weeklyHabits && weeklyHabits.length > 0 && (
                 <div style={{ marginBottom: '1.25rem' }}>
@@ -7225,8 +7405,13 @@ This has been your year of growth and intention. What are you most proud of? Wha
                     color: 'var(--text-muted)',
                     textTransform: 'uppercase',
                     letterSpacing: '0.05em',
-                    marginBottom: '0.75rem'
-                  }}>Habits</h4>
+                    marginBottom: '0.75rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem'
+                  }}>
+                    <span>🔄</span> Habits
+                  </h4>
                   {weeklyHabits.map(habit => {
                     const completed = isHabitCompleted(dateKey, habit.id);
                     return (
@@ -7238,9 +7423,11 @@ This has been your year of growth and intention. What are you most proud of? Wha
                           justifyContent: 'space-between',
                           padding: '0.6rem 0',
                           borderBottom: '1px solid var(--border)',
-                          cursor: 'pointer'
+                          cursor: isFuture ? 'default' : 'pointer',
+                          opacity: isFuture ? 0.5 : 1,
                         }}
                         onClick={(e) => {
+                          if (isFuture) return;
                           e.stopPropagation();
                           toggleHabit(dateKey, habit.id);
                         }}
@@ -7280,14 +7467,14 @@ This has been your year of growth and intention. What are you most proud of? Wha
                 </div>
               )}
               
-              {/* Events for this specific day - placeholder */}
-              {totalHabits === 0 && (
+              {/* Empty state */}
+              {totalHabits === 0 && !dayTend && !dayJournal && (
                 <p style={{
                   fontSize: '0.9rem',
                   color: 'var(--text-muted)',
                   textAlign: 'center',
-                  padding: '2rem 0'
-                }}>No habits set yet. Add some in the Weekly or Daily tabs!</p>
+                  padding: '1rem 0'
+                }}>Nothing recorded for this day yet.</p>
               )}
             </div>
           </div>
@@ -13228,6 +13415,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
