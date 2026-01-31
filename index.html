@@ -149,7 +149,7 @@
       },
     };
 
-    const VLQ_ORDER = ['family', 'partner', 'friendships', 'career', 'education', 'recreation', 'spirituality', 'community', 'health', 'mentalHealth'];
+    const VLQ_ORDER = ['family', 'partner', 'friendships', 'career', 'education', 'recreation', 'spirituality', 'community', 'health', 'finances', 'mentalHealth'];
 
     // Unique ID generator
     let idCounter = 0;
@@ -3486,16 +3486,18 @@ Time to complete your first daily tend!
         }
       }, [vlqCompleted, sessionGreeted, onboardingCompleted, onboardingStep, messages.length]);
 
-      // Auto-set currentOnboardingArea when in step 1 and it's not set
+      // Auto-set currentOnboardingArea ONLY on initial entry to step 1 (not when user closes)
+      const [hasAutoSetArea, setHasAutoSetArea] = useState(false);
       useEffect(() => {
-        if (vlqCompleted && !onboardingCompleted && onboardingStep === 1 && !currentOnboardingArea) {
+        if (vlqCompleted && !onboardingCompleted && onboardingStep === 1 && !currentOnboardingArea && !hasAutoSetArea) {
           const focusAreas = getFocusAreas();
           if (focusAreas.length > 0) {
             console.log('Auto-setting first focus area:', focusAreas[0]);
             setCurrentOnboardingArea(focusAreas[0]);
+            setHasAutoSetArea(true);
           }
         }
-      }, [vlqCompleted, onboardingCompleted, onboardingStep, currentOnboardingArea]);
+      }, [vlqCompleted, onboardingCompleted, onboardingStep, currentOnboardingArea, hasAutoSetArea]);
 
       // Track view/tab for system prompt context (no auto-messages)
 
@@ -11772,10 +11774,13 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       </div>
                       
                       {(() => {
-                        // Categorize life areas
-                        const focusAreas = [];
+                        // Categorize life areas with new logic:
+                        // Back Burner: importance ≤ 4
+                        // Strengths: importance ≥ 5 AND gap < 3 (sorted by importance desc)
+                        // Focus Areas: importance ≥ 5 AND gap ≥ 3 (sorted by gap desc)
+                        const backBurner = [];
                         const strengths = [];
-                        const exploring = [];
+                        const focusAreas = [];
                         
                         VLQ_ORDER.forEach(areaKey => {
                           const scores = vlqScores[areaKey] || {};
@@ -11790,19 +11795,21 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                           
                           const areaData = { areaKey, importance, consistency, gap, areaGoals, areaHabits, hasLifeMapInfo, notes, structured };
                           
-                          if (gap >= 3 || (importance >= 6 && gap >= 2)) {
+                          if (importance <= 4) {
+                            backBurner.push(areaData);
+                          } else if (gap >= 3) {
+                            // importance >= 5 AND gap >= 3
                             focusAreas.push(areaData);
-                          } else if (importance >= 6 && consistency >= 6) {
+                          } else {
+                            // importance >= 5 AND gap < 3
                             strengths.push(areaData);
-                          } else if (importance >= 4 || areaGoals.length > 0 || areaHabits.length > 0 || hasLifeMapInfo) {
-                            exploring.push(areaData);
                           }
                         });
                         
-                        // Sort each group by importance desc
+                        // Sort each group
+                        backBurner.sort((a, b) => b.importance - a.importance);
+                        strengths.sort((a, b) => b.importance - a.importance);
                         focusAreas.sort((a, b) => b.gap - a.gap);
-                        strengths.sort((a, b) => b.consistency - a.consistency);
-                        exploring.sort((a, b) => b.importance - a.importance);
                         
                         const renderAreaCard = (areaData) => {
                           const { areaKey, importance, consistency, gap, areaGoals, areaHabits, hasLifeMapInfo, notes, structured } = areaData;
@@ -12122,21 +12129,45 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                     );
                                   })()}
                                   
-                                  {/* 1. Goal */}
+                                  {/* 1. Goals */}
                                   <div style={{ marginTop: '0.75rem' }}>
                                     <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                      ADD A GOAL
+                                      {areaGoals.length > 0 ? 'YOUR GOALS' : 'ADD A GOAL'}
                                     </div>
                                     
+                                    {/* Show existing goals */}
+                                    {areaGoals.length > 0 && (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                        {areaGoals.map(goal => (
+                                          <div key={goal.id} style={{ 
+                                            display: 'flex', 
+                                            justifyContent: 'space-between', 
+                                            alignItems: 'center',
+                                            padding: '0.5rem 0.75rem', 
+                                            backgroundColor: 'var(--bg-elevated)', 
+                                            borderRadius: '8px',
+                                            border: '1px solid var(--border)'
+                                          }}>
+                                            <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>🎯 {goal.text}</span>
+                                            <button 
+                                              onClick={() => setGoals(prev => prev.filter(g => g.id !== goal.id))}
+                                              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', padding: '0.25rem' }}
+                                            >×</button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    
+                                    {/* Add another goal input */}
                                     <div>
                                       <input type="text" 
-                                        value={tempFormData.newGoal || ''}
-                                        onChange={(e) => setTempFormData(prev => ({...prev, newGoal: e.target.value}))}
-                                        placeholder="What do you want to accomplish?"
+                                        value={tempFormData[`newGoal_${areaKey}`] || ''}
+                                        onChange={(e) => setTempFormData(prev => ({...prev, [`newGoal_${areaKey}`]: e.target.value}))}
+                                        placeholder={areaGoals.length > 0 ? "Add another goal..." : "What do you want to accomplish?"}
                                         onKeyDown={(e) => {
-                                          if (e.key === 'Enter' && tempFormData.newGoal?.trim()) {
-                                            setGoals(prev => [...prev, { id: Date.now().toString(), text: tempFormData.newGoal.trim(), lifeArea: areaKey, completed: false }]);
-                                            setTempFormData(prev => ({...prev, newGoal: ''}));
+                                          if (e.key === 'Enter' && tempFormData[`newGoal_${areaKey}`]?.trim()) {
+                                            setGoals(prev => [...prev, { id: Date.now().toString(), text: tempFormData[`newGoal_${areaKey}`].trim(), lifeArea: areaKey, completed: false }]);
+                                            setTempFormData(prev => ({...prev, [`newGoal_${areaKey}`]: ''}));
                                             if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
                                           }
                                         }}
@@ -12146,40 +12177,66 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                     </div>
                                   </div>
                                   
-                                  {/* 2. Weekly Habit */}
+                                  {/* 2. Weekly Habits */}
                                   <div style={{ marginTop: '0.75rem' }}>
                                     <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                      ADD A WEEKLY HABIT
+                                      {areaHabits.length > 0 ? 'YOUR WEEKLY HABITS' : 'ADD A WEEKLY HABIT'}
                                     </div>
                                     
+                                    {/* Show existing habits */}
+                                    {areaHabits.length > 0 && (
+                                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                        {areaHabits.map(habit => (
+                                          <div key={habit.id} style={{ 
+                                            display: 'flex', 
+                                            justifyContent: 'space-between', 
+                                            alignItems: 'center',
+                                            padding: '0.5rem 0.75rem', 
+                                            backgroundColor: 'var(--bg-elevated)', 
+                                            borderRadius: '8px',
+                                            border: '1px solid var(--border)'
+                                          }}>
+                                            <span style={{ fontSize: '0.85rem', color: 'var(--text)' }}>
+                                              🔄 {habit.text} <span style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>({habit.frequency}x/wk)</span>
+                                            </span>
+                                            <button 
+                                              onClick={() => setWeeklyHabits(prev => prev.filter(h => h.id !== habit.id))}
+                                              style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', padding: '0.25rem' }}
+                                            >×</button>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
+                                    
+                                    {/* Add another habit input */}
                                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                       <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                                         <input type="text" 
-                                          value={tempFormData.newHabit || ''}
-                                          onChange={(e) => setTempFormData(prev => ({...prev, newHabit: e.target.value}))}
-                                          placeholder="What will you do regularly?"
+                                          value={tempFormData[`newHabit_${areaKey}`] || ''}
+                                          onChange={(e) => setTempFormData(prev => ({...prev, [`newHabit_${areaKey}`]: e.target.value}))}
+                                          placeholder={areaHabits.length > 0 ? "Add another habit..." : "What will you do regularly?"}
                                           onKeyDown={(e) => {
-                                            if (e.key === 'Enter' && tempFormData.newHabit?.trim()) {
-                                              const freq = parseInt(tempFormData.habitFreq) || 3;
+                                            if (e.key === 'Enter' && tempFormData[`newHabit_${areaKey}`]?.trim()) {
+                                              const freq = parseInt(tempFormData[`habitFreq_${areaKey}`]) || 3;
                                               // Auto-link to first goal if user didn't select one
-                                              const linkedGoalId = tempFormData.linkedGoal || (areaGoals.length > 0 ? areaGoals[0].id : null);
+                                              const linkedGoalId = tempFormData[`linkedGoal_${areaKey}`] || (areaGoals.length > 0 ? areaGoals[0].id : null);
                                               setWeeklyHabits(prev => [...prev, { 
                                                 id: Date.now().toString(), 
-                                                text: tempFormData.newHabit.trim(), 
+                                                text: tempFormData[`newHabit_${areaKey}`].trim(), 
                                                 lifeArea: areaKey, 
                                                 frequency: freq, 
                                                 color: area.color,
                                                 goalId: linkedGoalId
                                               }]);
-                                              setTempFormData(prev => ({...prev, newHabit: '', habitFreq: '', linkedGoal: ''}));
+                                              setTempFormData(prev => ({...prev, [`newHabit_${areaKey}`]: '', [`habitFreq_${areaKey}`]: '', [`linkedGoal_${areaKey}`]: ''}));
                                               if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
                                             }
                                           }}
                                           style={{ flex: 1, padding: '0.6rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem' }}
                                         />
                                         <select 
-                                          value={tempFormData.habitFreq || '3'}
-                                          onChange={(e) => setTempFormData(prev => ({...prev, habitFreq: e.target.value}))}
+                                          value={tempFormData[`habitFreq_${areaKey}`] || '3'}
+                                          onChange={(e) => setTempFormData(prev => ({...prev, [`habitFreq_${areaKey}`]: e.target.value}))}
                                           style={{ padding: '0.6rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text)', fontSize: '0.85rem' }}
                                         >
                                           {[1,2,3,4,5,6,7].map(n => <option key={n} value={n}>{n}x/wk</option>)}
@@ -12189,8 +12246,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                       {/* Link to goal dropdown - show during onboarding or if there are goals */}
                                       {areaGoals.length > 0 && (
                                         <select 
-                                          value={tempFormData.linkedGoal || (areaGoals.length === 1 ? areaGoals[0].id : '')}
-                                          onChange={(e) => setTempFormData(prev => ({...prev, linkedGoal: e.target.value}))}
+                                          value={tempFormData[`linkedGoal_${areaKey}`] || (areaGoals.length === 1 ? areaGoals[0].id : '')}
+                                          onChange={(e) => setTempFormData(prev => ({...prev, [`linkedGoal_${areaKey}`]: e.target.value}))}
                                           style={{ padding: '0.5rem 0.75rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'white', color: 'var(--text-muted)', fontSize: '0.8rem' }}
                                         >
                                           {areaGoals.length === 1 ? (
@@ -12216,6 +12273,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                       const promptIdx = tempFormData[`promptIdx_${areaKey}`] || 0;
                                       const aiPrompt = tempFormData[`aiPrompt_${areaKey}`];
                                       const isGeneratingPrompt = tempFormData[`generatingPrompt_${areaKey}`];
+                                      const promptQuestions = prefs.promptQuestions?.[areaKey] || {};
                                       
                                       // Use AI prompt if we've cycled through all static ones, otherwise use static
                                       const currentQuestion = aiPrompt 
@@ -12224,21 +12282,80 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                       
                                       const answeredKeys = Object.keys(structured).filter(k => structured[k]);
                                       
+                                      // Get question text for an answer key
+                                      const getQuestionText = (key) => {
+                                        // First check if we have a stored question for this key
+                                        if (promptQuestions[key]) return promptQuestions[key];
+                                        // Otherwise find it in the questions array
+                                        const q = questions.find(q => q.key === key);
+                                        return q?.q || key;
+                                      };
+                                      
                                       return (
                                         <>
+                                          {/* Show existing answers */}
+                                          {answeredKeys.length > 0 && (
+                                            <>
+                                              <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
+                                                YOUR ANSWERS
+                                              </div>
+                                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
+                                                {answeredKeys.map(key => (
+                                                  <div key={key} style={{ 
+                                                    padding: '0.5rem 0.75rem', 
+                                                    backgroundColor: 'var(--bg-elevated)', 
+                                                    borderRadius: '8px',
+                                                    border: '1px solid var(--border)'
+                                                  }}>
+                                                    <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.25rem' }}>
+                                                      {getQuestionText(key)}
+                                                    </div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                                      <span style={{ fontSize: '0.85rem', color: 'var(--text)', flex: 1 }}>{structured[key]}</span>
+                                                      <button 
+                                                        onClick={() => {
+                                                          const newStructured = { ...structured };
+                                                          delete newStructured[key];
+                                                          setUserProfile(prev => ({
+                                                            ...prev,
+                                                            tendPreferences: {
+                                                              ...prev?.tendPreferences,
+                                                              structuredInfo: { 
+                                                                ...prev?.tendPreferences?.structuredInfo, 
+                                                                [areaKey]: newStructured
+                                                              }
+                                                            }
+                                                          }));
+                                                        }}
+                                                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', fontSize: '0.8rem', padding: '0.25rem', marginLeft: '0.5rem' }}
+                                                      >×</button>
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </>
+                                          )}
+                                          
                                           <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                            {isGeneratingPrompt ? 'Thinking of a question...' : (currentQuestion?.q || 'TELL ME MORE')}
+                                            {isGeneratingPrompt ? 'Thinking of a question...' : (answeredKeys.length > 0 ? 'ADD MORE' : (currentQuestion?.q || 'TELL ME MORE'))}
                                           </div>
+                                          
+                                          {/* Show the question if user has answered some already */}
+                                          {answeredKeys.length > 0 && !isGeneratingPrompt && (
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text)', marginBottom: '0.5rem', fontStyle: 'italic' }}>
+                                              {currentQuestion?.q}
+                                            </div>
+                                          )}
                                           
                                           {/* Input for current prompt */}
                                           {!isGeneratingPrompt && (
                                             <div>
                                               <input type="text" 
-                                                value={tempFormData.prompt || ''}
-                                                onChange={(e) => setTempFormData(prev => ({...prev, prompt: e.target.value}))}
+                                                value={tempFormData[`prompt_${areaKey}`] || ''}
+                                                onChange={(e) => setTempFormData(prev => ({...prev, [`prompt_${areaKey}`]: e.target.value}))}
                                                 placeholder={currentQuestion?.placeholder || "Share your thoughts..."}
                                                 onKeyDown={(e) => {
-                                                  if (e.key === 'Enter' && tempFormData.prompt?.trim()) {
+                                                  if (e.key === 'Enter' && tempFormData[`prompt_${areaKey}`]?.trim()) {
                                                     const keyToUse = aiPrompt ? `ai_${Date.now()}` : currentQuestion.key;
                                                     setUserProfile(prev => ({
                                                       ...prev,
@@ -12246,7 +12363,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                                         ...prev?.tendPreferences,
                                                         structuredInfo: { 
                                                           ...prev?.tendPreferences?.structuredInfo, 
-                                                          [areaKey]: { ...structured, [keyToUse]: tempFormData.prompt }
+                                                          [areaKey]: { ...structured, [keyToUse]: tempFormData[`prompt_${areaKey}`] }
                                                         },
                                                         // Also store the question text for AI prompts
                                                         promptQuestions: {
@@ -12258,7 +12375,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                                         }
                                                       }
                                                     }));
-                                                    setTempFormData(prev => ({...prev, prompt: '', [`aiPrompt_${areaKey}`]: null}));
+                                                    setTempFormData(prev => ({...prev, [`prompt_${areaKey}`]: '', [`aiPrompt_${areaKey}`]: null}));
                                                     if (onLifeMapAnswer) onLifeMapAnswer(areaKey);
                                                   }
                                                 }}
@@ -12275,7 +12392,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                               const nextIdx = promptIdx + 1;
                                               // If we've gone through all static prompts, generate AI one
                                               if (nextIdx >= questions.length) {
-                                                setTempFormData(prev => ({...prev, [`generatingPrompt_${areaKey}`]: true, prompt: ''}));
+                                                setTempFormData(prev => ({...prev, [`generatingPrompt_${areaKey}`]: true, [`prompt_${areaKey}`]: ''}));
                                                 const aiQ = await generateAIPrompt();
                                                 setTempFormData(prev => ({
                                                   ...prev, 
@@ -12284,7 +12401,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                                   [`promptIdx_${areaKey}`]: nextIdx
                                                 }));
                                               } else {
-                                                setTempFormData(prev => ({...prev, [`promptIdx_${areaKey}`]: nextIdx, [`aiPrompt_${areaKey}`]: null, prompt: ''}));
+                                                setTempFormData(prev => ({...prev, [`promptIdx_${areaKey}`]: nextIdx, [`aiPrompt_${areaKey}`]: null, [`prompt_${areaKey}`]: ''}));
                                               }
                                             }}
                                             style={{ 
@@ -12318,7 +12435,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                         return (
                           <>
                             {/* Focus Areas */}
-                            {focusAreas.length > 0 && (
+                            {focusAreas.length > 0 ? (
                               <div>
                                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#E8A090', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                   <span>🌱</span> FOCUS AREAS
@@ -12327,6 +12444,19 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                                   {focusAreas.map(renderAreaCard)}
                                 </div>
+                              </div>
+                            ) : (
+                              <div style={{ 
+                                padding: '1rem', 
+                                backgroundColor: 'var(--bg-elevated)', 
+                                borderRadius: '8px', 
+                                textAlign: 'center',
+                                marginBottom: '1rem'
+                              }}>
+                                <span style={{ fontSize: '1.5rem' }}>✨</span>
+                                <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
+                                  You're doing great across the board! No major gaps right now.
+                                </p>
                               </div>
                             )}
                             
@@ -12343,14 +12473,15 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                               </div>
                             )}
                             
-                            {/* Exploring / Lower Priority */}
-                            {exploring.length > 0 && (
+                            {/* Back Burner */}
+                            {backBurner.length > 0 && (
                               <div>
                                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  <span>🌿</span> OTHER AREAS
+                                  <span>🌿</span> BACK BURNER
+                                  <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>— lower priority</span>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                  {exploring.map(renderAreaCard)}
+                                  {backBurner.map(renderAreaCard)}
                                 </div>
                               </div>
                             )}
@@ -13071,5 +13202,6 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
