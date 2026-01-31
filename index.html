@@ -4553,9 +4553,9 @@ Time to complete your first daily tend!
           'insights': () => setAppMode('insights'),
           'life map': () => setAppMode('insights'),
           'lifemap': () => setAppMode('insights'),
-          'quiz': () => setAppMode('insights'),
-          'gardener quiz': () => setAppMode('insights'),
-          'personality quiz': () => setAppMode('insights'),
+          'quiz': () => setAppMode('quiz'),
+          'gardener quiz': () => setAppMode('quiz'),
+          'personality quiz': () => setAppMode('quiz'),
           'tendy': () => setAppMode('tendy'),
           'daily tend': () => setAppMode('tendy'),
           'tends': () => setAppMode('tendy'),
@@ -5140,11 +5140,44 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
               }}
             >
               <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
-                <span style={{fontSize: '1.5rem'}}>📊</span>
+                <span style={{fontSize: '1.5rem'}}>🗺️</span>
                 <div>
-                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Your Insights</div>
-                  <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>See your trends and progress</div>
+                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Life Map</div>
+                  <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>View and edit your life areas</div>
                 </div>
+              </div>
+            </button>
+
+            <button
+              onClick={() => setAppMode('quiz')}
+              style={{
+                padding: '1.25rem 1.5rem',
+                backgroundColor: 'var(--bg-card)',
+                border: '1px solid var(--border)',
+                borderRadius: '16px',
+                cursor: 'pointer',
+                textAlign: 'left',
+                transition: 'all 0.2s',
+              }}
+            >
+              <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
+                <span style={{fontSize: '1.5rem'}}>🌻</span>
+                <div style={{flex: 1}}>
+                  <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Gardener Quiz</div>
+                  <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>Discover your tending style</div>
+                </div>
+                {userProfile?.tendPreferences?.gardenerType && (
+                  <div style={{
+                    backgroundColor: '#E8F5E9',
+                    color: '#2E7D32',
+                    fontSize: '0.7rem',
+                    padding: '0.25rem 0.5rem',
+                    borderRadius: '10px',
+                    fontWeight: 500,
+                  }}>
+                    ✓ {userProfile.tendPreferences.gardenerType.name}
+                  </div>
+                )}
               </div>
             </button>
 
@@ -5236,6 +5269,49 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                 }}
                 title="Chat with Tend"
               >💬</button>
+            </div>
+          </>
+        );
+      }
+
+      // Quiz mode - Gardener Quiz standalone
+      if (appMode === 'quiz') {
+        return (
+          <>
+            <InsightsView
+              trends={calculateTrends()}
+              vlqScores={vlqScores}
+              flexPoints={flexPoints}
+              userProfile={userProfile}
+              setUserProfile={setUserProfile}
+              goals={goals}
+              setGoals={setGoals}
+              weeklyHabits={weeklyHabits}
+              setWeeklyHabits={setWeeklyHabits}
+              onReassessVLQ={() => { setVlqStep(-1); setVlqCompleted(false); setAppMode(null); }}
+              onAddGoal={() => setShowGoalModal(true)}
+              onBack={() => setAppMode(null)}
+              apiKey={apiKey}
+              embedded={false}
+              autoExpandSection="quiz"
+              hideLifeMap={true}
+              onQuizComplete={(result) => {
+                // After quiz, return to home
+                setAppMode(null);
+              }}
+            />
+            {/* Floating home button */}
+            <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 1000 }}>
+              <button
+                onClick={() => setAppMode(null)}
+                style={{
+                  width: '60px', height: '60px', borderRadius: '50%',
+                  backgroundColor: 'var(--accent)', border: 'none',
+                  boxShadow: '0 4px 20px rgba(0,0,0,0.2)', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem',
+                }}
+                title="Back to Home"
+              >🏠</button>
             </div>
           </>
         );
@@ -11358,11 +11434,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           <div style={insightsStyles.content}>
 {/* Your Life Map - Visual Knowledge Graph - Hidden when taking quiz or when hideLifeMap is true */}
             {!hideLifeMap && expandedArea !== 'quiz' && (
-            <div style={insightsStyles.section}>
-              <h3 style={{...insightsStyles.sectionTitle, fontSize: '0.95rem', marginBottom: '0.5rem'}}>
-                <span style={{fontSize: '0.9rem'}}>✨</span>
-                <span>Your Life Map</span>
-              </h3>
+            <div style={{...insightsStyles.section, padding: 0, border: 'none', backgroundColor: 'transparent'}}>
               
               {/* Visual Knowledge Graph */}
               {(() => {
@@ -11523,11 +11595,25 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       zIndex: 50,
                       background: 'linear-gradient(180deg, #FDFBF7 0%, #F8F4EC 100%)',
                       borderRadius: '20px',
-                      padding: '1.25rem 0.5rem',
+                      padding: '1rem 0.5rem 1.25rem',
                       marginBottom: '1rem',
                       border: '1px solid #EDE8DD',
                       boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
                     }}>
+                      {/* Title inside sticky area */}
+                      <h3 style={{
+                        fontFamily: "'Fraunces', serif",
+                        fontSize: '0.9rem',
+                        color: 'var(--text)',
+                        marginBottom: '0.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.4rem',
+                      }}>
+                        <span style={{fontSize: '0.85rem'}}>✨</span>
+                        <span>Your Life Map</span>
+                      </h3>
                       <svg width={width} height={height} style={{ display: 'block', margin: '0 auto' }}>
                         {/* Subtle decorative rings */}
                         <circle cx={centerX} cy={centerY} r="30" fill="none" stroke="#C5B89A" strokeWidth="0.5" opacity="0.2" />
@@ -12816,186 +12902,7 @@ Respond in this exact JSON format only:
             })()}
             </div>
             
-{/* Overview Stats - Hidden when taking quiz */}
-            {expandedArea !== 'quiz' && (
-            <>
-            <div style={insightsStyles.section}>
-              <h3 style={insightsStyles.sectionTitle}>
-                <span>📊</span>
-                <span>Your Progress</span>
-              </h3>
-              <div style={insightsStyles.statsGrid}>
-                <div style={insightsStyles.statCard}>
-                  <div style={insightsStyles.statValue}>{trends.dailyTends.totalCompleted}</div>
-                  <div style={insightsStyles.statLabel}>Daily Tends Completed</div>
-                </div>
-                <div style={insightsStyles.statCard}>
-                  <div style={insightsStyles.statValue}>{trends.dailyTends.currentStreak}</div>
-                  <div style={insightsStyles.statLabel}>Current Streak</div>
-                </div>
-                <div style={insightsStyles.statCard}>
-                  <div style={insightsStyles.statValue}>{trends.journaling.totalEntries}</div>
-                  <div style={insightsStyles.statLabel}>Journal Entries</div>
-                </div>
-                <div style={insightsStyles.statCard}>
-                  <div style={insightsStyles.statValue}>{trends.journaling.currentStreak}</div>
-                  <div style={insightsStyles.statLabel}>Journal Streak</div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Daily Tends by Life Area - WITH CHART */}
-            <div style={insightsStyles.section}>
-              <h3 style={insightsStyles.sectionTitle}>
-                <span>🌱</span>
-                <span>Daily Tends by Life Area</span>
-              </h3>
-              {Object.keys(trends.dailyTends.byLifeArea).filter(key => {
-                const stats = trends.dailyTends.byLifeArea[key];
-                return stats.completed + stats.skipped > 0;
-              }).length > 0 ? (
-                <>
-                  {/* OPTION A: Bar Chart */}
-                  <div style={{marginBottom: '1.5rem'}}>
-                    {Object.entries(trends.dailyTends.byLifeArea)
-                      .filter(([_, stats]) => stats.completed + stats.skipped > 0)
-                      .sort((a, b) => b[1].completionRate - a[1].completionRate)
-                      .map(([areaKey, stats]) => {
-                        const area = VLQ_DOMAINS[areaKey];
-                        if (!area) return null;
-                        return (
-                          <div key={areaKey} style={{marginBottom: '1rem'}}>
-                            <div style={{
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'center',
-                              marginBottom: '0.375rem'
-                            }}>
-                              <div style={{fontSize: '0.85rem', color: 'var(--text)'}}>
-                                {area.icon} {area.name}
-                              </div>
-                              <div style={{fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent)'}}>
-                                {stats.completionRate}%
-                              </div>
-                            </div>
-                            {/* Bar Chart */}
-                            <div style={{
-                              width: '100%',
-                              height: '8px',
-                              backgroundColor: 'var(--bg-elevated)',
-                              borderRadius: '4px',
-                              overflow: 'hidden'
-                            }}>
-                              <div style={{
-                                width: `${stats.completionRate}%`,
-                                height: '100%',
-                                backgroundColor: 'var(--accent)',
-                                borderRadius: '4px',
-                                transition: 'width 0.3s ease'
-                              }}></div>
-                            </div>
-                            <div style={{
-                              fontSize: '0.7rem',
-                              color: 'var(--text-muted)',
-                              marginTop: '0.25rem'
-                            }}>
-                              {stats.completed} completed, {stats.skipped} skipped
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </>
-              ) : (
-                <div style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>
-                  Complete some daily tends to see your progress!
-                </div>
-              )}
-            </div>
-            
-            {/* OPTION D: Patterns Section */}
-            {trends.patterns && Object.keys(trends.patterns).length > 0 && (
-              <div style={insightsStyles.section}>
-                <h3 style={insightsStyles.sectionTitle}>
-                  <span>✨</span>
-                  <span>Your Patterns</span>
-                </h3>
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.75rem'
-                }}>
-                  {trends.patterns.mostJournalingDay && (
-                    <div style={{
-                      padding: '0.75rem',
-                      backgroundColor: 'var(--bg-elevated)',
-                      borderRadius: '8px',
-                      fontSize: '0.85rem',
-                      color: 'var(--text)'
-                    }}>
-                      📝 You journal most on <strong>{trends.patterns.mostJournalingDay}s</strong>
-                    </div>
-                  )}
-                  {trends.patterns.mostProductiveDay && (
-                    <div style={{
-                      padding: '0.75rem',
-                      backgroundColor: 'var(--bg-elevated)',
-                      borderRadius: '8px',
-                      fontSize: '0.85rem',
-                      color: 'var(--text)'
-                    }}>
-                      🌱 You complete the most tends on <strong>{trends.patterns.mostProductiveDay}s</strong>
-                    </div>
-                  )}
-                  {trends.patterns.longestJournalStreak > 0 && (
-                    <div style={{
-                      padding: '0.75rem',
-                      backgroundColor: 'var(--bg-elevated)',
-                      borderRadius: '8px',
-                      fontSize: '0.85rem',
-                      color: 'var(--text)'
-                    }}>
-                      🔥 Your longest journal streak: <strong>{trends.patterns.longestJournalStreak} days</strong>
-                    </div>
-                  )}
-                  {trends.patterns.completionTrend && (
-                    <div style={{
-                      padding: '0.75rem',
-                      backgroundColor: 'var(--bg-elevated)',
-                      borderRadius: '8px',
-                      fontSize: '0.85rem',
-                      color: 'var(--text)'
-                    }}>
-                      📊 {trends.patterns.completionTrend}
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {/* Goals Progress */}
-            {trends.goals.totalCreated > 0 && (
-              <div style={insightsStyles.section}>
-                <h3 style={insightsStyles.sectionTitle}>
-                  <span>🎯</span>
-                  <span>Goals</span>
-                </h3>
-                <div style={insightsStyles.statsGrid}>
-                  <div style={insightsStyles.statCard}>
-                    <div style={insightsStyles.statValue}>{trends.goals.completed}</div>
-                    <div style={insightsStyles.statLabel}>Completed</div>
-                  </div>
-                  <div style={insightsStyles.statCard}>
-                    <div style={insightsStyles.statValue}>{trends.goals.inProgress}</div>
-                    <div style={insightsStyles.statLabel}>In Progress</div>
-                  </div>
-                  <div style={insightsStyles.statCard}>
-                    <div style={insightsStyles.statValue}>{trends.goals.completionRate}%</div>
-                    <div style={insightsStyles.statLabel}>Completion Rate</div>
-                  </div>
-                </div>
-              </div>
-            )}
+{/* Stats sections removed - only Life Map and Life Areas on this tab */}
             </>
             )}
           </div>
@@ -13194,6 +13101,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
