@@ -5246,8 +5246,8 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
         // During onboarding steps 1-2 (life map and quiz), show insights WITHOUT chat panel
         if (!onboardingCompleted && (onboardingStep === 1 || onboardingStep === 2)) {
           return (
-            <div style={{...styles.container, overflow: 'auto'}}>
-              <header style={{...styles.header, justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100}}>
+            <div style={{...styles.container, overflow: 'hidden'}}>
+              <header style={{...styles.header, justifyContent: 'space-between', alignItems: 'center', position: 'relative'}}>
                 <div style={{...styles.headerLeft, position: 'absolute', left: '1rem'}}>
                   <div style={styles.logo}>
                     <svg width="28" height="28" viewBox="0 0 80 80" fill="none">
@@ -5289,10 +5289,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                 </div>
               </header>
               
-              <main style={{...styles.main, gridTemplateColumns: '1fr', maxWidth: '800px', margin: '0 auto', padding: '0.5rem 1rem', overflow: 'visible', height: 'auto'}}>
-                {/* Full width content - no chat panel during onboarding */}
-                <div style={{padding: '0'}}>
-                  
+              <main style={{...styles.main, gridTemplateColumns: '1fr', maxWidth: '800px', margin: '0 auto', padding: '0.5rem 1rem', overflow: 'auto', height: 'calc(100vh - 56px)', flex: 1}}>
                   <InsightsView
                     trends={calculateTrends()}
                     vlqScores={vlqScores}
@@ -5373,7 +5370,6 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                       Continue →
                     </button>
                   </div>
-                </div>
               </main>
               
               {/* Settings Modal - accessible from onboarding */}
@@ -11175,7 +11171,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       },
     };
 
-    function InsightsView({ trends, vlqScores, flexPoints, userProfile, setUserProfile, goals = [], setGoals, weeklyHabits = [], setWeeklyHabits, onReassessVLQ, onAddGoal, onBack, apiKey, embedded = false, autoExpandSection = null, onQuizComplete = null, onLifeMapAnswer = null, focusedArea = null, onFocusedAreaChange = null, onboardingStep = null, onboardingCompleted = false }) {
+    function InsightsView({ trends, vlqScores, flexPoints, userProfile, setUserProfile, goals = [], setGoals, weeklyHabits = [], setWeeklyHabits, onReassessVLQ, onAddGoal, onBack, apiKey, embedded = false, autoExpandSection = null, onQuizComplete = null, onLifeMapAnswer = null, focusedArea = null, onFocusedAreaChange = null, onboardingStep = null, onboardingCompleted = false, hideLifeMap = false }) {
       const [expandedArea, setExpandedArea] = useState(autoExpandSection || focusedArea);
       const [editingArea, setEditingArea] = useState(null);
       const [tempFormData, setTempFormData] = useState(autoExpandSection === 'quiz' ? { quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null } : {});
@@ -11357,12 +11353,12 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           )}
           
           <div style={insightsStyles.content}>
-{/* Your Life Map - Visual Knowledge Graph - Hidden when taking quiz */}
-            {expandedArea !== 'quiz' && (
+{/* Your Life Map - Visual Knowledge Graph - Hidden when taking quiz or when hideLifeMap is true */}
+            {!hideLifeMap && expandedArea !== 'quiz' && (
             <div style={{
               ...insightsStyles.section,
               position: 'sticky',
-              top: onboardingStep ? '56px' : 0,
+              top: 0,
               zIndex: 50,
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
             }}>
@@ -13197,6 +13193,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
