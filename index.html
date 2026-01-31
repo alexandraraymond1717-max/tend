@@ -11363,22 +11363,15 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             {expandedArea !== 'quiz' && (
             <div style={{
               ...insightsStyles.section,
-              padding: '0',
-              overflow: 'visible',
+              position: 'sticky',
+              top: 0,
+              zIndex: 50,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
             }}>
-              {/* Sticky header + constellation */}
-              <div style={{
-                position: 'sticky',
-                top: 0,
-                zIndex: 50,
-                backgroundColor: 'var(--bg-card)',
-                borderRadius: '16px 16px 0 0',
-                padding: '1rem',
-              }}>
-                <h3 style={{...insightsStyles.sectionTitle, fontSize: '0.95rem', marginBottom: '0.5rem'}}>
-                  <span style={{fontSize: '0.9rem'}}>✨</span>
-                  <span>Your Life Map</span>
-                </h3>
+              <h3 style={{...insightsStyles.sectionTitle, fontSize: '0.95rem', marginBottom: '0.5rem'}}>
+                <span style={{fontSize: '0.9rem'}}>✨</span>
+                <span>Your Life Map</span>
+              </h3>
               
               {/* Visual Knowledge Graph */}
               {(() => {
@@ -11773,11 +11766,9 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                         </div>
                       )}
                     </div>
-                  </div>
-                  {/* End of sticky wrapper */}
-                  
-                  {/* Life Area Cards - Grouped by category - NOT sticky */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem', padding: '0 1rem 1rem' }}>
+                    
+                    {/* Life Area Cards - Grouped by category */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
                       
                       {(() => {
                         // Categorize life areas with new logic:
@@ -13208,6 +13199,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
