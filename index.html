@@ -12378,7 +12378,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                           )}
                                           
                                           <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                            {isGeneratingPrompt ? 'Thinking of a question...' : (answeredKeys.length > 0 ? 'ADD MORE' : (currentQuestion?.q || 'TELL ME MORE'))} {!isGeneratingPrompt && <span style={{ fontWeight: 400, fontSize: '0.65rem' }}>(optional)</span>}
+                                            {isGeneratingPrompt ? 'Thinking of a question...' : (answeredKeys.length > 0 ? 'ADD MORE' : (currentQuestion?.q || 'TELL ME MORE'))} {!isGeneratingPrompt && answeredKeys.length > 0 && <span style={{ fontWeight: 400, fontSize: '0.65rem' }}>(optional)</span>}
                                           </div>
                                           
                                           {/* Show the question if user has answered some already */}
