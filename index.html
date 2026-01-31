@@ -1577,11 +1577,11 @@ Respond with ONLY the task text, nothing else.`,
     // Onboarding steps configuration
     const ONBOARDING_STEPS = {
       0: { id: 'vlq', label: 'Values', icon: '💚', required: true },
-      1: { id: 'goals', label: 'Goals', icon: '🎯', required: true },
-      2: { id: 'habits', label: 'Habits', icon: '🔄', required: true },
+      1: { id: 'goals', label: 'Goals', icon: '🎯', required: false }, // Goals OR prompts
+      2: { id: 'habits', label: 'Habits', icon: '🔄', required: false }, // Optional
       3: { id: 'quiz', label: 'Quiz', icon: '🌸', required: false },
-      4: { id: 'lifemap', label: 'Life Map', icon: '🗺️', required: true },
-      5: { id: 'compass', label: 'Compass', icon: '🧭', required: true },
+      4: { id: 'lifemap', label: 'Life Map', icon: '🗺️', required: false },
+      5: { id: 'compass', label: 'Compass', icon: '🧭', required: false },
       6: { id: 'tend', label: 'First Tend', icon: '🌱', required: true },
     };
 
@@ -2351,13 +2351,12 @@ Respond with ONLY the task text, nothing else.`,
         const prefs = userProfile?.tendPreferences || {};
         
         switch(step) {
-          case 1: // Life Map - prompt + goal + linked habit per focus area
+          case 1: // Life Map - prompt OR goal per focus area (habit is optional)
             for (const area of focusAreas) {
               const hasPrompt = prefs.structuredInfo?.[area] && Object.values(prefs.structuredInfo[area]).some(v => v) || prefs.lifeAreaNotes?.[area];
               const hasGoal = goals.some(g => g.lifeArea === area);
-              const areaGoalIds = goals.filter(g => g.lifeArea === area).map(g => g.id);
-              const hasLinkedHabit = weeklyHabits.some(h => h.lifeArea === area && areaGoalIds.includes(h.goalId));
-              if (!hasPrompt || !hasGoal || !hasLinkedHabit) return false;
+              // Step is complete if user has EITHER a prompt OR a goal (habit is optional)
+              if (!hasPrompt && !hasGoal) return false;
             }
             return true;
           case 2: // Gardener Quiz - optional, complete only if they took it
@@ -2380,7 +2379,8 @@ Respond with ONLY the task text, nothing else.`,
           const hasGoal = goals.some(g => g.lifeArea === area);
           const areaGoalIds = goals.filter(g => g.lifeArea === area).map(g => g.id);
           const hasLinkedHabit = weeklyHabits.some(h => h.lifeArea === area && areaGoalIds.includes(h.goalId));
-          return { area, hasPrompt, hasGoal, hasLinkedHabit, complete: hasPrompt && hasGoal && hasLinkedHabit };
+          // Complete if has prompt OR goal (habit is optional bonus)
+          return { area, hasPrompt, hasGoal, hasLinkedHabit, complete: hasPrompt || hasGoal };
         });
         
         const completeFocusAreas = focusAreaProgress.filter(p => p.complete).length;
@@ -3071,6 +3071,26 @@ Respond with ONLY the task text, nothing else.`,
         if (onboardingStep === 3 && todaysTendies.some(t => t.completed)) {
           setOnboardingCompleted(true);
           setOnboardingStep(null);
+          
+          // Show welcome message after onboarding completes
+          const welcomeMsg = {
+            role: 'assistant',
+            content: `🌱 **Welcome to Tend!**
+
+Hi! I'm here to help you on your journey toward a more intentional life. 
+
+You've completed your setup and your first Daily Tend — amazing start! Here's what you can do now:
+
+• **Daily Tend** — Get a personalized activity each day based on your life map
+• **Journal** — Reflect on your day and track your progress  
+• **Calendar** — See your history and plan ahead
+• **Life Map** — Update your goals, habits, and priorities anytime
+
+What would you like to explore?`,
+            timestamp: new Date().toISOString()
+          };
+          setMessages([welcomeMsg]);
+          setCurrentConversationType('main');
         }
       }, [vlqCompleted, onboardingCompleted, onboardingStep, goals, weeklyHabits, userProfile, todaysTendies]);
 
@@ -5223,8 +5243,19 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
 
       // Insights mode - during onboarding keep chat visible, otherwise full screen
       if (appMode === 'insights') {
-        // During onboarding steps 1-2 (life map and quiz), show insights with chat panel
+        // During onboarding steps 1-2 (life map and quiz), show insights WITHOUT chat panel
         if (!onboardingCompleted && (onboardingStep === 1 || onboardingStep === 2)) {
+          const stepDescriptions = {
+            1: {
+              title: "Build Your Life Map",
+              description: "Expand any life area below to set goals, habits, and answer prompts. This helps personalize your Daily Tends. You can skip any area and come back later."
+            },
+            2: {
+              title: "Discover Your Gardener Type",
+              description: "Answer a few quick questions to discover your unique approach to personal growth. This helps Tend communicate with you in a way that resonates."
+            }
+          };
+          
           return (
             <div style={styles.container}>
               <header style={styles.header}>
@@ -5251,12 +5282,9 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                 </div>
               </header>
               
-              <main style={{...styles.main, gridTemplateColumns: `64px 1fr ${chatWidth}px`}}>
-                {/* Empty sidebar space */}
-                <aside style={{...styles.sidebar, width: 64}}></aside>
-                
-                {/* Insights content in center */}
-                <div style={{...styles.centerPanel, padding: '1rem'}}>
+              <main style={{...styles.main, gridTemplateColumns: '1fr', maxWidth: '800px', margin: '0 auto', padding: '1rem'}}>
+                {/* Full width content - no chat panel during onboarding */}
+                <div style={{padding: '1rem'}}>
                   {/* Onboarding Progress Bar */}
                   <OnboardingProgressBar 
                     currentStep={onboardingStep}
@@ -5275,6 +5303,23 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                     getProgress={getOnboardingProgress}
                     vlqCompleted={vlqCompleted}
                   />
+                  
+                  {/* Step explanation card */}
+                  <div style={{
+                    backgroundColor: 'var(--bg-elevated)',
+                    borderRadius: '12px',
+                    padding: '1.25rem',
+                    marginBottom: '1.5rem',
+                    border: '1px solid var(--border)'
+                  }}>
+                    <h2 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text)', marginBottom: '0.5rem' }}>
+                      {stepDescriptions[onboardingStep]?.title}
+                    </h2>
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', margin: 0, lineHeight: 1.5 }}>
+                      {stepDescriptions[onboardingStep]?.description}
+                    </p>
+                  </div>
+                  
                   <InsightsView
                     trends={calculateTrends()}
                     vlqScores={vlqScores}
@@ -5299,69 +5344,65 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                       if (onboardingStep === 1) setCurrentOnboardingArea(area);
                     }}
                     onQuizComplete={(result) => {
-                      // Add message to chat prompting next step
-                      const msg = {
-                        role: 'assistant',
-                        content: `Congratulations, you're <strong>${result.name}</strong>! 🌸 Your superpower is ${result.strength.toLowerCase()}.
-
-Ready to try your first Daily Tend?
-
-[BUTTON: Yes, let's go! | next step]`,
-                        timestamp: new Date().toISOString()
-                      };
-                      setMessages(prev => [...prev, msg]);
-                      setTimeout(() => scrollChatToBottom(), 100);
+                      // Move to step 3 (Daily Tend) when quiz is complete
+                      setOnboardingStep(3);
                     }}
                     onLifeMapAnswer={() => {
                       // The useEffect monitors completion and sends messages
                       // This callback just triggers re-renders
                     }}
                   />
-                </div>
-                
-                {/* Chat panel */}
-                <div style={styles.chatPanel}>
-                  {/* Chat header */}
-                  <div style={{
-                    padding: '0.75rem 1rem',
-                    borderBottom: '1px solid var(--border)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
-                    backgroundColor: 'var(--bg-elevated)',
+                  
+                  {/* Skip / Continue buttons */}
+                  <div style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    marginTop: '1.5rem',
+                    paddingTop: '1rem',
+                    borderTop: '1px solid var(--border)'
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <span style={{ fontSize: '1rem' }}>💬</span>
-                      <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--text)' }}>Tend</span>
-                    </div>
-                  </div>
-                  <div style={styles.chatMessages} ref={chatContainerRef}>
-                    {messages.map((msg, i) => (
-                      <ChatMessage 
-                        key={i} 
-                        message={msg} 
-                        onButtonClick={handleChatNavigation}
-                      />
-                    ))}
-                    {isTyping && (
-                      <div style={{...styles.message, ...styles.assistantMessage, opacity: 0.7}}>
-                        <em>Tend is thinking...</em>
-                      </div>
-                    )}
-                  </div>
-                  <form onSubmit={handleSendMessage} style={styles.chatInputForm}>
-                    <input
-                      type="text"
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      placeholder="Type a message..."
-                      style={styles.chatInput}
-                      disabled={isTyping}
-                    />
-                    <button type="submit" style={styles.sendButton} disabled={isTyping || !inputValue.trim()}>
-                      →
+                    <button 
+                      onClick={() => {
+                        if (onboardingStep === 1) {
+                          setOnboardingStep(2);
+                        } else if (onboardingStep === 2) {
+                          setOnboardingStep(3);
+                        }
+                      }}
+                      style={{
+                        padding: '0.6rem 1.25rem',
+                        backgroundColor: 'transparent',
+                        border: '1px solid var(--border)',
+                        borderRadius: '8px',
+                        color: 'var(--text-muted)',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Skip for now →
                     </button>
-                  </form>
+                    <button 
+                      onClick={() => {
+                        if (onboardingStep === 1) {
+                          setOnboardingStep(2);
+                        } else if (onboardingStep === 2) {
+                          setOnboardingStep(3);
+                        }
+                      }}
+                      style={{
+                        padding: '0.6rem 1.25rem',
+                        backgroundColor: 'var(--accent)',
+                        border: 'none',
+                        borderRadius: '8px',
+                        color: 'white',
+                        fontSize: '0.85rem',
+                        fontWeight: 500,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Continue →
+                    </button>
+                  </div>
                 </div>
               </main>
               
@@ -12180,7 +12221,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                   {/* 2. Weekly Habits */}
                                   <div style={{ marginTop: '0.75rem' }}>
                                     <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                      {areaHabits.length > 0 ? 'YOUR WEEKLY HABITS' : 'ADD A WEEKLY HABIT'}
+                                      {areaHabits.length > 0 ? 'YOUR WEEKLY HABITS' : 'ADD A WEEKLY HABIT'} <span style={{ fontWeight: 400, fontSize: '0.65rem', color: 'var(--text-muted)' }}>(optional)</span>
                                     </div>
                                     
                                     {/* Show existing habits */}
@@ -12337,7 +12378,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                           )}
                                           
                                           <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
-                                            {isGeneratingPrompt ? 'Thinking of a question...' : (answeredKeys.length > 0 ? 'ADD MORE' : (currentQuestion?.q || 'TELL ME MORE'))}
+                                            {isGeneratingPrompt ? 'Thinking of a question...' : (answeredKeys.length > 0 ? 'ADD MORE' : (currentQuestion?.q || 'TELL ME MORE'))} {!isGeneratingPrompt && <span style={{ fontWeight: 400, fontSize: '0.65rem' }}>(optional)</span>}
                                           </div>
                                           
                                           {/* Show the question if user has answered some already */}
@@ -13202,6 +13243,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
