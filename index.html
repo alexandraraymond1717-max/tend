@@ -11359,9 +11359,15 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           <div style={insightsStyles.content}>
 {/* Your Life Map - Visual Knowledge Graph - Hidden when taking quiz */}
             {expandedArea !== 'quiz' && (
-            <div style={insightsStyles.section}>
-              <h3 style={insightsStyles.sectionTitle}>
-                <span>✨</span>
+            <div style={{
+              ...insightsStyles.section,
+              position: 'sticky',
+              top: 0,
+              zIndex: 50,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
+            }}>
+              <h3 style={{...insightsStyles.sectionTitle, fontSize: '0.95rem', marginBottom: '0.5rem'}}>
+                <span style={{fontSize: '0.9rem'}}>✨</span>
                 <span>Your Life Map</span>
               </h3>
               
@@ -11517,17 +11523,13 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 
                 return (
                   <div>
-                    {/* The Constellation - sticky when scrolling */}
+                    {/* The Constellation */}
                     <div style={{
-                      position: 'sticky',
-                      top: 0,
-                      zIndex: 50,
                       background: 'linear-gradient(180deg, #FDFBF7 0%, #F8F4EC 100%)',
                       borderRadius: '20px',
                       padding: '1.25rem 0.5rem',
                       marginBottom: '1rem',
                       border: '1px solid #EDE8DD',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
                     }}>
                       <svg width={width} height={height} style={{ display: 'block', margin: '0 auto' }}>
                         {/* Subtle decorative rings */}
@@ -13195,6 +13197,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
