@@ -5246,9 +5246,9 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
         // During onboarding steps 1-2 (life map and quiz), show insights WITHOUT chat panel
         if (!onboardingCompleted && (onboardingStep === 1 || onboardingStep === 2)) {
           return (
-            <div style={styles.container}>
-              <header style={{...styles.header, justifyContent: 'space-between', alignItems: 'center'}}>
-                <div style={styles.headerLeft}>
+            <div style={{...styles.container, overflow: 'auto'}}>
+              <header style={{...styles.header, justifyContent: 'space-between', alignItems: 'center', position: 'relative'}}>
+                <div style={{...styles.headerLeft, position: 'absolute', left: '1rem'}}>
                   <div style={styles.logo}>
                     <svg width="28" height="28" viewBox="0 0 80 80" fill="none">
                       <path d="M40 70 L40 45" stroke="var(--accent)" strokeWidth="2.5" strokeLinecap="round"/>
@@ -5259,24 +5259,26 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                     <span style={styles.logoText}>tend</span>
                   </div>
                 </div>
-                {/* Progress bar in header - centered */}
-                <OnboardingProgressBar 
-                  currentStep={onboardingStep}
-                  onStepClick={(step) => {
-                    if (step === 0) {
-                      setVlqStep(-1);
-                      setVlqCompleted(false);
-                      setAppMode(null);
-                    } else {
-                      setOnboardingStep(step);
-                      setSessionGreeted(false);
-                    }
-                  }}
-                  isStepComplete={isStepComplete}
-                  getProgress={getOnboardingProgress}
-                  vlqCompleted={vlqCompleted}
-                />
-                <div style={{display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
+                {/* Progress bar in header - truly centered */}
+                <div style={{flex: 1, display: 'flex', justifyContent: 'center'}}>
+                  <OnboardingProgressBar 
+                    currentStep={onboardingStep}
+                    onStepClick={(step) => {
+                      if (step === 0) {
+                        setVlqStep(-1);
+                        setVlqCompleted(false);
+                        setAppMode(null);
+                      } else {
+                        setOnboardingStep(step);
+                        setSessionGreeted(false);
+                      }
+                    }}
+                    isStepComplete={isStepComplete}
+                    getProgress={getOnboardingProgress}
+                    vlqCompleted={vlqCompleted}
+                  />
+                </div>
+                <div style={{position: 'absolute', right: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem'}}>
                   <button 
                     style={styles.settingsButton} 
                     onClick={() => setShowSettingsModal(true)}
@@ -5287,7 +5289,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                 </div>
               </header>
               
-              <main style={{...styles.main, gridTemplateColumns: '1fr', maxWidth: '800px', margin: '0 auto', padding: '0.5rem 1rem'}}>
+              <main style={{...styles.main, gridTemplateColumns: '1fr', maxWidth: '800px', margin: '0 auto', padding: '0.5rem 1rem', overflow: 'visible', height: 'auto'}}>
                 {/* Full width content - no chat panel during onboarding */}
                 <div style={{padding: '0'}}>
                   
@@ -13193,6 +13195,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
