@@ -182,210 +182,555 @@
     // Tendy templates by domain and difficulty (1=easy, 2=medium, 3=hard)
     // Type weights per life area: { action: weight, reflective: weight }
     const TYPE_WEIGHTS = {
-      career: { action: 1.0, reflective: 0.0 },
-      health: { action: 1.0, reflective: 0.0 },
-      education: { action: 1.0, reflective: 0.0 },
-      recreation: { action: 1.0, reflective: 0.0 },
-      family: { action: 0.7, reflective: 0.3 },
-      partner: { action: 0.7, reflective: 0.3 },
-      friendships: { action: 0.7, reflective: 0.3 },
-      community: { action: 0.7, reflective: 0.3 },
+      career: { action: 0.5, reflective: 0.5 },
+      health: { action: 0.7, reflective: 0.3 },
+      education: { action: 0.5, reflective: 0.5 },
+      recreation: { action: 0.7, reflective: 0.3 },
+      family: { action: 0.5, reflective: 0.5 },
+      partner: { action: 0.6, reflective: 0.4 },
+      partnerSingle: { action: 0.5, reflective: 0.5 },
+      friendships: { action: 0.55, reflective: 0.45 },
+      community: { action: 0.55, reflective: 0.45 },
       finances: { action: 0.5, reflective: 0.5 },
-      spirituality: { action: 0.3, reflective: 0.7 },
-      mentalHealth: { action: 0.3, reflective: 0.7 },
+      spirituality: { action: 0.5, reflective: 0.5 },
+      mentalHealth: { action: 0.45, reflective: 0.55 },
     };
 
     const TENDY_TEMPLATES = {
       family: [
-        // Easy (5 min) - Action
+        // 5 min - Action
         { text: 'Send a "thinking of you" text to a family member', type: 'action', difficulty: 1 },
         { text: 'Share a photo or memory with a family member', type: 'action', difficulty: 1 },
-        { text: 'Send a voice note to a family member', type: 'action', difficulty: 1 },
-        { text: 'Text a family member asking how their day is going', type: 'action', difficulty: 1 },
-        { text: 'Send a funny meme or video to a family member', type: 'action', difficulty: 1 },
-        // Easy (5 min) - Reflective
+        { text: 'Ask a family member one question about their life right now', type: 'action', difficulty: 1 },
+        { text: 'Send a family member something that made you think of them (song, meme, article)', type: 'action', difficulty: 1 },
+        { text: 'Look at old family photos for 5 minutes', type: 'action', difficulty: 1 },
+        { text: 'Ask a family member for advice on something small', type: 'action', difficulty: 1 },
+        { text: 'Text a sibling or cousin a "remember when..." memory', type: 'action', difficulty: 1 },
+        { text: 'Learn one new thing happening in a family member\'s life', type: 'action', difficulty: 1 },
+        { text: 'Thank a family member for something specific they did for you', type: 'action', difficulty: 1 },
+        { text: 'Send a family member a photo of something from your day', type: 'action', difficulty: 1 },
+        // 5 min - Reflective
         { text: 'Write down one thing you appreciate about a family member', type: 'reflective', difficulty: 1 },
-        { text: 'Think of a happy family memory and jot it down', type: 'reflective', difficulty: 1 },
-        // Hard (30 min) - Action
+        { text: 'Write down one childhood memory with a family member', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing a family member taught you', type: 'reflective', difficulty: 1 },
+        { text: 'Write down a question you wish you\'d asked (or still could ask) a family member', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: which family relationship needs the most attention right now?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one family tradition you want to keep alive', type: 'reflective', difficulty: 1 },
+        { text: 'Write down something you admire about how a family member handles life', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing you wish your family understood about you', type: 'reflective', difficulty: 1 },
+        // 15 min - Action
         { text: 'Call a family member for a real conversation', type: 'action', difficulty: 3 },
         { text: 'Plan a family activity for the upcoming weekend', type: 'action', difficulty: 3 },
-        { text: 'Write a heartfelt letter or long message to a family member', type: 'action', difficulty: 3 },
-        { text: 'Video call a family member you haven\'t seen in a while', type: 'action', difficulty: 3 },
-        { text: 'Look through old family photos and share one with someone', type: 'action', difficulty: 3 },
-        { text: 'Help a family member with something they need', type: 'action', difficulty: 3 },
-        // Hard (30 min) - Reflective
+        { text: 'Ask an older family member to tell you a story from their past', type: 'action', difficulty: 3 },
+        { text: 'Cook a family recipe (or ask a family member to share one)', type: 'action', difficulty: 3 },
+        { text: 'Have a device-free conversation with a family member', type: 'action', difficulty: 3 },
+        { text: 'Help a family member with something they\'re working on', type: 'action', difficulty: 3 },
+        { text: 'Video call a family member you haven\'t seen in person recently', type: 'action', difficulty: 3 },
+        { text: 'Create something small for a family member (card, playlist, note)', type: 'action', difficulty: 3 },
+        { text: 'Ask a family member what they\'re proud of lately', type: 'action', difficulty: 3 },
+        // 15 min - Reflective
         { text: 'Journal about your relationship with your family and one way to improve it', type: 'reflective', difficulty: 3 },
-        { text: 'Write about a family tradition you want to continue or start', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about your role in your family and how it\'s changed over time', type: 'reflective', difficulty: 3 },
+        { text: 'Write about a family pattern you want to continue — and one you want to break', type: 'reflective', difficulty: 3 },
+        { text: 'Write a letter to a family member you don\'t have to send', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on how your family shaped who you are today', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about a family member who influenced you deeply', type: 'reflective', difficulty: 3 },
+        { text: 'Write about what kind of family member you want to be', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on a difficult family moment and what you learned from it', type: 'reflective', difficulty: 3 },
+        { text: 'Write about what "home" and "family" mean to you right now', type: 'reflective', difficulty: 3 },
       ],
       partner: [
-        // Easy - Action
+        // 5 min - Action
         { text: 'Leave a sweet note for your partner', type: 'action', difficulty: 1 },
         { text: 'Send your partner a message about what you appreciate about them', type: 'action', difficulty: 1 },
         { text: 'Give your partner a genuine compliment', type: 'action', difficulty: 1 },
-        { text: 'Send your partner a song that makes you think of them', type: 'action', difficulty: 1 },
-        { text: 'Give your partner a hug and hold it for 20 seconds', type: 'action', difficulty: 1 },
-        { text: 'Text your partner something you love about them', type: 'action', difficulty: 1 },
-        // Easy - Reflective
+        { text: 'Send your partner a song that reminds you of them', type: 'action', difficulty: 1 },
+        { text: 'Take a candid photo of your partner and tell them why you love it', type: 'action', difficulty: 1 },
+        { text: 'Text your partner a favorite memory of the two of you', type: 'action', difficulty: 1 },
+        { text: 'Do one small task your partner usually does', type: 'action', difficulty: 1 },
+        { text: 'Put your partner\'s favorite snack somewhere they\'ll find it', type: 'action', difficulty: 1 },
+        { text: 'Send your partner a "what I\'m looking forward to with you" message', type: 'action', difficulty: 1 },
+        { text: 'Give your partner a 2-minute shoulder rub or back scratch', type: 'action', difficulty: 1 },
+        { text: 'Ask your partner "what can I do to make your day easier?"', type: 'action', difficulty: 1 },
+        { text: 'Put on a song and dance with your partner for one song', type: 'action', difficulty: 1 },
+        { text: 'Tell your partner about a moment you fell more in love with them', type: 'action', difficulty: 1 },
+        { text: 'Initiate a 2-minute hug with no agenda', type: 'action', difficulty: 1 },
+        // 5 min - Reflective
         { text: 'Write down one thing your partner did recently that you appreciated', type: 'reflective', difficulty: 1 },
-        { text: 'Think of a favorite memory with your partner and smile', type: 'reflective', difficulty: 1 },
-        // Hard - Action
+        { text: 'Write down one way your partner has helped you grow', type: 'reflective', difficulty: 1 },
+        { text: 'Write down something your partner does that you never want them to stop', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: when did you last feel really connected to your partner?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing you want your partner to know but haven\'t said', type: 'reflective', difficulty: 1 },
+        { text: 'Write down your favorite quirk or habit of your partner', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what\'s one way you could show up better for your partner this week?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down a dream you have for your relationship', type: 'reflective', difficulty: 1 },
+        { text: 'Write down what first attracted you to your partner — and what attracts you now', type: 'reflective', difficulty: 1 },
+        // 15 min - Action
         { text: 'Have a device-free conversation about dreams and goals', type: 'action', difficulty: 3 },
         { text: 'Plan a surprise or date for your partner', type: 'action', difficulty: 3 },
         { text: 'Cook a meal together or for your partner', type: 'action', difficulty: 3 },
+        { text: 'Look through old photos together and pick a favorite', type: 'action', difficulty: 3 },
+        { text: 'Ask your partner about something they\'re excited or worried about right now', type: 'action', difficulty: 3 },
+        { text: 'Learn something new about your partner\'s childhood or past', type: 'action', difficulty: 3 },
+        { text: 'Play a quick game together (cards, would you rather, 20 questions)', type: 'action', difficulty: 3 },
         { text: 'Take a walk together with no phones', type: 'action', difficulty: 3 },
-        { text: 'Do an activity your partner loves (even if it\'s not your favorite)', type: 'action', difficulty: 3 },
-        { text: 'Give your partner a massage or back rub', type: 'action', difficulty: 3 },
-        { text: 'Look at old photos together and reminisce', type: 'action', difficulty: 3 },
-        // Hard - Reflective
+        { text: 'Give your partner your full attention while they talk about their day', type: 'action', difficulty: 3 },
+        { text: 'Plan something to look forward to together (trip, date, project)', type: 'action', difficulty: 3 },
+        { text: 'Watch a sunset, sunrise, or the stars together', type: 'action', difficulty: 3 },
+        { text: 'Share your highs and lows of the week with each other', type: 'action', difficulty: 3 },
+        { text: 'Create a shared playlist of songs that mean something to you both', type: 'action', difficulty: 3 },
+        // 15 min - Reflective
         { text: 'Journal about what makes your relationship strong and one area to grow', type: 'reflective', difficulty: 3 },
-        { text: 'Write about what you admire most about your partner', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about a challenge you\'ve overcome together and what it taught you', type: 'reflective', difficulty: 3 },
+        { text: 'Write about what kind of partner you want to be', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on your partner\'s love language and one way to speak it this week', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about what makes your relationship different from others', type: 'reflective', difficulty: 3 },
+        { text: 'Write about a moment when your partner surprised you', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on the rituals or routines that keep you connected', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about what you\'ve learned about love from this relationship', type: 'reflective', difficulty: 3 },
+        { text: 'Write about where you hope your relationship is in 5 years', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on something you want to apologize for or do differently', type: 'reflective', difficulty: 3 },
+      ],
+      partnerSingle: [
+        // 5 min - Action
+        { text: 'Do one small thing to take care of yourself today', type: 'action', difficulty: 1 },
+        { text: 'Compliment yourself out loud or in writing', type: 'action', difficulty: 1 },
+        { text: 'Wear something that makes you feel confident', type: 'action', difficulty: 1 },
+        { text: 'Take yourself on a mini 5-minute "date" (coffee, a walk, a song)', type: 'action', difficulty: 1 },
+        { text: 'Flirt with life — do one thing that feels a little bold or playful', type: 'action', difficulty: 1 },
+        { text: 'Unfollow or mute one account that makes you feel bad about being single', type: 'action', difficulty: 1 },
+        { text: 'Say yes to a social invitation you might normally skip', type: 'action', difficulty: 1 },
+        { text: 'Tell a friend one thing you\'re looking for in a future partner', type: 'action', difficulty: 1 },
+        { text: 'Ask a friend to set you up with someone', type: 'action', difficulty: 1 },
+        // 5 min - Reflective
+        { text: 'Write down one thing you love about your life right now as a single person', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what are you learning about yourself in this season?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one quality you want in a future partner', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what\'s one way you\'ve grown since your last relationship?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down something you can do now that would be harder in a relationship', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: are you single by choice, circumstance, or healing? How do you feel about it?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing you\'re proud of yourself for lately', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what would you want a future partner to know about you?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one relationship pattern you want to break', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: do you treat yourself the way you\'d want a partner to treat you?', type: 'reflective', difficulty: 1 },
+        // 15 min - Action
+        { text: 'Take yourself on a real solo date (meal, museum, movie, walk)', type: 'action', difficulty: 3 },
+        { text: 'Do something you\'ve been waiting for a partner to do with you', type: 'action', difficulty: 3 },
+        { text: 'Reach out to someone you\'re curious about (romantically or platonically)', type: 'action', difficulty: 3 },
+        { text: 'Cook yourself a nice meal — plate it well, sit down, enjoy it', type: 'action', difficulty: 3 },
+        { text: 'Write a letter to your future partner (you don\'t have to send it)', type: 'action', difficulty: 3 },
+        { text: 'Plan a fun solo adventure for the weekend', type: 'action', difficulty: 3 },
+        { text: 'Call a friend who\'s good at relationships and ask for advice', type: 'action', difficulty: 3 },
+        { text: 'Do something that makes you feel attractive or confident', type: 'action', difficulty: 3 },
+        { text: 'Treat yourself to something small that brings you joy', type: 'action', difficulty: 3 },
+        // 15 min - Reflective
+        { text: 'Journal about what you want your next relationship to look like', type: 'reflective', difficulty: 3 },
+        { text: 'Write about a past relationship and what it taught you', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on your relationship with yourself — are you a good partner to you?', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about what scares you most about dating or relationships', type: 'reflective', difficulty: 3 },
+        { text: 'Write about the kind of partner you want to be someday', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect: what do you need to heal before your next relationship?', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about what "ready for a relationship" means to you', type: 'reflective', difficulty: 3 },
+        { text: 'Write about the difference between being alone and being lonely', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on whether you\'re looking for a relationship to complete you or complement you', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about what love means to you right now', type: 'reflective', difficulty: 3 },
       ],
       friendships: [
-        // Easy - Action
+        // 5 min - Action
         { text: 'Send a genuine message to a friend you haven\'t talked to recently', type: 'action', difficulty: 1 },
         { text: 'React to a friend\'s post with a thoughtful comment', type: 'action', difficulty: 1 },
-        { text: 'Send a voice memo to a friend', type: 'action', difficulty: 1 },
-        { text: 'Share a meme or article that made you think of a friend', type: 'action', difficulty: 1 },
-        { text: 'Text a friend to ask how they\'re doing', type: 'action', difficulty: 1 },
-        { text: 'Send a friend a song or podcast recommendation', type: 'action', difficulty: 1 },
-        // Easy - Reflective
+        { text: 'Send a friend a meme, song, or link that made you think of them', type: 'action', difficulty: 1 },
+        { text: 'Respond to a friend\'s text you\'ve been meaning to get back to', type: 'action', difficulty: 1 },
+        { text: 'Send a friend a compliment out of the blue', type: 'action', difficulty: 1 },
+        { text: 'Share something you\'re excited about with a friend', type: 'action', difficulty: 1 },
+        { text: 'Ask a friend for a recommendation (book, show, restaurant)', type: 'action', difficulty: 1 },
+        { text: 'Send a friend a "remember when..." message', type: 'action', difficulty: 1 },
+        { text: 'Congratulate a friend on something they accomplished', type: 'action', difficulty: 1 },
+        { text: 'Ask a friend one real question about their life right now', type: 'action', difficulty: 1 },
+        { text: 'Save the date for a friend\'s upcoming event or milestone', type: 'action', difficulty: 1 },
+        { text: 'Forward a friend a job, opportunity, or article they\'d appreciate', type: 'action', difficulty: 1 },
+        { text: 'Text a friend: "No need to reply, just thinking of you"', type: 'action', difficulty: 1 },
+        // 5 min - Reflective
         { text: 'Write down one friend you want to reconnect with and why', type: 'reflective', difficulty: 1 },
-        { text: 'Think of a friend who\'s been there for you and write them a mental thank you', type: 'reflective', difficulty: 1 },
-        // Hard - Action
+        { text: 'Write down what you appreciate most about a specific friend', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: which friendship have you been neglecting?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one way a friend has shown up for you recently', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing you\'ve learned from a friend', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what kind of friend do you want to be?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down a friend who\'s going through something — and how you could support them', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one quality you look for in friendships', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: do your friendships energize you or drain you? Why?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down a friendship you\'ve outgrown and how you feel about it', type: 'reflective', difficulty: 1 },
+        { text: 'Write down a new friend you\'d like to get to know better', type: 'reflective', difficulty: 1 },
+        // 15 min - Action
         { text: 'Call a friend for a real catch-up conversation', type: 'action', difficulty: 3 },
         { text: 'Plan a get-together with friends', type: 'action', difficulty: 3 },
         { text: 'Reach out to an old friend you\'ve lost touch with', type: 'action', difficulty: 3 },
-        { text: 'Invite a friend to do something specific together', type: 'action', difficulty: 3 },
-        { text: 'Send a handwritten card or letter to a friend', type: 'action', difficulty: 3 },
-        { text: 'Video call a friend who lives far away', type: 'action', difficulty: 3 },
-        { text: 'Help a friend with something they need', type: 'action', difficulty: 3 },
-        // Hard - Reflective
+        { text: 'Make plans with a friend for the next 2 weeks', type: 'action', difficulty: 3 },
+        { text: 'Write and send a longer message to a friend catching them up on your life', type: 'action', difficulty: 3 },
+        { text: 'Look through old photos with a friend and reminisce', type: 'action', difficulty: 3 },
+        { text: 'Send a friend a small gift, care package, or handwritten note', type: 'action', difficulty: 3 },
+        { text: 'Help a friend with something they\'re working on or struggling with', type: 'action', difficulty: 3 },
+        { text: 'Cook or share a meal with a friend', type: 'action', difficulty: 3 },
+        { text: 'Take a walk or do an activity with a friend', type: 'action', difficulty: 3 },
+        { text: 'Ask a friend to teach you something they know', type: 'action', difficulty: 3 },
+        { text: 'Plan a trip, adventure, or new experience with a friend', type: 'action', difficulty: 3 },
+        { text: 'Be fully present for 15 minutes while a friend vents or shares', type: 'action', difficulty: 3 },
+        // 15 min - Reflective
         { text: 'Journal about the friendships that matter most and how to nurture them', type: 'reflective', difficulty: 3 },
-        { text: 'Write about what you value most in a friendship', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about a friend who shaped who you are today', type: 'reflective', difficulty: 3 },
+        { text: 'Write about how your friendships have changed over the years', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on a time a friend was there for you when it mattered', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about what you need from friendships right now in your life', type: 'reflective', difficulty: 3 },
+        { text: 'Write about a friendship that ended and what you learned', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on the balance of giving and receiving in your friendships', type: 'reflective', difficulty: 3 },
+        { text: 'Write about a difficult conversation you need to have with a friend', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about how you maintain friendships across distance or time', type: 'reflective', difficulty: 3 },
+        { text: 'Write about a friend you admire and why', type: 'reflective', difficulty: 3 },
       ],
       career: [
-        // Easy - Action (100% action for career)
+        // 5 min - Action
         { text: 'Organize your workspace for 5 minutes', type: 'action', difficulty: 1 },
         { text: 'Write down your #1 priority for today', type: 'action', difficulty: 1 },
         { text: 'Send one networking message or professional email', type: 'action', difficulty: 1 },
         { text: 'Delete 10 emails or clear 3 items from your task list', type: 'action', difficulty: 1 },
-        { text: 'Review your calendar for tomorrow and prepare', type: 'action', difficulty: 1 },
-        { text: 'Write down one win from today at work', type: 'action', difficulty: 1 },
-        { text: 'Take a real break from work - no screens', type: 'action', difficulty: 1 },
-        // Hard - Action
-        { text: 'Spend 30 minutes learning a skill that would advance your career', type: 'action', difficulty: 3 },
+        { text: 'Send a thank you message to a colleague who helped you', type: 'action', difficulty: 1 },
+        { text: 'Add one task to your to-do list that you\'ve been avoiding', type: 'action', difficulty: 1 },
+        { text: 'Take a 5-minute break away from your screen', type: 'action', difficulty: 1 },
+        { text: 'Tidy your digital desktop or close unused tabs', type: 'action', difficulty: 1 },
+        { text: 'Read one industry article or post', type: 'action', difficulty: 1 },
+        { text: 'Block 30 minutes on your calendar for focused work tomorrow', type: 'action', difficulty: 1 },
+        { text: 'Celebrate a colleague\'s win (publicly or privately)', type: 'action', difficulty: 1 },
+        { text: 'Ask a coworker how their day is going — and actually listen', type: 'action', difficulty: 1 },
+        { text: 'Unsubscribe from one work newsletter you never read', type: 'action', difficulty: 1 },
+        { text: 'Write down one skill you want to develop this quarter', type: 'action', difficulty: 1 },
+        // 5 min - Reflective
+        { text: 'Write down one thing you accomplished today (however small)', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing you\'re procrastinating on and why', type: 'reflective', difficulty: 1 },
+        { text: 'Write down what energizes you most about your work', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what drained you at work today?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing you\'re proud of from this week at work', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: are you doing work that matters to you? Why or why not?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one boundary you need to set at work', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what would make tomorrow at work 10% better?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing you wish you could change about your job', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: who at work do you want to learn from?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down how you want to feel at work — and how you actually feel', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what\'s one thing you keep saying yes to that you should say no to?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one risk you\'ve been afraid to take at work', type: 'reflective', difficulty: 1 },
+        // 15 min - Action
+        { text: 'Spend 15 minutes learning a skill that would advance your career', type: 'action', difficulty: 3 },
         { text: 'Update one section of your resume or portfolio', type: 'action', difficulty: 3 },
         { text: 'Reach out to one person for career advice or mentorship', type: 'action', difficulty: 3 },
         { text: 'Complete one work task you\'ve been putting off', type: 'action', difficulty: 3 },
-        { text: 'Set up a coffee chat with someone in your field', type: 'action', difficulty: 3 },
-        { text: 'Work on a side project or passion project', type: 'action', difficulty: 3 },
-        { text: 'Draft a plan for a goal you want to achieve at work', type: 'action', difficulty: 3 },
-        { text: 'Organize your files, notes, or digital workspace', type: 'action', difficulty: 3 },
+        { text: 'Review your goals for the quarter and adjust if needed', type: 'action', difficulty: 3 },
+        { text: 'Clean out your inbox or organize your files for 15 minutes', type: 'action', difficulty: 3 },
+        { text: 'Draft a message you\'ve been putting off sending', type: 'action', difficulty: 3 },
+        { text: 'Research one company, role, or opportunity you\'re curious about', type: 'action', difficulty: 3 },
+        { text: 'Ask for feedback from someone you trust at work', type: 'action', difficulty: 3 },
+        { text: 'Map out your ideal workday vs. your actual workday', type: 'action', difficulty: 3 },
+        { text: 'Update your LinkedIn or professional profile', type: 'action', difficulty: 3 },
+        { text: 'Schedule a coffee chat with someone in your field', type: 'action', difficulty: 3 },
+        { text: 'Brainstorm what your next career move might be', type: 'action', difficulty: 3 },
+        // 15 min - Reflective
+        { text: 'Write down your wins from the past month', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about where you want your career to be in 5 years', type: 'reflective', difficulty: 3 },
+        { text: 'Write about what success means to you right now', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on a mistake at work and what you learned from it', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about the best boss, mentor, or colleague you\'ve had — and why', type: 'reflective', difficulty: 3 },
+        { text: 'Write about what kind of work environment helps you thrive', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on how your career has shaped who you are', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about a career decision you\'re wrestling with', type: 'reflective', difficulty: 3 },
+        { text: 'Write about the gap between where you are and where you want to be', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on what you\'d do if money weren\'t a factor', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about a professional accomplishment you\'re proud of and why it mattered', type: 'reflective', difficulty: 3 },
+        { text: 'Write about what kind of leader or coworker you want to be', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect: is your current path aligned with your values?', type: 'reflective', difficulty: 3 },
       ],
       education: [
-        // Easy - Action (100% action)
+        // 5 min - Action
         { text: 'Read one article about something you want to learn', type: 'action', difficulty: 1 },
         { text: 'Watch one 5-minute educational video', type: 'action', difficulty: 1 },
         { text: 'Learn one new word, concept, or fact and write it down', type: 'action', difficulty: 1 },
         { text: 'Add one book or course to your learning list', type: 'action', difficulty: 1 },
         { text: 'Listen to 5 minutes of an educational podcast', type: 'action', difficulty: 1 },
-        { text: 'Review notes from something you\'re learning', type: 'action', difficulty: 1 },
-        { text: 'Look up the answer to a question you\'ve been curious about', type: 'action', difficulty: 1 },
-        // Hard - Action
-        { text: 'Spend 30 minutes on a course, tutorial, or book', type: 'action', difficulty: 3 },
-        { text: 'Practice a skill you\'re learning for 30 minutes', type: 'action', difficulty: 3 },
+        { text: 'Write down one question you\'re curious about', type: 'action', difficulty: 1 },
+        { text: 'Look up a word or concept you\'ve heard but don\'t fully understand', type: 'action', difficulty: 1 },
+        { text: 'Ask someone to explain something they know well', type: 'action', difficulty: 1 },
+        { text: 'Review notes or highlights from something you recently learned', type: 'action', difficulty: 1 },
+        { text: 'Find one new account, newsletter, or creator to learn from', type: 'action', difficulty: 1 },
+        { text: 'Google something you\'ve always wondered about', type: 'action', difficulty: 1 },
+        { text: 'Skim the table of contents of a book you want to read', type: 'action', difficulty: 1 },
+        { text: 'Share something you learned recently with someone else', type: 'action', difficulty: 1 },
+        // 5 min - Reflective
+        { text: 'Write down one thing you learned today (from anywhere)', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing you want to learn and why it matters to you', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what\'s stopping you from learning something you\'ve been wanting to?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one skill you wish you had', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: how do you learn best? (reading, watching, doing, etc.)', type: 'reflective', difficulty: 1 },
+        { text: 'Write down something you learned recently that changed how you think', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what did you love learning as a kid?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one area where you feel like a beginner', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: who has taught you the most in your life?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing you know now that you wish you\'d learned earlier', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: are you learning things that matter to you, or just consuming?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down what you\'d learn if you had unlimited time', type: 'reflective', difficulty: 1 },
+        // 15 min - Action
+        { text: 'Spend 15 minutes on a course, tutorial, or book', type: 'action', difficulty: 3 },
+        { text: 'Practice a skill you\'re learning for 15 minutes', type: 'action', difficulty: 3 },
         { text: 'Teach someone one thing you know well', type: 'action', difficulty: 3 },
-        { text: 'Work on a personal project for 30 minutes', type: 'action', difficulty: 3 },
+        { text: 'Work on a personal project for 15 minutes', type: 'action', difficulty: 3 },
+        { text: 'Take notes on something you\'re reading or watching', type: 'action', difficulty: 3 },
+        { text: 'Summarize what you learned from a recent book, article, or video', type: 'action', difficulty: 3 },
+        { text: 'Research a topic you\'ve been curious about', type: 'action', difficulty: 3 },
+        { text: 'Practice explaining a concept in your own words', type: 'action', difficulty: 3 },
+        { text: 'Start a new book, course, or learning project', type: 'action', difficulty: 3 },
+        { text: 'Revisit something you learned a while ago and see what you remember', type: 'action', difficulty: 3 },
+        { text: 'Create a simple study plan for something you want to learn', type: 'action', difficulty: 3 },
         { text: 'Watch a documentary or educational video on a new topic', type: 'action', difficulty: 3 },
-        { text: 'Take an online lesson or class', type: 'action', difficulty: 3 },
-        { text: 'Read a chapter of a non-fiction book', type: 'action', difficulty: 3 },
-        { text: 'Do hands-on practice with something you\'re learning', type: 'action', difficulty: 3 },
+        { text: 'Try a new skill hands-on for 15 minutes', type: 'action', difficulty: 3 },
+        { text: 'Have a conversation with someone about something they\'re expert in', type: 'action', difficulty: 3 },
+        // 15 min - Reflective
+        { text: 'Journal about what you want to learn this year and why', type: 'reflective', difficulty: 3 },
+        { text: 'Write about a time when learning something changed your life', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on your relationship with learning — do you enjoy it or dread it?', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about a subject you gave up on and whether you\'d try again', type: 'reflective', difficulty: 3 },
+        { text: 'Write about what being a "lifelong learner" means to you', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on the difference between learning for credentials vs. curiosity', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about a teacher, mentor, or book that shaped how you think', type: 'reflective', difficulty: 3 },
+        { text: 'Write about what you\'d want to master if you had 10 years to dedicate to it', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on something you thought you knew but realized you didn\'t', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about how learning connects to your bigger goals in life', type: 'reflective', difficulty: 3 },
+        { text: 'Write about a mistake that taught you more than any class could', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect: what would you teach others if given the chance?', type: 'reflective', difficulty: 3 },
       ],
       recreation: [
-        // Easy - Action (100% action)
+        // 5 min - Action
         { text: 'Do a crossword, sudoku, or word puzzle for 5 minutes', type: 'action', difficulty: 1 },
         { text: 'Listen to one song that brings you joy', type: 'action', difficulty: 1 },
         { text: 'Watch one funny video', type: 'action', difficulty: 1 },
         { text: 'Step outside and enjoy the weather for 5 minutes', type: 'action', difficulty: 1 },
-        { text: 'Doodle or sketch something for 5 minutes', type: 'action', difficulty: 1 },
+        { text: 'Dance to one song like nobody\'s watching', type: 'action', difficulty: 1 },
+        { text: 'Doodle or sketch something (no pressure for it to be good)', type: 'action', difficulty: 1 },
         { text: 'Play with a pet for 5 minutes', type: 'action', difficulty: 1 },
-        { text: 'Look at photos from a fun memory', type: 'action', difficulty: 1 },
-        { text: 'Dance to one song in your living room', type: 'action', difficulty: 1 },
-        // Hard - Action
-        { text: 'Spend 30 minutes on a hobby you\'ve been neglecting', type: 'action', difficulty: 3 },
-        { text: 'Draw, paint, write, or make something creative for 30 minutes', type: 'action', difficulty: 3 },
-        { text: 'Play a video game, board game, or card game for 30 minutes', type: 'action', difficulty: 3 },
-        { text: 'Do something fun with zero productive purpose for 30 minutes', type: 'action', difficulty: 3 },
-        { text: 'Watch an episode of a show you love', type: 'action', difficulty: 3 },
-        { text: 'Play or practice a musical instrument', type: 'action', difficulty: 3 },
-        { text: 'Work on a craft or DIY project', type: 'action', difficulty: 3 },
-        { text: 'Go somewhere just for fun (park, cafe, bookstore)', type: 'action', difficulty: 3 },
+        { text: 'Text a friend a meme or joke', type: 'action', difficulty: 1 },
+        { text: 'Look up a new recipe you\'d like to try', type: 'action', difficulty: 1 },
+        { text: 'Stretch while listening to your favorite song', type: 'action', difficulty: 1 },
+        { text: 'Read a few pages of a book you\'re enjoying', type: 'action', difficulty: 1 },
+        { text: 'Sing along to a song (even badly)', type: 'action', difficulty: 1 },
+        // 5 min - Reflective
+        { text: 'Write down one thing that\'s been bringing you joy lately', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: when did you last do something just for fun?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down a hobby you used to love and why you stopped', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what does "play" look like for you as an adult?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one fun thing you want to do this week', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: do you give yourself permission to have fun?', type: 'reflective', difficulty: 1 },
+        // 15 min - Action
+        { text: 'Spend 15 minutes on a hobby you\'ve been neglecting', type: 'action', difficulty: 3 },
+        { text: 'Draw, paint, write, or make something creative for 15 minutes', type: 'action', difficulty: 3 },
+        { text: 'Play a video game, board game, or card game for 15 minutes', type: 'action', difficulty: 3 },
+        { text: 'Do something fun with zero productive purpose for 15 minutes', type: 'action', difficulty: 3 },
+        { text: 'Go for a walk with no destination in mind', type: 'action', difficulty: 3 },
+        { text: 'Cook or bake something just because you want to', type: 'action', difficulty: 3 },
+        { text: 'Do a mini photoshoot of something you find beautiful', type: 'action', difficulty: 3 },
+        { text: 'Rearrange or redecorate a small space', type: 'action', difficulty: 3 },
+        { text: 'Browse a bookstore, record store, or thrift shop in person', type: 'action', difficulty: 3 },
+        { text: 'Build, craft, or tinker with something', type: 'action', difficulty: 3 },
+        { text: 'Try a new recipe or food you\'ve never had', type: 'action', difficulty: 3 },
+        { text: 'Play music or mess around with an instrument', type: 'action', difficulty: 3 },
+        { text: 'Sign up for a class, league, or group for a hobby you\'re curious about', type: 'action', difficulty: 3 },
+        // 15 min - Reflective
+        { text: 'Write about a hobby or interest you\'d love to pick back up', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect: what\'s one thing you\'d do more of if you had more time?', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about the last time you laughed really hard', type: 'reflective', difficulty: 3 },
+        { text: 'Write about what recharges you vs. what drains you', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect: how do you balance productivity and play in your life?', type: 'reflective', difficulty: 3 },
       ],
       spirituality: [
-        // Easy - Action
+        // 5 min - Action
         { text: 'Take 5 deep breaths and center yourself', type: 'action', difficulty: 1 },
         { text: 'Step outside and notice something beautiful', type: 'action', difficulty: 1 },
-        { text: 'Light a candle and sit quietly for a moment', type: 'action', difficulty: 1 },
-        { text: 'Read one inspiring quote or passage', type: 'action', difficulty: 1 },
-        // Easy - Reflective
+        { text: 'Light a candle and sit with it for a moment', type: 'action', difficulty: 1 },
+        { text: 'Listen to a song that moves you — really listen', type: 'action', difficulty: 1 },
+        { text: 'Say one thing you\'re grateful for out loud', type: 'action', difficulty: 1 },
+        { text: 'Look at the sky for 2 minutes without distraction', type: 'action', difficulty: 1 },
+        { text: 'Read a poem, prayer, or passage that resonates with you', type: 'action', difficulty: 1 },
+        { text: 'Put your hand on your heart and take 3 slow breaths', type: 'action', difficulty: 1 },
+        { text: 'Send a silent wish of kindness to someone you love', type: 'action', difficulty: 1 },
+        { text: 'Notice 5 things around you using your senses', type: 'action', difficulty: 1 },
+        { text: 'Stretch your body slowly and notice how it feels', type: 'action', difficulty: 1 },
+        { text: 'Speak one kind thing to yourself', type: 'action', difficulty: 1 },
+        // 5 min - Reflective
         { text: 'Write down 3 things you\'re grateful for', type: 'reflective', difficulty: 1 },
         { text: 'Name one thing that gives your life meaning today', type: 'reflective', difficulty: 1 },
         { text: 'Pause and ask yourself: what do I need right now?', type: 'reflective', difficulty: 1 },
-        { text: 'Notice one small miracle or coincidence from today', type: 'reflective', difficulty: 1 },
-        { text: 'Reflect on something you\'re taking for granted', type: 'reflective', difficulty: 1 },
-        // Hard - Action
-        { text: 'Meditate or sit in stillness for 20+ minutes', type: 'action', difficulty: 3 },
-        { text: 'Spend 30 minutes in nature without your phone', type: 'action', difficulty: 3 },
-        { text: 'Attend a religious service, spiritual gathering, or meditation group', type: 'action', difficulty: 3 },
-        { text: 'Do a walking meditation or mindful walk', type: 'action', difficulty: 3 },
-        { text: 'Practice yoga or another contemplative movement', type: 'action', difficulty: 3 },
-        // Hard - Reflective
+        { text: 'Write down one moment today when you felt fully present', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what are you holding onto that you could release?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing bigger than yourself that you feel connected to', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: when do you feel most at peace?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down a question you\'re sitting with right now', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what does your soul need today?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one small thing that felt sacred or meaningful recently', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: how do you want to show up in the world today?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing you\'re letting go of today', type: 'reflective', difficulty: 1 },
+        // 15 min - Action
+        { text: 'Meditate or sit in stillness for 15+ minutes', type: 'action', difficulty: 3 },
+        { text: 'Spend 15 minutes in nature without your phone', type: 'action', difficulty: 3 },
+        { text: 'Go for a slow, mindful walk — no podcast, no music', type: 'action', difficulty: 3 },
+        { text: 'Sit somewhere beautiful and just be for 15 minutes', type: 'action', difficulty: 3 },
+        { text: 'Read something spiritually nourishing for 15 minutes', type: 'action', difficulty: 3 },
+        { text: 'Write a letter of gratitude to someone (send it or not)', type: 'action', difficulty: 3 },
+        { text: 'Do a body scan — notice each part of your body without judgment', type: 'action', difficulty: 3 },
+        { text: 'Watch the sunrise or sunset with full attention', type: 'action', difficulty: 3 },
+        { text: 'Create something with no purpose other than expression', type: 'action', difficulty: 3 },
+        { text: 'Practice a breathing exercise or guided meditation', type: 'action', difficulty: 3 },
+        { text: 'Spend 15 minutes in silence — no phone, no tasks', type: 'action', difficulty: 3 },
+        { text: 'Visit a place that feels sacred or peaceful to you', type: 'action', difficulty: 3 },
+        // 15 min - Reflective
         { text: 'Journal about what gives your life meaning', type: 'reflective', difficulty: 3 },
-        { text: 'Reflect on your values and whether you\'re living by them', type: 'reflective', difficulty: 3 },
         { text: 'Write about a difficult experience and what it taught you', type: 'reflective', difficulty: 3 },
-        { text: 'Explore a big question you\'ve been pondering', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about what you believe and why', type: 'reflective', difficulty: 3 },
+        { text: 'Write about a moment when you felt awe or wonder', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on what death teaches you about how to live', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about a person who embodies the kind of spirit you admire', type: 'reflective', difficulty: 3 },
+        { text: 'Write about your relationship with uncertainty and not-knowing', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect: what spiritual practices (if any) nourish you?', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about forgiveness — who do you need to forgive (including yourself)?', type: 'reflective', difficulty: 3 },
+        { text: 'Write about what "enough" means to you', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on a time you felt deeply connected to something larger than yourself', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about how you want to be remembered', type: 'reflective', difficulty: 3 },
       ],
       community: [
-        // Easy - Action
+        // 5 min - Action
         { text: 'Hold the door, smile at a stranger, or give a genuine compliment', type: 'action', difficulty: 1 },
-        { text: 'Say hello to a neighbor you usually walk past', type: 'action', difficulty: 1 },
+        { text: 'Share or repost a cause you care about on social media', type: 'action', difficulty: 1 },
         { text: 'Leave a positive review for a local business you like', type: 'action', difficulty: 1 },
-        { text: 'Text a neighbor to check in on them', type: 'action', difficulty: 1 },
-        { text: 'Learn the name of someone in your building or street', type: 'action', difficulty: 1 },
-        // Easy - Reflective
-        { text: 'Write down one person in your community you could get to know better', type: 'reflective', difficulty: 1 },
-        { text: 'Reflect on what makes you feel at home in your neighborhood', type: 'reflective', difficulty: 1 },
-        // Hard - Action
-        { text: 'Have a real conversation with a neighbor', type: 'action', difficulty: 3 },
-        { text: 'Attend a local event, market, or gathering', type: 'action', difficulty: 3 },
-        { text: 'Invite a neighbor for coffee or a walk', type: 'action', difficulty: 3 },
-        { text: 'Offer to help a neighbor with something', type: 'action', difficulty: 3 },
-        { text: 'Visit a local shop or cafe and chat with the owner', type: 'action', difficulty: 3 },
-        { text: 'Bring something to a neighbor (baked goods, extra produce, etc.)', type: 'action', difficulty: 3 },
+        { text: 'Wave or say hello to a neighbor', type: 'action', difficulty: 1 },
+        { text: 'Pick up a piece of litter on your street', type: 'action', difficulty: 1 },
+        { text: 'Learn the name of someone you see regularly but don\'t know', type: 'action', difficulty: 1 },
+        { text: 'Buy something from a local business instead of a chain', type: 'action', difficulty: 1 },
+        { text: 'Thank a service worker by name', type: 'action', difficulty: 1 },
+        { text: 'Let someone go ahead of you in line', type: 'action', difficulty: 1 },
+        { text: 'Post about a local business or event you love', type: 'action', difficulty: 1 },
+        { text: 'Text a neighbor about something happening in the area', type: 'action', difficulty: 1 },
+        { text: 'Offer to help a neighbor with something small', type: 'action', difficulty: 1 },
+        { text: 'Sign a petition for something you believe in', type: 'action', difficulty: 1 },
+        // 5 min - Reflective
+        { text: 'Write down one way you could contribute to your community', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one neighbor you\'d like to know better', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: do you feel connected to your neighborhood? Why or why not?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing you appreciate about where you live', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what kind of neighbor do you want to be?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one way your community has supported you', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what local issue do you care about most?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing you could do to make your neighborhood better', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: who are the people who make your community run?', type: 'reflective', difficulty: 1 },
+        // 15 min - Action
         { text: 'Volunteer your time for a cause you care about', type: 'action', difficulty: 3 },
-        // Hard - Reflective
-        { text: 'Journal about what kind of community you want to be part of', type: 'reflective', difficulty: 3 },
-        { text: 'Write about a time someone in your community helped you', type: 'reflective', difficulty: 3 },
+        { text: 'Attend a community event or meeting', type: 'action', difficulty: 3 },
+        { text: 'Donate to or support a local organization', type: 'action', difficulty: 3 },
+        { text: 'Have a real conversation with a neighbor', type: 'action', difficulty: 3 },
+        { text: 'Walk around your neighborhood and notice something new', type: 'action', difficulty: 3 },
+        { text: 'Cook or bake something and share it with a neighbor', type: 'action', difficulty: 3 },
+        { text: 'Offer to help an elderly or busy neighbor with an errand', type: 'action', difficulty: 3 },
+        { text: 'Explore a part of your neighborhood you haven\'t been to', type: 'action', difficulty: 3 },
+        { text: 'Support a local fundraiser, market, or event', type: 'action', difficulty: 3 },
+        { text: 'Introduce yourself to someone new in your building or block', type: 'action', difficulty: 3 },
+        { text: 'Research what\'s happening locally (events, issues, news)', type: 'action', difficulty: 3 },
+        { text: 'Join a local group, club, or online community for your area', type: 'action', difficulty: 3 },
+        // 15 min - Reflective
+        { text: 'Research a local cause and write down how you could help', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about what "community" means to you', type: 'reflective', difficulty: 3 },
+        { text: 'Write about a time a stranger or neighbor helped you', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on how connected or isolated you feel in your area', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about the kind of community you want to live in', type: 'reflective', difficulty: 3 },
+        { text: 'Write about what you could contribute that others can\'t', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect: what\'s stopping you from being more involved locally?', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about a community you\'ve been part of that felt like home', type: 'reflective', difficulty: 3 },
+        { text: 'Write about the relationship between place and belonging', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect: how do you balance your own needs with contributing to others?', type: 'reflective', difficulty: 3 },
       ],
       health: [
-        // Easy - Action (100% action)
+        // 5 min - Action
         { text: 'Drink a full glass of water', type: 'action', difficulty: 1 },
         { text: 'Stretch for 5 minutes', type: 'action', difficulty: 1 },
         { text: 'Do 10 jumping jacks, squats, or pushups', type: 'action', difficulty: 1 },
         { text: 'Eat a piece of fruit or a vegetable', type: 'action', difficulty: 1 },
-        { text: 'Take a 5-minute walk', type: 'action', difficulty: 1 },
+        { text: 'Stand up and move your body for 5 minutes', type: 'action', difficulty: 1 },
+        { text: 'Step outside and get some fresh air', type: 'action', difficulty: 1 },
+        { text: 'Roll out a tight muscle with a ball or foam roller', type: 'action', difficulty: 1 },
         { text: 'Do a quick posture check and adjust how you\'re sitting', type: 'action', difficulty: 1 },
-        { text: 'Take the stairs instead of the elevator today', type: 'action', difficulty: 1 },
-        { text: 'Stand up and move for 5 minutes', type: 'action', difficulty: 1 },
-        // Hard - Action
-        { text: 'Exercise for 30 minutes', type: 'action', difficulty: 3 },
+        { text: 'Swap one drink for water today', type: 'action', difficulty: 1 },
+        { text: 'Set a timer to remind yourself to move in an hour', type: 'action', difficulty: 1 },
+        { text: 'Take the stairs instead of the elevator', type: 'action', difficulty: 1 },
+        { text: 'Eat one meal without screens today', type: 'action', difficulty: 1 },
+        { text: 'Put on a song and dance or move to it', type: 'action', difficulty: 1 },
+        { text: 'Pack a healthy snack for later', type: 'action', difficulty: 1 },
+        { text: 'Read the ingredients label on something you eat often', type: 'action', difficulty: 1 },
+        { text: 'Add one extra serving of vegetables to your day', type: 'action', difficulty: 1 },
+        { text: 'Swap one processed snack for a whole food today', type: 'action', difficulty: 1 },
+        { text: 'Check your screen time and set a goal to reduce it', type: 'action', difficulty: 1 },
+        { text: 'Get 10 minutes of natural sunlight', type: 'action', difficulty: 1 },
+        { text: 'Try eating one meal more slowly today', type: 'action', difficulty: 1 },
+        // 5 min - Reflective
+        { text: 'Write down how your body feels right now', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: did you move your body today? How did it feel?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing your body did for you today', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what does your body need more of? Less of?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one healthy habit you want to build', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: how do you feel after eating well vs. eating poorly?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one way you could take better care of your body this week', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: do you listen to your body or push through its signals?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down how sleep (or lack of it) is affecting you', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what\'s one thing you\'re grateful your body can do?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down what you ate today — no judgment, just notice', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what\'s one food you know makes you feel good?', type: 'reflective', difficulty: 1 },
+        // 15 min - Action
+        { text: 'Exercise for 15 minutes', type: 'action', difficulty: 3 },
         { text: 'Prepare a healthy meal from scratch', type: 'action', difficulty: 3 },
-        { text: 'Go for a 30-minute walk or run', type: 'action', difficulty: 3 },
+        { text: 'Go for a 15-minute walk or run', type: 'action', difficulty: 3 },
         { text: 'Do a full stretching or yoga session', type: 'action', difficulty: 3 },
-        { text: 'Try a new healthy recipe', type: 'action', difficulty: 3 },
-        { text: 'Go to the gym or do a home workout', type: 'action', difficulty: 3 },
-        { text: 'Prep healthy meals or snacks for the week', type: 'action', difficulty: 3 },
-        { text: 'Take a bike ride or swim', type: 'action', difficulty: 3 },
+        { text: 'Go for a walk around your neighborhood', type: 'action', difficulty: 3 },
+        { text: 'Do a 15-minute home workout (YouTube, app, or freestyle)', type: 'action', difficulty: 3 },
+        { text: 'Prep healthy snacks or meals for the week', type: 'action', difficulty: 3 },
+        { text: 'Try a new type of movement you haven\'t done before', type: 'action', difficulty: 3 },
+        { text: 'Do a guided stretching or mobility routine', type: 'action', difficulty: 3 },
+        { text: 'Clean out your fridge and toss expired or unhealthy items', type: 'action', difficulty: 3 },
+        { text: 'Go to bed 15 minutes earlier tonight', type: 'action', difficulty: 3 },
+        { text: 'Make a grocery list focused on whole foods', type: 'action', difficulty: 3 },
+        { text: 'Do a body scan and stretch whatever feels tight', type: 'action', difficulty: 3 },
+        { text: 'Walk or bike somewhere you\'d normally drive', type: 'action', difficulty: 3 },
+        { text: 'Craft a doable, healthy morning routine you could actually stick to', type: 'action', difficulty: 3 },
+        { text: 'Design a calming wind-down routine for better sleep', type: 'action', difficulty: 3 },
+        { text: 'Set up your bedroom for better sleep (dark, cool, no screens)', type: 'action', difficulty: 3 },
+        { text: 'Research one health topic you\'ve been curious about', type: 'action', difficulty: 3 },
+        { text: 'Try cooking a new healthy recipe you\'ve been saving', type: 'action', difficulty: 3 },
+        { text: 'Plan your meals for the upcoming week', type: 'action', difficulty: 3 },
+        { text: 'Prep vegetables so they\'re washed, chopped, and ready to grab', type: 'action', difficulty: 3 },
+        { text: 'Make a big batch of soup, grain, or protein for the week', type: 'action', difficulty: 3 },
+        { text: 'Audit your pantry — what could you swap for healthier options?', type: 'action', difficulty: 3 },
+        { text: 'Try a new vegetable or ingredient you\'ve never cooked with', type: 'action', difficulty: 3 },
+        { text: 'Make your own version of a takeout favorite at home', type: 'action', difficulty: 3 },
+        { text: 'Learn to cook one simple, healthy dish you can repeat', type: 'action', difficulty: 3 },
+        { text: 'Freeze healthy portions for busy days', type: 'action', difficulty: 3 },
+        { text: 'Schedule a doctor, dentist, or health appointment you\'ve been putting off', type: 'action', difficulty: 3 },
+        { text: 'Look into health benefits or resources you might not be using', type: 'action', difficulty: 3 },
+        { text: 'Set up your workspace for better posture and ergonomics', type: 'action', difficulty: 3 },
+        { text: 'Try a new form of movement or fitness class', type: 'action', difficulty: 3 },
+        // 15 min - Reflective
+        { text: 'Journal about your relationship with your body', type: 'reflective', difficulty: 3 },
+        { text: 'Write about what "being healthy" means to you', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on how your energy levels have been lately', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about a time you felt really good in your body', type: 'reflective', difficulty: 3 },
+        { text: 'Write about what motivates you to take care of your health (or what blocks you)', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on the connection between your physical and mental health', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about how you want to feel in your body', type: 'reflective', difficulty: 3 },
+        { text: 'Write about one health habit you\'ve successfully built — and how', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect: are you caring for your body out of love or punishment?', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about what rest and recovery look like for you', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about your relationship with food', type: 'reflective', difficulty: 3 },
+        { text: 'Write about what "eating well" realistically looks like for your life', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on which meals or foods give you energy vs. drain you', type: 'reflective', difficulty: 3 },
       ],
       finances: [
         // Easy - Action
@@ -403,28 +748,63 @@
         { text: 'Journal about your relationship with money and one shift you want to make', type: 'reflective', difficulty: 3 },
       ],
       mentalHealth: [
-        // Easy - Action
+        // 5 min - Action
         { text: 'Step away from screens for 5 minutes', type: 'action', difficulty: 1 },
         { text: 'Take 5 slow, deep breaths', type: 'action', difficulty: 1 },
-        { text: 'Do a quick body scan and release tension', type: 'action', difficulty: 1 },
-        { text: 'Listen to a calming song or sounds of nature', type: 'action', difficulty: 1 },
-        // Easy - Reflective
+        { text: 'Go outside for a quick change of scenery', type: 'action', difficulty: 1 },
+        { text: 'Text someone you trust and tell them how you\'re doing', type: 'action', difficulty: 1 },
+        { text: 'Tidy one small area of your space', type: 'action', difficulty: 1 },
+        { text: 'Do something that usually makes you smile', type: 'action', difficulty: 1 },
+        { text: 'Unfollow or mute one account that affects your mental health', type: 'action', difficulty: 1 },
+        { text: 'Splash cold water on your face or hold ice', type: 'action', difficulty: 1 },
+        { text: 'Put on a song that matches or shifts your mood', type: 'action', difficulty: 1 },
+        { text: 'Cancel or reschedule something that\'s draining you', type: 'action', difficulty: 1 },
+        { text: 'Say no to one thing today', type: 'action', difficulty: 1 },
+        { text: 'Do one tiny task you\'ve been avoiding', type: 'action', difficulty: 1 },
+        { text: 'Hug someone, a pet, or yourself for 20 seconds', type: 'action', difficulty: 1 },
+        { text: 'List 3 things you can see, hear, and feel right now', type: 'action', difficulty: 1 },
+        // 5 min - Reflective
         { text: 'Name your current emotion without judgment', type: 'reflective', difficulty: 1 },
         { text: 'Write down one thing that\'s weighing on you', type: 'reflective', difficulty: 1 },
         { text: 'Ask yourself: what do I need right now?', type: 'reflective', difficulty: 1 },
-        { text: 'Write down 3 things that went well today', type: 'reflective', difficulty: 1 },
-        { text: 'Identify one thought that\'s been on repeat and question it', type: 'reflective', difficulty: 1 },
-        // Hard - Action
-        { text: 'Take a bath, nap, or do another restorative activity for 30 minutes', type: 'action', difficulty: 3 },
+        { text: 'Write down what triggered your current mood', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what\'s one thing you can control right now?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing you\'re doing well, even if it\'s small', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what would you say to a friend feeling this way?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thought that\'s been on repeat lately', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: are you running from something or toward something today?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down one thing you need to let go of', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what\'s one kind thing you can do for yourself today?', type: 'reflective', difficulty: 1 },
+        { text: 'Write down how your body is holding your stress', type: 'reflective', difficulty: 1 },
+        { text: 'Reflect: what\'s draining your energy lately?', type: 'reflective', difficulty: 1 },
+        // 15 min - Action
+        { text: 'Take a bath, nap, or do another restorative activity for 15 minutes', type: 'action', difficulty: 3 },
         { text: 'Set one boundary or say no to one thing that\'s draining you', type: 'action', difficulty: 3 },
-        { text: 'Do a guided meditation or breathing exercise', type: 'action', difficulty: 3 },
-        { text: 'Call or text a supportive friend to talk through something', type: 'action', difficulty: 3 },
-        { text: 'Declutter one small space to clear your mind', type: 'action', difficulty: 3 },
-        // Hard - Reflective
+        { text: 'Call or text someone who makes you feel safe', type: 'action', difficulty: 3 },
+        { text: 'Do something comforting: tea, blanket, cozy show', type: 'action', difficulty: 3 },
+        { text: 'Take a slow walk with no agenda', type: 'action', difficulty: 3 },
+        { text: 'Write out everything in your head — brain dump', type: 'action', difficulty: 3 },
+        { text: 'Research a therapist, counselor, or support group', type: 'action', difficulty: 3 },
+        { text: 'Create a "feel-better" list for hard days', type: 'action', difficulty: 3 },
+        { text: 'Do something creative with no expectations', type: 'action', difficulty: 3 },
+        { text: 'Set up your environment for calm (lighting, sounds, clutter)', type: 'action', difficulty: 3 },
+        { text: 'Reach out to someone you\'ve been isolating from', type: 'action', difficulty: 3 },
+        // 15 min - Reflective
         { text: 'Journal about how you\'re really feeling', type: 'reflective', difficulty: 3 },
         { text: 'Reflect on your stress levels and write down one way to reduce them', type: 'reflective', difficulty: 3 },
         { text: 'Write a compassionate letter to yourself about something you\'re struggling with', type: 'reflective', difficulty: 3 },
-        { text: 'Identify your emotional patterns this week and what triggered them', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about what\'s really going on beneath the surface', type: 'reflective', difficulty: 3 },
+        { text: 'Write about a pattern you keep repeating and why', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on what self-care actually looks like for you (not Instagram)', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about your inner critic — what does it say?', type: 'reflective', difficulty: 3 },
+        { text: 'Write about a hard season you got through and how', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect: what are you afraid to feel right now?', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about what "good enough" would look like today', type: 'reflective', difficulty: 3 },
+        { text: 'Write about how you\'re different when you\'re struggling vs. thriving', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect on one relationship that affects your mental health', type: 'reflective', difficulty: 3 },
+        { text: 'Journal about what healing looks like for you right now', type: 'reflective', difficulty: 3 },
+        { text: 'Write about one belief about yourself you\'d like to change', type: 'reflective', difficulty: 3 },
+        { text: 'Reflect: are you being kind to yourself lately?', type: 'reflective', difficulty: 3 },
       ],
     };
 
@@ -6842,6 +7222,9 @@ This has been your year of growth and intention. What are you most proud of? Wha
       const [tendChatInput, setTendChatInput] = useState('');
       const [isTendChatTyping, setIsTendChatTyping] = useState(false);
       const tendChatRef = useRef(null);
+      
+      // Reflection input for reflective tends
+      const [reflectionInput, setReflectionInput] = useState('');
 
       // Get the week identifier (e.g., "2026-W03")
       const getWeekIdentifier = () => {
@@ -7364,17 +7747,17 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       const getDifficultyLabel = (difficulty) => {
         const isWeekend = isWeekendDay();
         if (isWeekend) {
-          // Weekend: 30 min or 60 min
+          // Weekend: 15 min or 30 min
           switch(difficulty) {
-            case 1: return { text: '30 min', color: '#E8A090', minutes: 30 };
-            case 2: return { text: '60 min', color: '#D9534F', minutes: 60 };
-            default: return { text: '30 min', color: '#E8A090', minutes: 30 };
+            case 1: return { text: '15 min', color: '#8FD4A0', minutes: 15 };
+            case 3: return { text: '30 min', color: '#E8A090', minutes: 30 };
+            default: return { text: '15 min', color: '#8FD4A0', minutes: 15 };
           }
         } else {
           // Weekday: 5 min or 15 min
           switch(difficulty) {
             case 1: return { text: '5 min', color: '#8FD4A0', minutes: 5 };
-            case 2: return { text: '15 min', color: '#F9D07A', minutes: 15 };
+            case 3: return { text: '15 min', color: '#E8A090', minutes: 15 };
             default: return { text: '5 min', color: '#8FD4A0', minutes: 5 };
           }
         }
@@ -7878,12 +8261,46 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     <span>Chat about this tend</span>
                   </button>
                   
+                  {/* Reflection input for reflective tends */}
+                  {selectedTendy.type === 'reflective' && (
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{
+                        display: 'block',
+                        fontSize: '0.85rem',
+                        color: 'var(--text-muted)',
+                        marginBottom: '0.5rem',
+                        fontWeight: 500,
+                      }}>
+                        ✍️ Your reflection (optional)
+                      </label>
+                      <textarea
+                        value={reflectionInput}
+                        onChange={(e) => setReflectionInput(e.target.value)}
+                        placeholder="Write your thoughts here..."
+                        style={{
+                          width: '100%',
+                          minHeight: '100px',
+                          padding: '0.75rem',
+                          borderRadius: '10px',
+                          border: '1px solid var(--border)',
+                          backgroundColor: 'var(--bg-card)',
+                          color: 'var(--text)',
+                          fontSize: '0.95rem',
+                          fontFamily: 'inherit',
+                          resize: 'vertical',
+                          boxSizing: 'border-box',
+                        }}
+                      />
+                    </div>
+                  )}
+                  
                   <button style={tendyStyles.completeButton} onClick={() => {
                     // Complete regular tendy
                     const completedTendy = {
                       ...selectedTendy,
                       completed: true,
-                      completedAt: new Date().toISOString()
+                      completedAt: new Date().toISOString(),
+                      reflection: selectedTendy.type === 'reflective' ? reflectionInput : undefined
                     };
                     setTodaysTendies(todaysTendies.map(t => 
                       t.id === selectedTendy.id ? completedTendy : t
@@ -7901,6 +8318,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       setTendyStreak(tendyStreak + 1);
                     }
                     setJustCompletedPoints(selectedTendy.points);
+                    setReflectionInput(''); // Clear reflection input
                     setShowCelebration(true);
                     setTimeout(() => {
                       setShowCelebration(false);
@@ -12654,4 +13072,5 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
