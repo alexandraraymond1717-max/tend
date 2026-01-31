@@ -5247,7 +5247,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
         if (!onboardingCompleted && (onboardingStep === 1 || onboardingStep === 2)) {
           return (
             <div style={{...styles.container, overflow: 'auto'}}>
-              <header style={{...styles.header, justifyContent: 'space-between', alignItems: 'center', position: 'relative'}}>
+              <header style={{...styles.header, justifyContent: 'space-between', alignItems: 'center', position: 'sticky', top: 0, zIndex: 100}}>
                 <div style={{...styles.headerLeft, position: 'absolute', left: '1rem'}}>
                   <div style={styles.logo}>
                     <svg width="28" height="28" viewBox="0 0 80 80" fill="none">
@@ -11275,8 +11275,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           maxWidth: '800px',
           margin: '0 auto',
           width: '100%',
-          overflow: 'auto',
-          height: '100%',
         },
         section: {
           marginBottom: '1rem',
@@ -11364,7 +11362,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             <div style={{
               ...insightsStyles.section,
               position: 'sticky',
-              top: 0,
+              top: onboardingStep ? '56px' : 0,
               zIndex: 50,
               boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
             }}>
@@ -13199,6 +13197,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
