@@ -12226,13 +12226,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                     </span>
                                   )}
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                  <div style={{ display: 'flex', gap: '0.75rem', fontSize: '0.85rem' }}>
-                                    <span style={{ width: '45px', textAlign: 'center', fontWeight: 600, color: importance >= 7 ? 'var(--accent)' : 'var(--text)' }}>{importance}</span>
-                                    <span style={{ width: '45px', textAlign: 'center', fontWeight: 600, color: consistency >= 7 ? 'var(--accent)' : gap >= 2 ? '#E8A090' : 'var(--text)' }}>{consistency}</span>
-                                  </div>
-                                  <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
-                                </div>
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.8rem', transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
                               </div>
                               
                               {/* Expanded Content */}
@@ -12241,8 +12235,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                   
                                   {/* Progress indicator during onboarding */}
                                   {!onboardingCompleted && onboardingStep === 1 && (() => {
-                                    const areaGoalIds = areaGoals.map(g => g.id);
-                                    const hasLinkedHabit = areaHabits.some(h => areaGoalIds.includes(h.goalId));
                                     return (
                                       <div style={{ 
                                         display: 'flex', 
@@ -12255,9 +12247,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                       }}>
                                         <span style={{ color: areaGoals.length > 0 ? 'var(--accent)' : 'var(--text-muted)' }}>
                                           {areaGoals.length > 0 ? '✓' : '○'} Goal
-                                        </span>
-                                        <span style={{ color: hasLinkedHabit ? 'var(--accent)' : 'var(--text-muted)' }}>
-                                          {hasLinkedHabit ? '✓' : '○'} Linked Habit
                                         </span>
                                         <span style={{ color: hasLifeMapInfo ? 'var(--accent)' : 'var(--text-muted)' }}>
                                           {hasLifeMapInfo ? '✓' : '○'} Prompt
@@ -12314,7 +12303,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                     </div>
                                   </div>
                                   
-                                  {/* 2. Weekly Habits */}
+                                  {/* 2. Weekly Habits - Only show after onboarding */}
+                                  {onboardingCompleted && (
                                   <div style={{ marginTop: '0.75rem' }}>
                                     <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                                       {areaHabits.length > 0 ? 'YOUR WEEKLY HABITS' : 'ADD A WEEKLY HABIT'} <span style={{ fontWeight: 400, fontSize: '0.65rem', color: 'var(--text-muted)' }}>(optional)</span>
@@ -12402,6 +12392,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                     </div>
                                     <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Press Enter to save</div>
                                   </div>
+                                  )}
                                   
                                   {/* 3. Life Area Prompt */}
                                   <div style={{ marginTop: '0.75rem' }}>
@@ -12597,8 +12588,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                               </div>
                             )}
                             
-                            {/* Strengths */}
-                            {strengths.length > 0 && (
+                            {/* Strengths - Only show after onboarding */}
+                            {onboardingCompleted && strengths.length > 0 && (
                               <div>
                                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--accent)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                   <span>💪</span> STRENGTHS
@@ -12610,8 +12601,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                               </div>
                             )}
                             
-                            {/* Back Burner */}
-                            {backBurner.length > 0 && (
+                            {/* Back Burner - Only show after onboarding */}
+                            {onboardingCompleted && backBurner.length > 0 && (
                               <div>
                                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                                   <span>🌿</span> BACK BURNER
@@ -13156,6 +13147,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
