@@ -1324,7 +1324,7 @@ Respond with ONLY the task text, nothing else.`,
       yesterday.setDate(yesterday.getDate() - 1);
       const yesterdayStr = getLocalDateString(yesterday);
       const yesterdayCompletedDomains = tendyHistory
-        .filter(t => t.date === yesterdayStr)
+        .filter(t => t.date === yesterdayStr && !t.isWeekendTend) // Only consider daily tends
         .map(t => t.domain);
       
       // Combine completed domains with the previously shown domain (if provided)
@@ -1359,13 +1359,13 @@ Respond with ONLY the task text, nothing else.`,
         penaltyWeights[d] = Math.pow(0.8, recentDomainCounts[d]);
       });
 
-      // Select ONE domain for the entire day
-      const todaysDomain = selectWeightedDomain(probabilities, domainsToAvoid, penaltyWeights);
+      // Select domain for daily tend
+      const dailyDomain = selectWeightedDomain(probabilities, domainsToAvoid, penaltyWeights);
       
-      console.log('Selected domain for today:', todaysDomain, isWeekend ? '(WEEKEND)' : '(weekday)');
+      console.log('Selected domain for daily tend:', dailyDomain, isWeekend ? '(WEEKEND)' : '(weekday)');
 
       // Get type weights for this domain
-      const typeWeights = TYPE_WEIGHTS[todaysDomain] || { action: 0.5, reflective: 0.5 };
+      const typeWeights = TYPE_WEIGHTS[dailyDomain] || { action: 0.5, reflective: 0.5 };
       
       // Select type based on weights
       const selectType = () => {
@@ -1374,74 +1374,63 @@ Respond with ONLY the task text, nothing else.`,
 
       const tendies = [];
       
-      // Weekday: Only 1 tend (5 min) using difficulty 1 templates
-      // Weekend: 2 tends - 5 min daily + 30 min special weekend tend
-      const templateDifficulties = isWeekend ? [1, 3] : [1]; // Source templates (1=quick, 3=deep)
-      const outputDifficulties = isWeekend ? [1, 3] : [1]; // 1=daily, 3=weekend special
-      const pointValues = isWeekend ? [5, 30] : [5]; // Points = minutes
-
-      // Get recent templates with different cooldowns
+      // Get recent templates for cooldown
       const recentEasyTemplates = tendyHistory
         .filter(t => {
           const daysDiff = (new Date(today) - new Date(t.date)) / (1000 * 60 * 60 * 24);
-          return daysDiff < 7 && t.difficulty === 1; // 7-day cooldown for easy
+          return daysDiff < 7 && t.difficulty === 1;
         })
         .map(t => t.templateText || t.text);
       
       const recentHardTemplates = tendyHistory
         .filter(t => {
           const daysDiff = (new Date(today) - new Date(t.date)) / (1000 * 60 * 60 * 24);
-          return daysDiff < 30 && t.difficulty === 3; // 30-day cooldown for hard
+          return daysDiff < 30 && t.difficulty === 3;
         })
         .map(t => t.templateText || t.text);
 
-      outputDifficulties.forEach((outputDiff, idx) => {
-        const templateDiff = templateDifficulties[idx];
-        const points = pointValues[idx];
-        const recentTemplates = templateDiff === 1 ? recentEasyTemplates : recentHardTemplates;
+      // Helper to create a tend from templates
+      const createTendFromPool = (domain, templateDiff, points, tendId, isWeekendTend = false) => {
         const selectedType = selectType();
+        const recentTemplates = templateDiff === 1 ? recentEasyTemplates : recentHardTemplates;
         
-        // Get templates for this difficulty and type (not recently used)
-        let templates = TENDY_TEMPLATES[todaysDomain].filter(t => 
+        let templates = TENDY_TEMPLATES[domain].filter(t => 
           t.difficulty === templateDiff && 
           t.type === selectedType && 
           !recentTemplates.includes(t.text)
         );
 
-        // Fallback 1: any template of this difficulty and type (even if recently used)
         if (templates.length === 0) {
-          templates = TENDY_TEMPLATES[todaysDomain].filter(t => 
+          templates = TENDY_TEMPLATES[domain].filter(t => 
             t.difficulty === templateDiff && t.type === selectedType
           );
         }
         
-        // Fallback 2: any template of this difficulty (any type)
         if (templates.length === 0) {
-          templates = TENDY_TEMPLATES[todaysDomain].filter(t => 
+          templates = TENDY_TEMPLATES[domain].filter(t => 
             t.difficulty === templateDiff && !recentTemplates.includes(t.text)
           );
         }
         
-        // Fallback 3: any template of this difficulty
         if (templates.length === 0) {
-          templates = TENDY_TEMPLATES[todaysDomain].filter(t => t.difficulty === templateDiff);
+          templates = TENDY_TEMPLATES[domain].filter(t => t.difficulty === templateDiff);
         }
 
         if (templates.length > 0) {
           const template = templates[Math.floor(Math.random() * templates.length)];
-          tendies.push({
-            id: `${today}-${outputDiff}`,
-            domain: todaysDomain,
+          return {
+            id: tendId,
+            domain: domain,
             text: template.text,
-            originalText: template.text, // Keep original for cooldown tracking
+            originalText: template.text,
             type: template.type,
-            difficulty: outputDiff, // 1 for daily, 3 for weekend special
-            points: points, // Points = minutes
-            minutes: points, // Store minutes explicitly
-            gardenElement: GARDEN_ELEMENTS[todaysDomain],
-            color: VLQ_DOMAINS[todaysDomain].color,
-            domainName: VLQ_DOMAINS[todaysDomain].name,
-            domainIcon: VLQ_DOMAINS[todaysDomain].icon,
+            difficulty: templateDiff,
+            points: points,
+            minutes: points,
+            gardenElement: GARDEN_ELEMENTS[domain],
+            color: VLQ_DOMAINS[domain].color,
+            domainName: VLQ_DOMAINS[domain].name,
+            domainIcon: VLQ_DOMAINS[domain].icon,
             date: today,
             generatedAt: new Date().toISOString(),
             completed: false,
@@ -1450,11 +1439,31 @@ Respond with ONLY the task text, nothing else.`,
             isPersonalized: false,
             isAIGenerated: false,
             isWeekend: isWeekend,
-            isWeekendSpecial: outputDiff === 3, // Mark the 30-min as weekend special
-            source: 'pool', // 'pool', 'pool+personalized', 'ai'
-          });
+            isWeekendTend: isWeekendTend, // true for the special weekend challenge
+            source: 'pool',
+          };
         }
-      });
+        return null;
+      };
+
+      // DAILY TEND: Always 5-min (difficulty 1 template)
+      const dailyTend = createTendFromPool(dailyDomain, 1, 5, `${today}-daily`, false);
+      if (dailyTend) {
+        tendies.push(dailyTend);
+      }
+
+      // WEEKEND TEND: Only on weekends, 15-min deep activity (difficulty 3 template)
+      if (isWeekend) {
+        // Select a DIFFERENT domain for weekend tend for variety
+        const weekendDomainsToAvoid = [...domainsToAvoid, dailyDomain];
+        const weekendDomain = selectWeightedDomain(probabilities, weekendDomainsToAvoid, penaltyWeights);
+        console.log('Selected domain for weekend tend:', weekendDomain);
+        
+        const weekendTend = createTendFromPool(weekendDomain, 3, 15, `${today}-weekend`, true);
+        if (weekendTend) {
+          tendies.push(weekendTend);
+        }
+      }
 
       return tendies;
     }
@@ -1469,35 +1478,30 @@ Respond with ONLY the task text, nothing else.`,
         return baseTendies;
       }
       
-      // Get the domain for today's tendies (they all share the same domain)
-      const todaysDomain = baseTendies[0]?.domain;
-      if (!todaysDomain) return baseTendies;
-      
-      // Calculate readiness for THIS SPECIFIC domain (now includes goals/habits/journal)
-      const domainReadiness = calculateDomainReadiness(todaysDomain, userProfile, goals, weeklyHabits, journalEntries);
-      
-      console.log(`Tend personalization for ${domainReadiness.domainName}:`, {
-        tier: domainReadiness.tier,
-        aiPct: `${domainReadiness.aiPct}%`,
-        poolPct: `${domainReadiness.poolPct}%`,
-        canGenerateAI: domainReadiness.canGenerateAI,
-        canPersonalize: domainReadiness.canPersonalize,
-        dataPoints: domainReadiness.dataPoints.map(d => d.label)
-      });
-      
-      // If no AI capability AND no personalization capability, just return pool templates as-is
-      if (!domainReadiness.canGenerateAI && !domainReadiness.canPersonalize) {
-        console.log(`No ${domainReadiness.domainName} context - using pool templates only`);
-        return baseTendies.map(t => ({
-          ...t,
-          personalizationNote: `No ${domainReadiness.domainName.toLowerCase()} info yet - add goals or share details!`
-        }));
-      }
-      
-      // SIMPLIFIED: Two decisions
-      // 1. AI or Pool? (probability-based)
-      // 2. If Pool, try to personalize (always attempt if we can)
+      // Process each tend individually since they may have different domains
       const enhancedTendies = await Promise.all(baseTendies.map(async (tendy) => {
+        const tendyDomain = tendy.domain;
+        if (!tendyDomain) return tendy;
+        
+        // Calculate readiness for THIS tend's domain
+        const domainReadiness = calculateDomainReadiness(tendyDomain, userProfile, goals, weeklyHabits, journalEntries);
+        
+        console.log(`Tend personalization for ${domainReadiness.domainName} (${tendy.isWeekendTend ? 'weekend' : 'daily'}):`, {
+          tier: domainReadiness.tier,
+          aiPct: `${domainReadiness.aiPct}%`,
+          canGenerateAI: domainReadiness.canGenerateAI,
+          canPersonalize: domainReadiness.canPersonalize,
+        });
+        
+        // If no AI capability AND no personalization capability, return pool template as-is
+        if (!domainReadiness.canGenerateAI && !domainReadiness.canPersonalize) {
+          console.log(`No ${domainReadiness.domainName} context - using pool template`);
+          return {
+            ...tendy,
+            personalizationNote: `No ${domainReadiness.domainName.toLowerCase()} info yet - add goals or share details!`
+          };
+        }
+        
         const roll = Math.random() * 100; // 0-100
         
         // Decision 1: Try AI generation?
@@ -2269,6 +2273,7 @@ Respond with ONLY the task text, nothing else.`,
       // 1: Life Map (prompts + goals + habits per focus area), 2: Quiz (optional), 3: First Tend
       const [onboardingStep, setOnboardingStep] = useState(1);
       const [onboardingCompleted, setOnboardingCompleted] = useState(false);
+      const [showOnboardingOverlay, setShowOnboardingOverlay] = useState(null); // 'lifemap', 'quiz', or null
       const [currentOnboardingArea, setCurrentOnboardingArea] = useState(null); // Which life area is being focused on
       
       const [weeklyHabits, setWeeklyHabits] = useState([]);
@@ -2323,10 +2328,10 @@ Respond with ONLY the task text, nothing else.`,
       const [showEventModal, setShowEventModal] = useState(false);
       const [showGoalModal, setShowGoalModal] = useState(false);
       const [showSettingsModal, setShowSettingsModal] = useState(false);
-      const [showChatOverlay, setShowChatOverlay] = useState(false);
       const [apiKey, setApiKey] = useState(() => localStorage.getItem('tend_api_key') || '');
       const [chatWidth, setChatWidth] = useState(320);
-      const [chatMinimized, setChatMinimized] = useState(true);
+      const [chatMinimized, setChatMinimized] = useState(false);
+      const [showChatOverlay, setShowChatOverlay] = useState(false); // Full-screen chat after onboarding
       const [isResizing, setIsResizing] = useState(false);
       const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth());
       const [showAdminDashboard, setShowAdminDashboard] = useState(() => {
@@ -3070,33 +3075,28 @@ Respond with ONLY the task text, nothing else.`,
         if (!vlqCompleted || onboardingCompleted || !onboardingStep) return;
         
         // Special case: When daily tend is completed (step 3), mark onboarding complete
-        // Note: User can also finish via "Go to Home" button which handles this separately
         if (onboardingStep === 3 && todaysTendies.some(t => t.completed)) {
           setOnboardingCompleted(true);
           setOnboardingStep(null);
           
-          // Show welcome message after onboarding completes (if not already shown)
-          if (messages.length === 0 || !messages.some(m => m.content?.includes('Welcome to Tend'))) {
-            const welcomeMsg = {
-              role: 'assistant',
-              content: `🌱 **Welcome to Tend!**
+          // Show welcome message after onboarding completes
+          const welcomeMsg = {
+            role: 'assistant',
+            content: `🌱 **Welcome to Tend!**
 
-You're all set up and ready to start your intentional living journey!
+Hi! I'm here to help you on your journey toward a more intentional life. 
 
-What would you like to do now? We could just talk about whatever's on your mind — whether it's what you're looking to accomplish in the near or long term, how you want to feel in the future, or if you'd like to explore your values together.
+You've completed your setup and your first Daily Tend — amazing start! Here's what you can do now:
 
-You can also minimize this chat and explore the app on your own:
-• **Daily Tend** — Your personalized daily activity
-• **Journal** — Reflect on your progress
+• **Daily Tend** — Get a personalized activity each day based on your life map
+• **Journal** — Reflect on your day and track your progress  
 • **Calendar** — See your history and plan ahead
-• **Life Map** — Update your goals and priorities
+• **Life Map** — Update your goals, habits, and priorities anytime
 
-What sounds good?`,
-              timestamp: new Date().toISOString()
-            };
-            setMessages([welcomeMsg]);
-            setShowChatOverlay(true);
-          }
+What would you like to explore?`,
+            timestamp: new Date().toISOString()
+          };
+          setMessages([welcomeMsg]);
           setCurrentConversationType('main');
         }
       }, [vlqCompleted, onboardingCompleted, onboardingStep, goals, weeklyHabits, userProfile, todaysTendies]);
@@ -5408,101 +5408,128 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                     }}
                   />
                   
-                  {/* Completion message and navigation */}
+                  {/* Skip / Continue buttons */}
                   <div style={{ 
+                    display: 'flex', 
+                    justifyContent: onboardingStep === 2 ? 'space-between' : 'flex-end', 
                     marginTop: '1.5rem',
                     paddingTop: '1rem',
                     borderTop: '1px solid var(--border)'
                   }}>
-                    {/* Step 1 (Life Map) completion message */}
-                    {onboardingStep === 1 && goals.length > 0 && (
-                      <div style={{
-                        padding: '1rem',
-                        backgroundColor: '#E8F5E9',
-                        borderRadius: '12px',
-                        marginBottom: '1rem',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '0.75rem'
-                      }}>
-                        <span style={{fontSize: '1.5rem'}}>✅</span>
-                        <div>
-                          <div style={{fontWeight: 600, color: '#2E7D32', marginBottom: '0.25rem'}}>Life Map Started!</div>
-                          <div style={{fontSize: '0.85rem', color: '#4CAF50'}}>
-                            Don't worry — you can come back and fill out more of your Life Map later.
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Step 2 (Quiz) completion message */}
-                    {onboardingStep === 2 && userProfile?.tendPreferences?.gardenerType && (
-                      <div style={{
-                        padding: '1rem',
-                        backgroundColor: '#E8F5E9',
-                        borderRadius: '12px',
-                        marginBottom: '1rem',
-                        display: 'flex',
-                        alignItems: 'flex-start',
-                        gap: '0.75rem'
-                      }}>
-                        <span style={{fontSize: '1.5rem'}}>✅</span>
-                        <div>
-                          <div style={{fontWeight: 600, color: '#2E7D32', marginBottom: '0.25rem'}}>Quiz Complete!</div>
-                          <div style={{fontSize: '0.85rem', color: '#4CAF50'}}>
-                            You're a {userProfile.tendPreferences.gardenerType.name}! You can retake this quiz anytime from your Life Map.
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Navigation buttons */}
-                    <div style={{ 
-                      display: 'flex', 
-                      justifyContent: onboardingStep === 2 && !userProfile?.tendPreferences?.gardenerType ? 'space-between' : 'flex-end',
-                    }}>
-                      {/* Skip button - only for step 2 (Quiz) when not completed */}
-                      {onboardingStep === 2 && !userProfile?.tendPreferences?.gardenerType && (
-                        <button 
-                          onClick={() => setOnboardingStep(3)}
-                          style={{
-                            padding: '0.6rem 1.25rem',
-                            backgroundColor: 'transparent',
-                            border: '1px solid var(--border)',
-                            borderRadius: '8px',
-                            color: 'var(--text-muted)',
-                            fontSize: '0.85rem',
-                            cursor: 'pointer'
-                          }}
-                        >
-                          Skip for now →
-                        </button>
-                      )}
+                    {/* Skip button - only for step 2 (Quiz) */}
+                    {onboardingStep === 2 && (
                       <button 
-                        onClick={() => {
-                          if (onboardingStep === 1) {
-                            setOnboardingStep(2);
-                          } else if (onboardingStep === 2) {
-                            setOnboardingStep(3);
-                          }
-                        }}
+                        onClick={() => setShowOnboardingOverlay('quiz-skip')}
                         style={{
                           padding: '0.6rem 1.25rem',
-                          backgroundColor: 'var(--accent)',
-                          border: 'none',
+                          backgroundColor: 'transparent',
+                          border: '1px solid var(--border)',
                           borderRadius: '8px',
-                          color: 'white',
+                          color: 'var(--text-muted)',
                           fontSize: '0.85rem',
-                          fontWeight: 500,
                           cursor: 'pointer'
                         }}
                       >
-                        {onboardingStep === 1 && goals.length > 0 ? 'Continue to Quiz →' : 
-                         onboardingStep === 2 && userProfile?.tendPreferences?.gardenerType ? 'Continue to Daily Tend →' : 
-                         'Continue →'}
+                        Skip for now →
                       </button>
-                    </div>
+                    )}
+                    <button 
+                      onClick={() => {
+                        if (onboardingStep === 1) {
+                          setShowOnboardingOverlay('lifemap');
+                        } else if (onboardingStep === 2) {
+                          setShowOnboardingOverlay('quiz');
+                        }
+                      }}
+                      style={{
+                        padding: '0.6rem 1.25rem',
+                        backgroundColor: 'var(--accent)',
+                        border: 'none',
+                        borderRadius: '8px',
+                        color: 'white',
+                        fontSize: '0.85rem',
+                        fontWeight: 500,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Continue →
+                    </button>
                   </div>
+                  
+                  {/* Onboarding Completion Overlays */}
+                  {showOnboardingOverlay && (
+                    <div style={{
+                      position: 'fixed',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      backgroundColor: 'rgba(0,0,0,0.5)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 1000,
+                      padding: '1rem',
+                    }}>
+                      <div style={{
+                        backgroundColor: 'var(--bg-card)',
+                        borderRadius: '20px',
+                        padding: '2.5rem',
+                        maxWidth: '400px',
+                        width: '100%',
+                        textAlign: 'center',
+                        boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+                      }}>
+                        <div style={{fontSize: '3rem', marginBottom: '1rem'}}>
+                          {showOnboardingOverlay === 'lifemap' ? '🗺️' : '🌸'}
+                        </div>
+                        <h2 style={{
+                          fontFamily: "'Fraunces', serif",
+                          fontSize: '1.5rem',
+                          color: 'var(--text)',
+                          marginBottom: '0.75rem',
+                        }}>
+                          {showOnboardingOverlay === 'lifemap' ? 'Life Map Started!' : 
+                           showOnboardingOverlay === 'quiz' ? 'Quiz Complete!' : 'Moving On!'}
+                        </h2>
+                        <p style={{
+                          color: 'var(--text-muted)',
+                          fontSize: '0.95rem',
+                          lineHeight: 1.5,
+                          marginBottom: '1.5rem',
+                        }}>
+                          {showOnboardingOverlay === 'lifemap' 
+                            ? "Great start! Don't worry — you can come back and add more to your Life Map anytime. It grows with you!"
+                            : showOnboardingOverlay === 'quiz'
+                            ? "We've learned your communication style! This helps us personalize how we talk with you."
+                            : "No worries! You can always take the quiz later in your Life Map."}
+                        </p>
+                        <button
+                          onClick={() => {
+                            setShowOnboardingOverlay(null);
+                            if (showOnboardingOverlay === 'lifemap') {
+                              setOnboardingStep(2);
+                            } else {
+                              setOnboardingStep(3);
+                            }
+                          }}
+                          style={{
+                            width: '100%',
+                            padding: '0.875rem 1.5rem',
+                            backgroundColor: 'var(--accent)',
+                            border: 'none',
+                            borderRadius: '12px',
+                            color: 'white',
+                            fontSize: '1rem',
+                            fontWeight: 500,
+                            cursor: 'pointer',
+                          }}
+                        >
+                          Continue →
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </main>
               
@@ -5608,34 +5635,6 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
               apiKey={apiKey}
               onBack={() => setAppMode(null)}
               onTendComplete={() => setAppMode('journal')}
-              onboardingStep={onboardingStep}
-              onboardingCompleted={onboardingCompleted}
-              onFinishOnboarding={() => {
-                setOnboardingCompleted(true);
-                setOnboardingStep(null);
-                setAppMode(null);
-                // Show welcome message
-                const welcomeMsg = {
-                  role: 'assistant',
-                  content: `🌱 **Welcome to Tend!**
-
-You're all set up and ready to start your intentional living journey!
-
-What would you like to do now? We could just talk about whatever's on your mind — whether it's what you're looking to accomplish in the near or long term, how you want to feel in the future, or if you'd like to explore your values together.
-
-You can also minimize this chat and explore the app on your own:
-• **Daily Tend** — Your personalized daily activity
-• **Journal** — Reflect on your progress
-• **Calendar** — See your history and plan ahead
-• **Life Map** — Update your goals and priorities
-
-What sounds good?`,
-                  timestamp: new Date().toISOString()
-                };
-                setMessages([welcomeMsg]);
-                setCurrentConversationType('main');
-                setShowChatOverlay(true);
-              }}
             />
             {/* Floating chat bubble for navigation */}
             <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 1000 }}>
@@ -5678,7 +5677,7 @@ What sounds good?`,
             </div>
           </header>
 
-          <main style={{...styles.main, gridTemplateColumns: `1fr ${chatMinimized ? '0px' : chatWidth + 'px'}`}}>
+          <main style={{...styles.main, gridTemplateColumns: onboardingCompleted ? '1fr' : `1fr ${chatMinimized ? '0px' : chatWidth + 'px'}`}}>
             <div style={styles.centerPanel}>
               {/* Onboarding Progress Bar */}
               {!onboardingCompleted && onboardingStep !== null && (
@@ -5788,6 +5787,30 @@ What sounds good?`,
                     journalEntries={journalEntries}
                     apiKey={apiKey}
                     onBack={() => setCenterView(CENTER_VIEWS.YEAR)}
+                    isOnboarding={!onboardingCompleted && onboardingStep === 3}
+                    onFinishOnboarding={() => {
+                      setOnboardingCompleted(true);
+                      setOnboardingStep(null);
+                      setCenterView(CENTER_VIEWS.YEAR);
+                      setShowChatOverlay(true);
+                      // Send welcome message
+                      setMessages([{
+                        role: 'assistant',
+                        content: `🎉 **Welcome to Tend!**
+
+You've finished setting up — great job!
+
+Now it's time to make Tend yours. Here are some ways we can work together:
+
+• **Talk about what's on your mind** — whether it's something you're looking to accomplish, how you want to feel, or your values
+• **Plan your day or week** — I can help you be more intentional
+• **Explore the app** — check out the tabs below: **Home** for your overview, **Calendar** for planning, **Life Map** for your goals, **Daily Tend** for your activities, and **Journal** for reflection
+
+You can minimize this chat anytime and come back whenever you need me. I'm here to help you live more intentionally. 🌱
+
+What's on your mind today?`
+                      }]);
+                    }}
                   />
                 </div>
               )}
@@ -5817,8 +5840,9 @@ What sounds good?`,
               )}
             </div>
 
-            {/* Chat Panel - Full or Minimized */}
-            {!chatMinimized ? (
+            {/* Chat Panel - Only show during onboarding step 3 or when onboarding not complete */}
+            {/* After onboarding, use the floating bubble + overlay instead */}
+            {!onboardingCompleted && !chatMinimized ? (
               <div style={styles.chatPanel}>
                 <div 
                   style={styles.resizeHandle} 
@@ -5997,8 +6021,8 @@ What sounds good?`,
                   </div>
                 </div>
               </div>
-            ) : (
-              /* Minimized Chat Bubble */
+            ) : !onboardingCompleted && (
+              /* Minimized Chat Bubble - only during onboarding */
               <div style={{
                 position: 'fixed',
                 bottom: '1.5rem',
@@ -6006,7 +6030,7 @@ What sounds good?`,
                 zIndex: 1000,
               }}>
                 <button
-                  onClick={() => setShowChatOverlay(true)}
+                  onClick={() => setChatMinimized(false)}
                   style={{
                     width: '60px',
                     height: '60px',
@@ -6081,7 +6105,7 @@ What sounds good?`,
             />
           )}
           
-          {/* Full-page Chat Overlay */}
+          {/* Full-screen Chat Overlay */}
           {showChatOverlay && (
             <div style={{
               position: 'fixed',
@@ -6093,24 +6117,22 @@ What sounds good?`,
               zIndex: 1000,
               display: 'flex',
               flexDirection: 'column',
-              overflow: 'hidden'
             }}>
               {/* Chat Header */}
               <div style={{
                 padding: '1rem 1.5rem',
                 borderBottom: '1px solid var(--border)',
                 display: 'flex',
-                justifyContent: 'space-between',
                 alignItems: 'center',
-                backgroundColor: 'var(--bg-card)'
+                justifyContent: 'space-between',
+                backgroundColor: 'var(--bg-card)',
               }}>
-                <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
-                  <svg width="24" height="24" viewBox="0 0 32 32" fill="none">
-                    <path d="M16 26 Q16 18 16 14" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" fill="none"/>
-                    <path d="M16 18 Q10 16 8 10 Q14 12 16 18" fill="var(--accent)" opacity="0.5"/>
-                    <path d="M16 14 Q22 10 24 4 Q18 8 16 14" fill="var(--accent)"/>
-                  </svg>
-                  <span style={{fontFamily: "'Fraunces', serif", fontSize: '1.1rem', color: 'var(--text)'}}>Chat with Tend</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontSize: '1.5rem' }}>💬</span>
+                  <div>
+                    <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '1.1rem' }}>Chat with Tend</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Your personal wellness guide</div>
+                  </div>
                 </div>
                 <button
                   onClick={() => setShowChatOverlay(false)}
@@ -6124,61 +6146,34 @@ What sounds good?`,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '0.5rem'
+                    gap: '0.5rem',
                   }}
                 >
-                  <span>✕</span> Minimize
+                  <span>↓</span> Minimize
                 </button>
               </div>
               
               {/* Chat Messages */}
-              <div style={{
-                flex: 1,
-                overflow: 'auto',
-                padding: '1.5rem',
-                maxWidth: '700px',
-                margin: '0 auto',
-                width: '100%'
-              }}>
+              <div 
+                ref={chatContainerRef}
+                style={{
+                  flex: 1,
+                  overflowY: 'auto',
+                  padding: '1.5rem',
+                  maxWidth: '700px',
+                  width: '100%',
+                  margin: '0 auto',
+                }}
+              >
                 {messages.map((msg, idx) => (
-                  <div key={idx} style={{
-                    marginBottom: '1rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start'
-                  }}>
-                    <div style={{
-                      maxWidth: '85%',
-                      padding: '0.875rem 1rem',
-                      borderRadius: msg.role === 'user' ? '16px 16px 4px 16px' : '16px 16px 16px 4px',
-                      backgroundColor: msg.role === 'user' ? 'var(--accent)' : 'var(--bg-card)',
-                      color: msg.role === 'user' ? 'white' : 'var(--text)',
-                      border: msg.role === 'user' ? 'none' : '1px solid var(--border)',
-                      whiteSpace: 'pre-wrap',
-                      lineHeight: 1.5,
-                      fontSize: '0.9rem'
-                    }}>
-                      {msg.content.split('**').map((part, i) => 
-                        i % 2 === 0 ? part : <strong key={i}>{part}</strong>
-                      )}
-                    </div>
-                  </div>
+                  <ChatMessage 
+                    key={idx} 
+                    message={msg} 
+                    onButtonClick={handleChatNavigation}
+                  />
                 ))}
-                {isTyping && (
-                  <div style={{
-                    padding: '0.875rem 1rem',
-                    backgroundColor: 'var(--bg-card)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '16px 16px 16px 4px',
-                    color: 'var(--text-muted)',
-                    display: 'inline-block'
-                  }}>
-                    <span style={{animation: 'pulse 1.5s infinite'}}>●</span>
-                    <span style={{animation: 'pulse 1.5s infinite 0.2s'}}>●</span>
-                    <span style={{animation: 'pulse 1.5s infinite 0.4s'}}>●</span>
-                  </div>
-                )}
-                <div ref={chatEndRef} />
+                {isTyping && <TypingIndicator />}
+                <div ref={messagesEndRef} />
               </div>
               
               {/* Chat Input */}
@@ -6186,40 +6181,50 @@ What sounds good?`,
                 padding: '1rem 1.5rem',
                 borderTop: '1px solid var(--border)',
                 backgroundColor: 'var(--bg-card)',
-                maxWidth: '700px',
-                margin: '0 auto',
-                width: '100%'
               }}>
-                <div style={{display: 'flex', gap: '0.75rem'}}>
-                  <input
-                    type="text"
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
-                    placeholder="Type a message..."
+                <div style={{
+                  maxWidth: '700px',
+                  margin: '0 auto',
+                  display: 'flex',
+                  gap: '0.75rem',
+                }}>
+                  <textarea
                     style={{
                       flex: 1,
-                      padding: '0.875rem 1rem',
-                      border: '1px solid var(--border)',
+                      padding: '0.875rem',
                       borderRadius: '12px',
-                      backgroundColor: 'var(--bg-elevated)',
+                      border: '1px solid var(--border)',
+                      backgroundColor: 'var(--bg-main)',
                       color: 'var(--text)',
-                      fontSize: '0.9rem',
-                      outline: 'none'
+                      fontSize: '0.95rem',
+                      fontFamily: "'DM Sans', sans-serif",
+                      resize: 'none',
+                      minHeight: '50px',
+                      maxHeight: '150px',
                     }}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
+                    placeholder="Type your message..."
                   />
                   <button
-                    onClick={sendMessage}
-                    disabled={!input.trim() || isTyping}
+                    onClick={handleSend}
+                    disabled={!inputValue.trim() || isTyping}
                     style={{
-                      padding: '0.875rem 1.25rem',
-                      backgroundColor: input.trim() && !isTyping ? 'var(--accent)' : 'var(--border)',
+                      padding: '0.875rem 1.5rem',
+                      backgroundColor: inputValue.trim() && !isTyping ? 'var(--accent)' : 'var(--border-dark)',
                       border: 'none',
                       borderRadius: '12px',
                       color: 'white',
-                      cursor: input.trim() && !isTyping ? 'pointer' : 'not-allowed',
-                      fontSize: '0.9rem',
-                      fontWeight: 500
+                      fontSize: '0.95rem',
+                      fontWeight: 500,
+                      cursor: inputValue.trim() && !isTyping ? 'pointer' : 'not-allowed',
+                      alignSelf: 'flex-end',
                     }}
                   >
                     Send
@@ -6227,6 +6232,42 @@ What sounds good?`,
                 </div>
               </div>
             </div>
+          )}
+          
+          {/* Floating Chat Bubble - only show when overlay is closed and onboarding is complete */}
+          {onboardingCompleted && !showChatOverlay && (
+            <button
+              onClick={() => setShowChatOverlay(true)}
+              style={{
+                position: 'fixed',
+                bottom: '1.5rem',
+                right: '1.5rem',
+                width: '60px',
+                height: '60px',
+                borderRadius: '50%',
+                backgroundColor: 'var(--accent)',
+                border: 'none',
+                boxShadow: '0 4px 20px rgba(0,0,0,0.2)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontSize: '1.5rem',
+                zIndex: 999,
+                transition: 'transform 0.2s, box-shadow 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.target.style.transform = 'scale(1.05)';
+                e.target.style.boxShadow = '0 6px 24px rgba(0,0,0,0.25)';
+              }}
+              onMouseLeave={(e) => {
+                e.target.style.transform = 'scale(1)';
+                e.target.style.boxShadow = '0 4px 20px rgba(0,0,0,0.2)';
+              }}
+              title="Chat with Tend"
+            >
+              💬
+            </button>
           )}
         </div>
       );
@@ -7853,9 +7894,8 @@ This has been your year of growth and intention. What are you most proud of? Wha
       apiKey,
       onBack,
       onTendComplete,
-      onboardingStep = null,
-      onboardingCompleted = true,
-      onFinishOnboarding = null
+      isOnboarding = false,
+      onFinishOnboarding
     }) {
       const today = getLocalDateString();
       const [showCelebration, setShowCelebration] = useState(false);
@@ -7915,7 +7955,6 @@ This has been your year of growth and intention. What are you most proud of? Wha
         const tendiesDate = todaysTendies[0]?.date;
         const generatedAt = todaysTendies[0]?.generatedAt;
         const isStale = !generatedAt || (new Date() - new Date(generatedAt)) > (18 * 60 * 60 * 1000);
-        const hasOldFormat = todaysTendies.some(t => t.difficulty === 2 && !t.isWeekend);
         
         // Check weekend logic
         const dayOfWeek = new Date().getDay();
@@ -7931,33 +7970,28 @@ This has been your year of growth and intention. What are you most proud of? Wha
           return getLocalDateString(sat);
         })();
         
-        const tendiesAreFromSaturday = isSunday && tendiesDate === saturdayDate && tendiesAreWeekend;
-        const tendiesAreFromToday = todaysTendies.length > 0 && tendiesDate === today && !isStale && !hasOldFormat;
+        // Check if we need to preserve the weekend tend from Saturday
+        const weekendTendFromSaturday = isSunday && todaysTendies.find(t => 
+          t.isWeekendTend && t.date === saturdayDate && !t.completed
+        );
         
-        // Weekend tends from Saturday are valid on Sunday (unless completed)
-        const weekendTendiesStillValid = tendiesAreFromSaturday && !todaysTendies.some(t => t.completed);
+        const tendiesAreFromToday = todaysTendies.length > 0 && tendiesDate === today && !isStale;
         
         console.log('TendyView check:', { 
           today, 
           tendiesDate,
           generatedAt,
           isStale,
-          hasOldFormat,
           tendiesAreFromToday,
           isWeekend,
           isSunday,
-          weekendTendiesStillValid,
+          weekendTendFromSaturday: !!weekendTendFromSaturday,
           tendiesCount: todaysTendies.length 
         });
         
-        // Check if all tendies are from the same domain (v2 requirement)
-        const allSameDomain = todaysTendies.length > 0 && 
-          todaysTendies.every(t => t.domain === todaysTendies[0]?.domain);
-        
-        // Don't regenerate if: tendies are from today OR weekend tendies from Saturday are still valid
-        // AND they all have the same domain
-        if ((tendiesAreFromToday || weekendTendiesStillValid) && allSameDomain) {
-          return; // Tendies are valid, don't regenerate
+        // Don't regenerate if tendies are from today (and not stale)
+        if (tendiesAreFromToday) {
+          return;
         }
         
         // Skip regeneration if a tend is already selected (prevent glitch on selection)
@@ -7966,30 +8000,38 @@ This has been your year of growth and intention. What are you most proud of? Wha
           return;
         }
         
-        const previousDomain = todaysTendies[0]?.domain || null;
-        console.log('Generating new tendies - date mismatch, stale, old format, or domain issue. Previous domain:', previousDomain, isWeekend ? '(WEEKEND)' : '(weekday)');
+        const previousDomain = todaysTendies.find(t => !t.isWeekendTend)?.domain || null;
+        console.log('Generating new tendies. Previous daily domain:', previousDomain, isWeekend ? '(WEEKEND)' : '(weekday)');
         
         // Set generating flag
         isGeneratingTendies.current = true;
         
-        if (apiKey && userProfile) {
-          // Use async personalized generation
-          generatePersonalizedTendies(vlqScores, tendyHistory, previousDomain, userProfile, apiKey, goals, weeklyHabits, journalEntries)
-            .then(newTendies => {
-              setTodaysTendies(newTendies);
-              isGeneratingTendies.current = false;
-            })
-            .catch(err => {
+        const generateAndSet = async () => {
+          let newTendies;
+          
+          if (apiKey && userProfile) {
+            try {
+              newTendies = await generatePersonalizedTendies(vlqScores, tendyHistory, previousDomain, userProfile, apiKey, goals, weeklyHabits, journalEntries);
+            } catch (err) {
               console.error('Personalization failed:', err);
-              const newTendies = generateDailyTendies(vlqScores, tendyHistory, previousDomain);
-              setTodaysTendies(newTendies);
-              isGeneratingTendies.current = false;
-            });
-        } else {
-          const newTendies = generateDailyTendies(vlqScores, tendyHistory, previousDomain);
+              newTendies = generateDailyTendies(vlqScores, tendyHistory, previousDomain);
+            }
+          } else {
+            newTendies = generateDailyTendies(vlqScores, tendyHistory, previousDomain);
+          }
+          
+          // On Sunday, preserve uncompleted weekend tend from Saturday
+          if (weekendTendFromSaturday) {
+            // Remove any newly generated weekend tend and keep Saturday's
+            newTendies = newTendies.filter(t => !t.isWeekendTend);
+            newTendies.push(weekendTendFromSaturday);
+          }
+          
           setTodaysTendies(newTendies);
           isGeneratingTendies.current = false;
-        }
+        };
+        
+        generateAndSet();
       }, [today, vlqScores]);
 
       const selectedTendy = todaysTendies.find(t => t.selected);
@@ -8392,13 +8434,23 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
         return day === 0 || day === 6;
       };
       
-      const getDifficultyLabel = (difficulty, isWeekendSpecial = false) => {
-        // Weekend special tend (30 min, can complete anytime over weekend)
-        if (difficulty === 3 || isWeekendSpecial) {
-          return { text: '30 min', color: '#E8A090', minutes: 30, isWeekendSpecial: true };
+      const getDifficultyLabel = (difficulty) => {
+        const isWeekend = isWeekendDay();
+        if (isWeekend) {
+          // Weekend: 15 min or 30 min
+          switch(difficulty) {
+            case 1: return { text: '15 min', color: '#8FD4A0', minutes: 15 };
+            case 3: return { text: '30 min', color: '#E8A090', minutes: 30 };
+            default: return { text: '15 min', color: '#8FD4A0', minutes: 15 };
+          }
+        } else {
+          // Weekday: 5 min or 15 min
+          switch(difficulty) {
+            case 1: return { text: '5 min', color: '#8FD4A0', minutes: 5 };
+            case 3: return { text: '15 min', color: '#E8A090', minutes: 15 };
+            default: return { text: '5 min', color: '#8FD4A0', minutes: 5 };
+          }
         }
-        // Daily tend (always 5 min)
-        return { text: '5 min', color: '#8FD4A0', minutes: 5, isWeekendSpecial: false };
       };
 
       const tendyStyles = {
@@ -8607,8 +8659,21 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
         },
       };
 
-      // Already completed today
+      // Check completion states
+      const completedDaily = todaysTendies.find(t => !t.isWeekendTend && t.completed);
+      const completedWeekend = todaysTendies.find(t => t.isWeekendTend && t.completed);
+      const pendingDaily = todaysTendies.find(t => !t.isWeekendTend && !t.completed);
+      const pendingWeekend = todaysTendies.find(t => t.isWeekendTend && !t.completed);
+      const dayOfWeekCheck = new Date().getDay();
+      const isWeekendDay = dayOfWeekCheck === 0 || dayOfWeekCheck === 6;
+
+      // Already completed - show completed state
+      // On weekdays: show complete if daily is done
+      // On weekends: show complete if both are done OR if any is done (show partial state)
       if (completedToday) {
+        const allDone = isWeekendDay ? (completedDaily && completedWeekend) : completedDaily;
+        const somePending = isWeekendDay && (completedDaily ? pendingWeekend : pendingDaily);
+        
         return (
           <div style={tendyStyles.container}>
             <div style={tendyStyles.header}>
@@ -8624,7 +8689,9 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             <div style={tendyStyles.content}>
               <div style={tendyStyles.completedState}>
                 <div style={tendyStyles.completedIcon}>✨</div>
-                <h2 style={tendyStyles.completedTitle}>{completedToday.isWeekend ? 'Weekend' : 'Daily'} Tend Complete!</h2>
+                <h2 style={tendyStyles.completedTitle}>
+                  {completedToday.isWeekendTend ? 'Weekend Challenge' : 'Daily Tend'} Complete!
+                </h2>
                 <p style={tendyStyles.completedSubtitle}>
                   You earned {completedToday.points} point{completedToday.points !== 1 ? 's' : ''} for your garden
                 </p>
@@ -8634,12 +8701,47 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     +1 {completedToday.gardenElement?.element} growing in your garden
                   </span>
                 </div>
-                <p style={{color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic'}}>
-                  {completedToday.isWeekend 
-                    ? 'Great weekend work! See you Monday for your next tend'
-                    : 'Come back tomorrow for your next Daily Tend'
-                  }
-                </p>
+                
+                {/* Show pending tend if on weekend and one is still available */}
+                {somePending && (
+                  <div style={{
+                    marginTop: '1.5rem',
+                    padding: '1rem',
+                    backgroundColor: 'var(--bg-elevated)',
+                    borderRadius: '12px',
+                    border: '1px solid var(--border)',
+                  }}>
+                    <p style={{fontSize: '0.9rem', fontWeight: 500, color: 'var(--text)', marginBottom: '0.5rem'}}>
+                      {somePending.isWeekendTend ? '🌟 Weekend Challenge Available' : '✅ Daily Tend Available'}
+                    </p>
+                    <p style={{fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem'}}>
+                      {somePending.text}
+                    </p>
+                    <button
+                      onClick={() => selectTendy(somePending.id)}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: 'var(--accent)',
+                        border: 'none',
+                        borderRadius: '8px',
+                        color: 'white',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      Start This Tend →
+                    </button>
+                  </div>
+                )}
+                
+                {!somePending && (
+                  <p style={{color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic'}}>
+                    {isWeekendDay 
+                      ? 'Great weekend work! See you Monday for your next tend'
+                      : 'Come back tomorrow for your next Daily Tend'
+                    }
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -8655,7 +8757,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             {showCelebration && (
               <div style={tendyStyles.celebrationOverlay}>
                 <div style={tendyStyles.celebrationIcon}>✨</div>
-                <div style={tendyStyles.celebrationText}>{selectedTendy?.isWeekend ? 'Weekend' : 'Daily'} Tend Complete!</div>
+                <div style={tendyStyles.celebrationText}>{selectedTendy?.isWeekendTend ? 'Weekend Challenge' : 'Daily Tend'} Complete!</div>
                 <div style={tendyStyles.celebrationPoints}>+{justCompletedPoints} point{justCompletedPoints !== 1 ? 's' : ''}</div>
               </div>
             )}
@@ -9042,15 +9144,27 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
         );
       }
 
-      // Check if we're in onboarding step 3
-      const isOnboardingTend = onboardingStep === 3 && !onboardingCompleted;
-
-      // Selection view - show all tendies
+      // Selection view - show daily tend directly + weekend tend if applicable
+      const dailyTend = todaysTendies.find(t => !t.isWeekendTend);
+      const weekendTend = todaysTendies.find(t => t.isWeekendTend);
+      const dayOfWeek = new Date().getDay();
+      const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+      const isSunday = dayOfWeek === 0;
+      
+      // Auto-select the daily tend if nothing is selected yet
+      useEffect(() => {
+        if (dailyTend && !dailyTend.selected && !dailyTend.completed && !weekendTend?.selected && !weekendTend?.completed) {
+          selectTendy(dailyTend.id);
+        }
+      }, [dailyTend?.id]);
+      
       return (
         <div style={tendyStyles.container}>
           <div style={tendyStyles.header}>
-            {isOnboardingTend ? (
-              <div style={{width: '80px'}}></div>
+            {isOnboarding ? (
+              <div style={{color: 'var(--accent)', fontSize: '0.85rem', fontWeight: 500}}>
+                🌱 Your First Tend
+              </div>
             ) : (
               <button style={tendyStyles.backButton} onClick={onBack}>
                 ← Back
@@ -9063,111 +9177,155 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             </div>
           </div>
           
+          {/* Onboarding welcome message */}
+          {isOnboarding && (
+            <div style={{
+              backgroundColor: 'var(--accent-light)',
+              border: '1px solid var(--accent)',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              textAlign: 'center',
+            }}>
+              <p style={{color: 'var(--text)', fontSize: '0.9rem', marginBottom: '0.5rem'}}>
+                🎉 <strong>You're almost done with setup!</strong>
+              </p>
+              <p style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>
+                Here's your first daily tend. Try it out, or you can skip and explore the app!
+              </p>
+            </div>
+          )}
+          
           <div style={tendyStyles.content}>
-            {(() => {
-              const day = new Date().getDay();
-              const isWeekend = day === 0 || day === 6;
-              const isSunday = day === 0;
-              return (
-                <>
-                  <h1 style={tendyStyles.title}>
-                    {isOnboardingTend ? 'Your First Daily Tend!' : (isWeekend ? 'Choose Your Weekend Tend' : 'Choose Your Daily Tend')}
-                  </h1>
-                  {isSunday && !completedToday && !isOnboardingTend && (
-                    <div style={{
-                      backgroundColor: '#FFF3CD',
-                      color: '#856404',
-                      padding: '0.75rem 1rem',
-                      borderRadius: '8px',
-                      marginBottom: '1rem',
-                      fontSize: '0.85rem',
-                      textAlign: 'center',
-                      fontWeight: 500,
-                    }}>
-                      ⏰ Weekend Tend expires tonight!
-                    </div>
-                  )}
-                  <p style={tendyStyles.subtitle}>
-                    {isOnboardingTend 
-                      ? 'Each day, Tend will suggest a small action based on your Life Map. Select one to reveal your tend!'
-                      : (isWeekend 
-                        ? 'Pick a tend — your 5 min daily or 30 min weekend special.'
-                        : 'Pick a difficulty level to reveal your task for today.'
-                      )
-                    }
-                  </p>
-                </>
-              );
-            })()}
+            <h1 style={tendyStyles.title}>Today's Tends</h1>
+            <p style={tendyStyles.subtitle}>
+              {isWeekend 
+                ? 'Your quick daily tend + an optional weekend challenge!'
+                : 'A small action to tend to your values today.'
+              }
+            </p>
 
-            {/* Today's Life Area */}
-            {todaysTendies.length > 0 && (
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '0.5rem',
-                padding: '1rem',
-                backgroundColor: 'var(--bg-card)',
-                border: '1px solid var(--border)',
-                borderRadius: '12px',
-                marginBottom: '1.5rem',
-                fontSize: '1rem',
-              }}>
-                <span style={{fontSize: '1.5rem'}}>{todaysTendies[0].domainIcon}</span>
-                <span style={{fontWeight: 500, color: 'var(--text)'}}>Today's Focus: {todaysTendies[0].domainName}</span>
-              </div>
-            )}
-
-            {todaysTendies.map(tendy => {
-              const diffLabel = getDifficultyLabel(tendy.difficulty, tendy.isWeekendSpecial);
-              return (
+            {/* Daily Tend Section */}
+            {dailyTend && (
+              <div style={{ marginBottom: isWeekend ? '2rem' : '1rem' }}>
+                <div style={{
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: 'var(--text-muted)',
+                  marginBottom: '0.75rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                }}>
+                  Daily Tend • 5 min
+                </div>
                 <div
-                  key={tendy.id}
                   style={{
                     ...tendyStyles.tendyCard,
-                    borderColor: tendy.selected ? 'var(--accent)' : 'var(--border)',
-                    backgroundColor: tendy.selected ? 'var(--accent-light)' : 'var(--bg-card)',
+                    borderColor: dailyTend.selected ? 'var(--accent)' : 'var(--border)',
+                    backgroundColor: dailyTend.selected ? 'var(--accent-light)' : 'var(--bg-card)',
+                    cursor: 'pointer',
                   }}
-                  onClick={() => selectTendy(tendy.id)}
+                  onClick={() => selectTendy(dailyTend.id)}
                 >
-                  <div style={{
-                    ...tendyStyles.tendyHeader,
-                    justifyContent: 'center',
-                  }}>
+                  <div style={tendyStyles.tendyHeader}>
+                    <div style={tendyStyles.tendyDomain}>
+                      <span>{dailyTend.domainIcon}</span>
+                      <span>{dailyTend.domainName}</span>
+                    </div>
                     <span style={{
                       ...tendyStyles.difficultyBadge,
-                      backgroundColor: diffLabel.color + '20',
-                      color: diffLabel.color,
+                      backgroundColor: '#8FD4A020',
+                      color: '#8FD4A0',
                     }}>
-                      {tendy.isWeekendSpecial ? '🌟 Weekend Special' : diffLabel.text}
+                      5 min
                     </span>
                   </div>
-                  {/* Mystery box - no content shown until selected */}
-                  <div style={{
-                    padding: '2rem 1rem',
-                    textAlign: 'center',
-                    color: 'var(--text-muted)',
-                    fontSize: '0.85rem',
-                  }}>
-                    <div style={{fontSize: '2rem', marginBottom: '0.5rem'}}>?</div>
-                    <div>{tendy.isWeekendSpecial 
-                      ? 'Complete anytime this weekend' 
-                      : 'Select to reveal your daily tend'
-                    }</div>
-                  </div>
+                  <p style={tendyStyles.tendyText}>{dailyTend.text}</p>
                   <div style={tendyStyles.tendyFooter}>
-                    <span style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>
-                      {tendy.isWeekendSpecial ? '30 min' : '5 min'}
+                    <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
+                      {dailyTend.type === 'reflective' ? '✍️ Reflective' : '⚡ Action'}
                     </span>
                     <div style={tendyStyles.gardenReward}>
-                      <span>{tendy.gardenElement?.icon}</span>
-                      <span>+{tendy.points} pt{tendy.points !== 1 ? 's' : ''}</span>
+                      <span>{dailyTend.gardenElement?.icon}</span>
+                      <span>+{dailyTend.points} pt{dailyTend.points !== 1 ? 's' : ''}</span>
                     </div>
                   </div>
                 </div>
-              );
-            })}
+              </div>
+            )}
+
+            {/* Weekend Tend Section - Only on weekends */}
+            {isWeekend && weekendTend && (
+              <div style={{ marginBottom: '1rem' }}>
+                <div style={{
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  color: 'var(--text-muted)',
+                  marginBottom: '0.75rem',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.05em',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}>
+                  <span>🌟</span> Weekend Challenge • 15 min
+                  {isSunday && (
+                    <span style={{
+                      fontSize: '0.7rem',
+                      backgroundColor: '#FFF3CD',
+                      color: '#856404',
+                      padding: '0.2rem 0.5rem',
+                      borderRadius: '4px',
+                      fontWeight: 500,
+                    }}>
+                      Expires tonight!
+                    </span>
+                  )}
+                </div>
+                <div
+                  style={{
+                    ...tendyStyles.tendyCard,
+                    borderColor: weekendTend.selected ? 'var(--accent)' : 'var(--border)',
+                    backgroundColor: weekendTend.selected ? 'var(--accent-light)' : 'var(--bg-card)',
+                    cursor: 'pointer',
+                  }}
+                  onClick={() => selectTendy(weekendTend.id)}
+                >
+                  <div style={tendyStyles.tendyHeader}>
+                    <div style={tendyStyles.tendyDomain}>
+                      <span>{weekendTend.domainIcon}</span>
+                      <span>{weekendTend.domainName}</span>
+                    </div>
+                    <span style={{
+                      ...tendyStyles.difficultyBadge,
+                      backgroundColor: '#E8A09020',
+                      color: '#E8A090',
+                    }}>
+                      15 min
+                    </span>
+                  </div>
+                  <p style={tendyStyles.tendyText}>{weekendTend.text}</p>
+                  <div style={tendyStyles.tendyFooter}>
+                    <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
+                      {weekendTend.type === 'reflective' ? '✍️ Reflective' : '⚡ Action'}
+                    </span>
+                    <div style={tendyStyles.gardenReward}>
+                      <span>{weekendTend.gardenElement?.icon}</span>
+                      <span>+{weekendTend.points} pt{weekendTend.points !== 1 ? 's' : ''}</span>
+                    </div>
+                  </div>
+                </div>
+                <p style={{
+                  fontSize: '0.75rem',
+                  color: 'var(--text-muted)',
+                  textAlign: 'center',
+                  marginTop: '0.5rem',
+                  fontStyle: 'italic',
+                }}>
+                  Optional: Take on this deeper activity anytime this weekend
+                </p>
+              </div>
+            )}
 
             {/* Custom Tendy - if approved this week */}
             {hasApprovedCustom && (
@@ -9179,7 +9337,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 }}
                 onClick={() => {
                   setWeeklyCustomTendy({...weeklyCustomTendy, selected: !weeklyCustomTendy.selected});
-                  // Allow both daily and custom to be selected
                 }}
               >
                 <div style={tendyStyles.tendyHeader}>
@@ -9219,14 +9376,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   flexDirection: 'column',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  minHeight: '100px',
+                  minHeight: '80px',
                   color: 'var(--text-muted)',
+                  marginTop: '1rem',
                 }}
                 onClick={() => setShowCustomTendyForm(true)}
               >
-                <div style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>+</div>
-                <div style={{fontWeight: 500}}>Create Your Own Custom Tend</div>
-                <div style={{fontSize: '0.75rem', marginTop: '0.25rem'}}>Worth 1 point if completed</div>
+                <div style={{fontSize: '1.25rem', marginBottom: '0.25rem'}}>+</div>
+                <div style={{fontWeight: 500, fontSize: '0.9rem'}}>Create Your Own Custom Tend</div>
               </button>
             )}
 
@@ -9235,6 +9392,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               <div style={{
                 ...tendyStyles.tendyCard,
                 borderColor: 'var(--accent)',
+                marginTop: '1rem',
               }}>
                 <div style={{marginBottom: '0.75rem', fontWeight: 500, color: 'var(--text)'}}>
                   Create Your Custom Tend
@@ -9295,7 +9453,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 </div>
                 {!apiKey && (
                   <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontStyle: 'italic'}}>
-                    Set your API key in settings to enable custom daily tends
+                    Set your API key in settings to enable custom tends
                   </div>
                 )}
               </div>
@@ -9310,71 +9468,70 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 borderRadius: '12px',
                 fontSize: '0.85rem',
                 color: '#C53030',
+                marginTop: '1rem',
               }}>
-                <div style={{fontWeight: 500, marginBottom: '0.25rem'}}>Custom Daily Tend Not Approved</div>
+                <div style={{fontWeight: 500, marginBottom: '0.25rem'}}>Custom Tend Not Approved</div>
                 <div style={{color: '#744210'}}>{weeklyCustomTendy.aiResponse}</div>
                 <div style={{marginTop: '0.5rem', fontSize: '0.75rem', color: '#744210'}}>
-                  You can try again with a different daily tend this week.
+                  You can try again with a different tend this week.
                 </div>
               </div>
             )}
 
-            <button
-              style={{
-                ...tendyStyles.selectButton,
-                ...((todaysTendies.every(t => !t.selected) && !weeklyCustomTendy?.selected) ? tendyStyles.selectButtonDisabled : {}),
-              }}
-              onClick={() => {
-                // Selections are already tracked
-              }}
-              disabled={todaysTendies.every(t => !t.selected) && !weeklyCustomTendy?.selected}
-            >
-              {(() => {
-                const dailySelected = todaysTendies.some(t => t.selected);
-                const customSelected = weeklyCustomTendy?.selected;
-                if (dailySelected && customSelected) return 'Confirm Both Selections →';
-                if (dailySelected || customSelected) return 'Confirm Selection →';
-                return 'Select a Daily Tend above';
-              })()}
-            </button>
+            {/* Confirm button - only show if a tend is selected */}
+            {(todaysTendies.some(t => t.selected) || weeklyCustomTendy?.selected) && (
+              <button
+                style={{
+                  ...tendyStyles.selectButton,
+                  marginTop: '1.5rem',
+                }}
+                onClick={() => {
+                  // Selection already tracked, button confirms intent
+                }}
+              >
+                Start This Tend →
+              </button>
+            )}
             
-            {/* Finish Setup button for onboarding step 3 */}
-            {isOnboardingTend && onFinishOnboarding && (
-              <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
-                <div style={{
-                  padding: '1rem',
-                  backgroundColor: 'var(--bg-elevated)',
-                  borderRadius: '12px',
+            {/* Finish Onboarding button - only during onboarding */}
+            {isOnboarding && (
+              <div style={{
+                marginTop: '2rem',
+                paddingTop: '1.5rem',
+                borderTop: '1px solid var(--border)',
+                textAlign: 'center',
+              }}>
+                <p style={{
+                  color: 'var(--text-muted)',
+                  fontSize: '0.85rem',
                   marginBottom: '1rem',
-                  textAlign: 'center'
                 }}>
-                  <div style={{fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.25rem'}}>
-                    Ready to explore on your own?
-                  </div>
-                  <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>
-                    You can always come back to complete your Daily Tend later.
-                  </div>
-                </div>
-                <button 
+                  Ready to explore Tend on your own?
+                </p>
+                <button
                   onClick={onFinishOnboarding}
                   style={{
                     width: '100%',
-                    padding: '1rem 1.5rem',
-                    backgroundColor: 'var(--bg-card)',
+                    padding: '1rem',
+                    backgroundColor: 'var(--bg-elevated)',
                     border: '2px solid var(--accent)',
                     borderRadius: '12px',
                     color: 'var(--accent)',
                     fontSize: '1rem',
-                    fontWeight: 600,
+                    fontWeight: 500,
                     cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '0.5rem'
                   }}
                 >
-                  🏠 I'm Done — Go to Home
+                  Finish Setup & Go Home →
                 </button>
+                <p style={{
+                  color: 'var(--text-muted)',
+                  fontSize: '0.75rem',
+                  marginTop: '0.75rem',
+                  fontStyle: 'italic',
+                }}>
+                  You can always come back to your Daily Tend anytime!
+                </p>
               </div>
             )}
           </div>
