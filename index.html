@@ -8664,15 +8664,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       const completedWeekend = todaysTendies.find(t => t.isWeekendTend && t.completed);
       const pendingDaily = todaysTendies.find(t => !t.isWeekendTend && !t.completed);
       const pendingWeekend = todaysTendies.find(t => t.isWeekendTend && !t.completed);
-      const dayOfWeekCheck = new Date().getDay();
-      const isWeekendDay = dayOfWeekCheck === 0 || dayOfWeekCheck === 6;
+      const isWeekendNow = isWeekendDay(); // Use the existing function
 
       // Already completed - show completed state
       // On weekdays: show complete if daily is done
       // On weekends: show complete if both are done OR if any is done (show partial state)
       if (completedToday) {
-        const allDone = isWeekendDay ? (completedDaily && completedWeekend) : completedDaily;
-        const somePending = isWeekendDay && (completedDaily ? pendingWeekend : pendingDaily);
+        const allDone = isWeekendNow ? (completedDaily && completedWeekend) : completedDaily;
+        const somePending = isWeekendNow && (completedDaily ? pendingWeekend : pendingDaily);
         
         return (
           <div style={tendyStyles.container}>
@@ -8736,7 +8735,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 
                 {!somePending && (
                   <p style={{color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic'}}>
-                    {isWeekendDay 
+                    {isWeekendNow 
                       ? 'Great weekend work! See you Monday for your next tend'
                       : 'Come back tomorrow for your next Daily Tend'
                     }
@@ -13851,6 +13850,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
