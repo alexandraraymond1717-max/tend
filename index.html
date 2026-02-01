@@ -5400,7 +5400,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                     }}
                     onQuizComplete={(result) => {
                       // Move to step 3 (Daily Tend) when quiz is complete
-                      setOnboardingStep(3);
+                      setShowOnboardingOverlay('quiz'); // Show the quiz complete overlay
                     }}
                     onLifeMapAnswer={() => {
                       // The useEffect monitors completion and sends messages
@@ -5510,7 +5510,10 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                             if (showOnboardingOverlay === 'lifemap') {
                               setOnboardingStep(2);
                             } else {
+                              // Quiz complete or skipped - go to step 3 (First Tend)
                               setOnboardingStep(3);
+                              setAppMode(null); // Exit onboarding InsightsView
+                              setCenterView(CENTER_VIEWS.TENDY); // Navigate to TendyView
                             }
                           }}
                           style={{
@@ -13855,6 +13858,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
