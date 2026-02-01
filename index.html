@@ -1961,6 +1961,10 @@ Respond with ONLY the task text, nothing else.`,
         // Strengths: high importance AND consistency, but NOT already a growth area (gap < 3)
         const strengths = gaps.filter(g => g.importance >= 6 && g.consistency >= 6 && g.gap < 3);
         const lowerPriority = gaps.filter(g => g.importance <= 5);
+        // Middle ground: importance > 5, not a strength, not a growth area
+        const middleGround = gaps.filter(g => 
+          g.importance > 5 && g.gap < 3 && (g.consistency < 6 || g.importance < 6)
+        );
 
         return (
           <div style={vlqStyles.container}>
@@ -2012,10 +2016,33 @@ Respond with ONLY the task text, nothing else.`,
                 </div>
               )}
 
+              {middleGround.length > 0 && (
+                <div style={vlqStyles.summarySection}>
+                  <h3 style={vlqStyles.summarySectionTitle}>🔄 Maintaining</h3>
+                  <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontStyle: 'italic'}}>
+                    Important and doing okay
+                  </p>
+                  {middleGround.map(item => (
+                    <div key={item.key} style={vlqStyles.summaryItem}>
+                      <span style={vlqStyles.summaryItemIcon}>{item.icon}</span>
+                      <span style={vlqStyles.summaryItemName}>{item.name}</span>
+                      <div style={vlqStyles.summaryItemScores}>
+                        <span style={{color: item.color, fontWeight: 600}}>{item.importance}</span>
+                        <span style={{color: 'var(--text-muted)', margin: '0 0.25rem'}}>|</span>
+                        <span style={{color: 'var(--text-muted)'}}>{item.consistency}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {lowerPriority.length > 0 && (
                 <div style={vlqStyles.summarySection}>
                   <h3 style={vlqStyles.summarySectionTitle}>⚪ Lower Priority Right Now</h3>
-                  {lowerPriority.slice(0, 3).map(item => (
+                  <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontStyle: 'italic'}}>
+                    Less important to you at this time
+                  </p>
+                  {lowerPriority.map(item => (
                     <div key={item.key} style={{...vlqStyles.summaryItem, opacity: 0.7}}>
                       <span style={vlqStyles.summaryItemIcon}>{item.icon}</span>
                       <span style={vlqStyles.summaryItemName}>{item.name}</span>
@@ -2358,12 +2385,12 @@ Respond with ONLY the task text, nothing else.`,
         const prefs = userProfile?.tendPreferences || {};
         
         switch(step) {
-          case 1: // Life Map - prompt OR goal per focus area (habit is optional)
+          case 1: // Life Map - 1 goal AND 1 prompt per focus area
             for (const area of focusAreas) {
               const hasPrompt = prefs.structuredInfo?.[area] && Object.values(prefs.structuredInfo[area]).some(v => v) || prefs.lifeAreaNotes?.[area];
               const hasGoal = goals.some(g => g.lifeArea === area);
-              // Step is complete if user has EITHER a prompt OR a goal (habit is optional)
-              if (!hasPrompt && !hasGoal) return false;
+              // Step is complete if user has BOTH a prompt AND a goal
+              if (!hasPrompt || !hasGoal) return false;
             }
             return true;
           case 2: // Gardener Quiz - optional, complete only if they took it
@@ -2380,14 +2407,14 @@ Respond with ONLY the task text, nothing else.`,
         const focusAreas = getFocusAreas();
         const prefs = userProfile?.tendPreferences || {};
         
-        // Check completion per focus area for step 1
+        // Check completion per focus area for step 1 (requires BOTH goal AND prompt)
         const focusAreaProgress = focusAreas.map(area => {
           const hasPrompt = prefs.structuredInfo?.[area] && Object.values(prefs.structuredInfo[area]).some(v => v) || prefs.lifeAreaNotes?.[area];
           const hasGoal = goals.some(g => g.lifeArea === area);
           const areaGoalIds = goals.filter(g => g.lifeArea === area).map(g => g.id);
           const hasLinkedHabit = weeklyHabits.some(h => h.lifeArea === area && areaGoalIds.includes(h.goalId));
-          // Complete if has prompt OR goal (habit is optional bonus)
-          return { area, hasPrompt, hasGoal, hasLinkedHabit, complete: hasPrompt || hasGoal };
+          // Complete if has BOTH prompt AND goal
+          return { area, hasPrompt, hasGoal, hasLinkedHabit, complete: hasPrompt && hasGoal };
         });
         
         const completeFocusAreas = focusAreaProgress.filter(p => p.complete).length;
@@ -3106,7 +3133,7 @@ What would you like to explore?`,
       
       // Monitor focus area completion during step 1 onboarding
       useEffect(() => {
-        if (!vlqCompleted || onboardingCompleted || onboardingStep !== 1 || !currentOnboardingArea) return;
+        if (!vlqCompleted || onboardingCompleted || onboardingStep !== 1) return;
         
         const focusAreas = getFocusAreas();
         const prefs = userProfile?.tendPreferences || {};
@@ -3114,59 +3141,20 @@ What would you like to explore?`,
         const getAreaProgress = (areaKey) => {
           const hasPrompt = prefs.structuredInfo?.[areaKey] && Object.values(prefs.structuredInfo[areaKey]).some(v => v) || prefs.lifeAreaNotes?.[areaKey];
           const hasGoal = goals.some(g => g.lifeArea === areaKey);
-          const areaGoalIds = goals.filter(g => g.lifeArea === areaKey).map(g => g.id);
-          const hasLinkedHabit = weeklyHabits.some(h => h.lifeArea === areaKey && areaGoalIds.includes(h.goalId));
-          return { hasPrompt, hasGoal, hasLinkedHabit, complete: hasPrompt && hasGoal && hasLinkedHabit };
+          // Complete requires BOTH goal AND prompt (no habit requirement)
+          return { hasPrompt, hasGoal, complete: hasPrompt && hasGoal };
         };
         
         const completedAreas = focusAreas.filter(a => getAreaProgress(a).complete);
-        const newlyCompleted = completedAreas.filter(a => !lastCompletedAreas.includes(a));
+        const allComplete = focusAreas.every(a => getAreaProgress(a).complete);
         
-        if (newlyCompleted.length > 0 && newlyCompleted.includes(currentOnboardingArea)) {
-          // Current area just became complete
-          const allComplete = focusAreas.every(a => getAreaProgress(a).complete);
-          
-          if (allComplete) {
-            // All focus areas complete!
-            const msg = {
-              role: 'assistant',
-              content: `Wonderful! You've built out your Life Map for all your focus areas. 🗺️
-
-Would you like to:
-
-[BUTTON: Explore other life areas | stay]
-[BUTTON: Take the Gardener Quiz | next step]
-[BUTTON: Skip to my first Tend | skip quiz]`,
-              timestamp: new Date().toISOString()
-            };
-            setMessages(prev => [...prev, msg]);
-            setTimeout(() => scrollChatToBottom(), 100);
-          } else {
-            // Find next incomplete area
-            const currentIdx = focusAreas.indexOf(currentOnboardingArea);
-            const nextIncomplete = focusAreas.slice(currentIdx + 1).find(a => !getAreaProgress(a).complete) 
-              || focusAreas.find(a => !getAreaProgress(a).complete);
-            
-            if (nextIncomplete) {
-              setCurrentOnboardingArea(nextIncomplete);
-              const areaName = VLQ_DOMAINS[nextIncomplete]?.name || nextIncomplete;
-              const msg = {
-                role: 'assistant',
-                content: `Great work on ${VLQ_DOMAINS[currentOnboardingArea]?.name}! ✓
-
-Let's move on to <strong>${areaName}</strong>. I've opened it for you.
-
-Type directly into the input fields on the left, or chat with me here about what matters to you in this area.`,
-                timestamp: new Date().toISOString()
-              };
-              setMessages(prev => [...prev, msg]);
-              setTimeout(() => scrollChatToBottom(), 100);
-            }
-          }
+        // If all focus areas complete, show the overlay
+        if (allComplete && completedAreas.length > lastCompletedAreas.length) {
+          setShowOnboardingOverlay('lifemap');
         }
         
         setLastCompletedAreas(completedAreas);
-      }, [vlqCompleted, onboardingCompleted, onboardingStep, currentOnboardingArea, goals, weeklyHabits, userProfile]);
+      }, [vlqCompleted, onboardingCompleted, onboardingStep, goals, weeklyHabits, userProfile]);
 
       // Onboarding: Auto-navigate to relevant view when step changes
       useEffect(() => {
@@ -8051,16 +8039,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
         })));
       };
       
-      // Auto-select the daily tend if nothing is selected yet
-      useEffect(() => {
-        if (dailyTend && !dailyTend.selected && !dailyTend.completed && !weekendTend?.selected && !weekendTend?.completed && !selectedTendy) {
-          // Inline the selection to avoid stale closure
-          setTodaysTendies(prev => prev.map(t => ({
-            ...t,
-            selected: t.id === dailyTend.id
-          })));
-        }
-      }, [dailyTend?.id, selectedTendy]);
+      // No auto-select - user must click to reveal their tend
 
       const rerollTendy = () => {
         if (flexPoints < 1 || !selectedTendy) return;
@@ -8751,12 +8730,53 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 )}
                 
                 {!somePending && (
-                  <p style={{color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic'}}>
-                    {isWeekendNow 
-                      ? 'Great weekend work! See you Monday for your next tend'
-                      : 'Come back tomorrow for your next Daily Tend'
-                    }
-                  </p>
+                  <div style={{marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center'}}>
+                    <button
+                      onClick={() => {
+                        onBack();
+                        // Navigate to journal - we'll need to communicate this up
+                      }}
+                      style={{
+                        padding: '0.75rem 1.5rem',
+                        backgroundColor: 'var(--accent)',
+                        border: 'none',
+                        borderRadius: '12px',
+                        color: 'white',
+                        fontSize: '0.95rem',
+                        fontWeight: 500,
+                        cursor: 'pointer',
+                        width: '100%',
+                        maxWidth: '280px',
+                      }}
+                    >
+                      📝 Take Me to Journal
+                    </button>
+                    {isWeekendNow && pendingWeekend && (
+                      <button
+                        onClick={() => selectTendy(pendingWeekend.id)}
+                        style={{
+                          padding: '0.75rem 1.5rem',
+                          backgroundColor: 'var(--bg-elevated)',
+                          border: '2px solid var(--accent)',
+                          borderRadius: '12px',
+                          color: 'var(--accent)',
+                          fontSize: '0.95rem',
+                          fontWeight: 500,
+                          cursor: 'pointer',
+                          width: '100%',
+                          maxWidth: '280px',
+                        }}
+                      >
+                        🌟 Take On Weekend Challenge
+                      </button>
+                    )}
+                    <p style={{color: 'var(--text-muted)', fontSize: '0.85rem', fontStyle: 'italic', marginTop: '0.5rem'}}>
+                      {isWeekendNow && !pendingWeekend
+                        ? 'Great weekend work! See you Monday for your next tend'
+                        : !isWeekendNow ? 'Come back tomorrow for your next Daily Tend' : ''
+                      }
+                    </p>
+                  </div>
                 )}
               </div>
             </div>
@@ -9234,29 +9254,51 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   }}
                   onClick={() => selectTendy(dailyTend.id)}
                 >
-                  <div style={tendyStyles.tendyHeader}>
-                    <div style={tendyStyles.tendyDomain}>
-                      <span>{dailyTend.domainIcon}</span>
-                      <span>{dailyTend.domainName}</span>
-                    </div>
-                    <span style={{
-                      ...tendyStyles.difficultyBadge,
-                      backgroundColor: '#8FD4A020',
-                      color: '#8FD4A0',
+                  {dailyTend.selected ? (
+                    <>
+                      <div style={tendyStyles.tendyHeader}>
+                        <div style={tendyStyles.tendyDomain}>
+                          <span>{dailyTend.domainIcon}</span>
+                          <span>{dailyTend.domainName}</span>
+                        </div>
+                        <span style={{
+                          ...tendyStyles.difficultyBadge,
+                          backgroundColor: '#8FD4A020',
+                          color: '#8FD4A0',
+                        }}>
+                          5 min
+                        </span>
+                      </div>
+                      <p style={tendyStyles.tendyText}>{dailyTend.text}</p>
+                      <div style={tendyStyles.tendyFooter}>
+                        <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
+                          {dailyTend.type === 'reflective' ? '✍️ Reflective' : '⚡ Action'}
+                        </span>
+                        <div style={tendyStyles.gardenReward}>
+                          <span>{dailyTend.gardenElement?.icon}</span>
+                          <span>+{dailyTend.points} pt{dailyTend.points !== 1 ? 's' : ''}</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '1.5rem',
+                      gap: '0.75rem',
                     }}>
-                      5 min
-                    </span>
-                  </div>
-                  <p style={tendyStyles.tendyText}>{dailyTend.text}</p>
-                  <div style={tendyStyles.tendyFooter}>
-                    <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
-                      {dailyTend.type === 'reflective' ? '✍️ Reflective' : '⚡ Action'}
-                    </span>
-                    <div style={tendyStyles.gardenReward}>
-                      <span>{dailyTend.gardenElement?.icon}</span>
-                      <span>+{dailyTend.points} pt{dailyTend.points !== 1 ? 's' : ''}</span>
+                      <span style={{fontSize: '2rem'}}>🌱</span>
+                      <div style={{textAlign: 'left'}}>
+                        <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>
+                          Click to reveal your daily tend
+                        </div>
+                        <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>
+                          A quick 5-minute activity for your {dailyTend.domainName.toLowerCase()} values
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             )}
@@ -9298,29 +9340,51 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   }}
                   onClick={() => selectTendy(weekendTend.id)}
                 >
-                  <div style={tendyStyles.tendyHeader}>
-                    <div style={tendyStyles.tendyDomain}>
-                      <span>{weekendTend.domainIcon}</span>
-                      <span>{weekendTend.domainName}</span>
-                    </div>
-                    <span style={{
-                      ...tendyStyles.difficultyBadge,
-                      backgroundColor: '#E8A09020',
-                      color: '#E8A090',
+                  {weekendTend.selected ? (
+                    <>
+                      <div style={tendyStyles.tendyHeader}>
+                        <div style={tendyStyles.tendyDomain}>
+                          <span>{weekendTend.domainIcon}</span>
+                          <span>{weekendTend.domainName}</span>
+                        </div>
+                        <span style={{
+                          ...tendyStyles.difficultyBadge,
+                          backgroundColor: '#E8A09020',
+                          color: '#E8A090',
+                        }}>
+                          15 min
+                        </span>
+                      </div>
+                      <p style={tendyStyles.tendyText}>{weekendTend.text}</p>
+                      <div style={tendyStyles.tendyFooter}>
+                        <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
+                          {weekendTend.type === 'reflective' ? '✍️ Reflective' : '⚡ Action'}
+                        </span>
+                        <div style={tendyStyles.gardenReward}>
+                          <span>{weekendTend.gardenElement?.icon}</span>
+                          <span>+{weekendTend.points} pt{weekendTend.points !== 1 ? 's' : ''}</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '1.5rem',
+                      gap: '0.75rem',
                     }}>
-                      15 min
-                    </span>
-                  </div>
-                  <p style={tendyStyles.tendyText}>{weekendTend.text}</p>
-                  <div style={tendyStyles.tendyFooter}>
-                    <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
-                      {weekendTend.type === 'reflective' ? '✍️ Reflective' : '⚡ Action'}
-                    </span>
-                    <div style={tendyStyles.gardenReward}>
-                      <span>{weekendTend.gardenElement?.icon}</span>
-                      <span>+{weekendTend.points} pt{weekendTend.points !== 1 ? 's' : ''}</span>
+                      <span style={{fontSize: '2rem'}}>🌟</span>
+                      <div style={{textAlign: 'left'}}>
+                        <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>
+                          Click to reveal your weekend challenge
+                        </div>
+                        <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>
+                          A 15-minute activity for your {weekendTend.domainName.toLowerCase()} values
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
                 <p style={{
                   fontSize: '0.75rem',
@@ -12613,7 +12677,10 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       {/* Empty state text - positioned below SVG */}
                       {goals.length === 0 && allFacts.length === 0 && (
                         <div style={{ textAlign: 'center', color: '#9A8F7D', fontSize: '0.8rem', marginTop: '-0.25rem' }}>
-                          Add goals and answer prompts to build your map
+                          {onboardingStep === 1 
+                            ? 'Click on each focus area to add one goal and answer one prompt to build the base of your map'
+                            : 'Add goals and answer prompts to build your map'
+                          }
                         </div>
                       )}
                     </div>
@@ -13334,7 +13401,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             </div>
             )}
             
-                        {/* Gardener Type Section */}
+                        {/* Gardener Type Section - hide during Life Map onboarding step */}
+            {onboardingStep !== 1 && (
             <div id="gardener-quiz-section">
             {(() => {
               const savedGardenerType = userProfile?.tendPreferences?.gardenerType;
@@ -13662,6 +13730,7 @@ Respond in this exact JSON format only:
               );
             })()}
             </div>
+            )}
           </div>
         </div>
       );
@@ -13858,6 +13927,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
