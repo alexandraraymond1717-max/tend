@@ -76,6 +76,9 @@
     .fade-in { animation: fadeIn 0.4s ease-out forwards; }
     .slide-in { animation: slideIn 0.4s ease-out forwards; }
 
+    /* Prevent layout shift from scrollbar appearing */
+    html { scrollbar-gutter: stable; }
+
     input:focus, textarea:focus, select:focus { outline: none; border-color: var(--accent) !important; }
   </style>
 </head>
@@ -5317,7 +5320,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
         // During onboarding steps 1-2 (life map and quiz), show insights WITHOUT chat panel
         if (!onboardingCompleted && (onboardingStep === 1 || onboardingStep === 2)) {
           return (
-            <div style={{...styles.container, overflow: 'auto'}}>
+            <div style={{...styles.container, overflow: 'auto', scrollbarGutter: 'stable'}}>
               <header style={{...styles.header, justifyContent: 'space-between', alignItems: 'center', position: 'relative'}}>
                 <div style={{...styles.headerLeft, position: 'absolute', left: '1rem'}}>
                   <div style={styles.logo}>
@@ -13927,6 +13930,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
