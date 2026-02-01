@@ -8036,14 +8036,28 @@ This has been your year of growth and intention. What are you most proud of? Wha
 
       const selectedTendy = todaysTendies.find(t => t.selected);
       const completedToday = todaysTendies.find(t => t.completed);
+      
+      // For the new tend structure - find daily and weekend tends
+      const dailyTend = todaysTendies.find(t => !t.isWeekendTend);
+      const weekendTend = todaysTendies.find(t => t.isWeekendTend);
 
       const selectTendy = (tendyId) => {
         setTodaysTendies(todaysTendies.map(t => ({
           ...t,
           selected: t.id === tendyId
         })));
-        // Allow both daily and custom tendy to be selected
       };
+      
+      // Auto-select the daily tend if nothing is selected yet
+      useEffect(() => {
+        if (dailyTend && !dailyTend.selected && !dailyTend.completed && !weekendTend?.selected && !weekendTend?.completed && !selectedTendy) {
+          // Inline the selection to avoid stale closure
+          setTodaysTendies(prev => prev.map(t => ({
+            ...t,
+            selected: t.id === dailyTend.id
+          })));
+        }
+      }, [dailyTend?.id, selectedTendy]);
 
       const rerollTendy = () => {
         if (flexPoints < 1 || !selectedTendy) return;
@@ -9144,18 +9158,9 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       }
 
       // Selection view - show daily tend directly + weekend tend if applicable
-      const dailyTend = todaysTendies.find(t => !t.isWeekendTend);
-      const weekendTend = todaysTendies.find(t => t.isWeekendTend);
       const dayOfWeek = new Date().getDay();
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
       const isSunday = dayOfWeek === 0;
-      
-      // Auto-select the daily tend if nothing is selected yet
-      useEffect(() => {
-        if (dailyTend && !dailyTend.selected && !dailyTend.completed && !weekendTend?.selected && !weekendTend?.completed) {
-          selectTendy(dailyTend.id);
-        }
-      }, [dailyTend?.id]);
       
       return (
         <div style={tendyStyles.container}>
@@ -13850,6 +13855,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
