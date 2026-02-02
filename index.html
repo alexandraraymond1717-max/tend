@@ -12687,14 +12687,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       )}
                       
                       {/* Empty state text - positioned below SVG */}
-                      {goals.length === 0 && allFacts.length === 0 && (
+                      {(goals.length === 0 && allFacts.length === 0) || onboardingStep === 1 ? (
                         <div style={{ textAlign: 'center', color: '#9A8F7D', fontSize: '0.8rem', marginTop: '-0.25rem' }}>
                           {onboardingStep === 1 
                             ? 'Click on each focus area to add one goal and answer one prompt to build the base of your map'
                             : 'Add goals and answer prompts to build your map'
                           }
                         </div>
-                      )}
+                      ) : null}
                     </div>
                     
                     {/* Life Area Cards - Grouped by category */}
@@ -13939,6 +13939,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
