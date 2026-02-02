@@ -9236,9 +9236,12 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
         <div style={tendyStyles.container}>
           <div style={tendyStyles.header}>
             {isOnboarding ? (
-              <div style={{color: 'var(--accent)', fontSize: '0.85rem', fontWeight: 500}}>
-                🌱 Your First Tend
-              </div>
+              <button 
+                style={{...tendyStyles.backButton, display: 'flex', alignItems: 'center', gap: '0.25rem'}}
+                onClick={onFinishOnboarding}
+              >
+                🏠 Home
+              </button>
             ) : (
               <button style={tendyStyles.backButton} onClick={onBack}>
                 ← Back
@@ -9262,18 +9265,20 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               textAlign: 'center',
             }}>
               <p style={{color: 'var(--text)', fontSize: '0.9rem', marginBottom: '0.5rem'}}>
-                🎉 <strong>You're almost done with setup!</strong>
+                🎉 <strong>Final step!</strong>
               </p>
               <p style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>
-                Here's your first daily tend. Try it out, or you can skip and explore the app!
+                Reveal your first daily tend, or click Home to explore the app.
               </p>
             </div>
           )}
           
           <div style={tendyStyles.content}>
-            <h1 style={tendyStyles.title}>Today's Tends</h1>
+            <h1 style={tendyStyles.title}>{isOnboarding ? '🌱 Your First Tend' : "Today's Tends"}</h1>
             <p style={tendyStyles.subtitle}>
-              {isWeekend 
+              {isOnboarding 
+                ? 'Click to reveal your personalized daily activity!'
+                : isWeekend 
                 ? 'Your quick daily tend + an optional weekend challenge!'
                 : 'A small action to tend to your values today.'
               }
@@ -13977,6 +13982,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
