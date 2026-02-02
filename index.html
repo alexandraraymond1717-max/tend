@@ -13642,30 +13642,33 @@ Respond in this exact JSON format only:
                     )}
                     
                     {isGenerating ? (
-                      <div style={{ textAlign: 'center', padding: '2rem 1rem' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'pulse 1.5s ease-in-out infinite' }}>🌱</div>
-                        <div style={{ fontWeight: 500 }}>Growing your unique gardener profile...</div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Analyzing your answers to create something just for you</div>
+                      <div style={{ textAlign: 'center', padding: '1.5rem 1rem' }}>
+                        <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem', animation: 'pulse 1.5s ease-in-out infinite' }}>🌱</div>
+                        <div style={{ fontWeight: 500, fontSize: '0.95rem' }}>Discovering your gardener type...</div>
                         <style>{`@keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); opacity: 0.8; } }`}</style>
                       </div>
                     ) : generatedResult ? (
                       <div>
-                        <div style={{ padding: '1.75rem', backgroundColor: `${generatedResult.color}12`, borderRadius: '16px', marginBottom: '1.25rem', border: `1px solid ${generatedResult.color}25` }}>
-                          <div style={{ fontSize: '4rem', textAlign: 'center', marginBottom: '0.75rem' }}>{generatedResult.emoji}</div>
-                          <div style={{ fontSize: '1.5rem', fontWeight: 700, color: generatedResult.color, textAlign: 'center', marginBottom: '0.35rem', fontFamily: "'Fraunces', serif" }}>{generatedResult.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textAlign: 'center', marginBottom: '1.25rem', textTransform: 'uppercase', letterSpacing: '1px' }}>Your Gardener Type</div>
-                          <div style={{ fontSize: '0.95rem', lineHeight: 1.7, textAlign: 'center', marginBottom: '1.25rem' }}>{generatedResult.description}</div>
-                          <div style={{ padding: '0.75rem', backgroundColor: 'white', borderRadius: '8px', textAlign: 'center' }}>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginBottom: '0.25rem', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Your superpower</div>
-                            <div style={{ fontSize: '0.95rem', color: generatedResult.color, fontWeight: 600 }}>{generatedResult.strength}</div>
+                        <div style={{ padding: '1.25rem', backgroundColor: `${generatedResult.color}12`, borderRadius: '12px', marginBottom: '1rem', border: `1px solid ${generatedResult.color}25` }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+                            <div style={{ fontSize: '2.5rem' }}>{generatedResult.emoji}</div>
+                            <div>
+                              <div style={{ fontSize: '1.2rem', fontWeight: 700, color: generatedResult.color, fontFamily: "'Fraunces', serif" }}>{generatedResult.name}</div>
+                              <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Your Gardener Type</div>
+                            </div>
+                          </div>
+                          <div style={{ fontSize: '0.85rem', lineHeight: 1.6, marginBottom: '0.75rem' }}>{generatedResult.description}</div>
+                          <div style={{ padding: '0.5rem 0.75rem', backgroundColor: 'white', borderRadius: '6px', display: 'inline-block' }}>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Superpower: </span>
+                            <span style={{ fontSize: '0.85rem', color: generatedResult.color, fontWeight: 600 }}>{generatedResult.strength}</span>
                           </div>
                         </div>
                         <button onClick={() => { setUserProfile(prev => ({ ...prev, tendPreferences: { ...prev?.tendPreferences, gardenerType: { ...generatedResult, answers: quizAnswers, completedAt: new Date().toISOString() } } })); setTempFormData({}); setExpandedArea(null); if (onQuizComplete) onQuizComplete(generatedResult); }}
-                          style={{ width: '100%', padding: '1rem', border: 'none', borderRadius: '12px', backgroundColor: generatedResult.color, color: 'white', fontSize: '1rem', cursor: 'pointer', fontWeight: 600 }}>
+                          style={{ width: '100%', padding: '0.875rem', border: 'none', borderRadius: '10px', backgroundColor: generatedResult.color, color: 'white', fontSize: '0.95rem', cursor: 'pointer', fontWeight: 600 }}>
                           Save my gardener type
                         </button>
                         <button onClick={() => setTempFormData({ quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null })}
-                          style={{ width: '100%', padding: '0.75rem', border: 'none', backgroundColor: 'transparent', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer', marginTop: '0.75rem' }}>
+                          style={{ width: '100%', padding: '0.5rem', border: 'none', backgroundColor: 'transparent', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer', marginTop: '0.5rem' }}>
                           Retake quiz
                         </button>
                       </div>
@@ -13696,22 +13699,22 @@ Respond in this exact JSON format only:
               // If they have a saved gardener type, show it
               if (savedGardenerType) {
                 return (
-                  <div style={{ ...insightsStyles.section, marginBottom: '2rem', background: `linear-gradient(135deg, ${savedGardenerType.color}08 0%, ${savedGardenerType.color}15 100%)`, border: `1px solid ${savedGardenerType.color}30` }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div style={{ fontSize: '3rem' }}>{savedGardenerType.emoji}</div>
+                  <div style={{ ...insightsStyles.section, marginBottom: '1.5rem', padding: '1rem', background: `linear-gradient(135deg, ${savedGardenerType.color}08 0%, ${savedGardenerType.color}15 100%)`, border: `1px solid ${savedGardenerType.color}30` }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                      <div style={{ fontSize: '2rem' }}>{savedGardenerType.emoji}</div>
                       <div style={{ flex: 1 }}>
-                        <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.25rem' }}>Your Gardener Type</div>
-                        <div style={{ fontSize: '1.25rem', fontWeight: 700, color: savedGardenerType.color, fontFamily: "'Fraunces', serif" }}>{savedGardenerType.name}</div>
+                        <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.15rem' }}>Your Gardener Type</div>
+                        <div style={{ fontSize: '1.1rem', fontWeight: 700, color: savedGardenerType.color, fontFamily: "'Fraunces', serif" }}>{savedGardenerType.name}</div>
                       </div>
                       <button onClick={() => { setExpandedArea('quiz'); setTempFormData({ quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null }); }}
-                        style={{ padding: '0.5rem 1rem', border: `1px solid ${savedGardenerType.color}40`, borderRadius: '8px', backgroundColor: 'transparent', color: savedGardenerType.color, fontSize: '0.8rem', cursor: 'pointer' }}>
+                        style={{ padding: '0.4rem 0.75rem', border: `1px solid ${savedGardenerType.color}40`, borderRadius: '6px', backgroundColor: 'transparent', color: savedGardenerType.color, fontSize: '0.75rem', cursor: 'pointer' }}>
                         Retake
                       </button>
                     </div>
-                    <div style={{ marginTop: '1rem', fontSize: '0.9rem', lineHeight: 1.6, color: 'var(--text)' }}>{savedGardenerType.description}</div>
-                    <div style={{ marginTop: '1rem', padding: '0.6rem 1rem', backgroundColor: 'white', borderRadius: '8px', display: 'inline-block' }}>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Superpower: </span>
-                      <span style={{ fontSize: '0.85rem', color: savedGardenerType.color, fontWeight: 600 }}>{savedGardenerType.strength}</span>
+                    <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', lineHeight: 1.5, color: 'var(--text)' }}>{savedGardenerType.description}</div>
+                    <div style={{ marginTop: '0.75rem', padding: '0.4rem 0.75rem', backgroundColor: 'white', borderRadius: '6px', display: 'inline-block' }}>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Superpower: </span>
+                      <span style={{ fontSize: '0.8rem', color: savedGardenerType.color, fontWeight: 600 }}>{savedGardenerType.strength}</span>
                     </div>
                   </div>
                 );
@@ -13939,6 +13942,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
