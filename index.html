@@ -5411,7 +5411,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                   {/* Skip / Continue buttons */}
                   <div style={{ 
                     display: 'flex', 
-                    justifyContent: onboardingStep === 2 ? 'space-between' : 'flex-end', 
+                    justifyContent: onboardingStep === 2 ? 'center' : 'flex-end', 
                     marginTop: '1.5rem',
                     paddingTop: '1rem',
                     borderTop: '1px solid var(--border)'
@@ -5433,27 +5433,26 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                         Skip for now →
                       </button>
                     )}
-                    <button 
-                      onClick={() => {
-                        if (onboardingStep === 1) {
+                    {/* Continue button - only for step 1 (Life Map) */}
+                    {onboardingStep === 1 && (
+                      <button 
+                        onClick={() => {
                           setShowOnboardingOverlay('lifemap');
-                        } else if (onboardingStep === 2) {
-                          setShowOnboardingOverlay('quiz');
-                        }
-                      }}
-                      style={{
-                        padding: '0.6rem 1.25rem',
-                        backgroundColor: 'var(--accent)',
-                        border: 'none',
-                        borderRadius: '8px',
-                        color: 'white',
-                        fontSize: '0.85rem',
-                        fontWeight: 500,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      Continue →
-                    </button>
+                        }}
+                        style={{
+                          padding: '0.6rem 1.25rem',
+                          backgroundColor: 'var(--accent)',
+                          border: 'none',
+                          borderRadius: '8px',
+                          color: 'white',
+                          fontSize: '0.85rem',
+                          fontWeight: 500,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Continue →
+                      </button>
+                    )}
                   </div>
                   
                   {/* Onboarding Completion Overlays */}
@@ -13942,6 +13941,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
