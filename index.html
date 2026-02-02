@@ -5508,6 +5508,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                           borderRadius: '12px',
                           padding: '1rem',
                           marginBottom: '1.5rem',
+                          textAlign: 'left',
                         }}>
                           <div style={{
                             fontSize: '0.75rem',
@@ -5522,10 +5523,20 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                             fontSize: '0.95rem',
                             color: 'var(--text)',
                             fontWeight: 500,
+                            marginBottom: '0.5rem',
                           }}>
                             {showOnboardingOverlay === 'lifemap' 
-                              ? "🌻 Gardener Quiz — A quick, optional quiz to discover your unique tending style"
-                              : "🌱 Your First Tend — Reveal your personalized daily activity"}
+                              ? "🌻 Gardener Quiz"
+                              : "🌱 Your First Daily Tend"}
+                          </div>
+                          <div style={{
+                            fontSize: '0.85rem',
+                            color: 'var(--text-muted)',
+                            lineHeight: 1.5,
+                          }}>
+                            {showOnboardingOverlay === 'lifemap' 
+                              ? "This optional quiz helps Tend learn how you grow and tackle challenges. Your answers personalize how the app communicates with you, celebrates your wins, and supports you through setbacks."
+                              : "Every day, Tend generates a personalized activity based on your Life Map — a small, intentional step to help you live more aligned with your values. On weekends, you'll also get a longer challenge for deeper growth."}
                           </div>
                         </div>
                         <button
@@ -13966,6 +13977,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
