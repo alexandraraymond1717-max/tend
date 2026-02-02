@@ -5480,7 +5480,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                         boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
                       }}>
                         <div style={{fontSize: '3rem', marginBottom: '1rem'}}>
-                          {showOnboardingOverlay === 'lifemap' ? '🗺️' : '🌸'}
+                          {showOnboardingOverlay === 'lifemap' ? '🗺️' : showOnboardingOverlay === 'quiz' ? '🌻' : '🌱'}
                         </div>
                         <h2 style={{
                           fontFamily: "'Fraunces', serif",
@@ -5495,14 +5495,39 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                           color: 'var(--text-muted)',
                           fontSize: '0.95rem',
                           lineHeight: 1.5,
-                          marginBottom: '1.5rem',
+                          marginBottom: '1rem',
                         }}>
                           {showOnboardingOverlay === 'lifemap' 
-                            ? "Great start! Don't worry — you can come back and add more to your Life Map anytime. It grows with you!"
+                            ? "Great start! You can always come back and add more to your Life Map — it grows with you."
                             : showOnboardingOverlay === 'quiz'
-                            ? "We've learned your communication style! This helps us personalize how we talk with you."
+                            ? "We've learned your tending style! This helps personalize how Tend communicates with you."
                             : "No worries! You can always take the quiz later in your Life Map."}
                         </p>
+                        <div style={{
+                          backgroundColor: 'var(--bg-elevated)',
+                          borderRadius: '12px',
+                          padding: '1rem',
+                          marginBottom: '1.5rem',
+                        }}>
+                          <div style={{
+                            fontSize: '0.75rem',
+                            color: 'var(--text-muted)',
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.5px',
+                            marginBottom: '0.5rem',
+                          }}>
+                            Next up
+                          </div>
+                          <div style={{
+                            fontSize: '0.95rem',
+                            color: 'var(--text)',
+                            fontWeight: 500,
+                          }}>
+                            {showOnboardingOverlay === 'lifemap' 
+                              ? "🌻 Gardener Quiz — A quick, optional quiz to discover your unique tending style"
+                              : "🌱 Your First Tend — Reveal your personalized daily activity"}
+                          </div>
+                        </div>
                         <button
                           onClick={() => {
                             setShowOnboardingOverlay(null);
@@ -13941,6 +13966,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
