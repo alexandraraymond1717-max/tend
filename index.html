@@ -2675,6 +2675,11 @@ Respond with ONLY the task text, nothing else.`,
             // If gardener type is saved but still on step 2, advance to step 3
             if (data.onboardingStep === 2 && data.userProfile?.tendPreferences?.gardenerType) {
               setOnboardingStep(3);
+              setCenterView(CENTER_VIEWS.TENDY); // Navigate to TendyView for step 3
+            }
+            // If already on step 3 and not completed, navigate to TendyView
+            if (data.onboardingStep === 3 && !data.onboardingCompleted) {
+              setCenterView(CENTER_VIEWS.TENDY);
             }
             // If VLQ was completed, skip to step 2 (after summary) and reveal content
             if (data.vlqCompleted) {
@@ -13918,6 +13923,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
