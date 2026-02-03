@@ -5726,6 +5726,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
 
       // Tendy mode
       if (appMode === 'tendy') {
+        console.log('DEBUG: Rendering TendyView from appMode=tendy (NO onboarding props)');
         return (
           <>
             <TendyView
@@ -5881,6 +5882,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
               )}
               {centerView === CENTER_VIEWS.TENDY && (
                 <div style={{overflow: 'auto', maxHeight: 'calc(100vh - 140px)'}}>
+                  {console.log('DEBUG: Rendering TendyView from centerView=TENDY, onboardingCompleted:', onboardingCompleted, 'onboardingStep:', onboardingStep, 'isOnboarding:', !onboardingCompleted && onboardingStep === 3)}
                   <TendyView
                     vlqScores={vlqScores}
                     todaysTendies={todaysTendies}
@@ -8017,6 +8019,9 @@ This has been your year of growth and intention. What are you most proud of? Wha
       isOnboarding = false,
       onFinishOnboarding
     }) {
+      // DEBUG: Log isOnboarding value
+      console.log('TendyView rendered with isOnboarding:', isOnboarding, 'onFinishOnboarding:', !!onFinishOnboarding);
+      
       const today = getLocalDateString();
       const [showCelebration, setShowCelebration] = useState(false);
       const [justCompletedPoints, setJustCompletedPoints] = useState(0);
@@ -13914,6 +13919,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
