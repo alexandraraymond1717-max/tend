@@ -9094,9 +9094,15 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             )}
             
             <div style={tendyStyles.header}>
-              <button style={tendyStyles.backButton} onClick={onBack}>
-                🏠 Home
-              </button>
+              {isOnboarding ? (
+                <button style={tendyStyles.backButton} onClick={onFinishOnboarding}>
+                  🏠 Home
+                </button>
+              ) : (
+                <button style={tendyStyles.backButton} onClick={onBack}>
+                  🏠 Home
+                </button>
+              )}
               <div style={tendyStyles.stats}>
                 <div style={tendyStyles.stat}>
                   <span>🪴</span> {flexPoints} flex
@@ -13923,6 +13929,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
