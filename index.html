@@ -9243,29 +9243,68 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   }}
                   onClick={() => selectTendy(dailyTend.id)}
                 >
-                  <div style={tendyStyles.tendyHeader}>
-                    <div style={tendyStyles.tendyDomain}>
-                      <span>{dailyTend.domainIcon}</span>
-                      <span>{dailyTend.domainName}</span>
-                    </div>
-                    <span style={{
-                      ...tendyStyles.difficultyBadge,
-                      backgroundColor: '#8FD4A020',
-                      color: '#8FD4A0',
-                    }}>
-                      5 min
-                    </span>
-                  </div>
-                  <p style={tendyStyles.tendyText}>{dailyTend.text}</p>
-                  <div style={tendyStyles.tendyFooter}>
-                    <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
-                      {dailyTend.type === 'reflective' ? '✍️ Reflective' : '⚡ Action'}
-                    </span>
-                    <div style={tendyStyles.gardenReward}>
-                      <span>{dailyTend.gardenElement?.icon}</span>
-                      <span>+{dailyTend.points} pt{dailyTend.points !== 1 ? 's' : ''}</span>
-                    </div>
-                  </div>
+                  {dailyTend.selected ? (
+                    <>
+                      <div style={tendyStyles.tendyHeader}>
+                        <div style={tendyStyles.tendyDomain}>
+                          <span>{dailyTend.domainIcon}</span>
+                          <span>{dailyTend.domainName}</span>
+                        </div>
+                        <span style={{
+                          ...tendyStyles.difficultyBadge,
+                          backgroundColor: '#8FD4A020',
+                          color: '#8FD4A0',
+                        }}>
+                          5 min
+                        </span>
+                      </div>
+                      <p style={tendyStyles.tendyText}>{dailyTend.text}</p>
+                      <div style={tendyStyles.tendyFooter}>
+                        <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
+                          {dailyTend.type === 'reflective' ? '✍️ Reflective' : '⚡ Action'}
+                        </span>
+                        <div style={tendyStyles.gardenReward}>
+                          <span>{dailyTend.gardenElement?.icon}</span>
+                          <span>+{dailyTend.points} pt{dailyTend.points !== 1 ? 's' : ''}</span>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div style={tendyStyles.tendyHeader}>
+                        <div style={tendyStyles.tendyDomain}>
+                          <span>{dailyTend.domainIcon}</span>
+                          <span>{dailyTend.domainName}</span>
+                        </div>
+                        <span style={{
+                          ...tendyStyles.difficultyBadge,
+                          backgroundColor: '#8FD4A020',
+                          color: '#8FD4A0',
+                        }}>
+                          5 min
+                        </span>
+                      </div>
+                      <div style={{
+                        padding: '1rem 0',
+                        textAlign: 'center',
+                        color: 'var(--text-muted)',
+                      }}>
+                        <div style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>🌱</div>
+                        <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>
+                          Click to reveal your daily tend
+                        </div>
+                      </div>
+                      <div style={tendyStyles.tendyFooter}>
+                        <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
+                          {dailyTend.type === 'reflective' ? '✍️ Reflective' : '⚡ Action'}
+                        </span>
+                        <div style={tendyStyles.gardenReward}>
+                          <span>{dailyTend.gardenElement?.icon}</span>
+                          <span>+{dailyTend.points} pt{dailyTend.points !== 1 ? 's' : ''}</span>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             )}
@@ -9334,23 +9373,40 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       </div>
                     </>
                   ) : (
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      padding: '1.5rem',
-                      gap: '0.75rem',
-                    }}>
-                      <span style={{fontSize: '2rem'}}>🌟</span>
-                      <div style={{textAlign: 'left'}}>
+                    <>
+                      <div style={tendyStyles.tendyHeader}>
+                        <div style={tendyStyles.tendyDomain}>
+                          <span>{weekendTend.domainIcon}</span>
+                          <span>{weekendTend.domainName}</span>
+                        </div>
+                        <span style={{
+                          ...tendyStyles.difficultyBadge,
+                          backgroundColor: '#E8A09020',
+                          color: '#E8A090',
+                        }}>
+                          15 min
+                        </span>
+                      </div>
+                      <div style={{
+                        padding: '1rem 0',
+                        textAlign: 'center',
+                        color: 'var(--text-muted)',
+                      }}>
+                        <div style={{fontSize: '1.5rem', marginBottom: '0.5rem'}}>🌟</div>
                         <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>
                           Click to reveal your weekend challenge
                         </div>
-                        <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>
-                          A 15-minute activity for your {weekendTend.domainName.toLowerCase()} values
+                      </div>
+                      <div style={tendyStyles.tendyFooter}>
+                        <span style={{fontSize: '0.75rem', color: 'var(--text-muted)'}}>
+                          {weekendTend.type === 'reflective' ? '✍️ Reflective' : '⚡ Action'}
+                        </span>
+                        <div style={tendyStyles.gardenReward}>
+                          <span>{weekendTend.gardenElement?.icon}</span>
+                          <span>+{weekendTend.points} pt{weekendTend.points !== 1 ? 's' : ''}</span>
                         </div>
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
                 <p style={{
@@ -9365,159 +9421,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               </div>
             )}
 
-            {/* Custom Tendy - if approved this week */}
-            {hasApprovedCustom && (
-              <div
-                style={{
-                  ...tendyStyles.tendyCard,
-                  borderColor: weeklyCustomTendy.selected ? 'var(--accent)' : 'var(--border)',
-                  backgroundColor: weeklyCustomTendy.selected ? 'var(--accent-light)' : 'var(--bg-card)',
-                }}
-                onClick={() => {
-                  setWeeklyCustomTendy({...weeklyCustomTendy, selected: !weeklyCustomTendy.selected});
-                }}
-              >
-                <div style={tendyStyles.tendyHeader}>
-                  <div style={tendyStyles.tendyDomain}>
-                    <span>✨</span>
-                    <span>Your Custom Tend</span>
-                  </div>
-                  <span style={{
-                    ...tendyStyles.difficultyBadge,
-                    backgroundColor: '#B8A9C920',
-                    color: '#B8A9C9',
-                  }}>
-                    Personal
-                  </span>
-                </div>
-                <p style={tendyStyles.tendyText}>{weeklyCustomTendy.text}</p>
-                <div style={tendyStyles.tendyFooter}>
-                  <span>⏱ Self-paced</span>
-                  <div style={tendyStyles.gardenReward}>
-                    <span>🌟</span>
-                    <span>+1 pt • {customCompletionsRemaining}/2 left</span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Create Custom Tendy Form */}
-            {canCreateCustomThisWeek && !showCustomTendyForm && (
-              <button
-                style={{
-                  ...tendyStyles.tendyCard,
-                  cursor: 'pointer',
-                  borderStyle: 'dashed',
-                  borderColor: 'var(--border-dark)',
-                  textAlign: 'center',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  minHeight: '80px',
-                  color: 'var(--text-muted)',
-                  marginTop: '1rem',
-                }}
-                onClick={() => setShowCustomTendyForm(true)}
-              >
-                <div style={{fontSize: '1.25rem', marginBottom: '0.25rem'}}>+</div>
-                <div style={{fontWeight: 500, fontSize: '0.9rem'}}>Create Your Own Custom Tend</div>
-              </button>
-            )}
-
-            {/* Custom Tendy Creation Form */}
-            {showCustomTendyForm && (
-              <div style={{
-                ...tendyStyles.tendyCard,
-                borderColor: 'var(--accent)',
-                marginTop: '1rem',
-              }}>
-                <div style={{marginBottom: '0.75rem', fontWeight: 500, color: 'var(--text)'}}>
-                  Create Your Custom Tend
-                </div>
-                <textarea
-                  value={customTendyText}
-                  onChange={(e) => setCustomTendyText(e.target.value)}
-                  placeholder="Describe a specific action aligned with your values..."
-                  style={{
-                    width: '100%',
-                    minHeight: '80px',
-                    padding: '0.75rem',
-                    backgroundColor: 'var(--bg-elevated)',
-                    border: '1px solid var(--border)',
-                    borderRadius: '8px',
-                    fontSize: '0.9rem',
-                    fontFamily: "'DM Sans', sans-serif",
-                    color: 'var(--text)',
-                    marginBottom: '0.75rem',
-                    resize: 'vertical',
-                  }}
-                />
-                <div style={{display: 'flex', gap: '0.5rem'}}>
-                  <button
-                    onClick={submitCustomTendy}
-                    disabled={!customTendyText.trim() || isSubmittingCustom || !apiKey}
-                    style={{
-                      flex: 1,
-                      padding: '0.625rem',
-                      backgroundColor: isSubmittingCustom || !apiKey ? 'var(--border-dark)' : 'var(--accent)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: 'white',
-                      fontSize: '0.85rem',
-                      fontWeight: 500,
-                      cursor: isSubmittingCustom || !apiKey ? 'not-allowed' : 'pointer',
-                    }}
-                  >
-                    {isSubmittingCustom ? 'Submitting...' : 'Submit for Approval'}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowCustomTendyForm(false);
-                      setCustomTendyText('');
-                    }}
-                    style={{
-                      padding: '0.625rem 1rem',
-                      backgroundColor: 'transparent',
-                      border: '1px solid var(--border)',
-                      borderRadius: '8px',
-                      color: 'var(--text-muted)',
-                      fontSize: '0.85rem',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-                {!apiKey && (
-                  <div style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontStyle: 'italic'}}>
-                    Set your API key in settings to enable custom tends
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Rejected Custom Tendy Message */}
-            {weeklyCustomTendy?.status === 'rejected' && weeklyCustomTendy.weekOf === currentWeek && (
-              <div style={{
-                padding: '1rem',
-                backgroundColor: '#FFF5F5',
-                border: '1px solid #FED7D7',
-                borderRadius: '12px',
-                fontSize: '0.85rem',
-                color: '#C53030',
-                marginTop: '1rem',
-              }}>
-                <div style={{fontWeight: 500, marginBottom: '0.25rem'}}>Custom Tend Not Approved</div>
-                <div style={{color: '#744210'}}>{weeklyCustomTendy.aiResponse}</div>
-                <div style={{marginTop: '0.5rem', fontSize: '0.75rem', color: '#744210'}}>
-                  You can try again with a different tend this week.
-                </div>
-              </div>
-            )}
-
             {/* Confirm button - only show if a tend is selected */}
-            {(todaysTendies.some(t => t.selected) || weeklyCustomTendy?.selected) && (
+            {todaysTendies.some(t => t.selected) && (
               <button
                 style={{
                   ...tendyStyles.selectButton,
@@ -13897,6 +13802,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
