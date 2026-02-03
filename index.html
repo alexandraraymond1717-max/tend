@@ -9136,7 +9136,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                         marginBottom: '0.5rem',
                         fontWeight: 500,
                       }}>
-                        ✍️ Your reflection (optional)
+                        ✍️ Your reflection
                       </label>
                       <textarea
                         value={reflectionInput}
@@ -9147,7 +9147,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                           minHeight: '100px',
                           padding: '0.75rem',
                           borderRadius: '10px',
-                          border: '1px solid var(--border)',
+                          border: `1px solid ${reflectionInput.trim() ? 'var(--accent)' : 'var(--border)'}`,
                           backgroundColor: 'var(--bg-card)',
                           color: 'var(--text)',
                           fontSize: '0.95rem',
@@ -9156,10 +9156,22 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                           boxSizing: 'border-box',
                         }}
                       />
+                      {!reflectionInput.trim() && (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontStyle: 'italic' }}>
+                          Write your reflection to complete this tend
+                        </div>
+                      )}
                     </div>
                   )}
                   
-                  <button style={tendyStyles.completeButton} onClick={() => {
+                  <button 
+                    style={{
+                      ...tendyStyles.completeButton,
+                      opacity: selectedTendy.type === 'reflective' && !reflectionInput.trim() ? 0.5 : 1,
+                      cursor: selectedTendy.type === 'reflective' && !reflectionInput.trim() ? 'not-allowed' : 'pointer',
+                    }}
+                    disabled={selectedTendy.type === 'reflective' && !reflectionInput.trim()}
+                    onClick={() => {
                     // Complete regular tendy
                     const completedTendy = {
                       ...selectedTendy,
@@ -13837,6 +13849,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
