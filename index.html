@@ -3220,37 +3220,9 @@ What would you like to explore?`,
           case 2: // Quiz - go to Insights
             setAppMode('insights');
             break;
-          case 3: // Daily Tend - Onboarding is COMPLETE! Show welcome chat
-            // Mark onboarding as complete
-            setOnboardingCompleted(true);
-            setOnboardingStep(null);
-            // Navigate to Daily Tend
+          case 3: // Daily Tend - navigate to TendyView
             setCenterView(CENTER_VIEWS.TENDY);
             setAppMode(null);
-            // Show full-page welcome chat
-            setShowChatOverlay(true);
-            setMessages([{
-              role: 'assistant',
-              content: `🎉 **Welcome to Tend!**
-
-You've finished setting up — nice work!
-
-I'm here whenever you want to chat. We could talk about:
-
-• **What's on your mind** — goals you're working toward, how you want to feel, what matters most to you right now
-• **Your values** — what a meaningful life looks like for you and how to live more aligned with it
-• **Planning** — I can help you think through your day, week, or bigger life decisions
-
-You can also minimize this chat and explore the app on your own:
-
-• **🏠 Home** — your dashboard and overview
-• **📅 Calendar** — see your history and plan ahead  
-• **🗺️ Life Map** — your goals, habits, and values
-• **🌱 Daily Tend** — your personalized daily activities
-• **📝 Journal** — reflect on your day
-
-Click the chat bubble anytime to come back and talk. What's on your mind?`
-            }]);
             break;
         }
       }, [vlqCompleted, onboardingCompleted, onboardingStep]);
@@ -5930,6 +5902,35 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                     journalEntries={journalEntries}
                     apiKey={apiKey}
                     onBack={() => setCenterView(CENTER_VIEWS.YEAR)}
+                    isOnboarding={!onboardingCompleted && onboardingStep === 3}
+                    onFinishOnboarding={() => {
+                      setOnboardingCompleted(true);
+                      setOnboardingStep(null);
+                      setCenterView(CENTER_VIEWS.YEAR);
+                      setShowChatOverlay(true);
+                      setMessages([{
+                        role: 'assistant',
+                        content: `🎉 **Welcome to Tend!**
+
+You've finished setting up — nice work!
+
+I'm here whenever you want to chat. We could talk about:
+
+• **What's on your mind** — goals you're working toward, how you want to feel, what matters most to you right now
+• **Your values** — what a meaningful life looks like for you and how to live more aligned with it
+• **Planning** — I can help you think through your day, week, or bigger life decisions
+
+You can also minimize this chat and explore the app on your own:
+
+• **🏠 Home** — your dashboard and overview
+• **📅 Calendar** — see your history and plan ahead  
+• **🗺️ Life Map** — your goals, habits, and values
+• **🌱 Daily Tend** — your personalized daily activities
+• **📝 Journal** — reflect on your day
+
+Click the chat bubble anytime to come back and talk. What's on your mind?`
+                      }]);
+                    }}
                   />
                 </div>
               )}
@@ -8012,7 +8013,9 @@ This has been your year of growth and intention. What are you most proud of? Wha
       journalEntries,
       apiKey,
       onBack,
-      onTendComplete
+      onTendComplete,
+      isOnboarding = false,
+      onFinishOnboarding
     }) {
       const today = getLocalDateString();
       const [showCelebration, setShowCelebration] = useState(false);
@@ -8829,7 +8832,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
         return (
           <div style={tendyStyles.container}>
             <div style={tendyStyles.header}>
-              <button style={tendyStyles.backButton} onClick={onBack}>
+              <button style={tendyStyles.backButton} onClick={isOnboarding ? onFinishOnboarding : onBack}>
                 🏠 Home
               </button>
               <div style={tendyStyles.stats}>
@@ -9091,7 +9094,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             )}
             
             <div style={tendyStyles.header}>
-              <button style={tendyStyles.backButton} onClick={onBack}>
+              <button style={tendyStyles.backButton} onClick={isOnboarding ? onFinishOnboarding : onBack}>
                 🏠 Home
               </button>
               <div style={tendyStyles.stats}>
@@ -9289,7 +9292,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       return (
         <div style={tendyStyles.container}>
           <div style={tendyStyles.header}>
-            <button style={tendyStyles.backButton} onClick={onBack}>
+            <button style={tendyStyles.backButton} onClick={isOnboarding ? onFinishOnboarding : onBack}>
               🏠 Home
             </button>
             <div style={tendyStyles.stats}>
@@ -13848,6 +13851,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
