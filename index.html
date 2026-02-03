@@ -8099,17 +8099,46 @@ This has been your year of growth and intention. What are you most proud of? Wha
       
       // No auto-select - user must click to reveal their tend
 
-      const rerollTendy = () => {
+      const rerollTendy = async () => {
         if (flexPoints < 1 || !selectedTendy) return;
         
         // Deduct flex point
         setFlexPoints(flexPoints - 1);
         
-        // Deselect current tendy so they can pick a different difficulty
-        setTodaysTendies(todaysTendies.map(t => ({
-          ...t,
-          selected: false
-        })));
+        // Get a new activity for the same life area
+        const domain = selectedTendy.domain;
+        const difficulty = selectedTendy.difficulty;
+        const currentText = selectedTendy.originalText || selectedTendy.text;
+        
+        // Get templates for this domain, excluding the current one
+        let templates = TENDY_TEMPLATES[domain]?.filter(t => 
+          t.difficulty === difficulty && t.text !== currentText
+        ) || [];
+        
+        if (templates.length === 0) {
+          // If no alternatives, get any template of same difficulty
+          templates = TENDY_TEMPLATES[domain]?.filter(t => t.difficulty === difficulty) || [];
+        }
+        
+        if (templates.length > 0) {
+          const newTemplate = templates[Math.floor(Math.random() * templates.length)];
+          
+          // Update the tend with new text
+          setTodaysTendies(todaysTendies.map(t => {
+            if (t.id === selectedTendy.id) {
+              return {
+                ...t,
+                text: newTemplate.text,
+                originalText: newTemplate.text,
+                type: newTemplate.type,
+                isPersonalized: false,
+                isAIGenerated: false,
+                source: 'pool-reroll',
+              };
+            }
+            return t;
+          }));
+        }
       };
 
       // Tend chat function
@@ -9043,7 +9072,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     </div>
                   </div>
                   
-                  {/* Reroll button - costs 1 flex point */}
+                  {/* Reroll button - costs 1 flex point to get a different activity */}
                   {flexPoints >= 1 && !selectedTendy.completed && (
                     <button 
                       onClick={rerollTendy}
@@ -9064,7 +9093,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       }}
                     >
                       <span>🪴</span>
-                      <span>Spend 1 flex point to pick a different difficulty</span>
+                      <span>Spend 1 flex point to get a different activity</span>
                     </button>
                   )}
                   
@@ -13808,6 +13837,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
