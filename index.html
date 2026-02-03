@@ -9198,17 +9198,20 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               <button style={tendyStyles.backButton} onClick={isOnboarding ? onFinishOnboarding : onBack}>
                 🏠 Home
               </button>
-              <div style={tendyStyles.stats}>
-                <div style={tendyStyles.stat}>
-                  <span>🪴</span> {flexPoints} flex
+              {/* Hide stats during onboarding for cleaner look */}
+              {!isOnboarding && (
+                <div style={tendyStyles.stats}>
+                  <div style={tendyStyles.stat}>
+                    <span>🪴</span> {flexPoints} flex
+                  </div>
+                  <div style={tendyStyles.stat}>
+                    <span>🌱</span> {tendyPoints} pts
+                  </div>
                 </div>
-                <div style={tendyStyles.stat}>
-                  <span>🌱</span> {tendyPoints} pts
-                </div>
-              </div>
+              )}
             </div>
             <div style={tendyStyles.content}>
-              <h1 style={tendyStyles.title}>{hasBothSelected ? 'Today\'s Tendies' : 'Today\'s Tendy'}</h1>
+              <h1 style={{...tendyStyles.title, fontSize: isOnboarding ? '1.25rem' : tendyStyles.title.fontSize}}>{hasBothSelected ? 'Today\'s Tends' : 'Today\'s Tend'}</h1>
               <p style={tendyStyles.subtitle}>
                 {hasBothSelected 
                   ? 'Complete these actions to tend to your values'
@@ -9233,7 +9236,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                         {getDifficultyLabel(selectedTendy.difficulty).text}
                       </span>
                     </div>
-                    <p style={{...tendyStyles.tendyText, fontSize: '1.1rem'}}>
+                    <p style={{...tendyStyles.tendyText, fontSize: isOnboarding ? '0.95rem' : '1rem'}}>
                       {selectedTendy.text}
                     </p>
                     <div style={tendyStyles.tendyFooter}>
@@ -9243,31 +9246,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Reroll button - costs 1 flex point to get a different activity */}
-                  {flexPoints >= 1 && !selectedTendy.completed && (
-                    <button 
-                      onClick={rerollTendy}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        backgroundColor: 'transparent',
-                        border: '1px solid var(--border-dark)',
-                        borderRadius: '10px',
-                        color: 'var(--text-muted)',
-                        fontSize: '0.85rem',
-                        cursor: 'pointer',
-                        marginBottom: '0.75rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.5rem',
-                      }}
-                    >
-                      <span>🪴</span>
-                      <span>Spend 1 flex point to get a different activity</span>
-                    </button>
-                  )}
                   
                   {/* Chat about this tend button - only for action tends */}
                   {selectedTendy.type !== 'reflective' && (
@@ -9300,6 +9278,31 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     </button>
                   )}
                   
+                  {/* Reroll button for action tends - costs 1 flex point */}
+                  {selectedTendy.type !== 'reflective' && flexPoints >= 1 && !selectedTendy.completed && (
+                    <button 
+                      onClick={rerollTendy}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        backgroundColor: 'transparent',
+                        border: '1px solid var(--border-dark)',
+                        borderRadius: '10px',
+                        color: 'var(--text-muted)',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        marginBottom: '0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      <span>🪴</span>
+                      <span>Spend 1 flex point to get a different activity</span>
+                    </button>
+                  )}
+                  
                   {/* Reflection input for reflective tends */}
                   {selectedTendy.type === 'reflective' && (
                     <div style={{ marginBottom: '1rem' }}>
@@ -9315,7 +9318,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       <textarea
                         value={reflectionInput}
                         onChange={(e) => setReflectionInput(e.target.value)}
-                        placeholder="Write your thoughts here..."
+                        placeholder="Write your thoughts here to complete this tend..."
                         style={{
                           width: '100%',
                           minHeight: '100px',
@@ -9330,10 +9333,30 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                           boxSizing: 'border-box',
                         }}
                       />
-                      {!reflectionInput.trim() && (
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', fontStyle: 'italic' }}>
-                          Write your reflection to complete this tend
-                        </div>
+                      
+                      {/* Reroll button for reflective tends - underneath reflection */}
+                      {flexPoints >= 1 && !selectedTendy.completed && (
+                        <button 
+                          onClick={rerollTendy}
+                          style={{
+                            width: '100%',
+                            padding: '0.6rem',
+                            backgroundColor: 'transparent',
+                            border: '1px solid var(--border-dark)',
+                            borderRadius: '10px',
+                            color: 'var(--text-muted)',
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            marginTop: '0.75rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                          }}
+                        >
+                          <span>🪴</span>
+                          <span>Spend 1 flex point to get a different activity</span>
+                        </button>
                       )}
                     </div>
                   )}
@@ -14024,6 +14047,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
