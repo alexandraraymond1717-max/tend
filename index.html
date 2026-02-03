@@ -827,7 +827,7 @@
     
     // Calculate personalization readiness for a specific life area
     // AI can generate from ANY rich context - not just goals/habits
-    function calculateDomainReadiness(domain, userProfile, goals = [], weeklyHabits = [], journalEntries = {}) {
+    function calculateDomainReadiness(domain, userProfile, goals = [], weeklyHabits = [], journalEntries = {}, tendyHistory = []) {
       const prefs = userProfile?.tendPreferences || {};
       const fieldConfig = DOMAIN_PERSONALIZABLE_FIELDS[domain] || {};
       
@@ -863,6 +863,17 @@
       const hasRecentJournal = recentJournals.length >= 1;
       const hasMultipleJournals = recentJournals.length >= 3;
       
+      // 6. Tend reflections (rich insights from past reflective tends)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const domainReflections = tendyHistory
+        .filter(t => t.domain === domain && t.reflection && t.reflection.trim())
+        .filter(t => new Date(t.completedAt || t.date) >= thirtyDaysAgo)
+        .sort((a, b) => new Date(b.completedAt || b.date) - new Date(a.completedAt || a.date))
+        .slice(0, 5); // Keep most recent 5
+      const hasReflections = domainReflections.length >= 1;
+      const hasMultipleReflections = domainReflections.length >= 3;
+      
       // ========== CALCULATE AI PROBABILITY ==========
       // AI can work with ANY rich context - goals/habits are just one source
       
@@ -884,6 +895,10 @@
       // Recent journals show what's on their mind (+15% for multiple, +8% for one)
       if (hasMultipleJournals) aiPct += 15;
       else if (hasRecentJournal) aiPct += 8;
+      
+      // Tend reflections provide deep personal insights (+12% for multiple, +6% for one)
+      if (hasMultipleReflections) aiPct += 12;
+      else if (hasReflections) aiPct += 6;
       
       // Cap at 85% - always some chance of pool variety
       aiPct = Math.min(aiPct, 85);
@@ -933,6 +948,17 @@
           detail: notes.substring(0, 50) + (notes.length > 50 ? '...' : ''),
           impact: 'ai',
           boost: hasDetailedNotes ? '+20%' : '+10%'
+        });
+      }
+      
+      if (hasReflections) {
+        dataPoints.push({
+          type: 'reflections',
+          icon: '✍️',
+          label: `${domainReflections.length} reflection${domainReflections.length > 1 ? 's' : ''}`,
+          detail: domainReflections[0].reflection.substring(0, 50) + (domainReflections[0].reflection.length > 50 ? '...' : ''),
+          impact: 'ai',
+          boost: hasMultipleReflections ? '+12%' : '+6%'
         });
       }
       
@@ -1020,17 +1046,17 @@
     }
     
     // Calculate readiness for all domains
-    function calculateAllDomainReadiness(userProfile, goals = [], weeklyHabits = [], journalEntries = {}) {
+    function calculateAllDomainReadiness(userProfile, goals = [], weeklyHabits = [], journalEntries = {}, tendyHistory = []) {
       const readiness = {};
       VLQ_ORDER.forEach(domain => {
-        readiness[domain] = calculateDomainReadiness(domain, userProfile, goals, weeklyHabits, journalEntries);
+        readiness[domain] = calculateDomainReadiness(domain, userProfile, goals, weeklyHabits, journalEntries, tendyHistory);
       });
       return readiness;
     }
     
     // Get overall personalization summary
-    function getPersonalizationSummary(userProfile, goals = [], weeklyHabits = [], journalEntries = {}) {
-      const allReadiness = calculateAllDomainReadiness(userProfile, goals, weeklyHabits, journalEntries);
+    function getPersonalizationSummary(userProfile, goals = [], weeklyHabits = [], journalEntries = {}, tendyHistory = []) {
+      const allReadiness = calculateAllDomainReadiness(userProfile, goals, weeklyHabits, journalEntries, tendyHistory);
       const domains = Object.values(allReadiness);
       
       const aiReadyCount = domains.filter(d => d.tier === 'AI Ready').length;
@@ -1120,7 +1146,7 @@ User context: ${contextParts.join('. ')}`,
     }
 
     // Generate a completely fresh AI tend
-    async function generateFreshAITend(domain, difficulty, type, userProfile, apiKey, goals = [], weeklyHabits = [], journalEntries = {}, minutes = null) {
+    async function generateFreshAITend(domain, difficulty, type, userProfile, apiKey, goals = [], weeklyHabits = [], journalEntries = {}, minutes = null, tendyHistory = []) {
       const prefs = userProfile?.tendPreferences || {};
       const domainInfo = VLQ_DOMAINS[domain];
       // Use provided minutes, or fall back to old logic
@@ -1146,6 +1172,22 @@ User context: ${contextParts.join('. ')}`,
       const domainHabits = weeklyHabits.filter(h => h.lifeArea === domain);
       if (domainHabits.length > 0) {
         contextParts.push(`Their habits for ${domainInfo.name}: ${domainHabits.map(h => `${h.text} (${h.frequency}x/week)`).join(', ')}`);
+      }
+      
+      // Add recent tend reflections for this life area (deep insights)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const domainReflections = tendyHistory
+        .filter(t => t.domain === domain && t.reflection && t.reflection.trim())
+        .filter(t => new Date(t.completedAt || t.date) >= thirtyDaysAgo)
+        .sort((a, b) => new Date(b.completedAt || b.date) - new Date(a.completedAt || a.date))
+        .slice(0, 3);
+      
+      if (domainReflections.length > 0) {
+        const reflectionSummary = domainReflections
+          .map(r => r.reflection.substring(0, 100))
+          .join(' | ');
+        contextParts.push(`Recent reflections about ${domainInfo.name}: ${reflectionSummary}`);
       }
       
       // Add recent journal context for mood-awareness
@@ -1483,8 +1525,8 @@ Respond with ONLY the task text, nothing else.`,
         const tendyDomain = tendy.domain;
         if (!tendyDomain) return tendy;
         
-        // Calculate readiness for THIS tend's domain
-        const domainReadiness = calculateDomainReadiness(tendyDomain, userProfile, goals, weeklyHabits, journalEntries);
+        // Calculate readiness for THIS tend's domain (now includes reflections from tendyHistory)
+        const domainReadiness = calculateDomainReadiness(tendyDomain, userProfile, goals, weeklyHabits, journalEntries, tendyHistory);
         
         console.log(`Tend personalization for ${domainReadiness.domainName} (${tendy.isWeekendTend ? 'weekend' : 'daily'}):`, {
           tier: domainReadiness.tier,
@@ -1516,7 +1558,8 @@ Respond with ONLY the task text, nothing else.`,
             goals,
             weeklyHabits,
             journalEntries,
-            tendy.minutes
+            tendy.minutes,
+            tendyHistory
           );
           
           if (freshText) {
@@ -4221,6 +4264,34 @@ Guide the user through their onboarding journey. Be encouraging and help them ma
           };
           
           parts.push(getRecentJournalContext());
+          
+          // Recent tend reflections for deeper insights
+          const getRecentTendReflections = () => {
+            const thirtyDaysAgo = new Date();
+            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+            
+            const reflections = (tendyHistory || [])
+              .filter(t => t.reflection && t.reflection.trim())
+              .filter(t => new Date(t.completedAt || t.date) >= thirtyDaysAgo)
+              .sort((a, b) => new Date(b.completedAt || b.date) - new Date(a.completedAt || a.date))
+              .slice(0, 5);
+            
+            if (reflections.length === 0) return '';
+            
+            const reflectionParts = [`\n=== RECENT TEND REFLECTIONS ===`];
+            reflectionParts.push(`(These are personal reflections the user wrote after completing reflective tends)`);
+            
+            reflections.forEach(r => {
+              const domainName = VLQ_DOMAINS[r.domain]?.name || r.domain || 'Unknown';
+              const dateObj = new Date(r.completedAt || r.date);
+              const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+              reflectionParts.push(`${dayLabel} [${domainName}]: "${r.reflection.substring(0, 150)}${r.reflection.length > 150 ? '...' : ''}"`);
+            });
+            
+            return reflectionParts.join('\n');
+          };
+          
+          parts.push(getRecentTendReflections());
           
           return parts.length > 0 ? parts.join('\n') : '';
         };
@@ -9097,34 +9168,36 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     </button>
                   )}
                   
-                  {/* Chat about this tend button */}
-                  <button 
-                    onClick={() => {
-                      setShowTendChat(true);
-                      setTendChatMessages([{
-                        role: 'assistant',
-                        content: `This tend is: "${selectedTendy.text}"\n\nHow can I help? You can ask me to clarify, adapt it to your situation, or share what works/doesn't work for you.`
-                      }]);
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '0.75rem',
-                      backgroundColor: 'transparent',
-                      border: '1px solid var(--border)',
-                      borderRadius: '10px',
-                      color: 'var(--text-muted)',
-                      fontSize: '0.85rem',
-                      cursor: 'pointer',
-                      marginBottom: '0.75rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem',
-                    }}
-                  >
-                    <span>💬</span>
-                    <span>Chat about this tend</span>
-                  </button>
+                  {/* Chat about this tend button - only for action tends */}
+                  {selectedTendy.type !== 'reflective' && (
+                    <button 
+                      onClick={() => {
+                        setShowTendChat(true);
+                        setTendChatMessages([{
+                          role: 'assistant',
+                          content: `This tend is: "${selectedTendy.text}"\n\nHow can I help? You can ask me to clarify, adapt it to your situation, or share what works/doesn't work for you.`
+                        }]);
+                      }}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        backgroundColor: 'transparent',
+                        border: '1px solid var(--border)',
+                        borderRadius: '10px',
+                        color: 'var(--text-muted)',
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        marginBottom: '0.75rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      <span>💬</span>
+                      <span>Chat about this tend</span>
+                    </button>
+                  )}
                   
                   {/* Reflection input for reflective tends */}
                   {selectedTendy.type === 'reflective' && (
@@ -11347,6 +11420,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       <strong>Notes</strong> (+10-20% AI) → AI uses your context to suggest things you wouldn't think of<br/>
                       <strong>Profile Info & Names</strong> (+15% AI) → Personalizes templates with specific people/places<br/>
                       <strong>Recent Journals</strong> (+8-15% AI) → AI knows what's on your mind this week<br/>
+                      <strong>Tend Reflections</strong> (+6-12% AI) → Your written reflections provide deep insights for future tends<br/>
                       <strong>Chat History</strong> → Details you share in chat are saved and boost future AI %
                     </p>
                     <p style={{marginBottom: '0.5rem', fontWeight: 500}}>For Chat:</p>
@@ -11367,8 +11441,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               // Get today's domain if tendies exist
               const currentDomain = todaysTendies?.[0]?.domain;
               
-              // Calculate readiness for each domain (NOW WITH GOALS, HABITS, JOURNAL)
-              const allReadiness = calculateAllDomainReadiness(userProfile, goals, weeklyHabits, journalEntries);
+              // Calculate readiness for each domain (NOW WITH GOALS, HABITS, JOURNAL, REFLECTIONS)
+              const allReadiness = calculateAllDomainReadiness(userProfile, goals, weeklyHabits, journalEntries, tendyHistory);
               
               return (
                 <>
@@ -13849,6 +13923,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
