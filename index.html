@@ -5775,89 +5775,68 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
           <div style={{
             minHeight: '100vh',
             backgroundColor: 'var(--bg)',
-            padding: '1rem',
+            display: 'flex',
+            flexDirection: 'column',
+            padding: '1rem 1.5rem',
           }}>
-            {/* Simple header with logo */}
-            <header style={{
+            {/* Centered content container */}
+            <div style={{
+              maxWidth: '480px',
+              width: '100%',
+              margin: '0 auto',
+              flex: 1,
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginBottom: '1rem',
-              padding: '0.5rem 0',
+              flexDirection: 'column',
             }}>
-              <div style={{ display: 'flex', alignItems: 'center' }}>
-                <svg width="28" height="28" viewBox="0 0 32 32" fill="none" style={{ marginRight: '8px' }}>
-                  <path d="M16 26 Q16 18 16 14" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" fill="none"/>
-                  <path d="M16 18 Q10 16 8 10 Q14 12 16 18" fill="var(--accent)" opacity="0.5"/>
-                  <path d="M16 14 Q22 10 24 4 Q18 8 16 14" fill="var(--accent)"/>
-                  <path d="M16 10 Q14 6 16 2 Q18 6 16 10" fill="var(--accent)" opacity="0.7"/>
-                </svg>
-                <h1 style={{ fontSize: '1.5rem', fontWeight: 300, color: 'var(--text)' }}>tend</h1>
-              </div>
-              <button 
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  fontSize: '1.25rem',
-                  cursor: 'pointer',
-                  color: 'var(--text-muted)',
-                }} 
-                onClick={() => setShowSettingsModal(true)}
-                title="Settings"
-              >
-                ⚙
-              </button>
-            </header>
+              {/* Onboarding Progress Bar */}
+              <OnboardingProgressBar 
+                currentStep={onboardingStep}
+                onStepClick={(step) => {
+                  if (step === 0) {
+                    setVlqStep(-1);
+                    setVlqCompleted(false);
+                    setAppMode(null);
+                  } else {
+                    setOnboardingStep(step);
+                    setSessionGreeted(false);
+                  }
+                }}
+                isStepComplete={isStepComplete}
+                getProgress={getOnboardingProgress}
+                vlqCompleted={vlqCompleted}
+              />
 
-            {/* Onboarding Progress Bar */}
-            <OnboardingProgressBar 
-              currentStep={onboardingStep}
-              onStepClick={(step) => {
-                if (step === 0) {
-                  setVlqStep(-1);
-                  setVlqCompleted(false);
-                  setAppMode(null);
-                } else {
-                  setOnboardingStep(step);
-                  setSessionGreeted(false);
-                }
-              }}
-              isStepComplete={isStepComplete}
-              getProgress={getOnboardingProgress}
-              vlqCompleted={vlqCompleted}
-            />
-
-            {/* TendyView - the main content */}
-            <div style={{ maxWidth: '500px', margin: '0 auto', marginTop: '1rem' }}>
-              <TendyView
-                vlqScores={vlqScores}
-                todaysTendies={todaysTendies}
-                setTodaysTendies={setTodaysTendies}
-                tendyHistory={tendyHistory}
-                setTendyHistory={setTendyHistory}
-                tendyPoints={tendyPoints}
-                setTendyPoints={setTendyPoints}
-                tendyStreak={tendyStreak}
-                setTendyStreak={setTendyStreak}
-                flexPoints={flexPoints}
-                setFlexPoints={setFlexPoints}
-                weeklyCustomTendy={weeklyCustomTendy}
-                setWeeklyCustomTendy={setWeeklyCustomTendy}
-                userProfile={userProfile}
-                setUserProfile={setUserProfile}
-                goals={goals}
-                weeklyHabits={weeklyHabits}
-                journalEntries={journalEntries}
-                apiKey={apiKey}
-                onBack={() => {}} 
-                isOnboarding={true}
-                onFinishOnboarding={() => {
-                  setOnboardingCompleted(true);
-                  setOnboardingStep(null);
-                  setShowChatOverlay(true);
-                  setMessages([{
-                    role: 'assistant',
-                    content: `🎉 **Welcome to Tend!**
+              {/* TendyView - the main content */}
+              <div style={{ marginTop: '1.5rem' }}>
+                <TendyView
+                  vlqScores={vlqScores}
+                  todaysTendies={todaysTendies}
+                  setTodaysTendies={setTodaysTendies}
+                  tendyHistory={tendyHistory}
+                  setTendyHistory={setTendyHistory}
+                  tendyPoints={tendyPoints}
+                  setTendyPoints={setTendyPoints}
+                  tendyStreak={tendyStreak}
+                  setTendyStreak={setTendyStreak}
+                  flexPoints={flexPoints}
+                  setFlexPoints={setFlexPoints}
+                  weeklyCustomTendy={weeklyCustomTendy}
+                  setWeeklyCustomTendy={setWeeklyCustomTendy}
+                  userProfile={userProfile}
+                  setUserProfile={setUserProfile}
+                  goals={goals}
+                  weeklyHabits={weeklyHabits}
+                  journalEntries={journalEntries}
+                  apiKey={apiKey}
+                  onBack={() => {}} 
+                  isOnboarding={true}
+                  onFinishOnboarding={() => {
+                    setOnboardingCompleted(true);
+                    setOnboardingStep(null);
+                    setShowChatOverlay(true);
+                    setMessages([{
+                      role: 'assistant',
+                      content: `🎉 **Welcome to Tend!**
 
 You've finished setting up — nice work!
 
@@ -5879,6 +5858,7 @@ Click the chat bubble anytime to come back and talk. What's on your mind?`
                   }]);
                 }}
               />
+              </div>
             </div>
 
             {/* Settings Modal */}
@@ -9446,29 +9426,35 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           )}
           
           <div style={tendyStyles.content}>
-            <h1 style={tendyStyles.title}>{isOnboarding ? 'Your First Tend' : "Today's Tends"}</h1>
-            <p style={tendyStyles.subtitle}>
-              {isOnboarding 
-                ? 'Click to reveal your personalized activity!'
-                : isWeekend 
-                ? 'Your quick daily tend + an optional weekend challenge!'
-                : 'A small action to tend to your values today.'
-              }
-            </p>
+            {/* Hide title during onboarding - the welcome banner is enough */}
+            {!isOnboarding && (
+              <>
+                <h1 style={tendyStyles.title}>Today's Tends</h1>
+                <p style={tendyStyles.subtitle}>
+                  {isWeekend 
+                    ? 'Your quick daily tend + an optional weekend challenge!'
+                    : 'A small action to tend to your values today.'
+                  }
+                </p>
+              </>
+            )}
 
             {/* Daily Tend Section */}
             {dailyTend && (
               <div style={{ marginBottom: isWeekend ? '2rem' : '1rem' }}>
-                <div style={{
-                  fontSize: '0.8rem',
-                  fontWeight: 600,
-                  color: 'var(--text-muted)',
-                  marginBottom: '0.75rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em',
-                }}>
-                  Daily Tend • 5 min
-                </div>
+                {/* Hide label during onboarding for cleaner look */}
+                {!isOnboarding && (
+                  <div style={{
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    color: 'var(--text-muted)',
+                    marginBottom: '0.75rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                  }}>
+                    Daily Tend • 5 min
+                  </div>
+                )}
                 <div
                   style={{
                     ...tendyStyles.tendyCard,
@@ -14038,6 +14024,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
