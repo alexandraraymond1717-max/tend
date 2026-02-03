@@ -8524,7 +8524,9 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
         },
         backButton: {
           background: 'none',
-          border: 'none',
+          border: '1px solid var(--border)',
+          borderRadius: '8px',
+          padding: '0.4rem 0.75rem',
           color: 'var(--text-muted)',
           fontSize: '0.9rem',
           cursor: 'pointer',
@@ -9178,7 +9180,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           <div style={tendyStyles.header}>
             {isOnboarding ? (
               <button 
-                style={{...tendyStyles.backButton, display: 'flex', alignItems: 'center', gap: '0.25rem'}}
+                style={tendyStyles.backButton}
                 onClick={onFinishOnboarding}
               >
                 🏠 Home
@@ -13806,6 +13808,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
