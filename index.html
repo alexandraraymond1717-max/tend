@@ -5777,7 +5777,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
             backgroundColor: 'var(--bg)',
             display: 'flex',
             flexDirection: 'column',
-            padding: '1rem 1.5rem',
+            padding: '0.75rem 1rem',
           }}>
             {/* Centered content container */}
             <div style={{
@@ -5807,7 +5807,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
               />
 
               {/* TendyView - the main content */}
-              <div style={{ marginTop: '1.5rem' }}>
+              <div style={{ marginTop: '0.75rem' }}>
                 <TendyView
                   vlqScores={vlqScores}
                   todaysTendies={todaysTendies}
@@ -8712,16 +8712,16 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
         container: {
           minHeight: '100vh',
           backgroundColor: 'var(--bg-main)',
-          padding: '1.5rem',
+          padding: '1rem',
           fontFamily: "'DM Sans', sans-serif",
         },
         header: {
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
-          marginBottom: '2rem',
+          marginBottom: '1rem',
           maxWidth: '500px',
-          margin: '0 auto 2rem',
+          margin: '0 auto 1rem',
         },
         backButton: {
           background: 'none',
@@ -8759,21 +8759,21 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           fontFamily: "'Fraunces', serif",
           fontSize: '1.75rem',
           color: 'var(--text)',
-          marginBottom: '0.5rem',
+          marginBottom: '0.25rem',
           textAlign: 'center',
         },
         subtitle: {
           color: 'var(--text-muted)',
           fontSize: '0.9rem',
           textAlign: 'center',
-          marginBottom: '2rem',
+          marginBottom: '1rem',
           lineHeight: 1.5,
         },
         tendyCard: {
           backgroundColor: 'var(--bg-card)',
           borderRadius: '16px',
-          padding: '1.25rem',
-          marginBottom: '1rem',
+          padding: '1rem',
+          marginBottom: '0.75rem',
           border: '2px solid var(--border)',
           cursor: 'pointer',
           transition: 'all 0.2s',
@@ -8841,19 +8841,19 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
         },
         selectedCard: {
           backgroundColor: 'var(--bg-card)',
-          borderRadius: '20px',
-          padding: '2rem',
-          marginBottom: '1.5rem',
+          borderRadius: '16px',
+          padding: '1.25rem',
+          marginBottom: '1rem',
           border: '1px solid var(--border)',
           textAlign: 'left',
         },
         completeButton: {
-          padding: '1rem 2rem',
+          padding: '0.75rem 1.5rem',
           backgroundColor: 'var(--accent)',
           border: 'none',
-          borderRadius: '12px',
+          borderRadius: '10px',
           color: 'white',
-          fontSize: '1rem',
+          fontSize: '0.95rem',
           fontWeight: 500,
           cursor: 'pointer',
         },
@@ -9259,14 +9259,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       }}
                       style={{
                         width: '100%',
-                        padding: '0.75rem',
+                        padding: '0.5rem',
                         backgroundColor: 'transparent',
                         border: '1px solid var(--border)',
-                        borderRadius: '10px',
+                        borderRadius: '8px',
                         color: 'var(--text-muted)',
-                        fontSize: '0.85rem',
+                        fontSize: '0.8rem',
                         cursor: 'pointer',
-                        marginBottom: '0.75rem',
+                        marginBottom: '0.5rem',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -9284,14 +9284,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       onClick={rerollTendy}
                       style={{
                         width: '100%',
-                        padding: '0.75rem',
+                        padding: '0.5rem',
                         backgroundColor: 'transparent',
                         border: '1px solid var(--border-dark)',
-                        borderRadius: '10px',
+                        borderRadius: '8px',
                         color: 'var(--text-muted)',
-                        fontSize: '0.85rem',
+                        fontSize: '0.75rem',
                         cursor: 'pointer',
-                        marginBottom: '0.75rem',
+                        marginBottom: '0.5rem',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
@@ -9305,29 +9305,20 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   
                   {/* Reflection input for reflective tends */}
                   {selectedTendy.type === 'reflective' && (
-                    <div style={{ marginBottom: '1rem' }}>
-                      <label style={{
-                        display: 'block',
-                        fontSize: '0.85rem',
-                        color: 'var(--text-muted)',
-                        marginBottom: '0.5rem',
-                        fontWeight: 500,
-                      }}>
-                        ✍️ Your reflection
-                      </label>
+                    <div style={{ marginBottom: '0.75rem' }}>
                       <textarea
                         value={reflectionInput}
                         onChange={(e) => setReflectionInput(e.target.value)}
                         placeholder="Write your thoughts here to complete this tend..."
                         style={{
                           width: '100%',
-                          minHeight: '100px',
+                          minHeight: '80px',
                           padding: '0.75rem',
                           borderRadius: '10px',
                           border: `1px solid ${reflectionInput.trim() ? 'var(--accent)' : 'var(--border)'}`,
                           backgroundColor: 'var(--bg-card)',
                           color: 'var(--text)',
-                          fontSize: '0.95rem',
+                          fontSize: '0.9rem',
                           fontFamily: 'inherit',
                           resize: 'vertical',
                           boxSizing: 'border-box',
@@ -9340,14 +9331,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                           onClick={rerollTendy}
                           style={{
                             width: '100%',
-                            padding: '0.6rem',
+                            padding: '0.5rem',
                             backgroundColor: 'transparent',
                             border: '1px solid var(--border-dark)',
-                            borderRadius: '10px',
+                            borderRadius: '8px',
                             color: 'var(--text-muted)',
-                            fontSize: '0.8rem',
+                            fontSize: '0.75rem',
                             cursor: 'pointer',
-                            marginTop: '0.75rem',
+                            marginTop: '0.5rem',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -9435,14 +9426,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               backgroundColor: 'var(--accent-light)',
               border: '1px solid var(--accent)',
               borderRadius: '12px',
-              padding: '1.25rem',
-              marginBottom: '1.5rem',
+              padding: '0.875rem',
+              marginBottom: '1rem',
               textAlign: 'center',
             }}>
-              <p style={{color: 'var(--text)', fontSize: '1rem', marginBottom: '0.5rem'}}>
+              <p style={{color: 'var(--text)', fontSize: '0.95rem', marginBottom: '0.25rem'}}>
                 🎉 <strong>You're almost done with setup!</strong>
               </p>
-              <p style={{color: 'var(--text-muted)', fontSize: '0.9rem'}}>
+              <p style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>
                 Here's your first daily tend. Try it out, or skip to explore the app!
               </p>
             </div>
@@ -14047,6 +14038,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
