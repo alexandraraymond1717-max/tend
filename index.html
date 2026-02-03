@@ -5768,6 +5768,127 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
         );
       }
 
+      // ============ DEDICATED ONBOARDING STEP 3 VIEW ============
+      // When in onboarding step 3, show ONLY the progress bar and TendyView - nothing else
+      if (!onboardingCompleted && onboardingStep === 3) {
+        return (
+          <div style={{
+            minHeight: '100vh',
+            backgroundColor: 'var(--bg)',
+            padding: '1rem',
+          }}>
+            {/* Simple header with logo */}
+            <header style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginBottom: '1rem',
+              padding: '0.5rem 0',
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center' }}>
+                <svg width="28" height="28" viewBox="0 0 32 32" fill="none" style={{ marginRight: '8px' }}>
+                  <path d="M16 26 Q16 18 16 14" stroke="var(--accent)" strokeWidth="2" strokeLinecap="round" fill="none"/>
+                  <path d="M16 18 Q10 16 8 10 Q14 12 16 18" fill="var(--accent)" opacity="0.5"/>
+                  <path d="M16 14 Q22 10 24 4 Q18 8 16 14" fill="var(--accent)"/>
+                  <path d="M16 10 Q14 6 16 2 Q18 6 16 10" fill="var(--accent)" opacity="0.7"/>
+                </svg>
+                <h1 style={{ fontSize: '1.5rem', fontWeight: 300, color: 'var(--text)' }}>tend</h1>
+              </div>
+              <button 
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                }} 
+                onClick={() => setShowSettingsModal(true)}
+                title="Settings"
+              >
+                ⚙
+              </button>
+            </header>
+
+            {/* Onboarding Progress Bar */}
+            <OnboardingProgressBar 
+              currentStep={onboardingStep}
+              onStepClick={(step) => {
+                if (step === 0) {
+                  setVlqStep(-1);
+                  setVlqCompleted(false);
+                  setAppMode(null);
+                } else {
+                  setOnboardingStep(step);
+                  setSessionGreeted(false);
+                }
+              }}
+              isStepComplete={isStepComplete}
+              getProgress={getOnboardingProgress}
+              vlqCompleted={vlqCompleted}
+            />
+
+            {/* TendyView - the main content */}
+            <div style={{ maxWidth: '500px', margin: '0 auto', marginTop: '1rem' }}>
+              <TendyView
+                vlqScores={vlqScores}
+                todaysTendies={todaysTendies}
+                setTodaysTendies={setTodaysTendies}
+                tendyHistory={tendyHistory}
+                setTendyHistory={setTendyHistory}
+                tendyPoints={tendyPoints}
+                setTendyPoints={setTendyPoints}
+                tendyStreak={tendyStreak}
+                setTendyStreak={setTendyStreak}
+                flexPoints={flexPoints}
+                setFlexPoints={setFlexPoints}
+                weeklyCustomTendy={weeklyCustomTendy}
+                setWeeklyCustomTendy={setWeeklyCustomTendy}
+                userProfile={userProfile}
+                setUserProfile={setUserProfile}
+                goals={goals}
+                weeklyHabits={weeklyHabits}
+                journalEntries={journalEntries}
+                apiKey={apiKey}
+                onBack={() => {}} 
+                isOnboarding={true}
+                onFinishOnboarding={() => {
+                  setOnboardingCompleted(true);
+                  setOnboardingStep(null);
+                  setShowChatOverlay(true);
+                  setMessages([{
+                    role: 'assistant',
+                    content: `🎉 **Welcome to Tend!**
+
+You've finished setting up — nice work!
+
+I'm here whenever you want to chat. We could talk about:
+
+• **What's on your mind** — goals you're working toward, how you want to feel, what matters most to you right now
+• **Your values** — what a meaningful life looks like for you and how to live more aligned with it
+• **Planning** — I can help you think through your day, week, or bigger life decisions
+
+You can also minimize this chat and explore the app on your own:
+
+• **🏠 Home** — your dashboard and overview
+• **📅 Calendar** — see your history and plan ahead  
+• **🗺️ Life Map** — your goals, habits, and values
+• **🌱 Daily Tend** — your personalized daily activities
+• **📝 Journal** — reflect on your day
+
+Click the chat bubble anytime to come back and talk. What's on your mind?`
+                  }]);
+                }}
+              />
+            </div>
+
+            {/* Settings Modal */}
+            {showSettingsModal && (
+              <SettingsModal onClose={() => setShowSettingsModal(false)} />
+            )}
+          </div>
+        );
+      }
+
       return (
         <div style={styles.container}>
           <header style={styles.header}>
@@ -9291,22 +9412,19 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       
       return (
         <div style={tendyStyles.container}>
-          <div style={tendyStyles.header}>
-            {isOnboarding ? (
-              <div style={{color: 'var(--accent)', fontSize: '0.85rem', fontWeight: 500}}>
-                🌱 Your First Tend
-              </div>
-            ) : (
+          {/* Only show header when NOT onboarding */}
+          {!isOnboarding && (
+            <div style={tendyStyles.header}>
               <button style={tendyStyles.backButton} onClick={onBack}>
                 🏠 Home
               </button>
-            )}
-            <div style={tendyStyles.stats}>
-              <div style={tendyStyles.stat}>
-                <span>🌱</span> {tendyPoints} pts
+              <div style={tendyStyles.stats}>
+                <div style={tendyStyles.stat}>
+                  <span>🌱</span> {tendyPoints} pts
+                </div>
               </div>
             </div>
-          </div>
+          )}
           
           {/* Onboarding welcome message */}
           {isOnboarding && (
@@ -9314,23 +9432,25 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               backgroundColor: 'var(--accent-light)',
               border: '1px solid var(--accent)',
               borderRadius: '12px',
-              padding: '1rem',
+              padding: '1.25rem',
               marginBottom: '1.5rem',
               textAlign: 'center',
             }}>
-              <p style={{color: 'var(--text)', fontSize: '0.9rem', marginBottom: '0.5rem'}}>
+              <p style={{color: 'var(--text)', fontSize: '1rem', marginBottom: '0.5rem'}}>
                 🎉 <strong>You're almost done with setup!</strong>
               </p>
-              <p style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>
-                Here's your first daily tend. Try it out, or you can skip and explore the app!
+              <p style={{color: 'var(--text-muted)', fontSize: '0.9rem'}}>
+                Here's your first daily tend. Try it out, or skip to explore the app!
               </p>
             </div>
           )}
           
           <div style={tendyStyles.content}>
-            <h1 style={tendyStyles.title}>Today's Tends</h1>
+            <h1 style={tendyStyles.title}>{isOnboarding ? 'Your First Tend' : "Today's Tends"}</h1>
             <p style={tendyStyles.subtitle}>
-              {isWeekend 
+              {isOnboarding 
+                ? 'Click to reveal your personalized activity!'
+                : isWeekend 
                 ? 'Your quick daily tend + an optional weekend challenge!'
                 : 'A small action to tend to your values today.'
               }
@@ -13918,6 +14038,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
