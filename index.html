@@ -9302,10 +9302,31 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             </div>
           </div>
           
+          {/* Onboarding welcome message */}
+          {isOnboarding && (
+            <div style={{
+              backgroundColor: 'var(--accent-light)',
+              border: '1px solid var(--accent)',
+              borderRadius: '12px',
+              padding: '1rem',
+              marginBottom: '1.5rem',
+              textAlign: 'center',
+            }}>
+              <p style={{color: 'var(--text)', fontSize: '0.9rem', marginBottom: '0.5rem'}}>
+                🎉 <strong>Final step!</strong>
+              </p>
+              <p style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>
+                Reveal your first daily tend, or click Home to explore the app.
+              </p>
+            </div>
+          )}
+          
           <div style={tendyStyles.content}>
-            <h1 style={tendyStyles.title}>Today's Tends</h1>
+            <h1 style={tendyStyles.title}>{isOnboarding ? '🌱 Your First Tend' : "Today's Tends"}</h1>
             <p style={tendyStyles.subtitle}>
-              {isWeekend 
+              {isOnboarding 
+                ? 'Click to reveal your personalized daily activity!'
+                : isWeekend 
                 ? 'Your quick daily tend + an optional weekend challenge!'
                 : 'A small action to tend to your values today.'
               }
@@ -9524,6 +9545,48 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               >
                 Start This Tend →
               </button>
+            )}
+            
+            {/* Finish Onboarding button - only during onboarding */}
+            {isOnboarding && (
+              <div style={{
+                marginTop: '2rem',
+                paddingTop: '1.5rem',
+                borderTop: '1px solid var(--border)',
+                textAlign: 'center',
+              }}>
+                <p style={{
+                  color: 'var(--text-muted)',
+                  fontSize: '0.85rem',
+                  marginBottom: '1rem',
+                }}>
+                  Ready to explore Tend on your own?
+                </p>
+                <button
+                  onClick={onFinishOnboarding}
+                  style={{
+                    width: '100%',
+                    padding: '1rem',
+                    backgroundColor: 'var(--bg-elevated)',
+                    border: '2px solid var(--accent)',
+                    borderRadius: '12px',
+                    color: 'var(--accent)',
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                  }}
+                >
+                  Finish Setup & Go Home →
+                </button>
+                <p style={{
+                  color: 'var(--text-muted)',
+                  fontSize: '0.75rem',
+                  marginTop: '0.75rem',
+                  fontStyle: 'italic',
+                }}>
+                  You can always come back to your Daily Tend anytime!
+                </p>
+              </div>
             )}
           </div>
         </div>
@@ -13851,6 +13914,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
