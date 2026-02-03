@@ -5726,7 +5726,6 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
 
       // Tendy mode
       if (appMode === 'tendy') {
-        console.log('DEBUG: Rendering TendyView from appMode=tendy (NO onboarding props)');
         return (
           <>
             <TendyView
@@ -5882,7 +5881,6 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
               )}
               {centerView === CENTER_VIEWS.TENDY && (
                 <div style={{overflow: 'auto', maxHeight: 'calc(100vh - 140px)'}}>
-                  {console.log('DEBUG: Rendering TendyView from centerView=TENDY, onboardingCompleted:', onboardingCompleted, 'onboardingStep:', onboardingStep, 'isOnboarding:', !onboardingCompleted && onboardingStep === 3)}
                   <TendyView
                     vlqScores={vlqScores}
                     todaysTendies={todaysTendies}
@@ -8019,9 +8017,6 @@ This has been your year of growth and intention. What are you most proud of? Wha
       isOnboarding = false,
       onFinishOnboarding
     }) {
-      // DEBUG: Log isOnboarding value
-      console.log('TendyView rendered with isOnboarding:', isOnboarding, 'onFinishOnboarding:', !!onFinishOnboarding);
-      
       const today = getLocalDateString();
       const [showCelebration, setShowCelebration] = useState(false);
       const [justCompletedPoints, setJustCompletedPoints] = useState(0);
@@ -9297,9 +9292,15 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       return (
         <div style={tendyStyles.container}>
           <div style={tendyStyles.header}>
-            <button style={tendyStyles.backButton} onClick={isOnboarding ? onFinishOnboarding : onBack}>
-              🏠 Home
-            </button>
+            {isOnboarding ? (
+              <div style={{color: 'var(--accent)', fontSize: '0.85rem', fontWeight: 500}}>
+                🌱 Your First Tend
+              </div>
+            ) : (
+              <button style={tendyStyles.backButton} onClick={onBack}>
+                🏠 Home
+              </button>
+            )}
             <div style={tendyStyles.stats}>
               <div style={tendyStyles.stat}>
                 <span>🌱</span> {tendyPoints} pts
@@ -9318,20 +9319,18 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               textAlign: 'center',
             }}>
               <p style={{color: 'var(--text)', fontSize: '0.9rem', marginBottom: '0.5rem'}}>
-                🎉 <strong>Final step!</strong>
+                🎉 <strong>You're almost done with setup!</strong>
               </p>
               <p style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>
-                Reveal your first daily tend, or click Home to explore the app.
+                Here's your first daily tend. Try it out, or you can skip and explore the app!
               </p>
             </div>
           )}
           
           <div style={tendyStyles.content}>
-            <h1 style={tendyStyles.title}>{isOnboarding ? '🌱 Your First Tend' : "Today's Tends"}</h1>
+            <h1 style={tendyStyles.title}>Today's Tends</h1>
             <p style={tendyStyles.subtitle}>
-              {isOnboarding 
-                ? 'Click to reveal your personalized daily activity!'
-                : isWeekend 
+              {isWeekend 
                 ? 'Your quick daily tend + an optional weekend challenge!'
                 : 'A small action to tend to your values today.'
               }
@@ -13919,6 +13918,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
