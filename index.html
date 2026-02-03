@@ -2629,6 +2629,10 @@ Respond with ONLY the task text, nothing else.`,
               setOnboardingCompleted(true);
               setOnboardingStep(null);
             }
+            // If gardener type is saved but still on step 2, advance to step 3
+            if (data.onboardingStep === 2 && data.userProfile?.tendPreferences?.gardenerType) {
+              setOnboardingStep(3);
+            }
             // If VLQ was completed, skip to step 2 (after summary) and reveal content
             if (data.vlqCompleted) {
               setVlqStep(2);
@@ -13802,6 +13806,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
