@@ -4266,32 +4266,27 @@ Guide the user through their onboarding journey. Be encouraging and help them ma
           parts.push(getRecentJournalContext());
           
           // Recent tend reflections for deeper insights
-          const getRecentTendReflections = () => {
-            const thirtyDaysAgo = new Date();
-            thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-            
+          const getTendReflections = () => {
             const reflections = (tendyHistory || [])
               .filter(t => t.reflection && t.reflection.trim())
-              .filter(t => new Date(t.completedAt || t.date) >= thirtyDaysAgo)
-              .sort((a, b) => new Date(b.completedAt || b.date) - new Date(a.completedAt || a.date))
-              .slice(0, 5);
+              .sort((a, b) => new Date(b.completedAt || b.date) - new Date(a.completedAt || a.date));
             
             if (reflections.length === 0) return '';
             
-            const reflectionParts = [`\n=== RECENT TEND REFLECTIONS ===`];
+            const reflectionParts = [`\n=== TEND REFLECTIONS (${reflections.length} total) ===`];
             reflectionParts.push(`(These are personal reflections the user wrote after completing reflective tends)`);
             
             reflections.forEach(r => {
               const domainName = VLQ_DOMAINS[r.domain]?.name || r.domain || 'Unknown';
               const dateObj = new Date(r.completedAt || r.date);
               const dayLabel = dateObj.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-              reflectionParts.push(`${dayLabel} [${domainName}]: "${r.reflection.substring(0, 150)}${r.reflection.length > 150 ? '...' : ''}"`);
+              reflectionParts.push(`${dayLabel} [${domainName}]: "${r.reflection}"`);
             });
             
             return reflectionParts.join('\n');
           };
           
-          parts.push(getRecentTendReflections());
+          parts.push(getTendReflections());
           
           return parts.length > 0 ? parts.join('\n') : '';
         };
@@ -13923,6 +13918,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
