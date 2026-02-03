@@ -3220,8 +3220,37 @@ What would you like to explore?`,
           case 2: // Quiz - go to Insights
             setAppMode('insights');
             break;
-          case 3: // Daily Tend - go to Tendy
-            setAppMode('tendy');
+          case 3: // Daily Tend - Onboarding is COMPLETE! Show welcome chat
+            // Mark onboarding as complete
+            setOnboardingCompleted(true);
+            setOnboardingStep(null);
+            // Navigate to Daily Tend
+            setCenterView(CENTER_VIEWS.TENDY);
+            setAppMode(null);
+            // Show full-page welcome chat
+            setShowChatOverlay(true);
+            setMessages([{
+              role: 'assistant',
+              content: `🎉 **Welcome to Tend!**
+
+You've finished setting up — nice work!
+
+I'm here whenever you want to chat. We could talk about:
+
+• **What's on your mind** — goals you're working toward, how you want to feel, what matters most to you right now
+• **Your values** — what a meaningful life looks like for you and how to live more aligned with it
+• **Planning** — I can help you think through your day, week, or bigger life decisions
+
+You can also minimize this chat and explore the app on your own:
+
+• **🏠 Home** — your dashboard and overview
+• **📅 Calendar** — see your history and plan ahead  
+• **🗺️ Life Map** — your goals, habits, and values
+• **🌱 Daily Tend** — your personalized daily activities
+• **📝 Journal** — reflect on your day
+
+Click the chat bubble anytime to come back and talk. What's on your mind?`
+            }]);
             break;
         }
       }, [vlqCompleted, onboardingCompleted, onboardingStep]);
@@ -5901,36 +5930,6 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                     journalEntries={journalEntries}
                     apiKey={apiKey}
                     onBack={() => setCenterView(CENTER_VIEWS.YEAR)}
-                    isOnboarding={!onboardingCompleted && onboardingStep === 3}
-                    onFinishOnboarding={() => {
-                      setOnboardingCompleted(true);
-                      setOnboardingStep(null);
-                      setCenterView(CENTER_VIEWS.YEAR);
-                      setShowChatOverlay(true);
-                      // Send welcome message
-                      setMessages([{
-                        role: 'assistant',
-                        content: `🎉 **Welcome to Tend!**
-
-You've finished setting up — nice work!
-
-I'm here whenever you want to chat. We could talk about:
-
-• **What's on your mind** — goals you're working toward, how you want to feel, what matters most to you right now
-• **Your values** — what a meaningful life looks like for you and how to live more aligned with it
-• **Planning** — I can help you think through your day, week, or bigger life decisions
-
-You can also minimize this chat and explore the app on your own:
-
-• **🏠 Home** — your dashboard and overview
-• **📅 Calendar** — see your history and plan ahead  
-• **🗺️ Life Map** — your goals, habits, and values
-• **🌱 Daily Tend** — your personalized daily activities
-• **📝 Journal** — reflect on your day
-
-Click the chat bubble anytime to come back and talk. What's on your mind?`
-                      }]);
-                    }}
                   />
                 </div>
               )}
@@ -8013,9 +8012,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
       journalEntries,
       apiKey,
       onBack,
-      onTendComplete,
-      isOnboarding = false,
-      onFinishOnboarding
+      onTendComplete
     }) {
       const today = getLocalDateString();
       const [showCelebration, setShowCelebration] = useState(false);
@@ -9094,15 +9091,9 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             )}
             
             <div style={tendyStyles.header}>
-              {isOnboarding ? (
-                <button style={tendyStyles.backButton} onClick={onFinishOnboarding}>
-                  🏠 Home
-                </button>
-              ) : (
-                <button style={tendyStyles.backButton} onClick={onBack}>
-                  🏠 Home
-                </button>
-              )}
+              <button style={tendyStyles.backButton} onClick={onBack}>
+                🏠 Home
+              </button>
               <div style={tendyStyles.stats}>
                 <div style={tendyStyles.stat}>
                   <span>🪴</span> {flexPoints} flex
@@ -9298,18 +9289,9 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       return (
         <div style={tendyStyles.container}>
           <div style={tendyStyles.header}>
-            {isOnboarding ? (
-              <button 
-                style={tendyStyles.backButton}
-                onClick={onFinishOnboarding}
-              >
-                🏠 Home
-              </button>
-            ) : (
-              <button style={tendyStyles.backButton} onClick={onBack}>
-                🏠 Home
-              </button>
-            )}
+            <button style={tendyStyles.backButton} onClick={onBack}>
+              🏠 Home
+            </button>
             <div style={tendyStyles.stats}>
               <div style={tendyStyles.stat}>
                 <span>🌱</span> {tendyPoints} pts
@@ -9317,31 +9299,10 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             </div>
           </div>
           
-          {/* Onboarding welcome message */}
-          {isOnboarding && (
-            <div style={{
-              backgroundColor: 'var(--accent-light)',
-              border: '1px solid var(--accent)',
-              borderRadius: '12px',
-              padding: '1rem',
-              marginBottom: '1.5rem',
-              textAlign: 'center',
-            }}>
-              <p style={{color: 'var(--text)', fontSize: '0.9rem', marginBottom: '0.5rem'}}>
-                🎉 <strong>Final step!</strong>
-              </p>
-              <p style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>
-                Reveal your first daily tend, or click Home to explore the app.
-              </p>
-            </div>
-          )}
-          
           <div style={tendyStyles.content}>
-            <h1 style={tendyStyles.title}>{isOnboarding ? '🌱 Your First Tend' : "Today's Tends"}</h1>
+            <h1 style={tendyStyles.title}>Today's Tends</h1>
             <p style={tendyStyles.subtitle}>
-              {isOnboarding 
-                ? 'Click to reveal your personalized daily activity!'
-                : isWeekend 
+              {isWeekend 
                 ? 'Your quick daily tend + an optional weekend challenge!'
                 : 'A small action to tend to your values today.'
               }
@@ -9560,48 +9521,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               >
                 Start This Tend →
               </button>
-            )}
-            
-            {/* Finish Onboarding button - only during onboarding */}
-            {isOnboarding && (
-              <div style={{
-                marginTop: '2rem',
-                paddingTop: '1.5rem',
-                borderTop: '1px solid var(--border)',
-                textAlign: 'center',
-              }}>
-                <p style={{
-                  color: 'var(--text-muted)',
-                  fontSize: '0.85rem',
-                  marginBottom: '1rem',
-                }}>
-                  Ready to explore Tend on your own?
-                </p>
-                <button
-                  onClick={onFinishOnboarding}
-                  style={{
-                    width: '100%',
-                    padding: '1rem',
-                    backgroundColor: 'var(--bg-elevated)',
-                    border: '2px solid var(--accent)',
-                    borderRadius: '12px',
-                    color: 'var(--accent)',
-                    fontSize: '1rem',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                  }}
-                >
-                  Finish Setup & Go Home →
-                </button>
-                <p style={{
-                  color: 'var(--text-muted)',
-                  fontSize: '0.75rem',
-                  marginTop: '0.75rem',
-                  fontStyle: 'italic',
-                }}>
-                  You can always come back to your Daily Tend anytime!
-                </p>
-              </div>
             )}
           </div>
         </div>
@@ -13929,6 +13848,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
