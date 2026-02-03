@@ -5506,24 +5506,25 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                         <div style={{
                           backgroundColor: 'var(--bg-elevated)',
                           borderRadius: '12px',
-                          padding: '1rem',
+                          padding: '1.25rem',
                           marginBottom: '1.5rem',
                           textAlign: 'left',
                         }}>
                           <div style={{
-                            fontSize: '0.75rem',
-                            color: 'var(--text-muted)',
+                            fontSize: '0.7rem',
+                            color: 'var(--accent)',
                             textTransform: 'uppercase',
                             letterSpacing: '0.5px',
                             marginBottom: '0.5rem',
+                            fontWeight: 600,
                           }}>
-                            Next up
+                            {showOnboardingOverlay === 'lifemap' ? 'Next up' : 'Final step'}
                           </div>
                           <div style={{
-                            fontSize: '0.95rem',
+                            fontSize: '1.1rem',
                             color: 'var(--text)',
-                            fontWeight: 500,
-                            marginBottom: '0.5rem',
+                            fontWeight: 600,
+                            marginBottom: '0.75rem',
                           }}>
                             {showOnboardingOverlay === 'lifemap' 
                               ? "🌻 Gardener Quiz"
@@ -5532,11 +5533,11 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                           <div style={{
                             fontSize: '0.85rem',
                             color: 'var(--text-muted)',
-                            lineHeight: 1.5,
+                            lineHeight: 1.6,
                           }}>
                             {showOnboardingOverlay === 'lifemap' 
                               ? "This optional quiz helps Tend learn how you grow and tackle challenges. Your answers personalize how the app communicates with you, celebrates your wins, and supports you through setbacks."
-                              : "Every day, Tend generates a personalized activity based on your Life Map — a small, intentional step to help you live more aligned with your values. On weekends, you'll also get a longer challenge for deeper growth."}
+                              : "Each day, Tend creates a personalized 5-minute activity based on your Life Map — a small, intentional step toward living more aligned with your values. On weekends, you'll also get a 15-minute challenge for deeper growth. These daily tends are designed to help you build the life you want, one small action at a time."}
                           </div>
                         </div>
                         <button
@@ -13988,6 +13989,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
