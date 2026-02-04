@@ -1620,7 +1620,7 @@ Respond with ONLY the task text, nothing else.`,
     const MONTH_FULL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
     const PHASES = { EXPLORE: 'explore', GROUND: 'ground', REVEAL: 'reveal', PLAN: 'plan' };
-    const CENTER_VIEWS = { YEAR: 'year', CALENDAR: 'calendar', WEEKLY: 'weekly', DAILY: 'daily', INSIGHTS: 'insights', TENDY: 'tendy', JOURNAL: 'journal' };
+    const CENTER_VIEWS = { YEAR: 'year', CALENDAR: 'calendar', WEEKLY: 'weekly', DAILY: 'daily', INSIGHTS: 'insights', TENDY: 'tendy', JOURNAL: 'journal', COMMUNITY: 'community' };
     
     // Onboarding steps configuration
     const ONBOARDING_STEPS = {
@@ -1632,6 +1632,287 @@ Respond with ONLY the task text, nothing else.`,
       5: { id: 'compass', label: 'Compass', icon: '🧭', required: false },
       6: { id: 'tend', label: 'First Tend', icon: '🌱', required: true },
     };
+
+    // ============ COMMUNITY SYSTEM ============
+    
+    // Generate a unique referral code for a user
+    function generateReferralCode(username) {
+      const prefix = (username || 'tend').slice(0, 4).toLowerCase();
+      const suffix = Math.random().toString(36).substring(2, 6);
+      return `${prefix}-${suffix}`;
+    }
+    
+    // Connection status types
+    const CONNECTION_STATUS = {
+      PENDING: 'pending',
+      ACCEPTED: 'accepted',
+      DECLINED: 'declined',
+    };
+    
+    // Relationship types organized by life area
+    const RELATIONSHIP_TYPES = {
+      family: ['parent', 'sibling', 'child', 'spouse', 'partner', 'grandparent', 'aunt/uncle', 'cousin', 'in-law', 'other family'],
+      partner: ['spouse', 'partner', 'boyfriend', 'girlfriend', 'fiancé/fiancée'],
+      friendships: ['best friend', 'close friend', 'friend', 'childhood friend', 'work friend', 'neighbor'],
+      career: ['mentor', 'colleague', 'boss', 'employee', 'business partner', 'client'],
+      education: ['classmate', 'study buddy', 'teacher', 'student', 'tutor'],
+      community: ['neighbor', 'community member', 'volunteer friend', 'club member'],
+      health: ['workout buddy', 'accountability partner', 'coach'],
+      spirituality: ['spiritual guide', 'faith community member', 'meditation partner'],
+      recreation: ['hobby friend', 'gaming buddy', 'sports teammate', 'travel companion'],
+    };
+    
+    // Search for users by name or username
+    async function searchUsers(searchQuery, currentUserId) {
+      if (!searchQuery || searchQuery.length < 2) return [];
+      
+      const query = searchQuery.toLowerCase().trim();
+      const results = [];
+      
+      try {
+        // Search by firstName
+        const firstNameSnapshot = await db.collection('users')
+          .orderBy('userProfile.firstName')
+          .startAt(query)
+          .endAt(query + '\uf8ff')
+          .limit(15)
+          .get();
+        
+        firstNameSnapshot.forEach(doc => {
+          if (doc.id !== currentUserId) {
+            results.push({ id: doc.id, ...doc.data() });
+          }
+        });
+        
+        // Search by lastName  
+        const lastNameSnapshot = await db.collection('users')
+          .orderBy('userProfile.lastName')
+          .startAt(query)
+          .endAt(query + '\uf8ff')
+          .limit(15)
+          .get();
+        
+        lastNameSnapshot.forEach(doc => {
+          if (doc.id !== currentUserId && !results.find(r => r.id === doc.id)) {
+            results.push({ id: doc.id, ...doc.data() });
+          }
+        });
+        
+        // Search by username
+        const usernameSnapshot = await db.collection('users')
+          .orderBy('userProfile.username')
+          .startAt(query)
+          .endAt(query + '\uf8ff')
+          .limit(15)
+          .get();
+        
+        usernameSnapshot.forEach(doc => {
+          if (doc.id !== currentUserId && !results.find(r => r.id === doc.id)) {
+            results.push({ id: doc.id, ...doc.data() });
+          }
+        });
+        
+        return results.slice(0, 20);
+      } catch (error) {
+        console.error('Error searching users:', error);
+        return [];
+      }
+    }
+    
+    // Send a connection request
+    async function sendConnectionRequest(fromUserId, toUserId, fromUserProfile, relationship, lifeArea) {
+      try {
+        const requestId = `${fromUserId}_${toUserId}_${Date.now()}`;
+        const request = {
+          id: requestId,
+          fromUserId,
+          toUserId,
+          fromUserName: `${fromUserProfile.firstName} ${fromUserProfile.lastName}`,
+          fromUsername: fromUserProfile.username,
+          relationship,
+          lifeArea,
+          status: CONNECTION_STATUS.PENDING,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        };
+        
+        // Add to connection_requests collection
+        await db.collection('connection_requests').doc(requestId).set(request);
+        
+        // Add to recipient's incoming requests
+        await db.collection('users').doc(toUserId)
+          .collection('incoming_requests').doc(requestId).set(request);
+        
+        // Add to sender's sent requests  
+        await db.collection('users').doc(fromUserId)
+          .collection('sent_requests').doc(requestId).set(request);
+        
+        return { success: true, requestId };
+      } catch (error) {
+        console.error('Error sending connection request:', error);
+        return { success: false, error: error.message };
+      }
+    }
+    
+    // Accept a connection request
+    async function acceptConnectionRequest(requestId, currentUserId) {
+      try {
+        const requestDoc = await db.collection('connection_requests').doc(requestId).get();
+        if (!requestDoc.exists) throw new Error('Request not found');
+        
+        const request = requestDoc.data();
+        const now = firebase.firestore.FieldValue.serverTimestamp();
+        
+        // Update request status
+        await db.collection('connection_requests').doc(requestId).update({
+          status: CONNECTION_STATUS.ACCEPTED,
+          acceptedAt: now,
+        });
+        
+        // Create connection for both users
+        const connectionBase = {
+          relationship: request.relationship,
+          lifeArea: request.lifeArea,
+          connectedAt: now,
+        };
+        
+        await db.collection('users').doc(request.fromUserId)
+          .collection('connections').doc(request.toUserId).set({
+            ...connectionBase,
+            oderId: request.toUserId,
+          });
+        
+        await db.collection('users').doc(request.toUserId)
+          .collection('connections').doc(request.fromUserId).set({
+            ...connectionBase,
+            oderId: request.fromUserId,
+          });
+        
+        // Clean up request docs
+        await db.collection('users').doc(request.toUserId)
+          .collection('incoming_requests').doc(requestId).delete();
+        await db.collection('users').doc(request.fromUserId)
+          .collection('sent_requests').doc(requestId).delete();
+        
+        return { success: true };
+      } catch (error) {
+        console.error('Error accepting connection:', error);
+        return { success: false, error: error.message };
+      }
+    }
+    
+    // Decline a connection request
+    async function declineConnectionRequest(requestId) {
+      try {
+        const requestDoc = await db.collection('connection_requests').doc(requestId).get();
+        if (!requestDoc.exists) throw new Error('Request not found');
+        
+        const request = requestDoc.data();
+        
+        await db.collection('connection_requests').doc(requestId).update({
+          status: CONNECTION_STATUS.DECLINED,
+          declinedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        
+        // Clean up
+        await db.collection('users').doc(request.toUserId)
+          .collection('incoming_requests').doc(requestId).delete();
+        await db.collection('users').doc(request.fromUserId)
+          .collection('sent_requests').doc(requestId).delete();
+        
+        return { success: true };
+      } catch (error) {
+        console.error('Error declining connection:', error);
+        return { success: false, error: error.message };
+      }
+    }
+    
+    // Load user's connections
+    async function loadUserConnections(userId) {
+      try {
+        const snapshot = await db.collection('users').doc(userId)
+          .collection('connections').get();
+        
+        const connections = [];
+        for (const doc of snapshot.docs) {
+          const connData = doc.data();
+          // Fetch connected user's profile
+          const userDoc = await db.collection('users').doc(connData.oderId).get();
+          if (userDoc.exists) {
+            connections.push({
+              ...connData,
+              userProfile: userDoc.data().userProfile || {},
+            });
+          }
+        }
+        return connections;
+      } catch (error) {
+        console.error('Error loading connections:', error);
+        return [];
+      }
+    }
+    
+    // Load incoming connection requests
+    async function loadIncomingRequests(userId) {
+      try {
+        const snapshot = await db.collection('users').doc(userId)
+          .collection('incoming_requests')
+          .where('status', '==', CONNECTION_STATUS.PENDING)
+          .get();
+        
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (error) {
+        console.error('Error loading requests:', error);
+        return [];
+      }
+    }
+    
+    // Load sent connection requests  
+    async function loadSentRequests(userId) {
+      try {
+        const snapshot = await db.collection('users').doc(userId)
+          .collection('sent_requests')
+          .where('status', '==', CONNECTION_STATUS.PENDING)
+          .get();
+        
+        return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      } catch (error) {
+        console.error('Error loading sent requests:', error);
+        return [];
+      }
+    }
+    
+    // Process referral when new user signs up
+    async function processReferral(referralCode, newUserId) {
+      try {
+        // Find user with this referral code
+        const usersSnapshot = await db.collection('users')
+          .where('userProfile.referralCode', '==', referralCode)
+          .limit(1)
+          .get();
+        
+        if (usersSnapshot.empty) return { success: false, error: 'Invalid code' };
+        
+        const referrerDoc = usersSnapshot.docs[0];
+        const referrerId = referrerDoc.id;
+        const referrerData = referrerDoc.data();
+        
+        // Award 10 tend points
+        const currentPoints = referrerData.tendyPoints || 0;
+        await db.collection('users').doc(referrerId).update({
+          tendyPoints: currentPoints + 10,
+        });
+        
+        // Mark new user as referred
+        await db.collection('users').doc(newUserId).update({
+          'userProfile.referredBy': referrerId,
+        });
+        
+        return { success: true, referrerId, pointsAwarded: 10 };
+      } catch (error) {
+        console.error('Error processing referral:', error);
+        return { success: false, error: error.message };
+      }
+    }
 
     // ============ MAIN APP ============
     // ============ VLQ ASSESSMENT ============
@@ -1862,6 +2143,9 @@ Respond with ONLY the task text, nothing else.`,
 
       // Handle About You form submission
       const handleAboutYouSubmit = () => {
+        // Generate unique referral code for this user
+        const newReferralCode = generateReferralCode(aboutYouForm.username);
+        
         setUserProfile(prev => ({
           ...prev,
           firstName: aboutYouForm.firstName,
@@ -1870,6 +2154,7 @@ Respond with ONLY the task text, nothing else.`,
           birthday: aboutYouForm.birthday,
           gender: aboutYouForm.gender,
           name: aboutYouForm.firstName, // Keep legacy name field synced
+          referralCode: newReferralCode,
         }));
         setVlqStep(-1); // Go to VLQ intro
       };
@@ -2587,8 +2872,19 @@ Respond with ONLY the task text, nothing else.`,
         occupation: '',
         location: '',
         lifeStage: '',
-        tendPreferences: {}
+        tendPreferences: {},
+        // Community fields
+        referralCode: '', // Unique code for inviting others
+        referredBy: '', // userId of who referred them
       });
+      
+      // Community system state
+      const [connections, setConnections] = useState([]); // Array of accepted connections
+      const [connectionRequests, setConnectionRequests] = useState([]); // Incoming requests
+      const [sentRequests, setSentRequests] = useState([]); // Outgoing requests
+      const [showUserSearchModal, setShowUserSearchModal] = useState(false);
+      const [showShareInviteModal, setShowShareInviteModal] = useState(false);
+      const [showConnectionRequestsModal, setShowConnectionRequestsModal] = useState(false);
       
       // Chat history system
       const [chatHistory, setChatHistory] = useState([]); // Array of past chats
@@ -2848,6 +3144,20 @@ Respond with ONLY the task text, nothing else.`,
             // Load chat history
             if (data.chatHistory) setChatHistory(data.chatHistory);
             
+            // Load community data (connections and requests)
+            try {
+              const [conns, incoming, sent] = await Promise.all([
+                loadUserConnections(userId),
+                loadIncomingRequests(userId),
+                loadSentRequests(userId)
+              ]);
+              setConnections(conns);
+              setConnectionRequests(incoming);
+              setSentRequests(sent);
+            } catch (communityErr) {
+              console.log('Community data not loaded:', communityErr);
+            }
+            
             // Check if user is still in onboarding
             const isStillOnboarding = !data.onboardingCompleted && data.onboardingStep;
             
@@ -2919,7 +3229,7 @@ Respond with ONLY the task text, nothing else.`,
               mentalHealth: { importance: null, consistency: null },
             });
             setVlqCompleted(false);
-            setVlqStep(-1);
+            setVlqStep(-2); // Start at About You screen
             setEvents([]);
             setGoals([]);
             setNotes({});
@@ -2936,6 +3246,10 @@ Respond with ONLY the task text, nothing else.`,
             setFlexPoints(3); // Start with 3 flex points
             setFlexPointsTracking({});
             setWeeklyCustomTendy(null);
+            // Reset community state
+            setConnections([]);
+            setConnectionRequests([]);
+            setSentRequests([]);
             setSavedConversations([]);
             setRevealed(false);
             setPhase(PHASES.EXPLORE);
@@ -3535,7 +3849,7 @@ What would you like to explore?`,
             mentalHealth: { importance: null, consistency: null },
           });
           setVlqCompleted(false);
-          setVlqStep(-1);
+          setVlqStep(-2);
           setEvents([]);
           setGoals([]);
           setNotes({});
@@ -3631,7 +3945,7 @@ What would you like to explore?`,
             mentalHealth: { importance: null, consistency: null },
           });
           setVlqCompleted(false);
-          setVlqStep(-1);
+          setVlqStep(-2);
           setEvents([]);
           setGoals([]);
           setNotes('');
@@ -6139,6 +6453,7 @@ Click the chat bubble anytime to come back and talk. What's on your mind?`
                   { id: CENTER_VIEWS.INSIGHTS, label: 'Life Map' },
                   { id: CENTER_VIEWS.TENDY, label: 'Daily Tend' },
                   { id: CENTER_VIEWS.JOURNAL, label: 'Journal' },
+                  { id: CENTER_VIEWS.COMMUNITY, label: 'Community' },
                 ].map(view => (
                   <button
                     key={view.id}
@@ -6277,7 +6592,61 @@ Click the chat bubble anytime to come back and talk. What's on your mind?`
                   />
                 </div>
               )}
+              {centerView === CENTER_VIEWS.COMMUNITY && (
+                <div style={{overflow: 'auto', maxHeight: 'calc(100vh - 140px)'}}>
+                  <CommunityView
+                    connections={connections}
+                    connectionRequests={connectionRequests}
+                    onOpenSearch={() => setShowUserSearchModal(true)}
+                    onOpenInvite={() => setShowShareInviteModal(true)}
+                    onOpenRequests={() => setShowConnectionRequestsModal(true)}
+                  />
+                </div>
+              )}
             </div>
+            
+            {/* Community Modals */}
+            <UserSearchModal
+              isOpen={showUserSearchModal}
+              onClose={() => setShowUserSearchModal(false)}
+              currentUserId={user?.uid}
+              currentUserProfile={userProfile}
+              connections={connections}
+              sentRequests={sentRequests}
+              onRequestSent={async () => {
+                if (user?.uid) {
+                  const sent = await loadSentRequests(user.uid);
+                  setSentRequests(sent);
+                }
+              }}
+            />
+            
+            <ConnectionRequestsModal
+              isOpen={showConnectionRequestsModal}
+              onClose={() => setShowConnectionRequestsModal(false)}
+              requests={connectionRequests}
+              onAccept={async (requestId) => {
+                await acceptConnectionRequest(requestId, user?.uid);
+              }}
+              onDecline={async (requestId) => {
+                await declineConnectionRequest(requestId);
+              }}
+              onRefresh={async () => {
+                if (user?.uid) {
+                  const requests = await loadIncomingRequests(user.uid);
+                  setConnectionRequests(requests);
+                  const conns = await loadUserConnections(user.uid);
+                  setConnections(conns);
+                }
+              }}
+            />
+            
+            <ShareInviteModal
+              isOpen={showShareInviteModal}
+              onClose={() => setShowShareInviteModal(false)}
+              referralCode={userProfile?.referralCode || 'tend-0000'}
+              userName={userProfile?.firstName}
+            />
 
             {/* Chat Panel - Only show during onboarding step 3 or when onboarding not complete */}
             {/* After onboarding, use the floating bubble + overlay instead */}
@@ -11181,6 +11550,413 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       );
     }
 
+    // ============ COMMUNITY COMPONENTS ============
+    
+    // User Search Modal - Find and connect with friends
+    function UserSearchModal({ 
+      isOpen, 
+      onClose, 
+      currentUserId, 
+      currentUserProfile,
+      connections,
+      sentRequests,
+      onRequestSent 
+    }) {
+      const [searchQuery, setSearchQuery] = useState('');
+      const [searchResults, setSearchResults] = useState([]);
+      const [isSearching, setIsSearching] = useState(false);
+      const [selectedUser, setSelectedUser] = useState(null);
+      const [selectedRelationship, setSelectedRelationship] = useState('');
+      const [selectedLifeArea, setSelectedLifeArea] = useState('');
+      const [isSending, setIsSending] = useState(false);
+      const [successMessage, setSuccessMessage] = useState('');
+      
+      const handleSearch = async () => {
+        if (searchQuery.length < 2) return;
+        setIsSearching(true);
+        try {
+          const results = await searchUsers(searchQuery, currentUserId);
+          setSearchResults(results);
+        } catch (error) {
+          console.error('Search error:', error);
+        }
+        setIsSearching(false);
+      };
+      
+      const isAlreadyConnected = (userId) => connections?.some(c => c.oderId === userId);
+      const hasPendingRequest = (userId) => sentRequests?.some(r => r.toUserId === userId && r.status === 'pending');
+      
+      const handleSendRequest = async () => {
+        if (!selectedUser || !selectedRelationship || !selectedLifeArea) return;
+        setIsSending(true);
+        
+        const result = await sendConnectionRequest(
+          currentUserId,
+          selectedUser.id,
+          currentUserProfile,
+          selectedRelationship,
+          selectedLifeArea
+        );
+        
+        if (result.success) {
+          setSuccessMessage(`Request sent to ${selectedUser.userProfile?.firstName}!`);
+          setSelectedUser(null);
+          setSelectedRelationship('');
+          setSelectedLifeArea('');
+          if (onRequestSent) onRequestSent();
+          setTimeout(() => setSuccessMessage(''), 3000);
+        }
+        setIsSending(false);
+      };
+      
+      if (!isOpen) return null;
+      
+      const styles = {
+        overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' },
+        modal: { backgroundColor: 'var(--bg-card)', borderRadius: '16px', width: '100%', maxWidth: '480px', maxHeight: '85vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
+        header: { padding: '1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+        title: { fontSize: '1.1rem', fontWeight: 600, color: 'var(--text)' },
+        closeBtn: { background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-muted)' },
+        content: { padding: '1.25rem', overflowY: 'auto', flex: 1 },
+        searchBox: { display: 'flex', gap: '0.5rem', marginBottom: '1rem' },
+        searchInput: { flex: 1, padding: '0.75rem', borderRadius: '10px', border: '1px solid var(--border)', backgroundColor: 'var(--bg-card)', color: 'var(--text)', fontSize: '0.95rem' },
+        searchBtn: { padding: '0.75rem 1rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '10px', color: 'white', fontSize: '0.9rem', cursor: 'pointer' },
+        resultCard: { padding: '0.875rem', border: '1px solid var(--border)', borderRadius: '10px', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer' },
+        avatar: { width: '40px', height: '40px', borderRadius: '50%', backgroundColor: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', color: 'var(--accent)', fontWeight: 600 },
+        select: { width: '100%', padding: '0.75rem', borderRadius: '10px', border: '1px solid var(--border)', backgroundColor: 'var(--bg-card)', color: 'var(--text)', fontSize: '0.95rem', marginBottom: '0.75rem' },
+        sendBtn: { width: '100%', padding: '0.875rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '10px', color: 'white', fontSize: '0.95rem', fontWeight: 500, cursor: 'pointer' },
+        successMsg: { padding: '0.75rem', backgroundColor: '#E8F5E9', borderRadius: '8px', color: '#2E7D32', fontSize: '0.9rem', textAlign: 'center', marginBottom: '1rem' },
+        badge: { fontSize: '0.7rem', padding: '0.25rem 0.5rem', borderRadius: '4px', backgroundColor: 'var(--accent-light)', color: 'var(--accent)' },
+      };
+      
+      return (
+        <div style={styles.overlay} onClick={onClose}>
+          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+            <div style={styles.header}>
+              <h2 style={styles.title}>🔍 Find Friends on Tend</h2>
+              <button style={styles.closeBtn} onClick={onClose}>×</button>
+            </div>
+            
+            <div style={styles.content}>
+              {successMessage && <div style={styles.successMsg}>✓ {successMessage}</div>}
+              
+              <div style={styles.searchBox}>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  placeholder="Search by name or username..."
+                  style={styles.searchInput}
+                />
+                <button style={styles.searchBtn} onClick={handleSearch} disabled={isSearching || searchQuery.length < 2}>
+                  {isSearching ? '...' : 'Search'}
+                </button>
+              </div>
+              
+              {/* Selected user - connection form */}
+              {selectedUser && (
+                <div style={{ padding: '1rem', backgroundColor: 'var(--accent-light)', borderRadius: '12px', marginBottom: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+                    <div style={styles.avatar}>{selectedUser.userProfile?.firstName?.[0] || '?'}</div>
+                    <div>
+                      <div style={{ fontWeight: 500 }}>{selectedUser.userProfile?.firstName} {selectedUser.userProfile?.lastName}</div>
+                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>@{selectedUser.userProfile?.username}</div>
+                    </div>
+                    <button onClick={() => setSelectedUser(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
+                  </div>
+                  
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>How do you know this person?</p>
+                  
+                  <select value={selectedLifeArea} onChange={(e) => { setSelectedLifeArea(e.target.value); setSelectedRelationship(''); }} style={styles.select}>
+                    <option value="">Select life area...</option>
+                    {Object.keys(RELATIONSHIP_TYPES).map(area => (
+                      <option key={area} value={area}>{VLQ_DOMAINS[area]?.icon} {VLQ_DOMAINS[area]?.name || area}</option>
+                    ))}
+                  </select>
+                  
+                  {selectedLifeArea && (
+                    <select value={selectedRelationship} onChange={(e) => setSelectedRelationship(e.target.value)} style={styles.select}>
+                      <option value="">Select relationship...</option>
+                      {RELATIONSHIP_TYPES[selectedLifeArea]?.map(rel => (
+                        <option key={rel} value={rel}>{rel}</option>
+                      ))}
+                    </select>
+                  )}
+                  
+                  <button
+                    style={{ ...styles.sendBtn, opacity: selectedRelationship ? 1 : 0.5, cursor: selectedRelationship ? 'pointer' : 'not-allowed' }}
+                    onClick={handleSendRequest}
+                    disabled={!selectedRelationship || isSending}
+                  >
+                    {isSending ? 'Sending...' : 'Send Connection Request'}
+                  </button>
+                  
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', textAlign: 'center' }}>
+                    They'll see: "{currentUserProfile?.firstName} wants to add you as their {selectedRelationship || '...'}"
+                  </p>
+                </div>
+              )}
+              
+              {/* Search results */}
+              {!selectedUser && searchResults.length > 0 && (
+                <div>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '0.75rem' }}>
+                    {searchResults.length} result{searchResults.length !== 1 ? 's' : ''}
+                  </p>
+                  {searchResults.map(user => {
+                    const connected = isAlreadyConnected(user.id);
+                    const pending = hasPendingRequest(user.id);
+                    
+                    return (
+                      <div 
+                        key={user.id}
+                        style={{ ...styles.resultCard, backgroundColor: connected || pending ? 'var(--bg-elevated)' : 'var(--bg-card)', cursor: connected || pending ? 'default' : 'pointer' }}
+                        onClick={() => !connected && !pending && setSelectedUser(user)}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                          <div style={styles.avatar}>{user.userProfile?.firstName?.[0] || '?'}</div>
+                          <div>
+                            <div style={{ fontWeight: 500 }}>{user.userProfile?.firstName} {user.userProfile?.lastName}</div>
+                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>@{user.userProfile?.username}</div>
+                          </div>
+                        </div>
+                        {connected && <span style={styles.badge}>✓ Connected</span>}
+                        {pending && <span style={{ ...styles.badge, backgroundColor: '#FFF3E0', color: '#E65100' }}>Pending</span>}
+                        {!connected && !pending && <span style={{ color: 'var(--accent)', fontSize: '1.25rem' }}>+</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              
+              {/* Empty states */}
+              {!selectedUser && searchResults.length === 0 && searchQuery.length >= 2 && !isSearching && (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🔍</div>
+                  <p>No users found matching "{searchQuery}"</p>
+                </div>
+              )}
+              
+              {!selectedUser && searchResults.length === 0 && searchQuery.length < 2 && (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>👋</div>
+                  <p>Search for friends by name or username</p>
+                  <p style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>Connect to see each other's gardens!</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Connection Requests Modal
+    function ConnectionRequestsModal({ isOpen, onClose, requests, onAccept, onDecline, onRefresh }) {
+      const [processingId, setProcessingId] = useState(null);
+      
+      const handleAccept = async (requestId) => {
+        setProcessingId(requestId);
+        await onAccept(requestId);
+        setProcessingId(null);
+        if (onRefresh) onRefresh();
+      };
+      
+      const handleDecline = async (requestId) => {
+        setProcessingId(requestId);
+        await onDecline(requestId);
+        setProcessingId(null);
+        if (onRefresh) onRefresh();
+      };
+      
+      if (!isOpen) return null;
+      
+      const styles = {
+        overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' },
+        modal: { backgroundColor: 'var(--bg-card)', borderRadius: '16px', width: '100%', maxWidth: '440px', maxHeight: '80vh', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
+        header: { padding: '1.25rem', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
+        content: { padding: '1.25rem', overflowY: 'auto', flex: 1 },
+        requestCard: { padding: '1rem', border: '1px solid var(--border)', borderRadius: '12px', marginBottom: '0.75rem' },
+        avatar: { width: '44px', height: '44px', borderRadius: '50%', backgroundColor: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', color: 'var(--accent)', fontWeight: 600 },
+        buttons: { display: 'flex', gap: '0.5rem', marginTop: '0.75rem' },
+        acceptBtn: { flex: 1, padding: '0.625rem', backgroundColor: 'var(--accent)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '0.85rem', fontWeight: 500, cursor: 'pointer' },
+        declineBtn: { flex: 1, padding: '0.625rem', backgroundColor: 'transparent', border: '1px solid var(--border)', borderRadius: '8px', color: 'var(--text-muted)', fontSize: '0.85rem', cursor: 'pointer' },
+      };
+      
+      return (
+        <div style={styles.overlay} onClick={onClose}>
+          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+            <div style={styles.header}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 600 }}>📬 Connection Requests</h2>
+              <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: 'var(--text-muted)' }}>×</button>
+            </div>
+            
+            <div style={styles.content}>
+              {requests && requests.length > 0 ? (
+                requests.map(request => (
+                  <div key={request.id} style={styles.requestCard}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.75rem' }}>
+                      <div style={styles.avatar}>{request.fromUserName?.[0] || '?'}</div>
+                      <div>
+                        <div><strong>{request.fromUserName}</strong> wants to connect</div>
+                        <div>as your <span style={{ fontWeight: 600, color: 'var(--accent)' }}>{request.relationship}</span></div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{VLQ_DOMAINS[request.lifeArea]?.icon} {VLQ_DOMAINS[request.lifeArea]?.name}</div>
+                      </div>
+                    </div>
+                    <div style={styles.buttons}>
+                      <button style={styles.acceptBtn} onClick={() => handleAccept(request.id)} disabled={processingId === request.id}>
+                        {processingId === request.id ? '...' : '✓ Accept'}
+                      </button>
+                      <button style={styles.declineBtn} onClick={() => handleDecline(request.id)} disabled={processingId === request.id}>
+                        Decline
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                  <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>📭</div>
+                  <p>No pending requests</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
+    // Share/Invite Modal
+    function ShareInviteModal({ isOpen, onClose, referralCode, userName }) {
+      const [copied, setCopied] = useState(false);
+      
+      const inviteLink = `https://alexandraraymond1717-max.github.io/tend/?ref=${referralCode}`;
+      const inviteMessage = `Hey! I've been using Tend to live more intentionally. Join me: ${inviteLink}`;
+      
+      const copyToClipboard = () => {
+        navigator.clipboard.writeText(inviteLink);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      };
+      
+      if (!isOpen) return null;
+      
+      const styles = {
+        overlay: { position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem' },
+        modal: { backgroundColor: 'var(--bg-card)', borderRadius: '16px', width: '100%', maxWidth: '400px', padding: '1.5rem' },
+        linkBox: { backgroundColor: 'var(--bg-elevated)', borderRadius: '10px', padding: '0.875rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' },
+        copyBtn: { padding: '0.5rem 0.75rem', backgroundColor: copied ? '#E8F5E9' : 'var(--accent)', border: 'none', borderRadius: '6px', color: copied ? '#2E7D32' : 'white', fontSize: '0.8rem', cursor: 'pointer', whiteSpace: 'nowrap' },
+        shareButtons: { display: 'flex', gap: '0.5rem', marginBottom: '1rem' },
+        shareBtn: { flex: 1, padding: '0.75rem', border: '1px solid var(--border)', borderRadius: '10px', backgroundColor: 'var(--bg-card)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', fontSize: '0.85rem', color: 'var(--text)' },
+        reward: { backgroundColor: 'var(--accent-light)', borderRadius: '8px', padding: '0.75rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--accent)' },
+        closeBtn: { width: '100%', padding: '0.75rem', backgroundColor: 'transparent', border: '1px solid var(--border)', borderRadius: '10px', color: 'var(--text-muted)', fontSize: '0.9rem', cursor: 'pointer', marginTop: '1rem' },
+      };
+      
+      return (
+        <div style={styles.overlay} onClick={onClose}>
+          <div style={styles.modal} onClick={e => e.stopPropagation()}>
+            <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.75rem' }}>🌱</div>
+              <h2 style={{ fontSize: '1.2rem', fontWeight: 600, marginBottom: '0.5rem' }}>Invite Friends to Tend</h2>
+              <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>Share your link and grow together!</p>
+            </div>
+            
+            <div style={styles.linkBox}>
+              <span style={{ flex: 1, fontSize: '0.8rem', wordBreak: 'break-all' }}>{inviteLink}</span>
+              <button style={styles.copyBtn} onClick={copyToClipboard}>
+                {copied ? '✓ Copied!' : 'Copy'}
+              </button>
+            </div>
+            
+            <div style={styles.shareButtons}>
+              <button style={styles.shareBtn} onClick={() => window.open(`sms:?body=${encodeURIComponent(inviteMessage)}`, '_blank')}>
+                💬 Text
+              </button>
+              <button style={styles.shareBtn} onClick={() => window.open(`mailto:?subject=Join me on Tend&body=${encodeURIComponent(inviteMessage)}`, '_blank')}>
+                ✉️ Email
+              </button>
+            </div>
+            
+            <div style={styles.reward}>
+              🎁 Earn <strong>+10 tend points</strong> for each friend who joins!
+            </div>
+            
+            <button style={styles.closeBtn} onClick={onClose}>Done</button>
+          </div>
+        </div>
+      );
+    }
+    
+    // My Connections View (Community Tab)
+    function CommunityView({ connections, connectionRequests, onOpenSearch, onOpenInvite, onOpenRequests }) {
+      // Group connections by life area
+      const connectionsByArea = {};
+      connections?.forEach(conn => {
+        const area = conn.lifeArea || 'other';
+        if (!connectionsByArea[area]) connectionsByArea[area] = [];
+        connectionsByArea[area].push(conn);
+      });
+      
+      const styles = {
+        container: { padding: '1.5rem' },
+        header: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '0.75rem' },
+        title: { fontSize: '1.25rem', fontWeight: 600, color: 'var(--text)' },
+        buttons: { display: 'flex', gap: '0.5rem', flexWrap: 'wrap' },
+        button: { padding: '0.5rem 1rem', border: '1px solid var(--border)', borderRadius: '8px', backgroundColor: 'var(--bg-card)', color: 'var(--text)', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem', position: 'relative' },
+        primaryBtn: { padding: '0.5rem 1rem', border: 'none', borderRadius: '8px', backgroundColor: 'var(--accent)', color: 'white', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.375rem' },
+        badge: { position: 'absolute', top: '-6px', right: '-6px', backgroundColor: '#E53935', color: 'white', fontSize: '0.7rem', fontWeight: 600, padding: '2px 6px', borderRadius: '10px', minWidth: '18px', textAlign: 'center' },
+        section: { marginBottom: '1.5rem' },
+        sectionTitle: { fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.5rem' },
+        grid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: '0.75rem' },
+        card: { padding: '1rem', backgroundColor: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', textAlign: 'center' },
+        avatar: { width: '48px', height: '48px', borderRadius: '50%', backgroundColor: 'var(--accent-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.25rem', color: 'var(--accent)', fontWeight: 600, margin: '0 auto 0.5rem' },
+        emptyState: { textAlign: 'center', padding: '3rem', color: 'var(--text-muted)' },
+      };
+      
+      return (
+        <div style={styles.container}>
+          <div style={styles.header}>
+            <h2 style={styles.title}>🌻 Community Garden</h2>
+            <div style={styles.buttons}>
+              <button style={styles.button} onClick={onOpenRequests}>
+                📬 Requests
+                {connectionRequests?.length > 0 && <span style={styles.badge}>{connectionRequests.length}</span>}
+              </button>
+              <button style={styles.button} onClick={onOpenInvite}>📤 Invite</button>
+              <button style={styles.primaryBtn} onClick={onOpenSearch}>➕ Find Friends</button>
+            </div>
+          </div>
+          
+          {connections && connections.length > 0 ? (
+            Object.entries(connectionsByArea).map(([area, areaConnections]) => (
+              <div key={area} style={styles.section}>
+                <h3 style={styles.sectionTitle}>
+                  <span>{VLQ_DOMAINS[area]?.icon || '👤'}</span>
+                  <span>{VLQ_DOMAINS[area]?.name || area}</span>
+                  <span style={{ fontWeight: 400 }}>({areaConnections.length})</span>
+                </h3>
+                <div style={styles.grid}>
+                  {areaConnections.map((conn, idx) => (
+                    <div key={idx} style={styles.card}>
+                      <div style={styles.avatar}>{conn.userProfile?.firstName?.[0] || '?'}</div>
+                      <div style={{ fontSize: '0.9rem', fontWeight: 500, marginBottom: '0.25rem' }}>{conn.userProfile?.firstName}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{conn.relationship}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))
+          ) : (
+            <div style={styles.emptyState}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🌱</div>
+              <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--text)' }}>Start building your community</h3>
+              <p style={{ marginBottom: '1.5rem' }}>Connect with friends and family to grow together</p>
+              <button style={styles.primaryBtn} onClick={onOpenSearch}>➕ Find Friends</button>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     // Onboarding Progress Bar Component
     function OnboardingProgressBar({ currentStep, onStepClick, isStepComplete, getProgress, vlqCompleted }) {
       const steps = [
@@ -14245,6 +15021,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
