@@ -1635,7 +1635,16 @@ Respond with ONLY the task text, nothing else.`,
 
     // ============ MAIN APP ============
     // ============ VLQ ASSESSMENT ============
-    function VLQAssessment({ vlqScores, setVlqScores, vlqStep, setVlqStep, onComplete }) {
+    function VLQAssessment({ vlqScores, setVlqScores, vlqStep, setVlqStep, onComplete, userProfile, setUserProfile }) {
+      
+      // Local state for About You form
+      const [aboutYouForm, setAboutYouForm] = useState({
+        firstName: userProfile?.firstName || '',
+        lastName: userProfile?.lastName || '',
+        username: userProfile?.username || '',
+        birthday: userProfile?.birthday || '',
+        gender: userProfile?.gender || '',
+      });
       
       // Calculate gaps for summary
       const getGaps = () => {
@@ -1851,6 +1860,205 @@ Respond with ONLY the task text, nothing else.`,
         }));
       };
 
+      // Handle About You form submission
+      const handleAboutYouSubmit = () => {
+        setUserProfile(prev => ({
+          ...prev,
+          firstName: aboutYouForm.firstName,
+          lastName: aboutYouForm.lastName,
+          username: aboutYouForm.username,
+          birthday: aboutYouForm.birthday,
+          gender: aboutYouForm.gender,
+          name: aboutYouForm.firstName, // Keep legacy name field synced
+        }));
+        setVlqStep(-1); // Go to VLQ intro
+      };
+
+      // About You screen (Step -2)
+      if (vlqStep === -2) {
+        const isFormValid = aboutYouForm.firstName.trim() && aboutYouForm.lastName.trim() && aboutYouForm.username.trim();
+        
+        return (
+          <div style={vlqStyles.container}>
+            <div style={{...vlqStyles.card, ...vlqStyles.intro, maxWidth: '460px'}}>
+              <div style={{ fontSize: '3rem', marginBottom: '0.75rem' }}>🌱</div>
+              <h1 style={{...vlqStyles.introTitle, marginBottom: '0.5rem'}}>Let's get to know you</h1>
+              <p style={{color: 'var(--text-muted)', fontSize: '1rem', marginBottom: '1.75rem'}}>
+                Just a few quick things before we begin.
+              </p>
+              
+              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                {/* First & Last Name Row */}
+                <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.8rem',
+                      fontWeight: 500,
+                      color: 'var(--text-muted)',
+                      marginBottom: '0.4rem',
+                    }}>
+                      First name
+                    </label>
+                    <input
+                      type="text"
+                      value={aboutYouForm.firstName}
+                      onChange={(e) => setAboutYouForm(prev => ({ ...prev, firstName: e.target.value }))}
+                      placeholder="Alex"
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        borderRadius: '10px',
+                        border: '1px solid var(--border)',
+                        backgroundColor: 'var(--bg-card)',
+                        color: 'var(--text)',
+                        fontSize: '1rem',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.8rem',
+                      fontWeight: 500,
+                      color: 'var(--text-muted)',
+                      marginBottom: '0.4rem',
+                    }}>
+                      Last name
+                    </label>
+                    <input
+                      type="text"
+                      value={aboutYouForm.lastName}
+                      onChange={(e) => setAboutYouForm(prev => ({ ...prev, lastName: e.target.value }))}
+                      placeholder="Smith"
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        borderRadius: '10px',
+                        border: '1px solid var(--border)',
+                        backgroundColor: 'var(--bg-card)',
+                        color: 'var(--text)',
+                        fontSize: '1rem',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                </div>
+                
+                {/* Username */}
+                <div>
+                  <label style={{
+                    display: 'block',
+                    fontSize: '0.8rem',
+                    fontWeight: 500,
+                    color: 'var(--text-muted)',
+                    marginBottom: '0.4rem',
+                  }}>
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    value={aboutYouForm.username}
+                    onChange={(e) => setAboutYouForm(prev => ({ ...prev, username: e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '') }))}
+                    placeholder="alexsmith"
+                    style={{
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '10px',
+                      border: '1px solid var(--border)',
+                      backgroundColor: 'var(--bg-card)',
+                      color: 'var(--text)',
+                      fontSize: '1rem',
+                      boxSizing: 'border-box',
+                    }}
+                  />
+                  <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.3rem', marginBottom: 0 }}>
+                    Letters, numbers, and underscores only
+                  </p>
+                </div>
+                
+                {/* Birthday & Gender Row */}
+                <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
+                  <div style={{ flex: 1 }}>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.8rem',
+                      fontWeight: 500,
+                      color: 'var(--text-muted)',
+                      marginBottom: '0.4rem',
+                    }}>
+                      Birthday <span style={{ fontWeight: 400, opacity: 0.7 }}>(optional)</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={aboutYouForm.birthday}
+                      onChange={(e) => setAboutYouForm(prev => ({ ...prev, birthday: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        borderRadius: '10px',
+                        border: '1px solid var(--border)',
+                        backgroundColor: 'var(--bg-card)',
+                        color: aboutYouForm.birthday ? 'var(--text)' : 'var(--text-muted)',
+                        fontSize: '1rem',
+                        boxSizing: 'border-box',
+                      }}
+                    />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.8rem',
+                      fontWeight: 500,
+                      color: 'var(--text-muted)',
+                      marginBottom: '0.4rem',
+                    }}>
+                      Gender <span style={{ fontWeight: 400, opacity: 0.7 }}>(optional)</span>
+                    </label>
+                    <select
+                      value={aboutYouForm.gender}
+                      onChange={(e) => setAboutYouForm(prev => ({ ...prev, gender: e.target.value }))}
+                      style={{
+                        width: '100%',
+                        padding: '0.75rem',
+                        borderRadius: '10px',
+                        border: '1px solid var(--border)',
+                        backgroundColor: 'var(--bg-card)',
+                        color: aboutYouForm.gender ? 'var(--text)' : 'var(--text-muted)',
+                        fontSize: '1rem',
+                        boxSizing: 'border-box',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      <option value="">Select...</option>
+                      <option value="female">Female</option>
+                      <option value="male">Male</option>
+                      <option value="non-binary">Non-binary</option>
+                      <option value="other">Other</option>
+                      <option value="prefer-not-to-say">Prefer not to say</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              <button 
+                style={{
+                  ...vlqStyles.startButton,
+                  marginTop: '1.75rem',
+                  opacity: isFormValid ? 1 : 0.5,
+                  cursor: isFormValid ? 'pointer' : 'not-allowed',
+                }} 
+                onClick={handleAboutYouSubmit}
+                disabled={!isFormValid}
+              >
+                Continue →
+              </button>
+            </div>
+          </div>
+        );
+      }
+
       // Intro screen
       if (vlqStep === -1) {
         return (
@@ -1864,12 +2072,12 @@ Respond with ONLY the task text, nothing else.`,
                 <path d="M40 28 Q48 22 52 12 Q44 20 40 28" stroke="var(--accent)" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
                 <circle cx="40" cy="70" r="3" fill="none" stroke="var(--accent)" strokeWidth="1.5"/>
               </svg>
-              <h1 style={vlqStyles.introTitle}>Welcome to Tend</h1>
+              <h1 style={vlqStyles.introTitle}>Nice to meet you, {aboutYouForm.firstName}!</h1>
               <p style={{...vlqStyles.introText, marginBottom: '1.5rem'}}>
                 Tend helps you design a life aligned with your values — not just survive, but live intentionally and mindfully.
               </p>
               <p style={vlqStyles.introText}>
-                To get started, you'll reflect on <strong>10 areas of life</strong>. For each one, you'll rate:
+                To get started, you'll reflect on <strong>11 areas of life</strong>. For each one, you'll rate:
                 <br /><br />
                 <em>How important is this to you?</em>
                 <br />
@@ -2305,7 +2513,7 @@ Respond with ONLY the task text, nothing else.`,
         mentalHealth: { importance: 5, consistency: 5 },
       });
       const [vlqCompleted, setVlqCompleted] = useState(false);
-      const [vlqStep, setVlqStep] = useState(-1); // -1 for intro, 0-9 for domains, 10 for summary
+      const [vlqStep, setVlqStep] = useState(-2); // -2 for About You, -1 for intro, 0-1 for domains, 2 for summary
       const [values, setValues] = useState([]);
       const [lifeAreaRatings, setLifeAreaRatings] = useState({
         health: { satisfaction: null, intention: null },
@@ -2370,7 +2578,12 @@ Respond with ONLY the task text, nothing else.`,
       const [savedConversations, setSavedConversations] = useState({}); // Archive of important conversations
       const [currentConversationType, setCurrentConversationType] = useState('general'); // 'general' | 'monthly_review' | 'yearly_review' | 'onboarding'
       const [userProfile, setUserProfile] = useState({
-        name: '',
+        firstName: '',
+        lastName: '',
+        username: '',
+        birthday: '',
+        gender: '',
+        name: '', // Legacy field
         occupation: '',
         location: '',
         lifeStage: '',
@@ -5300,6 +5513,8 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
             vlqStep={vlqStep}
             setVlqStep={setVlqStep}
             onComplete={handleVlqComplete}
+            userProfile={userProfile}
+            setUserProfile={setUserProfile}
           />
         );
       }
@@ -14039,6 +14254,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
