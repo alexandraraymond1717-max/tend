@@ -3165,7 +3165,7 @@ Respond with ONLY the task text, nothing else.`,
 
 Hi! I'm here to help you on your journey toward a more intentional life. 
 
-You've completed your setup and your first Daily Tend — amazing start! Here's what you can do now:
+You've laid your foundation and completed your first Daily Tend — amazing start! Here's what you can do now:
 
 • **🌱 Daily Tend** — Get a personalized activity each day based on your life map
 • **📝 Journal** — Reflect on your day and track your progress  
@@ -5833,12 +5833,13 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                   onFinishOnboarding={() => {
                     setOnboardingCompleted(true);
                     setOnboardingStep(null);
+                    setCenterView(CENTER_VIEWS.YEAR); // Navigate to Home tab
                     setShowChatOverlay(true);
                     setMessages([{
                       role: 'assistant',
                       content: `🎉 **Welcome to Tend!**
 
-You've finished setting up — nice work!
+You've laid your foundation — nice work!
 
 I'm here whenever you want to chat. We could talk about:
 
@@ -9431,7 +9432,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               textAlign: 'center',
             }}>
               <p style={{color: 'var(--text)', fontSize: '0.95rem', marginBottom: '0.25rem'}}>
-                🎉 <strong>You're almost done with setup!</strong>
+                🌱 <strong>Your foundation is almost complete!</strong>
               </p>
               <p style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>
                 Here's your first daily tend. Try it out, or skip to explore the app!
@@ -9700,7 +9701,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     cursor: 'pointer',
                   }}
                 >
-                  Finish Setup & Go Home →
+                  Start Growing →
                 </button>
                 <p style={{
                   color: 'var(--text-muted)',
@@ -14038,6 +14039,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
