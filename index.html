@@ -6428,13 +6428,13 @@ Click the chat bubble anytime to come back and talk. What's on your mind?`
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && !e.shiftKey) {
                         e.preventDefault();
-                        handleSend();
+                        handleSendMessage();
                       }
                     }}
                     placeholder="Type your message..."
                   />
                   <button
-                    onClick={handleSend}
+                    onClick={handleSendMessage}
                     disabled={!inputValue.trim() || isTyping}
                     style={{
                       padding: '0.875rem 1.5rem',
@@ -14038,6 +14038,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
