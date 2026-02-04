@@ -6219,6 +6219,7 @@ Click the chat bubble anytime to come back and talk. What's on your mind?`
                     journalEntries={journalEntries}
                     apiKey={apiKey}
                     onBack={() => setCenterView(CENTER_VIEWS.YEAR)}
+                    onNavigateToJournal={() => setCenterView(CENTER_VIEWS.JOURNAL)}
                     isOnboarding={!onboardingCompleted && onboardingStep === 3}
                     onFinishOnboarding={() => {
                       setOnboardingCompleted(true);
@@ -6272,6 +6273,7 @@ Click the chat bubble anytime to come back and talk. What's on your mind?`
                     setMessages={setMessages}
                     onSwitchMode={() => setCenterView(CENTER_VIEWS.YEAR)}
                     onBack={() => setCenterView(CENTER_VIEWS.YEAR)}
+                    embedded={true}
                   />
                 </div>
               )}
@@ -6729,7 +6731,8 @@ Click the chat bubble anytime to come back and talk. What's on your mind?`
       onBack,
       setAppMode,
       setMessages,
-      goals
+      goals,
+      embedded = false
     }) {
       const today = new Date();
       const currentMonth = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}`;
@@ -7000,9 +7003,12 @@ This has been your year of growth and intention. What are you most proud of? Wha
         <div style={journalStyles.container}>
           <div style={journalStyles.header}>
             <div style={journalStyles.headerLeft}>
-              <button style={journalStyles.backButton} onClick={onBack} title="Back">
-                ←
-              </button>
+              {/* Hide back button when embedded in tabs */}
+              {!embedded && (
+                <button style={journalStyles.backButton} onClick={onBack} title="Back">
+                  ←
+                </button>
+              )}
               <h2 style={journalStyles.title}>Daily Journal</h2>
             </div>
             <div style={{display: 'flex', gap: '0.75rem', alignItems: 'center'}}>
@@ -8332,7 +8338,8 @@ This has been your year of growth and intention. What are you most proud of? Wha
       onBack,
       onTendComplete,
       isOnboarding = false,
-      onFinishOnboarding
+      onFinishOnboarding,
+      onNavigateToJournal
     }) {
       const today = getLocalDateString();
       const [showCelebration, setShowCelebration] = useState(false);
@@ -9148,16 +9155,19 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
         
         return (
           <div style={tendyStyles.container}>
-            <div style={tendyStyles.header}>
-              <button style={tendyStyles.backButton} onClick={isOnboarding ? onFinishOnboarding : onBack}>
-                🏠 Home
-              </button>
-              <div style={tendyStyles.stats}>
-                <div style={tendyStyles.stat}>
-                  <span>🌱</span> {tendyPoints} pts
+            {/* Only show header with Home button during onboarding */}
+            {isOnboarding && (
+              <div style={tendyStyles.header}>
+                <button style={tendyStyles.backButton} onClick={onFinishOnboarding}>
+                  🏠 Home
+                </button>
+                <div style={tendyStyles.stats}>
+                  <div style={tendyStyles.stat}>
+                    <span>🌱</span> {tendyPoints} pts
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
             <div style={tendyStyles.content}>
               <div style={tendyStyles.completedState}>
                 <div style={tendyStyles.completedIcon}>✨</div>
@@ -9210,8 +9220,11 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                   <div style={{marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', alignItems: 'center'}}>
                     <button
                       onClick={() => {
-                        onBack();
-                        // Navigate to journal - we'll need to communicate this up
+                        if (onNavigateToJournal) {
+                          onNavigateToJournal();
+                        } else {
+                          onBack();
+                        }
                       }}
                       style={{
                         padding: '0.75rem 1.5rem',
@@ -9226,7 +9239,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                         maxWidth: '280px',
                       }}
                     >
-                      📝 Take Me to Journal
+                      📝 Reflect in Journal
                     </button>
                     {isWeekendNow && pendingWeekend && (
                       <button
@@ -9410,22 +9423,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               </div>
             )}
             
-            <div style={tendyStyles.header}>
-              <button style={tendyStyles.backButton} onClick={isOnboarding ? onFinishOnboarding : onBack}>
-                🏠 Home
-              </button>
-              {/* Hide stats during onboarding for cleaner look */}
-              {!isOnboarding && (
-                <div style={tendyStyles.stats}>
-                  <div style={tendyStyles.stat}>
-                    <span>🪴</span> {flexPoints} flex
-                  </div>
-                  <div style={tendyStyles.stat}>
-                    <span>🌱</span> {tendyPoints} pts
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Only show header with Home button during onboarding */}
+            {isOnboarding && (
+              <div style={tendyStyles.header}>
+                <button style={tendyStyles.backButton} onClick={onFinishOnboarding}>
+                  🏠 Home
+                </button>
+              </div>
+            )}
             <div style={tendyStyles.content}>
               <h1 style={{...tendyStyles.title, fontSize: isOnboarding ? '1.25rem' : tendyStyles.title.fontSize}}>{hasBothSelected ? 'Today\'s Tends' : 'Today\'s Tend'}</h1>
               <p style={tendyStyles.subtitle}>
@@ -9622,20 +9627,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       
       return (
         <div style={tendyStyles.container}>
-          {/* Only show header when NOT onboarding */}
-          {!isOnboarding && (
-            <div style={tendyStyles.header}>
-              <button style={tendyStyles.backButton} onClick={onBack}>
-                🏠 Home
-              </button>
-              <div style={tendyStyles.stats}>
-                <div style={tendyStyles.stat}>
-                  <span>🌱</span> {tendyPoints} pts
-                </div>
-              </div>
-            </div>
-          )}
-          
           {/* Onboarding welcome message */}
           {isOnboarding && (
             <div style={{
@@ -14254,6 +14245,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
