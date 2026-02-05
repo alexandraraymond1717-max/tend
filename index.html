@@ -2551,6 +2551,7 @@ Respond with ONLY the task text, nothing else.`,
         const strengths = gaps.filter(g => g.gap < 3 && g.importance >= 5);
 
         return (
+          <>
           <div style={vlqStyles.container}>
             <div style={vlqStyles.card}>
               <div style={vlqStyles.header}>
@@ -2731,6 +2732,7 @@ Respond with ONLY the task text, nothing else.`,
               </div>
             );
           })()}
+          </>
         );
       }
 
