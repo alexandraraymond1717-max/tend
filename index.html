@@ -6359,6 +6359,22 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                   onClose={() => setShowAdminDashboard(false)}
                 />
               )}
+              {showUserSearchModal && (
+                <UserSearchModal
+                  isOpen={showUserSearchModal}
+                  onClose={() => setShowUserSearchModal(false)}
+                  currentUserId={user?.uid}
+                  currentUserProfile={userProfile}
+                  connections={connections}
+                  sentRequests={sentRequests}
+                  onRequestSent={async () => {
+                    if (user?.uid) {
+                      const sent = await loadSentRequests(user.uid);
+                      setSentRequests(sent);
+                    }
+                  }}
+                />
+              )}
             </div>
           );
         }
@@ -6635,6 +6651,7 @@ Click the chat bubble anytime to come back and talk. What's on your mind?`
                   setHabitCompletions={setHabitCompletions}
                   journalEntries={journalEntries}
                   tendyHistory={tendyHistory}
+                  todaysTendies={todaysTendies}
                   onNavigateToTend={() => setCenterView(CENTER_VIEWS.TENDY)}
                 />
               )}
@@ -6655,6 +6672,7 @@ Click the chat bubble anytime to come back and talk. What's on your mind?`
                     onBack={() => setCenterView(CENTER_VIEWS.YEAR)}
                     apiKey={apiKey}
                     embedded={true}
+                    onboardingCompleted={onboardingCompleted}
                     onOpenCommunitySearch={() => setShowUserSearchModal(true)}
                   />
                 </div>
@@ -8319,7 +8337,7 @@ This has been your year of growth and intention. What are you most proud of? Wha
     }
 
     // ============ MONTHLY VIEW ============
-    function MonthlyView({ events, selectedMonth, setSelectedMonth, revealed, onAddEvent, weeklyHabits, habitCompletions, setHabitCompletions, journalEntries = {}, tendyHistory = [], onNavigateToTend }) {
+    function MonthlyView({ events, selectedMonth, setSelectedMonth, revealed, onAddEvent, weeklyHabits, habitCompletions, setHabitCompletions, journalEntries = {}, tendyHistory = [], todaysTendies = [], onNavigateToTend }) {
       const year = 2026;
       const daysInMonth = new Date(year, selectedMonth + 1, 0).getDate();
       const firstDayOfMonth = new Date(year, selectedMonth, 1).getDay();
@@ -8396,8 +8414,9 @@ This has been your year of growth and intention. What are you most proud of? Wha
         const fullDate = new Date(year, selectedMonth, day).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
         const dateKey = getDateKey(day);
         
-        // Get tend for this day
+        // Get tend for this day (check history first, then today's active tends)
         const dayTend = tendyHistory.find(t => t.date === dateKey);
+        const todayTend = isToday && !dayTend ? todaysTendies.find(t => t.selected) : null;
         
         // Get journal entry for this day
         const dayJournal = journalEntries[dateKey];
@@ -8518,6 +8537,32 @@ This has been your year of growth and intention. What are you most proud of? Wha
                     fontSize: '0.85rem',
                   }}>
                     Future date — tend not yet available
+                  </div>
+                ) : isToday && todayTend ? (
+                  <div style={{
+                    padding: '0.75rem',
+                    backgroundColor: 'var(--accent-light)',
+                    borderRadius: '8px',
+                    border: '1px solid var(--accent)',
+                  }}>
+                    <div style={{ fontSize: '0.9rem', color: 'var(--text)', marginBottom: '0.5rem' }}>
+                      {todayTend.text}
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        {todayTend.domainIcon} {todayTend.domainName}
+                      </span>
+                      <span style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 500,
+                        padding: '0.2rem 0.5rem',
+                        borderRadius: '10px',
+                        backgroundColor: 'var(--accent)',
+                        color: 'white',
+                      }}>
+                        Revealed
+                      </span>
+                    </div>
                   </div>
                 ) : isToday ? (
                   <div style={{
