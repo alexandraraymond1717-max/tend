@@ -1644,7 +1644,7 @@ Respond with ONLY the task text, nothing else.`,
       1: { id: 'goals', label: 'Goals', icon: '🎯', required: false }, // Goals OR prompts
       2: { id: 'habits', label: 'Habits', icon: '🔄', required: false }, // Optional
       3: { id: 'quiz', label: 'Quiz', icon: '🌸', required: false },
-      4: { id: 'lifemap', label: 'Life Map', icon: '🗺️', required: false },
+      4: { id: 'lifemap', label: 'Life Map', icon: '🌍', required: false },
       5: { id: 'compass', label: 'Compass', icon: '🧭', required: false },
       6: { id: 'tend', label: 'First Tend', icon: '🌱', required: true },
     };
@@ -2694,7 +2694,7 @@ Respond with ONLY the task text, nothing else.`,
                       fontWeight: 600,
                       marginBottom: '0.75rem',
                     }}>
-                      🗺️ Your Life Map
+                      🌍 Your Life Map
                     </div>
                     <div style={{
                       fontSize: '0.85rem',
@@ -3824,7 +3824,7 @@ You've laid your foundation and completed your first Daily Tend — amazing star
 • **🌱 Daily Tend** — Get a personalized activity each day based on your life map
 • **📝 Journal** — Reflect on your day and track your progress  
 • **📅 Calendar** — See what each day holds and track your activities
-• **🗺️ Life Map** — Your goals, the habits that support them, and all the important parts of your life mapped out
+• **🌍 Life Map** — Your goals, the habits that support them, and all the important parts of your life mapped out
 
 What would you like to explore?`,
             timestamp: new Date().toISOString()
@@ -5333,7 +5333,7 @@ How did that feel? Is there anything you want to explore or work on next?
 [BUTTON: Generate a daily tend | tendy]
 [BUTTON: Let's talk about goals | goals]
 [BUTTON: Show me the Life Map | life map]`,
-          'insights': `Welcome back! 🗺️
+          'insights': `Welcome back! 🌍
 
 Did you discover anything interesting? Where would you like to go next?
 
@@ -5882,7 +5882,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
               }}
             >
               <div style={{display: 'flex', alignItems: 'center', gap: '0.75rem'}}>
-                <span style={{fontSize: '1.5rem'}}>🗺️</span>
+                <span style={{fontSize: '1.5rem'}}>🌍</span>
                 <div>
                   <div style={{fontWeight: 500, color: 'var(--text)', marginBottom: '0.25rem'}}>Life Map</div>
                   <div style={{fontSize: '0.8rem', color: 'var(--text-muted)'}}>View and edit your life areas</div>
@@ -6231,7 +6231,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                         boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
                       }}>
                         <div style={{fontSize: '3rem', marginBottom: '1rem'}}>
-                          {showOnboardingOverlay === 'lifemap' ? '🗺️' : showOnboardingOverlay === 'quiz' ? '🌻' : '🌱'}
+                          {showOnboardingOverlay === 'lifemap' ? '🌍' : showOnboardingOverlay === 'quiz' ? '🌻' : '🌱'}
                         </div>
                         <h2 style={{
                           fontFamily: "'Fraunces', serif",
@@ -6527,7 +6527,7 @@ You can also minimize this chat and explore the app on your own:
 
 • **🏠 Home** — watch your garden grow as you tend to each life area *(coming soon!)*
 • **📅 Calendar** — see what each day holds and track your activities
-• **🗺️ Life Map** — your goals, the habits that support them, and all the important parts of your life mapped out
+• **🌍 Life Map** — your goals, the habits that support them, and all the important parts of your life mapped out
 • **🌱 Daily Tend** — your personalized daily activities
 • **📝 Journal** — reflect on your day
 
@@ -6705,7 +6705,7 @@ You can also minimize this chat and explore the app on your own:
 
 • **🏠 Home** — your dashboard and overview
 • **📅 Calendar** — see your history and plan ahead  
-• **🗺️ Life Map** — your goals, habits, and values
+• **🌍 Life Map** — your goals, habits, and values
 • **🌱 Daily Tend** — your personalized daily activities
 • **📝 Journal** — reflect on your day
 
@@ -12109,7 +12109,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
     function OnboardingProgressBar({ currentStep, onStepClick, isStepComplete, getProgress, vlqCompleted }) {
       const steps = [
         { num: 0, id: 'vlq', label: 'Values', icon: '💚', alwaysComplete: true },
-        { num: 1, id: 'lifemap', label: 'Life Map', icon: '🗺️' },
+        { num: 1, id: 'lifemap', label: 'Life Map', icon: '🌍' },
         { num: 2, id: 'quiz', label: 'Quiz', icon: '🌸', optional: true },
         { num: 3, id: 'tend', label: 'First Tend', icon: '🌱' },
       ];
@@ -12608,7 +12608,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               <button style={dashStyles.tab(activeTab === 'overview')} onClick={() => setActiveTab('overview')}>📊 Overview</button>
               <button style={dashStyles.tab(activeTab === 'tendengine')} onClick={() => setActiveTab('tendengine')}>🎲 Tend Engine</button>
               <button style={dashStyles.tab(activeTab === 'vlq')} onClick={() => setActiveTab('vlq')}>📋 VLQ Scores</button>
-              <button style={dashStyles.tab(activeTab === 'lifemap')} onClick={() => setActiveTab('lifemap')}>🗺️ Life Map</button>
+              <button style={dashStyles.tab(activeTab === 'lifemap')} onClick={() => setActiveTab('lifemap')}>🌍 Life Map</button>
               <button style={dashStyles.tab(activeTab === 'quiz')} onClick={() => setActiveTab('quiz')}>🌻 Gardener Quiz</button>
               <button style={dashStyles.tab(activeTab === 'goals')} onClick={() => setActiveTab('goals')}>🎯 Goals & Habits</button>
               <button style={dashStyles.tab(activeTab === 'raw')} onClick={() => setActiveTab('raw')}>🔧 Raw Data</button>
@@ -13056,7 +13056,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             {/* Life Map Tab */}
             {activeTab === 'lifemap' && (
               <div style={dashStyles.section}>
-                <h3 style={dashStyles.sectionTitle}>🗺️ Life Map Data (from prompts)</h3>
+                <h3 style={dashStyles.sectionTitle}>🌍 Life Map Data (from prompts)</h3>
                 {Object.keys(prefs.structuredInfo || {}).length > 0 ? (
                   <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem'}}>
                     {VLQ_ORDER.map(domain => {
