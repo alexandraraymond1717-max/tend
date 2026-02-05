@@ -5963,6 +5963,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
               embedded={false}
               autoExpandSection="quiz"
               hideLifeMap={true}
+              onOpenCommunitySearch={() => setShowUserSearchModal(true)}
               onQuizComplete={(result) => {
                 // After quiz, return to home
                 setAppMode(null);
@@ -6068,6 +6069,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                     focusedArea={null}
                     onboardingStep={onboardingStep}
                     onboardingCompleted={onboardingCompleted}
+                    onOpenCommunitySearch={() => setShowUserSearchModal(true)}
                     onFocusedAreaChange={(area) => {
                       if (onboardingStep === 1) setCurrentOnboardingArea(area);
                     }}
@@ -6303,6 +6305,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
               onAddGoal={() => setShowGoalModal(true)}
               onBack={() => setAppMode(null)}
               apiKey={apiKey}
+              onOpenCommunitySearch={() => setShowUserSearchModal(true)}
             />
             {/* Floating chat bubble for navigation */}
             <div style={{ position: 'fixed', bottom: '1.5rem', right: '1.5rem', zIndex: 1000 }}>
@@ -6576,6 +6579,7 @@ Click the chat bubble anytime to come back and talk. What's on your mind?`
                     onBack={() => setCenterView(CENTER_VIEWS.YEAR)}
                     apiKey={apiKey}
                     embedded={true}
+                    onOpenCommunitySearch={() => setShowUserSearchModal(true)}
                   />
                 </div>
               )}
@@ -13243,7 +13247,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
       },
     };
 
-    function InsightsView({ trends, vlqScores, flexPoints, userProfile, setUserProfile, goals = [], setGoals, weeklyHabits = [], setWeeklyHabits, onReassessVLQ, onAddGoal, onBack, apiKey, embedded = false, autoExpandSection = null, onQuizComplete = null, onLifeMapAnswer = null, focusedArea = null, onFocusedAreaChange = null, onboardingStep = null, onboardingCompleted = false, hideLifeMap = false }) {
+    function InsightsView({ trends, vlqScores, flexPoints, userProfile, setUserProfile, goals = [], setGoals, weeklyHabits = [], setWeeklyHabits, onReassessVLQ, onAddGoal, onBack, apiKey, embedded = false, autoExpandSection = null, onQuizComplete = null, onLifeMapAnswer = null, focusedArea = null, onFocusedAreaChange = null, onboardingStep = null, onboardingCompleted = false, hideLifeMap = false, onOpenCommunitySearch = null }) {
       const [expandedArea, setExpandedArea] = useState(autoExpandSection || focusedArea);
       const [editingArea, setEditingArea] = useState(null);
       const [tempFormData, setTempFormData] = useState(autoExpandSection === 'quiz' ? { quizStep: 0, quizAnswers: {}, isGenerating: false, generatedResult: null } : {});
@@ -14400,6 +14404,55 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                                               </div>
                                             </>
                                           )}
+                                          
+                                          {/* Community suggestion - show when answers mention people */}
+                                          {(() => {
+                                            if (!onOpenCommunitySearch) return null;
+                                            const peopleAreas = ['family', 'partner', 'friendships', 'community'];
+                                            if (!peopleAreas.includes(areaKey)) return null;
+                                            
+                                            const allAnswerText = Object.values(structured).join(' ').toLowerCase();
+                                            const personPatterns = /\b(my\s+)?(sister|brother|mom|mother|dad|father|wife|husband|partner|boyfriend|girlfriend|son|daughter|cousin|aunt|uncle|grandma|grandmother|grandpa|grandfather|friend|bestie|best friend|roommate|neighbor|fiancé|fiancée|fiance|fiancee)\b|[A-Z][a-z]+(?:\s+and\s+[A-Z][a-z]+)?/;
+                                            const hasPeopleRef = personPatterns.test(Object.values(structured).join(' '));
+                                            
+                                            if (!hasPeopleRef || answeredKeys.length === 0) return null;
+                                            
+                                            // Don't show if user already dismissed it for this area
+                                            if (tempFormData[`communityDismissed_${areaKey}`]) return null;
+                                            
+                                            return (
+                                              <div style={{
+                                                padding: '0.5rem 0.75rem',
+                                                backgroundColor: '#F0F7F4',
+                                                border: '1px solid #C8E6D0',
+                                                borderRadius: '8px',
+                                                marginBottom: '0.75rem',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '0.5rem',
+                                              }}>
+                                                <span style={{ fontSize: '1rem' }}>🌻</span>
+                                                <div style={{ flex: 1 }}>
+                                                  <div style={{ fontSize: '0.8rem', color: '#2E7D4F', fontWeight: 500 }}>
+                                                    Know someone on Tend?
+                                                  </div>
+                                                  <div style={{ fontSize: '0.7rem', color: '#5A9E72' }}>
+                                                    Add them to your Community Garden to grow together
+                                                  </div>
+                                                </div>
+                                                <button 
+                                                  onClick={() => onOpenCommunitySearch()}
+                                                  style={{ padding: '0.35rem 0.65rem', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '6px', fontSize: '0.75rem', cursor: 'pointer', fontWeight: 500, whiteSpace: 'nowrap' }}
+                                                >
+                                                  Find them
+                                                </button>
+                                                <button
+                                                  onClick={() => setTempFormData(prev => ({...prev, [`communityDismissed_${areaKey}`]: true}))}
+                                                  style={{ background: 'none', border: 'none', color: '#5A9E72', cursor: 'pointer', fontSize: '0.8rem', padding: '0.25rem' }}
+                                                >×</button>
+                                              </div>
+                                            );
+                                          })()}
                                           
                                           <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', marginBottom: '0.5rem' }}>
                                             {isGeneratingPrompt ? 'Thinking of a question...' : (answeredKeys.length > 0 ? 'ADD MORE' : (currentQuestion?.q || 'TELL ME MORE'))} {!isGeneratingPrompt && answeredKeys.length > 0 && <span style={{ fontWeight: 400, fontSize: '0.65rem' }}>(optional)</span>}
