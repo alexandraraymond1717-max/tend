@@ -1091,6 +1091,10 @@
       // Build context string
       const contextParts = [];
       
+      // Add basic profile info
+      if (userProfile?.firstName) contextParts.push(`Name: ${userProfile.firstName}`);
+      if (userProfile?.gender) contextParts.push(`Gender: ${userProfile.gender}`);
+      
       // Add gardener type for tone/style guidance
       if (prefs.gardenerType) {
         contextParts.push(`Gardener type: ${prefs.gardenerType.name} - ${prefs.gardenerType.strength}`);
@@ -1155,6 +1159,18 @@ User context: ${contextParts.join('. ')}`,
       
       // Build rich context
       const contextParts = [];
+      
+      // Add basic profile info (name, age, gender)
+      if (userProfile?.firstName) contextParts.push(`User's name: ${userProfile.firstName}`);
+      if (userProfile?.birthday) {
+        const birthDate = new Date(userProfile.birthday);
+        const today = new Date();
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
+        if (age > 0 && age < 120) contextParts.push(`Age: ${age}`);
+      }
+      if (userProfile?.gender) contextParts.push(`Gender: ${userProfile.gender}`);
       
       // Add gardener type for personalized tone and approach
       if (prefs.gardenerType) {
@@ -2265,7 +2281,7 @@ Respond with ONLY the task text, nothing else.`,
                 
                 {/* Birthday & Gender Row */}
                 <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
-                  <div style={{ flex: 1 }}>
+                  <div style={{ flex: 1.5 }}>
                     <label style={{
                       display: 'block',
                       fontSize: '0.8rem',
@@ -2275,21 +2291,56 @@ Respond with ONLY the task text, nothing else.`,
                     }}>
                       Birthday <span style={{ fontWeight: 400, opacity: 0.7 }}>(optional)</span>
                     </label>
-                    <input
-                      type="date"
-                      value={aboutYouForm.birthday}
-                      onChange={(e) => setAboutYouForm(prev => ({ ...prev, birthday: e.target.value }))}
-                      style={{
-                        width: '100%',
-                        padding: '0.75rem',
-                        borderRadius: '10px',
-                        border: '1px solid var(--border)',
-                        backgroundColor: 'var(--bg-card)',
-                        color: aboutYouForm.birthday ? 'var(--text)' : 'var(--text-muted)',
-                        fontSize: '1rem',
-                        boxSizing: 'border-box',
-                      }}
-                    />
+                    <div style={{ display: 'flex', gap: '0.375rem' }}>
+                      {/* Month */}
+                      <select
+                        value={aboutYouForm.birthday ? new Date(aboutYouForm.birthday + 'T00:00:00').getMonth() + 1 : ''}
+                        onChange={(e) => {
+                          const month = e.target.value;
+                          if (!month) { setAboutYouForm(prev => ({ ...prev, birthday: '' })); return; }
+                          const parts = aboutYouForm.birthday ? aboutYouForm.birthday.split('-') : ['2000', '01', '01'];
+                          setAboutYouForm(prev => ({ ...prev, birthday: `${parts[0]}-${month.padStart(2, '0')}-${parts[2]}` }));
+                        }}
+                        style={{ flex: 1.2, padding: '0.75rem 0.25rem', borderRadius: '10px', border: '1px solid var(--border)', backgroundColor: 'var(--bg-card)', color: aboutYouForm.birthday ? 'var(--text)' : 'var(--text-muted)', fontSize: '0.85rem', boxSizing: 'border-box', appearance: 'none', WebkitAppearance: 'none', textAlign: 'center' }}
+                      >
+                        <option value="">Mo</option>
+                        {['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'].map((m, i) => (
+                          <option key={i} value={i + 1}>{m}</option>
+                        ))}
+                      </select>
+                      {/* Day */}
+                      <select
+                        value={aboutYouForm.birthday ? parseInt(aboutYouForm.birthday.split('-')[2]) : ''}
+                        onChange={(e) => {
+                          const day = e.target.value;
+                          if (!day) return;
+                          const parts = aboutYouForm.birthday ? aboutYouForm.birthday.split('-') : ['2000', '01', '01'];
+                          setAboutYouForm(prev => ({ ...prev, birthday: `${parts[0]}-${parts[1]}-${day.toString().padStart(2, '0')}` }));
+                        }}
+                        style={{ flex: 0.8, padding: '0.75rem 0.25rem', borderRadius: '10px', border: '1px solid var(--border)', backgroundColor: 'var(--bg-card)', color: aboutYouForm.birthday ? 'var(--text)' : 'var(--text-muted)', fontSize: '0.85rem', boxSizing: 'border-box', appearance: 'none', WebkitAppearance: 'none', textAlign: 'center' }}
+                      >
+                        <option value="">Day</option>
+                        {Array.from({length: 31}, (_, i) => i + 1).map(d => (
+                          <option key={d} value={d}>{d}</option>
+                        ))}
+                      </select>
+                      {/* Year */}
+                      <select
+                        value={aboutYouForm.birthday ? aboutYouForm.birthday.split('-')[0] : ''}
+                        onChange={(e) => {
+                          const year = e.target.value;
+                          if (!year) { setAboutYouForm(prev => ({ ...prev, birthday: '' })); return; }
+                          const parts = aboutYouForm.birthday ? aboutYouForm.birthday.split('-') : ['2000', '01', '01'];
+                          setAboutYouForm(prev => ({ ...prev, birthday: `${year}-${parts[1] || '01'}-${parts[2] || '01'}` }));
+                        }}
+                        style={{ flex: 1, padding: '0.75rem 0.25rem', borderRadius: '10px', border: '1px solid var(--border)', backgroundColor: 'var(--bg-card)', color: aboutYouForm.birthday ? 'var(--text)' : 'var(--text-muted)', fontSize: '0.85rem', boxSizing: 'border-box', appearance: 'none', WebkitAppearance: 'none', textAlign: 'center' }}
+                      >
+                        <option value="">Year</option>
+                        {Array.from({length: 100}, (_, i) => new Date().getFullYear() - i).map(y => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <div style={{ flex: 1 }}>
                     <label style={{
@@ -4689,6 +4740,23 @@ Guide the user through their onboarding journey. Be encouraging and help them ma
           const prefs = userProfile?.tendPreferences || {};
           const parts = [];
           
+          // Basic profile info (name, age, gender)
+          const profileParts = [];
+          if (userProfile?.firstName) profileParts.push(`Name: ${userProfile.firstName}`);
+          if (userProfile?.birthday) {
+            const birthDate = new Date(userProfile.birthday);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) age--;
+            if (age > 0 && age < 120) profileParts.push(`Age: ${age}`);
+          }
+          if (userProfile?.gender) profileParts.push(`Gender: ${userProfile.gender}`);
+          if (profileParts.length > 0) {
+            parts.push(`\n=== USER PROFILE ===`);
+            parts.push(profileParts.join(', '));
+          }
+          
           // Gardener type and tending style
           if (prefs.gardenerType) {
             parts.push(`\n=== USER'S PERSONALITY (from Gardener Quiz) ===`);
@@ -6105,7 +6173,7 @@ I've opened <strong>${firstAreaName}</strong> for you on the left. You can type 
                           {showOnboardingOverlay === 'lifemap' 
                             ? "Great start! You can always come back and add more to your Life Map — it grows with you."
                             : showOnboardingOverlay === 'quiz'
-                            ? "We've learned your tending style! This helps personalize how Tend communicates with you."
+                            ? "We've learned your tending style! This personalizes your daily tends and how Tend communicates with you."
                             : "No worries! You can always take the quiz later in your Life Map."}
                         </p>
                         <div style={{
@@ -10007,7 +10075,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               textAlign: 'center',
             }}>
               <p style={{color: 'var(--text)', fontSize: '0.95rem', marginBottom: '0.25rem'}}>
-                🌱 <strong>Your foundation is almost complete!</strong>
+                🌱 <strong>Your foundation is complete!</strong>
               </p>
               <p style={{color: 'var(--text-muted)', fontSize: '0.85rem'}}>
                 Here's your first daily tend. Try it out, or skip to explore the app!
@@ -15021,6 +15089,7 @@ Respond in this exact JSON format only:
   </script>
 </body>
 </html>
+
 
 
 
