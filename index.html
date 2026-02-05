@@ -5292,9 +5292,9 @@ Time to complete your first daily tend!
           'design': () => setAppMode('plan'),
           'plan & design': () => setAppMode('plan'),
           'journal': () => setAppMode('journal'),
-          'insights': () => setAppMode('insights'),
-          'life map': () => setAppMode('insights'),
-          'lifemap': () => setAppMode('insights'),
+          'insights': () => { setAppMode(null); setCenterView(CENTER_VIEWS.INSIGHTS); },
+          'life map': () => { setAppMode(null); setCenterView(CENTER_VIEWS.INSIGHTS); },
+          'lifemap': () => { setAppMode(null); setCenterView(CENTER_VIEWS.INSIGHTS); },
           'quiz': () => setAppMode('quiz'),
           'gardener quiz': () => setAppMode('quiz'),
           'personality quiz': () => setAppMode('quiz'),
@@ -9850,140 +9850,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               </div>
             )}
             
-            {/* Tend Chat Modal */}
-            {showTendChat && (
-              <div style={{
-                position: 'fixed',
-                top: 0,
-                left: 0,
-                right: 0,
-                bottom: 0,
-                backgroundColor: 'rgba(0,0,0,0.5)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                zIndex: 1000,
-                padding: '1rem',
-              }}>
-                <div style={{
-                  backgroundColor: 'var(--bg-card)',
-                  borderRadius: '16px',
-                  width: '100%',
-                  maxWidth: '500px',
-                  maxHeight: '80vh',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  overflow: 'hidden',
-                }}>
-                  {/* Chat Header */}
-                  <div style={{
-                    padding: '1rem',
-                    borderBottom: '1px solid var(--border)',
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  }}>
-                    <div>
-                      <div style={{ fontWeight: 600, color: 'var(--text)' }}>Chat about this tend</div>
-                      <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{selectedTendy?.domainName}</div>
-                    </div>
-                    <button 
-                      onClick={() => setShowTendChat(false)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        fontSize: '1.5rem',
-                        cursor: 'pointer',
-                        color: 'var(--text-muted)',
-                      }}
-                    >×</button>
-                  </div>
-                  
-                  {/* Chat Messages */}
-                  <div 
-                    ref={tendChatRef}
-                    style={{
-                      flex: 1,
-                      overflowY: 'auto',
-                      padding: '1rem',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.75rem',
-                    }}
-                  >
-                    {tendChatMessages.map((msg, i) => (
-                      <div 
-                        key={i}
-                        style={{
-                          alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                          backgroundColor: msg.role === 'user' ? 'var(--accent)' : 'var(--bg-elevated)',
-                          color: msg.role === 'user' ? 'white' : 'var(--text)',
-                          padding: '0.75rem 1rem',
-                          borderRadius: '12px',
-                          maxWidth: '85%',
-                          fontSize: '0.9rem',
-                          whiteSpace: 'pre-wrap',
-                        }}
-                      >
-                        {msg.content}
-                      </div>
-                    ))}
-                    {isTendChatTyping && (
-                      <div style={{
-                        alignSelf: 'flex-start',
-                        backgroundColor: 'var(--bg-elevated)',
-                        padding: '0.75rem 1rem',
-                        borderRadius: '12px',
-                        color: 'var(--text-muted)',
-                        fontSize: '0.9rem',
-                      }}>
-                        Thinking...
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Chat Input */}
-                  <div style={{
-                    padding: '1rem',
-                    borderTop: '1px solid var(--border)',
-                    display: 'flex',
-                    gap: '0.5rem',
-                  }}>
-                    <input
-                      type="text"
-                      value={tendChatInput}
-                      onChange={(e) => setTendChatInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendTendChatMessage()}
-                      placeholder="Ask about this tend..."
-                      style={{
-                        flex: 1,
-                        padding: '0.75rem',
-                        borderRadius: '10px',
-                        border: '1px solid var(--border)',
-                        backgroundColor: 'var(--bg-main)',
-                        color: 'var(--text)',
-                        fontSize: '0.9rem',
-                      }}
-                    />
-                    <button
-                      onClick={sendTendChatMessage}
-                      disabled={!tendChatInput.trim() || isTendChatTyping}
-                      style={{
-                        padding: '0.75rem 1rem',
-                        borderRadius: '10px',
-                        border: 'none',
-                        backgroundColor: 'var(--accent)',
-                        color: 'white',
-                        cursor: tendChatInput.trim() && !isTendChatTyping ? 'pointer' : 'not-allowed',
-                        opacity: tendChatInput.trim() && !isTendChatTyping ? 1 : 0.5,
-                      }}
-                    >
-                      Send
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
             
             {/* Only show header with Home button during onboarding */}
             {isOnboarding && (
@@ -10029,37 +9895,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       </div>
                     </div>
                   </div>
-                  
-                  {/* Chat about this tend button - only for action tends */}
-                  {selectedTendy.type !== 'reflective' && (
-                    <button 
-                      onClick={() => {
-                        setShowTendChat(true);
-                        setTendChatMessages([{
-                          role: 'assistant',
-                          content: `This tend is: "${selectedTendy.text}"\n\nHow can I help? You can ask me to clarify, adapt it to your situation, or share what works/doesn't work for you.`
-                        }]);
-                      }}
-                      style={{
-                        width: '100%',
-                        padding: '0.5rem',
-                        backgroundColor: 'transparent',
-                        border: '1px solid var(--border)',
-                        borderRadius: '8px',
-                        color: 'var(--text-muted)',
-                        fontSize: '0.8rem',
-                        cursor: 'pointer',
-                        marginBottom: '0.5rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: '0.5rem',
-                      }}
-                    >
-                      <span>💬</span>
-                      <span>Chat about this tend</span>
-                    </button>
-                  )}
                   
                   {/* Reroll button for action tends - costs 1 flex point */}
                   {selectedTendy.type !== 'reflective' && flexPoints >= 1 && !selectedTendy.completed && (
@@ -13636,11 +13471,10 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 });
                 
                 // Calculate icon scale based on GOALS count (1.0 to 1.6)
-                const maxGoals = Math.max(...Object.values(domainGoalCounts), 1);
                 const getIconScale = (domain) => {
                   const count = domainGoalCounts[domain] || 0;
                   if (count === 0) return 1.0;
-                  return 1.0 + (count / maxGoals) * 0.6; // Scale from 1.0 to 1.6
+                  return 1.0 + Math.min(count, 5) * 0.15; // Each goal adds 0.15, capped at 5 goals (max 1.75)
                 };
                 
                 // Cleaner SVG layout - wider to prevent overlap
