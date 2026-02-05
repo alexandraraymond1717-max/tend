@@ -2546,8 +2546,8 @@ Respond with ONLY the task text, nothing else.`,
         const gaps = getGaps();
         // Waterfall: Growth first, then Lower Priority, then Strengths catches the rest
         const growthAreas = gaps.filter(g => g.gap >= 3);
-        const lowerPriority = gaps.filter(g => g.gap < 3 && g.importance <= 5);
-        const strengths = gaps.filter(g => g.gap < 3 && g.importance > 5);
+        const lowerPriority = gaps.filter(g => g.gap < 3 && g.importance < 5);
+        const strengths = gaps.filter(g => g.gap < 3 && g.importance >= 5);
 
         return (
           <div style={vlqStyles.container}>
