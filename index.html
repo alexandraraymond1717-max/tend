@@ -3054,7 +3054,7 @@ Respond with ONLY the task text, nothing else.`,
             consistency: vlqScores[key]?.consistency || 5,
             gap: (vlqScores[key]?.importance || 5) - (vlqScores[key]?.consistency || 5)
           }))
-          .filter(a => a.gap >= 2)
+          .filter(a => a.gap >= 3)
           .map(a => a.key);
       };
 
@@ -3854,7 +3854,7 @@ What would you like to explore?`,
         const completedAreas = focusAreas.filter(a => getAreaProgress(a).complete);
         const allComplete = focusAreas.every(a => getAreaProgress(a).complete);
         
-        // If all focus areas complete, show the overlay
+        // If all growth areas complete, show the overlay
         if (allComplete && completedAreas.length > lastCompletedAreas.length) {
           setShowOnboardingOverlay('lifemap');
         }
@@ -4156,7 +4156,7 @@ What would you like to explore?`,
 
 Based on your values assessment, ${focusAreaNames.length > 0 ? `you want to focus on growing in: <strong>${focusAreaNames.join('</strong>, <strong>')}</strong>` : 'there are areas where you want to grow'}.
 
-Let's build out your <strong>Life Map</strong> — for each focus area, we'll set a goal, add a weekly habit linked to that goal, and answer a prompt.
+Let's build out your <strong>Life Map</strong> — for each growth area, we'll set a goal, add a weekly habit linked to that goal, and answer a prompt.
 
 I've opened <strong>${firstAreaName}</strong> for you on the left. You can type directly into the input fields there, or just chat with me here about what matters to you and I'll help you fill it in.`;
                   break;
@@ -4725,9 +4725,9 @@ Click on the event in the sidebar to add details.`;
             return `
 
 === ONBOARDING MODE: LIFE MAP (Step 1 of 3) ===
-You're helping the user build out their Life Map one focus area at a time.
+You're helping the user build out their Life Map one growth area at a time.
 
-FOCUS AREAS: ${focusAreaNames.join(', ')}
+GROWTH AREAS: ${focusAreaNames.join(', ')}
 
 CURRENTLY WORKING ON: ${currentAreaName} (${currentArea})
 Progress for ${currentAreaName}:
@@ -4738,7 +4738,7 @@ Progress for ${currentAreaName}:
 OVERALL PROGRESS:
 ${focusAreaProgress.map(p => `${p.name}: ${p.complete ? '✓ complete' : `${p.hasGoal ? '✓' : '○'} goal | ${p.hasLinkedHabit ? '✓' : '○'} linked habit | ${p.hasPrompt ? '✓' : '○'} prompt`}`).join('\n')}
 
-${allFocusAreasComplete ? '🎉 ALL FOCUS AREAS COMPLETE!' : ''}
+${allFocusAreasComplete ? '🎉 ALL GROWTH AREAS COMPLETE!' : ''}
 
 YOUR APPROACH FOR ${currentAreaName.toUpperCase()}:
 1. The area is already expanded in the UI - user can fill in prompts directly OR chat with you
@@ -4755,8 +4755,8 @@ User: "Yes!"
 You: [GOAL: Reach out to one friend weekly | friendships] Got it! What habit would help you do this consistently? Maybe a weekly reminder to call or text someone?
 
 WHEN THIS AREA IS COMPLETE:
-- If more focus areas remain: "Great work on ${currentAreaName}! ✓ Let's move on to [next area]. [FOCUS_AREA: nextAreaKey]"
-- If all focus areas done: Offer to explore other areas OR move to quiz
+- If more growth areas remain: "Great work on ${currentAreaName}! ✓ Let's move on to [next area]. [FOCUS_AREA: nextAreaKey]"
+- If all growth areas done: Offer to explore other areas OR move to quiz
 
 NAVIGATION MARKER:
 Use [FOCUS_AREA: areaKey] to navigate to and expand a different life area.
@@ -5754,7 +5754,7 @@ I'm here to help with any planning.`
 
 Based on your values assessment, ${focusAreaNames.length > 0 ? `you want to focus on growing in: <strong>${focusAreaNames.join('</strong>, <strong>')}</strong>` : 'there are areas where you want to grow'}.
 
-Let's build out your <strong>Life Map</strong> — for each focus area, we'll set a goal, add a weekly habit linked to that goal, and answer a prompt.
+Let's build out your <strong>Life Map</strong> — for each growth area, we'll set a goal, add a weekly habit linked to that goal, and answer a prompt.
 
 I've opened <strong>${firstAreaName}</strong> for you on the left. You can type directly into the input fields there, or just chat with me here about what matters to you and I'll help you fill it in.`;
         
@@ -7301,12 +7301,12 @@ Click the chat bubble anytime to come back and talk. What's on your mind?`
 - You completed ${completedTends} daily tends
 - You achieved ${completedGoals} goals
 
-🌱 **Areas You Focused On:**
+🌱 **Growth Areas:**
 ${VLQ_ORDER.filter(key => {
   const importance = vlqScores[key]?.importance || 5;
   const gap = importance - (vlqScores[key]?.consistency || 5);
   return gap >= 2;
-}).map(key => `- ${VLQ_DOMAINS[key].icon} ${VLQ_DOMAINS[key].name}`).join('\n') || 'No specific focus areas'}
+}).map(key => `- ${VLQ_DOMAINS[key].icon} ${VLQ_DOMAINS[key].name}`).join('\n') || 'No specific growth areas'}
 
 Let's reflect on your month together. What stood out to you most? What are you proud of? What would you like to carry forward into next month?`;
       };
@@ -7380,7 +7380,7 @@ ${VLQ_ORDER.filter(key => {
   const importance = vlqScores[key]?.importance || 5;
   const gap = importance - (vlqScores[key]?.consistency || 5);
   return gap >= 2;
-}).map(key => `- ${VLQ_DOMAINS[key].icon} ${VLQ_DOMAINS[key].name}`).join('\n') || 'No specific focus areas'}
+}).map(key => `- ${VLQ_DOMAINS[key].icon} ${VLQ_DOMAINS[key].name}`).join('\n') || 'No specific growth areas'}
 
 💪 **Your Strengths:**
 ${VLQ_ORDER.filter(key => {
@@ -10468,7 +10468,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             <p style={styles.weeklySubtitle}>What do you want to do each week?</p>
             {focusAreas.length > 0 && (
               <p style={{fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem'}}>
-                Cover your focus areas: {focusAreas.map(a => VLQ_DOMAINS[a]?.name.split(' ')[0]).join(', ')}
+                Cover your growth areas: {focusAreas.map(a => VLQ_DOMAINS[a]?.name.split(' ')[0]).join(', ')}
               </p>
             )}
           </div>
@@ -11505,7 +11505,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             fontWeight: 500
           }} onClick={onAddGoal}>+ Add Goal</button>
           
-          {/* Focus Areas */}
+          {/* Growth Areas */}
           {focusAreas.length > 0 && (
             <div>
               <h3 style={{
@@ -11516,7 +11516,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 color: 'var(--text-muted)', 
                 marginBottom: '0.5rem'
               }}>
-                🌱 Focus On
+                🌱 Growth Areas
               </h3>
               <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem'}}>
                 {focusAreas.map(renderAreaCard)}
@@ -12219,7 +12219,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
             }}>
               {currentStep === 1 && (
                 <span>
-                  {progress[1].current}/{progress[1].required} focus areas complete
+                  {progress[1].current}/{progress[1].required} growth areas complete
                 </span>
               )}
               {currentStep === 2 && <span>{progress[2].current === 1 ? 'Quiz completed!' : 'Take the quiz (optional)'}</span>}
@@ -12316,7 +12316,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                 <input type="text" style={styles.textInput} value={text} onChange={(e) => setText(e.target.value)} placeholder="Run a 5K, read 12 books..." autoFocus />
               </div>
               <div style={styles.formField}>
-                <label style={styles.formLabel}>Life Area {focusAreas.length > 0 && <span style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>(cover your focus areas: {focusAreas.map(a => VLQ_DOMAINS[a]?.name.split(' ')[0]).join(', ')})</span>}</label>
+                <label style={styles.formLabel}>Life Area {focusAreas.length > 0 && <span style={{fontSize: '0.7rem', color: 'var(--text-muted)'}}>(cover your growth areas: {focusAreas.map(a => VLQ_DOMAINS[a]?.name.split(' ')[0]).join(', ')})</span>}</label>
                 <select style={styles.selectInput} value={lifeArea} onChange={(e) => setLifeArea(e.target.value)}>
                   <option value="">— Select life area —</option>
                   {VLQ_ORDER.map(key => (
@@ -13917,7 +13917,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                       {(goals.length === 0 && allFacts.length === 0) || onboardingStep === 1 ? (
                         <div style={{ textAlign: 'center', color: '#9A8F7D', fontSize: '0.8rem', marginTop: '-0.25rem' }}>
                           {onboardingStep === 1 
-                            ? 'Click on each focus area to add one goal and answer one prompt to build the base of your map'
+                            ? 'Click on each growth area to add one goal and answer one prompt to build the base of your map'
                             : 'Add goals and answer prompts to build your map'
                           }
                         </div>
@@ -14628,11 +14628,11 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                         
                         return (
                           <>
-                            {/* Focus Areas */}
+                            {/* Growth Areas */}
                             {focusAreas.length > 0 ? (
                               <div>
                                 <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#E8A090', marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                  <span>🌱</span> FOCUS AREAS
+                                  <span>🌱</span> GROWTH AREAS
                                   <span style={{ fontWeight: 400, color: 'var(--text-muted)' }}>— room to grow</span>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
