@@ -13928,10 +13928,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', marginTop: '0.5rem' }}>
                       
                       {(() => {
-                        // Categorize life areas with new logic:
-                        // Back Burner: importance ≤ 4
-                        // Strengths: importance ≥ 5 AND gap < 3 (sorted by importance desc)
-                        // Focus Areas: importance ≥ 5 AND gap ≥ 3 (sorted by gap desc)
+                        // Categorize life areas (waterfall: growth first, then lower priority, then strengths)
                         const backBurner = [];
                         const strengths = [];
                         const focusAreas = [];
@@ -13949,13 +13946,11 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                           
                           const areaData = { areaKey, importance, consistency, gap, areaGoals, areaHabits, hasLifeMapInfo, notes, structured };
                           
-                          if (importance < 5) {
-                            backBurner.push(areaData);
-                          } else if (gap >= 3) {
-                            // importance >= 5 AND gap >= 3
+                          if (gap >= 3) {
                             focusAreas.push(areaData);
+                          } else if (importance < 5) {
+                            backBurner.push(areaData);
                           } else {
-                            // importance >= 5 AND gap < 3
                             strengths.push(areaData);
                           }
                         });
