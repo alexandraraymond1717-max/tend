@@ -11944,14 +11944,16 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
         <div style={styles.container}>
           <div style={styles.header}>
             <h2 style={styles.title}>🌻 Community Garden</h2>
-            <div style={styles.buttons}>
-              <button style={styles.button} onClick={onOpenRequests}>
-                📬 Requests
-                {connectionRequests?.length > 0 && <span style={styles.badge}>{connectionRequests.length}</span>}
-              </button>
-              <button style={styles.button} onClick={onOpenInvite}>📤 Invite</button>
-              <button style={styles.primaryBtn} onClick={onOpenSearch}>➕ Find Friends</button>
-            </div>
+            {connections && connections.length > 0 && (
+              <div style={styles.buttons}>
+                <button style={styles.button} onClick={onOpenRequests}>
+                  📬 Requests
+                  {connectionRequests?.length > 0 && <span style={styles.badge}>{connectionRequests.length}</span>}
+                </button>
+                <button style={styles.button} onClick={onOpenInvite}>📤 Invite</button>
+                <button style={styles.primaryBtn} onClick={onOpenSearch}>➕ Find Friends</button>
+              </div>
+            )}
           </div>
           
           {connections && connections.length > 0 ? (
