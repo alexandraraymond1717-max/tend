@@ -11944,16 +11944,14 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
         <div style={styles.container}>
           <div style={styles.header}>
             <h2 style={styles.title}>🌻 Community Garden</h2>
-            {connections && connections.length > 0 && (
-              <div style={styles.buttons}>
-                <button style={styles.button} onClick={onOpenRequests}>
-                  📬 Requests
-                  {connectionRequests?.length > 0 && <span style={styles.badge}>{connectionRequests.length}</span>}
-                </button>
-                <button style={styles.button} onClick={onOpenInvite}>📤 Invite</button>
-                <button style={styles.primaryBtn} onClick={onOpenSearch}>➕ Find Friends</button>
-              </div>
-            )}
+            <div style={styles.buttons}>
+              <button style={styles.button} onClick={onOpenRequests}>
+                📬 Requests
+                {connectionRequests?.length > 0 && <span style={styles.badge}>{connectionRequests.length}</span>}
+              </button>
+              <button style={styles.button} onClick={onOpenInvite}>📤 Invite</button>
+              <button style={styles.primaryBtn} onClick={onOpenSearch}>➕ Find Friends</button>
+            </div>
           </div>
           
           {connections && connections.length > 0 ? (
@@ -11980,7 +11978,6 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
               <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🌱</div>
               <h3 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--text)' }}>Start building your community</h3>
               <p style={{ marginBottom: '1.5rem' }}>Connect with friends and family to grow together</p>
-              <button style={styles.primaryBtn} onClick={onOpenSearch}>➕ Find Friends</button>
             </div>
           )}
         </div>
