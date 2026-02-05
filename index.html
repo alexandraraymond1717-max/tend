@@ -11383,8 +11383,8 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
         return <div style={{padding: '1rem'}}><p style={{fontSize: '0.8rem', color: 'var(--text-muted)', fontStyle: 'italic'}}>Complete the assessment to see your life areas.</p></div>;
       }
 
-      // Categorize life areas
-      const focusAreas = []; // gap >= 2
+      // Categorize life areas (waterfall: growth -> lower priority -> strengths)
+      const focusAreas = []; // gap >= 3
       const strengths = []; // importance >= 5, gap < 3
       const lowImportance = []; // importance < 5, gap < 3
 
@@ -11402,12 +11402,12 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
           gap
         };
 
-        if (gap >= 2) {
+        if (gap >= 3) {
           focusAreas.push(areaData);
-        } else if (importance >= 5 && gap < 3) {
-          strengths.push(areaData);
-        } else if (importance < 5 && gap < 3) {
+        } else if (importance < 5) {
           lowImportance.push(areaData);
+        } else {
+          strengths.push(areaData);
         }
       });
 
@@ -13949,7 +13949,7 @@ Response format: "APPROVED: [reason]" or "REJECTED: [reason]"`
                           
                           const areaData = { areaKey, importance, consistency, gap, areaGoals, areaHabits, hasLifeMapInfo, notes, structured };
                           
-                          if (importance <= 4) {
+                          if (importance < 5) {
                             backBurner.push(areaData);
                           } else if (gap >= 3) {
                             // importance >= 5 AND gap >= 3
