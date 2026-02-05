@@ -2544,10 +2544,10 @@ Respond with ONLY the task text, nothing else.`,
       // Step 2: Summary screen
       if (vlqStep === 2) {
         const gaps = getGaps();
+        // Waterfall: Growth first, then Lower Priority, then Strengths catches the rest
         const growthAreas = gaps.filter(g => g.gap >= 3);
-        // Strengths: important (>5) and small gap (not a growth area)
-        const strengths = gaps.filter(g => g.importance > 5 && g.gap < 3);
-        const lowerPriority = gaps.filter(g => g.importance <= 5);
+        const lowerPriority = gaps.filter(g => g.gap < 3 && g.importance <= 5);
+        const strengths = gaps.filter(g => g.gap < 3 && g.importance > 5);
 
         return (
           <div style={vlqStyles.container}>
