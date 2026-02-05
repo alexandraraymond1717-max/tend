@@ -2545,13 +2545,9 @@ Respond with ONLY the task text, nothing else.`,
       if (vlqStep === 2) {
         const gaps = getGaps();
         const growthAreas = gaps.filter(g => g.gap >= 3);
-        // Strengths: high importance AND consistency, but NOT already a growth area (gap < 3)
-        const strengths = gaps.filter(g => g.importance >= 6 && g.consistency >= 6 && g.gap < 3);
+        // Strengths: important (>5) and small gap (not a growth area)
+        const strengths = gaps.filter(g => g.importance > 5 && g.gap < 3);
         const lowerPriority = gaps.filter(g => g.importance <= 5);
-        // Middle ground: importance > 5, not a strength, not a growth area
-        const middleGround = gaps.filter(g => 
-          g.importance > 5 && g.gap < 3 && (g.consistency < 6 || g.importance < 6)
-        );
 
         return (
           <div style={vlqStyles.container}>
@@ -2597,26 +2593,6 @@ Respond with ONLY the task text, nothing else.`,
                         <span style={{color: item.color, fontWeight: 600}}>{item.importance}</span>
                         <span style={{color: 'var(--text-muted)', margin: '0 0.25rem'}}>|</span>
                         <span style={{color: item.color, fontWeight: 600}}>{item.consistency}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {middleGround.length > 0 && (
-                <div style={vlqStyles.summarySection}>
-                  <h3 style={vlqStyles.summarySectionTitle}>🔄 Maintaining</h3>
-                  <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '0.75rem', fontStyle: 'italic'}}>
-                    Important and doing okay
-                  </p>
-                  {middleGround.map(item => (
-                    <div key={item.key} style={vlqStyles.summaryItem}>
-                      <span style={vlqStyles.summaryItemIcon}>{item.icon}</span>
-                      <span style={vlqStyles.summaryItemName}>{item.name}</span>
-                      <div style={vlqStyles.summaryItemScores}>
-                        <span style={{color: item.color, fontWeight: 600}}>{item.importance}</span>
-                        <span style={{color: 'var(--text-muted)', margin: '0 0.25rem'}}>|</span>
-                        <span style={{color: 'var(--text-muted)'}}>{item.consistency}</span>
                       </div>
                     </div>
                   ))}
