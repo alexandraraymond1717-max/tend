@@ -2634,10 +2634,6 @@ Respond with ONLY the task text, nothing else.`,
           
           {/* VLQ Complete Overlay */}
           {showVlqCompleteOverlay && (() => {
-            const gaps = getGaps();
-            const growthAreas = gaps.filter(g => g.gap >= 3);
-            const growthNames = growthAreas.map(g => g.name).slice(0, 3);
-            
             return (
               <div style={{
                 position: 'fixed',
@@ -2673,7 +2669,7 @@ Respond with ONLY the task text, nothing else.`,
                     lineHeight: 1.5,
                     marginBottom: '1.25rem',
                   }}>
-                    Nice work! Your values help Tend understand what matters most to you{growthNames.length > 0 ? ` — like ${growthNames.join(', ')}` : ''}. This shapes every daily tend and recommendation you'll receive.
+                    Nice work! Your values help Tend understand what matters most to you — and where you have the most room to grow.
                   </p>
                   <div style={{
                     backgroundColor: 'var(--bg-elevated)',
@@ -2705,7 +2701,7 @@ Respond with ONLY the task text, nothing else.`,
                       color: 'var(--text-muted)',
                       lineHeight: 1.6,
                     }}>
-                      Your Life Map is where you share the details of your life — the people, goals, habits, and experiences that make your world unique. The more Tend knows, the more personal and meaningful your daily tends become.
+                      Now Tend knows your values — but your life is more than a score. Your Life Map is where you fill in the texture: who's in your world, what you're working toward, what lights you up. Think of it as giving Tend the context to really know you.
                     </div>
                   </div>
                   <button
