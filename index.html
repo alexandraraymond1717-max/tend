@@ -1935,6 +1935,7 @@ Respond with ONLY the task text, nothing else.`,
     function VLQAssessment({ vlqScores, setVlqScores, vlqStep, setVlqStep, onComplete, userProfile, setUserProfile }) {
       
       // Local state for About You form
+      const [showVlqCompleteOverlay, setShowVlqCompleteOverlay] = useState(false);
       const [aboutYouForm, setAboutYouForm] = useState({
         firstName: userProfile?.firstName || '',
         lastName: userProfile?.lastName || '',
@@ -2623,12 +2624,113 @@ Respond with ONLY the task text, nothing else.`,
                 <button style={vlqStyles.backButton} onClick={() => setVlqStep(1)}>
                   Back
                 </button>
-                <button style={vlqStyles.nextButton} onClick={onComplete}>
-                  Chat with Tend →
+                <button style={vlqStyles.nextButton} onClick={() => setShowVlqCompleteOverlay(true)}>
+                  Continue →
                 </button>
               </div>
             </div>
           </div>
+          
+          {/* VLQ Complete Overlay */}
+          {showVlqCompleteOverlay && (() => {
+            const gaps = getGaps();
+            const growthAreas = gaps.filter(g => g.gap >= 3);
+            const growthNames = growthAreas.map(g => g.name).slice(0, 3);
+            
+            return (
+              <div style={{
+                position: 'fixed',
+                top: 0, left: 0, right: 0, bottom: 0,
+                backgroundColor: 'rgba(0,0,0,0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                zIndex: 1000,
+                padding: '1rem',
+              }}>
+                <div style={{
+                  backgroundColor: 'var(--bg-card)',
+                  borderRadius: '20px',
+                  padding: '2.5rem',
+                  maxWidth: '420px',
+                  width: '100%',
+                  textAlign: 'center',
+                  boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+                }}>
+                  <div style={{fontSize: '3rem', marginBottom: '1rem'}}>💚</div>
+                  <h2 style={{
+                    fontFamily: "'Fraunces', serif",
+                    fontSize: '1.5rem',
+                    color: 'var(--text)',
+                    marginBottom: '0.75rem',
+                  }}>
+                    Values Landscape Complete!
+                  </h2>
+                  <p style={{
+                    color: 'var(--text-muted)',
+                    fontSize: '0.95rem',
+                    lineHeight: 1.5,
+                    marginBottom: '1.25rem',
+                  }}>
+                    Nice work! Your values help Tend understand what matters most to you{growthNames.length > 0 ? ` — like ${growthNames.join(', ')}` : ''}. This shapes every daily tend and recommendation you'll receive.
+                  </p>
+                  <div style={{
+                    backgroundColor: 'var(--bg-elevated)',
+                    borderRadius: '12px',
+                    padding: '1.25rem',
+                    marginBottom: '1.5rem',
+                    textAlign: 'left',
+                  }}>
+                    <div style={{
+                      fontSize: '0.7rem',
+                      color: 'var(--accent)',
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.5px',
+                      marginBottom: '0.5rem',
+                      fontWeight: 600,
+                    }}>
+                      Next up
+                    </div>
+                    <div style={{
+                      fontSize: '1.1rem',
+                      color: 'var(--text)',
+                      fontWeight: 600,
+                      marginBottom: '0.75rem',
+                    }}>
+                      🗺️ Your Life Map
+                    </div>
+                    <div style={{
+                      fontSize: '0.85rem',
+                      color: 'var(--text-muted)',
+                      lineHeight: 1.6,
+                    }}>
+                      Your Life Map is where you share the details of your life — the people, goals, habits, and experiences that make your world unique. The more Tend knows, the more personal and meaningful your daily tends become.
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setShowVlqCompleteOverlay(false);
+                      onComplete();
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: '0.875rem 1.5rem',
+                      backgroundColor: 'var(--accent)',
+                      border: 'none',
+                      borderRadius: '12px',
+                      color: 'white',
+                      fontSize: '1rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      fontFamily: "'DM Sans', sans-serif",
+                    }}
+                  >
+                    Build My Life Map →
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
         );
       }
 
