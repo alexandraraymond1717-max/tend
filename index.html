@@ -1686,9 +1686,9 @@ Respond with ONLY the task text, nothing else.`,
       const results = [];
       
       try {
-        // Search by firstName
+        // Search by firstName (case-insensitive via lowercase field)
         const firstNameSnapshot = await db.collection('users')
-          .orderBy('userProfile.firstName')
+          .orderBy('searchFirstName')
           .startAt(query)
           .endAt(query + '\uf8ff')
           .limit(15)
@@ -1700,9 +1700,9 @@ Respond with ONLY the task text, nothing else.`,
           }
         });
         
-        // Search by lastName  
+        // Search by lastName (case-insensitive)
         const lastNameSnapshot = await db.collection('users')
-          .orderBy('userProfile.lastName')
+          .orderBy('searchLastName')
           .startAt(query)
           .endAt(query + '\uf8ff')
           .limit(15)
@@ -1714,9 +1714,9 @@ Respond with ONLY the task text, nothing else.`,
           }
         });
         
-        // Search by username
+        // Search by username (case-insensitive)
         const usernameSnapshot = await db.collection('users')
-          .orderBy('userProfile.username')
+          .orderBy('searchUsername')
           .startAt(query)
           .endAt(query + '\uf8ff')
           .limit(15)
@@ -3762,6 +3762,10 @@ Respond with ONLY the task text, nothing else.`,
               // NEW: Knowledge & Intelligence
               savedConversations,
               userProfile,
+              // Top-level lowercase fields for case-insensitive search
+              searchFirstName: (userProfile?.firstName || '').toLowerCase(),
+              searchLastName: (userProfile?.lastName || '').toLowerCase(),
+              searchUsername: (userProfile?.username || '').toLowerCase(),
               trends,
               // Chat history system
               chatHistory: chatHistory.slice(0, 50), // Keep last 50 chats
